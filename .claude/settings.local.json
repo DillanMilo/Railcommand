@@ -8,7 +8,9 @@
       "Bash(npx shadcn@latest:*)",
       "Bash(npx next:*)",
       "Bash(git status:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh auth:*)"
     ]
   }
 }

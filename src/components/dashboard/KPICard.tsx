@@ -43,23 +43,22 @@ export default function KPICard({
         <div className="min-w-0 flex-1">
           <p className="font-heading text-2xl font-bold leading-tight">{value}</p>
           <p className="text-sm text-rc-steel truncate">{title}</p>
+          {trend && trendValue && (
+            <div
+              className={cn(
+                'flex items-center gap-0.5 text-xs font-medium mt-0.5',
+                trend === 'up' && 'text-rc-emerald',
+                trend === 'down' && 'text-rc-red',
+                trend === 'flat' && 'text-rc-steel'
+              )}
+            >
+              {trend === 'up' && <TrendingUp className="size-3.5" />}
+              {trend === 'down' && <TrendingDown className="size-3.5" />}
+              {trend === 'flat' && <Minus className="size-3.5" />}
+              <span>{trendValue}</span>
+            </div>
+          )}
         </div>
-
-        {trend && trendValue && (
-          <div
-            className={cn(
-              'flex items-center gap-0.5 text-xs font-medium shrink-0',
-              trend === 'up' && 'text-rc-emerald',
-              trend === 'down' && 'text-rc-red',
-              trend === 'flat' && 'text-rc-steel'
-            )}
-          >
-            {trend === 'up' && <TrendingUp className="size-3.5" />}
-            {trend === 'down' && <TrendingDown className="size-3.5" />}
-            {trend === 'flat' && <Minus className="size-3.5" />}
-            <span>{trendValue}</span>
-          </div>
-        )}
       </CardContent>
 
       {subtitle && (
