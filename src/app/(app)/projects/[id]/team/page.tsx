@@ -1,0 +1,150 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { Plus, Mail, Phone } from 'lucide-react';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  seedProfiles,
+  seedProjectMembers,
+  seedOrganizations,
+} from '@/lib/seed-data';
+import { cn } from '@/lib/utils';
+
+const ROLE_COLORS: Record<string, string> = {
+  manager: 'bg-purple-100 text-purple-700',
+  engineer: 'bg-blue-100 text-blue-700',
+  contractor: 'bg-orange-100 text-orange-700',
+  inspector: 'bg-emerald-100 text-emerald-700',
+  foreman: 'bg-amber-100 text-amber-700',
+  superintendent: 'bg-slate-100 text-slate-700',
+  owner: 'bg-gray-100 text-gray-700',
+};
+
+const AVATAR_COLORS = [
+  'bg-rc-navy text-white',
+  'bg-rc-orange text-white',
+  'bg-rc-emerald text-white',
+  'bg-rc-blue text-white',
+  'bg-rc-amber text-white',
+  'bg-purple-600 text-white',
+  'bg-rc-red text-white',
+  'bg-teal-600 text-white',
+];
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function formatRole(role: string) {
+  return role
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function TeamPage() {
+  const params = useParams();
+  const projectId = params.id as string;
+
+  const members = useMemo(() => {
+    return seedProjectMembers.map((pm, idx) => {
+      const profile = seedProfiles.find((p) => p.id === pm.profile_id);
+      const org = profile
+        ? seedOrganizations.find((o) => o.id === profile.organization_id)
+        : undefined;
+      return { member: pm, profile, org, colorIdx: idx };
+    });
+  }, []);
+
+  return (
+    <div>
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', href: `/projects/${projectId}/dashboard` },
+          { label: 'Team' },
+        ]}
+      />
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+        <div className="flex items-center gap-3">
+          <h1 className="font-heading text-2xl font-bold">Project Team</h1>
+          <Badge variant="secondary" className="text-xs">
+            {members.length} members
+          </Badge>
+        </div>
+        <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+          <Plus className="size-4" /> Add Team Member
+        </Button>
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+        {members.map(({ member, profile, org, colorIdx }) => {
+          if (!profile) return null;
+          const avatarColor = AVATAR_COLORS[colorIdx % AVATAR_COLORS.length];
+
+          return (
+            <Card key={member.id} className="gap-0 py-4 hover:border-rc-orange/40 transition-colors">
+              <CardContent className="px-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
+                  <div
+                    className={cn(
+                      'flex shrink-0 items-center justify-center rounded-full size-11 text-sm font-bold',
+                      avatarColor
+                    )}
+                  >
+                    {getInitials(profile.full_name)}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{profile.full_name}</p>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'border-0 text-[10px] mt-0.5',
+                        ROLE_COLORS[member.project_role] ?? ROLE_COLORS.owner
+                      )}
+                    >
+                      {formatRole(member.project_role)}
+                    </Badge>
+                  </div>
+                </div>
+
+                {org && (
+                  <p className="text-xs text-muted-foreground truncate">{org.name}</p>
+                )}
+
+                <div className="space-y-1">
+                  <a
+                    href={`mailto:${profile.email}`}
+                    className="flex items-center gap-1.5 text-xs text-rc-blue hover:underline truncate"
+                  >
+                    <Mail className="size-3 shrink-0" />
+                    {profile.email}
+                  </a>
+                  <a
+                    href={`tel:${profile.phone}`}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <Phone className="size-3 shrink-0" />
+                    {profile.phone}
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
