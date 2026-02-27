@@ -53,12 +53,12 @@ export default function QuickActions() {
               <Link
                 key={action.label}
                 href={action.href}
-                className="flex flex-col items-center gap-2 rounded-lg border border-rc-border bg-white p-4 text-center transition-all hover:border-rc-orange hover:shadow-sm group"
+                className="flex flex-col items-center gap-2 rounded-lg border border-rc-border bg-rc-card p-4 text-center transition-all hover:border-rc-orange hover:shadow-sm group"
               >
                 <div className="flex items-center justify-center rounded-lg bg-rc-bg p-2 group-hover:bg-rc-orange/10 transition-colors">
                   <Icon className="size-5 text-rc-steel group-hover:text-rc-orange transition-colors" />
                 </div>
-                <span className="text-sm font-medium text-rc-navy">{action.label}</span>
+                <span className="text-sm font-medium text-foreground">{action.label}</span>
               </Link>
             );
           })}

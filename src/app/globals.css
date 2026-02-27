@@ -46,19 +46,19 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  /* RailCommand custom colors */
-  --color-rc-navy: #0F172A;
-  --color-rc-slate: #1E293B;
-  --color-rc-steel: #64748B;
-  --color-rc-orange: #F97316;
-  --color-rc-orange-dark: #EA580C;
-  --color-rc-amber: #F59E0B;
-  --color-rc-emerald: #10B981;
-  --color-rc-red: #EF4444;
-  --color-rc-blue: #3B82F6;
-  --color-rc-bg: #F8FAFC;
-  --color-rc-card: #FFFFFF;
-  --color-rc-border: #E2E8F0;
+  /* RailCommand custom colors (theme-aware via CSS vars) */
+  --color-rc-navy: var(--rc-navy);
+  --color-rc-slate: var(--rc-slate);
+  --color-rc-steel: var(--rc-steel);
+  --color-rc-orange: var(--rc-orange);
+  --color-rc-orange-dark: var(--rc-orange-dark);
+  --color-rc-amber: var(--rc-amber);
+  --color-rc-emerald: var(--rc-emerald);
+  --color-rc-red: var(--rc-red);
+  --color-rc-blue: var(--rc-blue);
+  --color-rc-bg: var(--rc-bg);
+  --color-rc-card: var(--rc-card);
+  --color-rc-border: var(--rc-border);
 
   /* RailCommand fonts */
   --font-heading: var(--font-plus-jakarta-sans);
@@ -68,6 +68,21 @@
 
 :root {
   --radius: 0.625rem;
+
+  /* RailCommand light mode */
+  --rc-navy: #0F172A;
+  --rc-slate: #1E293B;
+  --rc-steel: #64748B;
+  --rc-orange: #F97316;
+  --rc-orange-dark: #EA580C;
+  --rc-amber: #F59E0B;
+  --rc-emerald: #10B981;
+  --rc-red: #EF4444;
+  --rc-blue: #3B82F6;
+  --rc-bg: #F8FAFC;
+  --rc-card: #FFFFFF;
+  --rc-border: #E2E8F0;
+
   --background: oklch(0.98 0.002 247.84);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -102,6 +117,20 @@
 }
 
 .dark {
+  /* RailCommand dark mode */
+  --rc-navy: #0F172A;
+  --rc-slate: #1E293B;
+  --rc-steel: #94A3B8;
+  --rc-orange: #FB923C;
+  --rc-orange-dark: #F97316;
+  --rc-amber: #FBBF24;
+  --rc-emerald: #34D399;
+  --rc-red: #F87171;
+  --rc-blue: #60A5FA;
+  --rc-bg: #0B0F1A;
+  --rc-card: #141B2D;
+  --rc-border: rgba(255, 255, 255, 0.1);
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

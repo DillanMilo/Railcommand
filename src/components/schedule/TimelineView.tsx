@@ -1,7 +1,7 @@
 'use client';
 
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
-import { seedProject } from '@/lib/seed-data';
+import { seedProject } from '@/lib/store';
 import type { Milestone, MilestoneStatus } from '@/lib/types';
 
 const TIMELINE_BAR_COLOR: Record<MilestoneStatus, string> = {
@@ -48,7 +48,7 @@ export default function TimelineView({ milestones }: { milestones: Milestone[] }
         {/* today marker */}
         <div className="absolute top-0 bottom-0 z-10" style={{ left: `${todayPct}%` }}>
           <div className="h-full border-l-2 border-dashed border-red-500" />
-          <span className="absolute -top-0.5 -translate-x-1/2 text-[10px] font-semibold text-red-600 bg-white px-1 rounded">
+          <span className="absolute -top-0.5 -translate-x-1/2 text-[10px] font-semibold text-red-600 bg-rc-card px-1 rounded">
             Today
           </span>
         </div>

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { seedProfiles } from '@/lib/seed-data';
+import { seedProfiles, addPunchListItem } from '@/lib/store';
 import type { Priority } from '@/lib/types';
 
 const PRIORITIES: { label: string; value: Priority }[] = [
@@ -35,6 +35,14 @@ export default function NewPunchListItemPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    addPunchListItem({
+      title,
+      description,
+      location,
+      priority,
+      assigned_to: assignedTo,
+      due_date: dueDate,
+    });
     setSuccess(true);
     setTimeout(() => router.push(basePath), 1500);
   }

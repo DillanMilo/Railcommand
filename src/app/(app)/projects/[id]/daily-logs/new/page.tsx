@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { addDailyLog } from '@/lib/store';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -31,6 +33,7 @@ export default function NewDailyLogPage() {
   const [workItems, setWorkItems] = useState<WorkItemRow[]>([{ description: '', quantity: 0, unit: '', location: '' }]);
   const [workSummary, setWorkSummary] = useState('');
   const [safetyNotes, setSafetyNotes] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const updateRow = <T,>(arr: T[], i: number, patch: Partial<T>, setter: (v: T[]) => void) => {
     const next = [...arr];
@@ -187,9 +190,37 @@ export default function NewDailyLogPage() {
         <CardContent><Textarea rows={3} placeholder="Any safety observations, incidents, or notes..." value={safetyNotes} onChange={(e) => setSafetyNotes(e.target.value)} /></CardContent>
       </Card>
 
+      {success && (
+        <Alert className="border-emerald-300 bg-emerald-50">
+          <CheckCircle2 className="size-4 text-emerald-600" />
+          <AlertTitle className="text-emerald-800">Daily log created</AlertTitle>
+          <AlertDescription className="text-emerald-700">Redirecting to daily logs...</AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex gap-3 justify-end pb-8">
         <Button variant="outline" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
-        <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Submit Log</Button>
+        <Button
+          className="bg-rc-orange hover:bg-rc-orange-dark text-white"
+          disabled={success}
+          onClick={() => {
+            addDailyLog({
+              log_date: date,
+              weather_temp: typeof temp === 'number' ? temp : 0,
+              weather_conditions: conditions,
+              weather_wind: wind,
+              work_summary: workSummary,
+              safety_notes: safetyNotes,
+              personnel,
+              equipment: equipment.map((e) => ({ type: e.type, count: e.count, notes: e.notes })),
+              work_items: workItems,
+            });
+            setSuccess(true);
+            setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
+          }}
+        >
+          Submit Log
+        </Button>
       </div>
     </div>
   );

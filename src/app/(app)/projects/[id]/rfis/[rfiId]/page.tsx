@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { format, differenceInCalendarDays } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Lock, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { seedRFIs, seedProfiles, seedOrganizations, seedMilestones } from '@/lib/seed-data';
+import { getRFIs, seedProfiles, seedOrganizations, seedMilestones, updateRFIStatus, addRFIResponse } from '@/lib/store';
 
 function getProfile(id: string) {
   return seedProfiles.find((p) => p.id === id);
@@ -25,25 +25,32 @@ function getMilestone(id: string | null) {
 
 export default function RFIDetailPage() {
   const { id: projectId, rfiId } = useParams<{ id: string; rfiId: string }>();
-  const router = useRouter();
   const [newResponse, setNewResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const rfi = seedRFIs.find((r) => r.id === rfiId);
+  const rfi = getRFIs().find((r) => r.id === rfiId);
+  const [status, setStatus] = useState(rfi?.status ?? 'open');
+
   if (!rfi) return <p className="p-8 text-muted-foreground">RFI not found.</p>;
 
   const submitter = getProfile(rfi.submitted_by);
   const assignee = getProfile(rfi.assigned_to);
   const milestone = getMilestone(rfi.milestone_id);
-  const isOverdue = rfi.status === 'overdue';
-  const canRespond = rfi.status === 'open' || rfi.status === 'overdue';
+  const isOverdue = status === 'overdue';
+  const canRespond = status === 'open' || status === 'overdue';
   const overdueDays = isOverdue ? differenceInCalendarDays(new Date(), new Date(rfi.due_date)) : 0;
   const basePath = `/projects/${projectId}/rfis`;
 
   const handleSubmitResponse = () => {
     if (!newResponse.trim()) return;
+    addRFIResponse(rfiId, newResponse);
     setSubmitted(true);
     setNewResponse('');
+  };
+
+  const handleStatusChange = (newStatus: 'answered' | 'closed') => {
+    updateRFIStatus(rfiId, newStatus);
+    setStatus(newStatus);
   };
 
   return (
@@ -67,17 +74,17 @@ export default function RFIDetailPage() {
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-heading text-xl font-bold sm:text-2xl">{rfi.number}</h1>
-            <StatusBadge status={rfi.status} type="rfi" />
+            <StatusBadge status={status} type="rfi" />
             <PriorityBadge priority={rfi.priority} />
           </div>
           <p className="text-muted-foreground text-sm sm:text-base">{rfi.subject}</p>
         </div>
         {canRespond && (
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => alert('Marked as Answered')}>
+            <Button variant="outline" size="sm" onClick={() => handleStatusChange('answered')}>
               <CheckCircle2 className="mr-1.5 size-4" />Answered
             </Button>
-            <Button variant="outline" size="sm" onClick={() => alert('RFI Closed')}>
+            <Button variant="outline" size="sm" onClick={() => handleStatusChange('closed')}>
               <Lock className="mr-1.5 size-4" />Close
             </Button>
           </div>

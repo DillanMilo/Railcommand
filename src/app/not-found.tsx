@@ -15,11 +15,11 @@ export default function NotFound() {
           {PROJECT_NAME}
         </p>
 
-        <h1 className="font-heading text-4xl font-bold text-rc-navy mb-2">
+        <h1 className="font-heading text-4xl font-bold text-foreground mb-2">
           404
         </h1>
 
-        <p className="text-lg text-rc-slate font-medium mb-1">
+        <p className="text-lg text-foreground font-medium mb-1">
           Page not found
         </p>
 

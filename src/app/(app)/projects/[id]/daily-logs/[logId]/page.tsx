@@ -7,7 +7,7 @@ import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList,
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { seedDailyLogs, seedProfiles } from '@/lib/seed-data';
+import { getDailyLogs, seedProfiles } from '@/lib/store';
 import type { DailyLog } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
@@ -19,7 +19,7 @@ function weatherIcon(conditions: string) {
 
 export default function DailyLogDetailPage() {
   const { id: projectId, logId } = useParams<{ id: string; logId: string }>();
-  const log = seedDailyLogs.find((l) => l.id === logId) as DailyLog | undefined;
+  const log = getDailyLogs().find((l) => l.id === logId) as DailyLog | undefined;
 
   if (!log) {
     return (

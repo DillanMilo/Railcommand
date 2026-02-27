@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import StatusBadge from '@/components/shared/StatusBadge';
-import { seedMilestones } from '@/lib/seed-data';
+import { seedMilestones } from '@/lib/store';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 

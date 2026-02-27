@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { seedActivityLog, seedProfiles } from '@/lib/seed-data';
+import { getActivityLog, seedProfiles } from '@/lib/store';
 import { formatDistanceToNow } from 'date-fns';
 import {
   FileCheck,
@@ -29,7 +29,7 @@ function getProfileName(profileId: string): string {
 }
 
 export default function ActivityFeed() {
-  const recentActivities = [...seedActivityLog]
+  const recentActivities = [...getActivityLog()]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10);
 
@@ -75,7 +75,7 @@ export default function ActivityFeed() {
         </div>
         <div className="border-t px-5 py-3">
           <Link
-            href="/projects/proj-001/activity"
+            href="/projects/proj-001/daily-logs"
             className="text-sm font-medium text-rc-orange hover:text-rc-orange-dark transition-colors"
           >
             View all activity

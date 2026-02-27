@@ -23,7 +23,7 @@ export default function EmptyState({
         <Icon className="w-8 h-8 text-rc-steel" />
       </div>
 
-      <h3 className="font-heading text-lg font-semibold text-rc-navy mb-2">
+      <h3 className="font-heading text-lg font-semibold text-foreground mb-2">
         {title}
       </h3>
 

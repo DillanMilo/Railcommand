@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ArrowLeft, Paperclip, Calendar, User, Building2, Flag } from 'lucide-react';
+import { ArrowLeft, Paperclip, Calendar, User, Flag } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import SubmittalTimeline from '@/components/submittals/SubmittalTimeline';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { seedSubmittals, seedProfiles, seedMilestones, getProfileWithOrg } from '@/lib/seed-data';
+import { getSubmittals, seedProfiles, seedMilestones, getProfileWithOrg, updateSubmittalStatus } from '@/lib/store';
 import type { SubmittalStatus } from '@/lib/types';
 
 export default function SubmittalDetailPage() {
@@ -19,7 +19,7 @@ export default function SubmittalDetailPage() {
   const projectId = params.id as string;
   const submittalId = params.submittalId as string;
 
-  const original = seedSubmittals.find((s) => s.id === submittalId);
+  const original = getSubmittals().find((s) => s.id === submittalId);
   const [status, setStatus] = useState<SubmittalStatus>(original?.status ?? 'draft');
 
   if (!original) {
@@ -46,7 +46,7 @@ export default function SubmittalDetailPage() {
     <div>
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: `/projects/${projectId}/dashboard` },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Submittals', href: `/projects/${projectId}/submittals` },
           { label: submittal.number },
         ]}
@@ -135,16 +135,16 @@ export default function SubmittalDetailPage() {
       {/* Action buttons */}
       <Separator className="my-6" />
       <div className="flex flex-wrap gap-3">
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setStatus('approved')}>
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setStatus('approved'); updateSubmittalStatus(submittalId, 'approved'); }}>
           Approve
         </Button>
-        <Button className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setStatus('conditional')}>
+        <Button className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => { setStatus('conditional'); updateSubmittalStatus(submittalId, 'conditional'); }}>
           Approve with Conditions
         </Button>
-        <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => setStatus('rejected')}>
+        <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { setStatus('rejected'); updateSubmittalStatus(submittalId, 'rejected'); }}>
           Reject
         </Button>
-        <Button variant="outline" onClick={() => setStatus('submitted')}>
+        <Button variant="outline" onClick={() => { setStatus('submitted'); updateSubmittalStatus(submittalId, 'submitted'); }}>
           Request Revision
         </Button>
       </div>

@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { seedPunchListItems, seedProfiles } from '@/lib/seed-data';
+import { getPunchListItems, seedProfiles, updatePunchListStatus } from '@/lib/store';
 import type { PunchListStatus } from '@/lib/types';
 
 function getName(id: string) {
@@ -20,11 +20,10 @@ function getName(id: string) {
 
 export default function PunchListDetailPage() {
   const { id: projectId, itemId } = useParams<{ id: string; itemId: string }>();
-  const item = seedPunchListItems.find((i) => i.id === itemId);
+  const item = getPunchListItems().find((i) => i.id === itemId);
   const [status, setStatus] = useState<PunchListStatus>(item?.status ?? 'open');
   const [notes, setNotes] = useState(item?.resolution_notes ?? '');
   const [resolutionInput, setResolutionInput] = useState('');
-  const [saved, setSaved] = useState(false);
 
   if (!item) {
     return (
@@ -37,10 +36,10 @@ export default function PunchListDetailPage() {
 
   const basePath = `/projects/${projectId}/punch-list`;
 
-  function handleStart() { setStatus('in_progress'); }
-  function handleResolve() { setStatus('resolved'); setNotes(resolutionInput || 'Resolved.'); }
-  function handleVerify() { setStatus('verified'); }
-  function handleReopen() { setStatus('open'); setNotes(''); setResolutionInput(''); }
+  function handleStart() { setStatus('in_progress'); updatePunchListStatus(itemId, 'in_progress'); }
+  function handleResolve() { const n = resolutionInput || 'Resolved.'; setStatus('resolved'); setNotes(n); updatePunchListStatus(itemId, 'resolved', n); }
+  function handleVerify() { setStatus('verified'); updatePunchListStatus(itemId, 'verified'); }
+  function handleReopen() { setStatus('open'); setNotes(''); setResolutionInput(''); updatePunchListStatus(itemId, 'open', ''); }
 
   const info = [
     { label: 'Location', value: item.location },

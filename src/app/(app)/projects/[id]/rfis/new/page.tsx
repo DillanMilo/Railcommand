@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { seedProfiles, seedMilestones } from '@/lib/seed-data';
+import { seedProfiles, seedMilestones, addRFI } from '@/lib/store';
 import type { Priority } from '@/lib/types';
 
 const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low'];
@@ -31,6 +31,14 @@ export default function NewRFIPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !question.trim()) return;
+    addRFI({
+      subject,
+      question,
+      priority,
+      assigned_to: assignTo,
+      due_date: dueDate,
+      milestone_id: milestoneId || null,
+    });
     setSuccess(true);
     setTimeout(() => router.push(basePath), 1500);
   };
@@ -38,8 +46,8 @@ export default function NewRFIPage() {
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="size-12 rounded-full bg-emerald-100 flex items-center justify-center">
-          <span className="text-emerald-600 text-xl font-bold">!</span>
+        <div className="size-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+          <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
         </div>
         <p className="text-lg font-semibold">RFI Created Successfully</p>
         <p className="text-sm text-muted-foreground">Redirecting to RFIs list...</p>

@@ -11,7 +11,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { seedPunchListItems, seedProfiles } from '@/lib/seed-data';
+import { getPunchListItems, seedProfiles } from '@/lib/store';
 import type { PunchListStatus, Priority } from '@/lib/types';
 
 const STATUS_TABS: { label: string; value: PunchListStatus | 'all' }[] = [
@@ -46,7 +46,7 @@ export default function PunchListPage() {
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
 
-  const items = seedPunchListItems;
+  const items = getPunchListItems();
   const counts = useMemo(() => ({
     open: items.filter((i) => i.status === 'open').length,
     in_progress: items.filter((i) => i.status === 'in_progress').length,

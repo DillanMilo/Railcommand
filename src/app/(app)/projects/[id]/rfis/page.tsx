@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { seedRFIs, seedProfiles } from '@/lib/seed-data';
+import { getRFIs, seedProfiles } from '@/lib/store';
 import type { RFI, RFIStatus } from '@/lib/types';
 
 const TABS: { label: string; value: RFIStatus | 'all' }[] = [
@@ -38,7 +38,7 @@ export default function RFIsPage() {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    return seedRFIs.filter((r) => {
+    return getRFIs().filter((r) => {
       if (tab !== 'all' && r.status !== tab) return false;
       if (search) {
         const q = search.toLowerCase();

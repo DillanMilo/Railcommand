@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { seedMilestones } from '@/lib/seed-data';
+import { seedMilestones, addSubmittal } from '@/lib/store';
 
 const SPEC_SECTIONS = [
   '34 11 13 - Track Construction',
@@ -33,6 +33,7 @@ export default function NewSubmittalPage() {
   const [specSection, setSpecSection] = useState('');
   const [description, setDescription] = useState('');
   const [milestoneId, setMilestoneId] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [success, setSuccess] = useState(false);
 
   const canSubmit = title.trim() && specSection;
@@ -40,6 +41,12 @@ export default function NewSubmittalPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    addSubmittal({
+      title,
+      description,
+      spec_section: specSection,
+      milestone_id: milestoneId || null,
+    });
     setSuccess(true);
     setTimeout(() => {
       router.push(`/projects/${projectId}/submittals`);
@@ -50,7 +57,7 @@ export default function NewSubmittalPage() {
     <div>
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: `/projects/${projectId}/dashboard` },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Submittals', href: `/projects/${projectId}/submittals` },
           { label: 'New Submittal' },
         ]}
@@ -119,14 +126,41 @@ export default function NewSubmittalPage() {
               </Select>
             </div>
 
-            {/* Attachments placeholder */}
+            {/* Attachments */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Attachments</label>
-              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center">
+              <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center cursor-pointer hover:border-rc-orange/50 transition-colors">
                 <Upload className="size-8 text-muted-foreground/40 mb-2" />
                 <p className="text-sm text-muted-foreground">Drag and drop files here, or click to browse</p>
                 <p className="text-xs text-muted-foreground/60 mt-1">PDF, DWG, images up to 50 MB</p>
-              </div>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept=".pdf,.dwg,.png,.jpg,.jpeg"
+                  onChange={(e) => {
+                    if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+                  }}
+                />
+              </label>
+              {files.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {files.map((file, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                      <span className="truncate">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 shrink-0"
+                        onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <span className="text-xs text-muted-foreground">&times;</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Actions */}

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { seedSubmittals, seedProfiles, getProfileWithOrg } from '@/lib/seed-data';
+import { getSubmittals, seedProfiles } from '@/lib/store';
 import type { SubmittalStatus } from '@/lib/types';
 
 const STATUS_TABS: { label: string; value: string }[] = [
@@ -41,7 +41,7 @@ export default function SubmittalsListPage() {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    let items = [...seedSubmittals].sort(
+    let items = [...getSubmittals()].sort(
       (a, b) => new Date(b.submit_date).getTime() - new Date(a.submit_date).getTime()
     );
     if (statusFilter !== 'all') {
@@ -58,13 +58,13 @@ export default function SubmittalsListPage() {
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'Dashboard', href: `/projects/${projectId}/dashboard` }, { label: 'Submittals' }]} />
+      <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Submittals' }]} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-2xl font-bold">Submittals</h1>
-          <Badge variant="secondary" className="text-xs">{seedSubmittals.length}</Badge>
+          <Badge variant="secondary" className="text-xs">{getSubmittals().length}</Badge>
         </div>
         <Link href={`/projects/${projectId}/submittals/new`}>
           <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">

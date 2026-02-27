@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { seedDailyLogs } from '@/lib/seed-data';
+import { getDailyLogs } from '@/lib/store';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -19,7 +19,7 @@ export default function DailyLogsPage() {
   const basePath = `/projects/${projectId}/daily-logs`;
 
   const logs = useMemo(
-    () => [...seedDailyLogs].sort((a, b) => b.log_date.localeCompare(a.log_date)),
+    () => [...getDailyLogs()].sort((a, b) => b.log_date.localeCompare(a.log_date)),
     [],
   );
 
@@ -31,7 +31,7 @@ export default function DailyLogsPage() {
   const calDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
   function logForDay(day: Date) {
-    return seedDailyLogs.find((l) => isSameDay(new Date(l.log_date), day));
+    return getDailyLogs().find((l) => isSameDay(new Date(l.log_date), day));
   }
 
   const totalHeadcount = (p: { headcount: number }[]) => p.reduce((s, r) => s + r.headcount, 0);

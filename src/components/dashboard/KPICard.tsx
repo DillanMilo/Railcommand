@@ -18,7 +18,7 @@ const colorMap: Record<string, string> = {
   amber: 'bg-rc-amber/10 text-rc-amber',
   red: 'bg-rc-red/10 text-rc-red',
   blue: 'bg-rc-blue/10 text-rc-blue',
-  navy: 'bg-rc-navy/10 text-rc-navy',
+  navy: 'bg-primary/10 text-primary',
   steel: 'bg-rc-steel/10 text-rc-steel',
 };
 

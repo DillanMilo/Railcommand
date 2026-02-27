@@ -1,17 +1,33 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { Plus, Mail, Phone } from 'lucide-react';
+import { Plus, Mail, Phone, X } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   seedProfiles,
-  seedProjectMembers,
   seedOrganizations,
-} from '@/lib/seed-data';
+  getProjectMembers,
+  addProjectMember,
+  removeProjectMember,
+} from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 const ROLE_COLORS: Record<string, string> = {
@@ -35,6 +51,8 @@ const AVATAR_COLORS = [
   'bg-teal-600 text-white',
 ];
 
+const PROJECT_ROLES = ['manager', 'engineer', 'contractor', 'inspector', 'foreman', 'superintendent'];
+
 function getInitials(name: string) {
   return name
     .split(' ')
@@ -53,22 +71,46 @@ function formatRole(role: string) {
 export default function TeamPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [, forceUpdate] = useState(0);
+
+  const projectMembers = getProjectMembers();
 
   const members = useMemo(() => {
-    return seedProjectMembers.map((pm, idx) => {
+    return projectMembers.map((pm, idx) => {
       const profile = seedProfiles.find((p) => p.id === pm.profile_id);
       const org = profile
         ? seedOrganizations.find((o) => o.id === profile.organization_id)
         : undefined;
       return { member: pm, profile, org, colorIdx: idx };
     });
-  }, []);
+  }, [projectMembers]);
+
+  const availableProfiles = seedProfiles.filter(
+    (p) => !projectMembers.some((pm) => pm.profile_id === p.id)
+  );
+
+  function handleAddMember() {
+    if (!selectedProfile || !selectedRole) return;
+    addProjectMember(selectedProfile, selectedRole);
+    setSelectedProfile('');
+    setSelectedRole('');
+    setDialogOpen(false);
+    forceUpdate((n) => n + 1);
+  }
+
+  function handleRemoveMember(memberId: string) {
+    removeProjectMember(memberId);
+    forceUpdate((n) => n + 1);
+  }
 
   return (
     <div>
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: `/projects/${projectId}/dashboard` },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Team' },
         ]}
       />
@@ -81,9 +123,52 @@ export default function TeamPage() {
             {members.length} members
           </Badge>
         </div>
-        <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-          <Plus className="size-4" /> Add Team Member
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Plus className="size-4" /> Add Team Member
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Team Member</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Team Member</label>
+                <Select value={selectedProfile} onValueChange={setSelectedProfile}>
+                  <SelectTrigger><SelectValue placeholder="Select a person" /></SelectTrigger>
+                  <SelectContent>
+                    {availableProfiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                    ))}
+                    {availableProfiles.length === 0 && (
+                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">All team members already added</div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Role</label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                  <SelectContent>
+                    {PROJECT_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>{formatRole(r)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={handleAddMember}
+                disabled={!selectedProfile || !selectedRole}
+                className="w-full bg-rc-orange hover:bg-rc-orange-dark text-white"
+              >
+                Add Member
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Grid */}
@@ -93,7 +178,15 @@ export default function TeamPage() {
           const avatarColor = AVATAR_COLORS[colorIdx % AVATAR_COLORS.length];
 
           return (
-            <Card key={member.id} className="gap-0 py-4 hover:border-rc-orange/40 transition-colors">
+            <Card key={member.id} className="gap-0 py-4 hover:border-rc-orange/40 transition-colors relative group">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 size-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500"
+                onClick={() => handleRemoveMember(member.id)}
+              >
+                <X className="size-3.5" />
+              </Button>
               <CardContent className="px-4 space-y-3">
                 <div className="flex items-start gap-3">
                   {/* Avatar */}

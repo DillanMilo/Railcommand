@@ -12,7 +12,7 @@ import BudgetTracker from '@/components/schedule/BudgetTracker';
 import TimelineView from '@/components/schedule/TimelineView';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { seedMilestones } from '@/lib/seed-data';
+import { seedMilestones } from '@/lib/store';
 import type { Milestone, MilestoneStatus } from '@/lib/types';
 
 const STATUS_BAR_COLOR: Record<MilestoneStatus, string> = {
@@ -59,7 +59,7 @@ export default function SchedulePage() {
     <div>
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: `/projects/${projectId}/dashboard` },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Schedule' },
         ]}
       />

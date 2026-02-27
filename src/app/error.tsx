@@ -22,7 +22,7 @@ export default function GlobalError({
           <AlertTriangle className="h-8 w-8 text-rc-red" />
         </div>
 
-        <h1 className="font-heading text-2xl font-bold text-rc-navy mb-2">
+        <h1 className="font-heading text-2xl font-bold text-foreground mb-2">
           Something went wrong
         </h1>
 

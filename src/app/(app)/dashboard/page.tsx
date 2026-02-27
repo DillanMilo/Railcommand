@@ -6,11 +6,11 @@ import QuickActions from '@/components/dashboard/QuickActions';
 import MilestoneWidget from '@/components/dashboard/MilestoneWidget';
 import {
   seedProject,
-  seedSubmittals,
-  seedRFIs,
-  seedPunchListItems,
-  seedDailyLogs,
-} from '@/lib/seed-data';
+  getSubmittals,
+  getRFIs,
+  getPunchListItems,
+  getDailyLogs,
+} from '@/lib/store';
 import {
   DollarSign,
   Calendar,
@@ -32,26 +32,30 @@ function computeKPIs() {
   const elapsed = Date.now() - new Date(project.start_date).getTime();
   const schedulePercent = Math.min(100, Math.round((elapsed / totalDays) * 100));
 
-  const totalSubmittals = seedSubmittals.length;
-  const pendingSubmittals = seedSubmittals.filter(
+  const allSubmittals = getSubmittals();
+  const totalSubmittals = allSubmittals.length;
+  const pendingSubmittals = allSubmittals.filter(
     (s) => s.status === 'submitted' || s.status === 'under_review'
   ).length;
 
-  const openRFIs = seedRFIs.filter(
+  const allRFIs = getRFIs();
+  const openRFIs = allRFIs.filter(
     (r) => r.status === 'open' || r.status === 'overdue'
   ).length;
-  const overdueRFIs = seedRFIs.filter((r) => r.status === 'overdue').length;
+  const overdueRFIs = allRFIs.filter((r) => r.status === 'overdue').length;
 
-  const openPunch = seedPunchListItems.filter(
+  const allPunch = getPunchListItems();
+  const openPunch = allPunch.filter(
     (p) => p.status === 'open' || p.status === 'in_progress'
   ).length;
-  const criticalPunch = seedPunchListItems.filter(
+  const criticalPunch = allPunch.filter(
     (p) =>
       (p.status === 'open' || p.status === 'in_progress') && p.priority === 'critical'
   ).length;
 
-  const totalLogs = seedDailyLogs.length;
-  const lastLog = [...seedDailyLogs].sort(
+  const allLogs = getDailyLogs();
+  const totalLogs = allLogs.length;
+  const lastLog = [...allLogs].sort(
     (a, b) => new Date(b.log_date).getTime() - new Date(a.log_date).getTime()
   )[0];
   const lastLogDate = lastLog
@@ -87,7 +91,7 @@ export default function DashboardPage() {
       {/* Project header */}
       <div>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-2xl font-bold text-rc-navy">
+          <h1 className="font-heading text-2xl font-bold text-foreground">
             {seedProject.name}
           </h1>
           <Badge className="border-0 bg-rc-emerald/10 text-rc-emerald font-medium">
