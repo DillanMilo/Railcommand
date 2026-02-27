@@ -1,7 +1,6 @@
 'use client';
 
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
-import { seedProject } from '@/lib/store';
 import type { Milestone, MilestoneStatus } from '@/lib/types';
 
 const TIMELINE_BAR_COLOR: Record<MilestoneStatus, string> = {
@@ -12,9 +11,15 @@ const TIMELINE_BAR_COLOR: Record<MilestoneStatus, string> = {
   not_started: 'bg-gray-300',
 };
 
-export default function TimelineView({ milestones }: { milestones: Milestone[] }) {
-  const projectStart = parseISO(seedProject.start_date);
-  const projectEnd = parseISO(seedProject.target_end_date);
+interface TimelineViewProps {
+  milestones: Milestone[];
+  startDate: string;
+  endDate: string;
+}
+
+export default function TimelineView({ milestones, startDate, endDate }: TimelineViewProps) {
+  const projectStart = parseISO(startDate);
+  const projectEnd = parseISO(endDate);
   const totalDays = differenceInCalendarDays(projectEnd, projectStart);
   const today = new Date();
   const todayPct = Math.min(
@@ -33,7 +38,8 @@ export default function TimelineView({ milestones }: { milestones: Milestone[] }
   }
 
   return (
-    <div className="overflow-x-auto pb-4">
+    <div className="overflow-x-auto pb-4 -mx-1 px-1">
+      <p className="text-xs text-muted-foreground mb-2 lg:hidden">Scroll horizontally to view full timeline</p>
       <div className="relative min-w-[700px]" style={{ height: `${milestones.length * 52 + 60}px` }}>
         {/* month gridlines + labels */}
         {months.map((m, i) => (

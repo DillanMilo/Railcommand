@@ -7,7 +7,7 @@ import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList,
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { getDailyLogs, seedProfiles } from '@/lib/store';
+import { getDailyLogs, getProfiles } from '@/lib/store';
 import type { DailyLog } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
@@ -19,7 +19,7 @@ function weatherIcon(conditions: string) {
 
 export default function DailyLogDetailPage() {
   const { id: projectId, logId } = useParams<{ id: string; logId: string }>();
-  const log = getDailyLogs().find((l) => l.id === logId) as DailyLog | undefined;
+  const log = getDailyLogs(projectId).find((l) => l.id === logId) as DailyLog | undefined;
 
   if (!log) {
     return (
@@ -33,7 +33,7 @@ export default function DailyLogDetailPage() {
   const dateObj = new Date(log.log_date);
   const dateLabel = format(dateObj, 'MMM d, yyyy');
   const dateFull = format(dateObj, 'EEEE, MMMM d, yyyy');
-  const author = seedProfiles.find((p) => p.id === log.created_by);
+  const author = getProfiles().find((p) => p.id === log.created_by);
   const totalHeadcount = log.personnel.reduce((s, r) => s + r.headcount, 0);
 
   return (
@@ -69,7 +69,7 @@ export default function DailyLogDetailPage() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Users className="size-5" />Personnel</CardTitle></CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-rc-border overflow-hidden">
+          <div className="rounded-lg border border-rc-border overflow-x-auto">
             <Table>
               <TableHeader><TableRow className="bg-rc-card"><TableHead>Role</TableHead><TableHead className="text-right">Headcount</TableHead><TableHead>Company</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -87,7 +87,7 @@ export default function DailyLogDetailPage() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Wrench className="size-5" />Equipment</CardTitle></CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-rc-border overflow-hidden">
+          <div className="rounded-lg border border-rc-border overflow-x-auto">
             <Table>
               <TableHeader><TableRow className="bg-rc-card"><TableHead>Equipment Type</TableHead><TableHead className="text-right">Count</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -104,7 +104,7 @@ export default function DailyLogDetailPage() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="size-5" />Work Items</CardTitle></CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-rc-border overflow-hidden">
+          <div className="rounded-lg border border-rc-border overflow-x-auto">
             <Table>
               <TableHeader><TableRow className="bg-rc-card"><TableHead>Description</TableHead><TableHead className="text-right">Qty</TableHead><TableHead>Unit</TableHead><TableHead>Location</TableHead></TableRow></TableHeader>
               <TableBody>

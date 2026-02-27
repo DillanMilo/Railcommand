@@ -72,15 +72,27 @@
 - [x] Loading states and skeleton screens
 - [x] Empty states with helpful messaging
 - [x] Error handling and error boundaries
-- [ ] Mobile responsiveness audit (every page)
-- [ ] Touch target sizing audit (44px minimum)
-- [ ] Color contrast accessibility check
+- [x] Mobile responsiveness audit (every page)
+- [x] Touch target sizing audit (44px minimum)
+- [x] Color contrast accessibility check
 - [x] Page transitions / micro-animations
 - [x] Favicon and meta tags
 - [ ] Deploy to Vercel
 
+### Phase 11: AI Assistant (RailBot)
+- [ ] Set up Claude API integration (Anthropic SDK + API route)
+- [ ] Build chat UI component (slide-over panel, accessible from any page)
+- [ ] Implement project data context layer (feed seed/Supabase data to the agent)
+- [ ] Natural language queries — pull up submittals, RFIs, punch lists, logs by status/date/assignee
+- [ ] Project summarization — daily log summaries, overdue item reports, budget snapshots
+- [ ] Guided data entry — create RFIs, punch list items, and daily log entries via conversation
+- [ ] Conversation history (per-user, per-project)
+- [ ] Mobile-optimized chat experience
+- [ ] Guard rails — read-heavy by default, confirm before any create/update actions
+- [ ] Rate limiting and error handling for API calls
+
 ---
 
-*Last updated: February 26, 2026*
+*Last updated: February 27, 2026*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

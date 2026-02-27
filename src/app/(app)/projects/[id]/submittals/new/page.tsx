@@ -11,7 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { seedMilestones, addSubmittal } from '@/lib/store';
+import { getMilestones, addSubmittal } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 
 const SPEC_SECTIONS = [
   '34 11 13 - Track Construction',
@@ -28,6 +30,7 @@ export default function NewSubmittalPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
+  const { can } = usePermissions(projectId);
 
   const [title, setTitle] = useState('');
   const [specSection, setSpecSection] = useState('');
@@ -38,10 +41,28 @@ export default function NewSubmittalPage() {
 
   const canSubmit = title.trim() && specSection;
 
+  if (!can(ACTIONS.SUBMITTAL_CREATE)) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Submittals', href: `/projects/${projectId}/submittals` },
+            { label: 'New Submittal' },
+          ]}
+        />
+        <div className="text-center py-20 text-muted-foreground">
+          <p className="text-lg font-medium">Access Denied</p>
+          <p className="text-sm mt-1">You do not have permission to perform this action.</p>
+        </div>
+      </div>
+    );
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    addSubmittal({
+    addSubmittal(projectId, {
       title,
       description,
       spec_section: specSection,
@@ -78,7 +99,7 @@ export default function NewSubmittalPage() {
         </Alert>
       )}
 
-      <Card className="mt-6">
+      <Card className="mt-6 max-w-3xl">
         <CardHeader>
           <CardTitle className="text-base">Submittal Details</CardTitle>
         </CardHeader>
@@ -119,7 +140,7 @@ export default function NewSubmittalPage() {
                   <SelectValue placeholder="Select milestone (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {seedMilestones.map((m) => (
+                  {getMilestones(projectId).map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -129,7 +150,7 @@ export default function NewSubmittalPage() {
             {/* Attachments */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Attachments</label>
-              <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center cursor-pointer hover:border-rc-orange/50 transition-colors">
+              <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 sm:p-8 text-center cursor-pointer hover:border-rc-orange/50 transition-colors">
                 <Upload className="size-8 text-muted-foreground/40 mb-2" />
                 <p className="text-sm text-muted-foreground">Drag and drop files here, or click to browse</p>
                 <p className="text-xs text-muted-foreground/60 mt-1">PDF, DWG, images up to 50 MB</p>
@@ -152,7 +173,7 @@ export default function NewSubmittalPage() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-6 shrink-0"
+                        className="size-7 shrink-0"
                         onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
                       >
                         <span className="text-xs text-muted-foreground">&times;</span>
@@ -164,12 +185,12 @@ export default function NewSubmittalPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <Button type="submit" disabled={!canSubmit || success} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
                 Create Submittal
               </Button>
               <Link href={`/projects/${projectId}/submittals`}>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline" className="w-full sm:w-auto">Cancel</Button>
               </Link>
             </div>
           </form>

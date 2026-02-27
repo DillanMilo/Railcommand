@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, Settings, LogOut, User, X } from 'lucide-react';
+import { Bell, Search, Settings, LogOut, User, X, Check, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -28,7 +28,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import ThemeToggle from './ThemeToggle';
-import { getActivityLog, seedProfiles } from '@/lib/store';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { getActivityLog, getProfiles, getProjectMembers } from '@/lib/store';
 import { formatDistanceToNow } from 'date-fns';
 
 interface TopbarProps {
@@ -36,23 +39,37 @@ interface TopbarProps {
 }
 
 function getProfileName(id: string) {
-  return seedProfiles.find((p) => p.id === id)?.full_name ?? 'Unknown';
+  return getProfiles().find((p) => p.id === id)?.full_name ?? 'Unknown';
+}
+
+function getInitials(name: string): string {
+  return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function formatProjectRole(role: string): string {
+  return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
+  const { currentProjectId, currentUserId, setCurrentUser } = useProject();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const recentActivity = getActivityLog().slice(0, 5);
+  const recentActivity = getActivityLog(currentProjectId).slice(0, 5);
+
+  const allProfiles = getProfiles();
+  const currentProfile = allProfiles.find((p) => p.id === currentUserId);
+  const projectMembers = getProjectMembers(currentProjectId);
+  const currentMembership = projectMembers.find((m) => m.profile_id === currentUserId);
 
   const searchResults = searchQuery.trim()
     ? [
-        { label: 'Submittals', href: '/projects/proj-001/submittals' },
-        { label: 'RFIs', href: '/projects/proj-001/rfis' },
-        { label: 'Daily Logs', href: '/projects/proj-001/daily-logs' },
-        { label: 'Punch List', href: '/projects/proj-001/punch-list' },
-        { label: 'Schedule', href: '/projects/proj-001/schedule' },
-        { label: 'Team', href: '/projects/proj-001/team' },
+        { label: 'Submittals', href: `/projects/${currentProjectId}/submittals` },
+        { label: 'RFIs', href: `/projects/${currentProjectId}/rfis` },
+        { label: 'Daily Logs', href: `/projects/${currentProjectId}/daily-logs` },
+        { label: 'Punch List', href: `/projects/${currentProjectId}/punch-list` },
+        { label: 'Schedule', href: `/projects/${currentProjectId}/schedule` },
+        { label: 'Team', href: `/projects/${currentProjectId}/team` },
         { label: 'Dashboard', href: '/dashboard' },
       ].filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
@@ -95,7 +112,7 @@ export default function Topbar({ children }: TopbarProps) {
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-[360px] sm:w-[400px]">
+            <SheetContent className="w-full max-w-[360px] sm:max-w-[400px]">
               <SheetHeader>
                 <SheetTitle>Notifications</SheetTitle>
               </SheetHeader>
@@ -127,33 +144,67 @@ export default function Topbar({ children }: TopbarProps) {
               >
                 <Avatar>
                   <AvatarFallback className="bg-rc-navy text-white text-xs font-semibold">
-                    MS
+                    {currentProfile ? getInitials(currentProfile.full_name) : '??'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium leading-tight">Mark Sullivan</p>
+                  <p className="text-sm font-medium leading-tight">{currentProfile?.full_name ?? 'Unknown'}</p>
                   <p className="text-xs text-muted-foreground leading-tight">
-                    Project Manager
+                    {currentMembership ? formatProjectRole(currentMembership.project_role) : 'No Role'}
                   </p>
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuLabel>
-                <p className="font-medium">Mark Sullivan</p>
+                <p className="font-medium">{currentProfile?.full_name ?? 'Unknown'}</p>
                 <p className="text-xs text-muted-foreground font-normal">
-                  mark.sullivan@a5rail.com
+                  {currentProfile?.email ?? ''}
                 </p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+              <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
                 <User className="size-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
                 <Settings className="size-4" />
                 Settings
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
+                <Users className="size-3" />
+                Switch User (Demo)
+              </DropdownMenuLabel>
+              {allProfiles.map((p) => {
+                const mem = projectMembers.find((m) => m.profile_id === p.id);
+                return (
+                  <DropdownMenuItem
+                    key={p.id}
+                    onClick={() => setCurrentUser(p.id)}
+                    className={cn('cursor-pointer', p.id === currentUserId && 'bg-accent')}
+                  >
+                    <div className="flex items-center gap-2 w-full min-w-0">
+                      <Avatar className="size-6 shrink-0">
+                        <AvatarFallback className="bg-rc-slate text-white text-[10px] font-semibold">
+                          {getInitials(p.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm truncate">{p.full_name}</span>
+                      {mem ? (
+                        <Badge variant="secondary" className="text-[10px] ml-auto shrink-0 px-1.5 py-0">
+                          {formatProjectRole(mem.project_role)}
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
+                          Not on project
+                        </span>
+                      )}
+                      {p.id === currentUserId && <Check className="size-3.5 shrink-0 text-rc-emerald" />}
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
                 <LogOut className="size-4" />
@@ -184,7 +235,7 @@ export default function Topbar({ children }: TopbarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 size-9"
                   onClick={() => setSearchQuery('')}
                 >
                   <X className="size-3" />

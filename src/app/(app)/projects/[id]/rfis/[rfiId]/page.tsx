@@ -11,31 +11,34 @@ import { Badge } from '@/components/ui/badge';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getRFIs, seedProfiles, seedOrganizations, seedMilestones, updateRFIStatus, addRFIResponse } from '@/lib/store';
+import { getRFIs, getProfiles, getOrganizations, getMilestones, updateRFIStatus, addRFIResponse } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 
 function getProfile(id: string) {
-  return seedProfiles.find((p) => p.id === id);
+  return getProfiles().find((p) => p.id === id);
 }
 function getOrg(orgId: string) {
-  return seedOrganizations.find((o) => o.id === orgId);
+  return getOrganizations().find((o) => o.id === orgId);
 }
-function getMilestone(id: string | null) {
-  return id ? seedMilestones.find((m) => m.id === id) : null;
+function getMilestoneById(id: string | null, projectId: string) {
+  return id ? getMilestones(projectId).find((m) => m.id === id) : null;
 }
 
 export default function RFIDetailPage() {
   const { id: projectId, rfiId } = useParams<{ id: string; rfiId: string }>();
+  const { can } = usePermissions(projectId);
   const [newResponse, setNewResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const rfi = getRFIs().find((r) => r.id === rfiId);
+  const rfi = getRFIs(projectId).find((r) => r.id === rfiId);
   const [status, setStatus] = useState(rfi?.status ?? 'open');
 
   if (!rfi) return <p className="p-8 text-muted-foreground">RFI not found.</p>;
 
   const submitter = getProfile(rfi.submitted_by);
   const assignee = getProfile(rfi.assigned_to);
-  const milestone = getMilestone(rfi.milestone_id);
+  const milestone = getMilestoneById(rfi.milestone_id, projectId);
   const isOverdue = status === 'overdue';
   const canRespond = status === 'open' || status === 'overdue';
   const overdueDays = isOverdue ? differenceInCalendarDays(new Date(), new Date(rfi.due_date)) : 0;
@@ -79,7 +82,7 @@ export default function RFIDetailPage() {
           </div>
           <p className="text-muted-foreground text-sm sm:text-base">{rfi.subject}</p>
         </div>
-        {canRespond && (
+        {canRespond && can(ACTIONS.RFI_CLOSE) && (
           <div className="flex gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={() => handleStatusChange('answered')}>
               <CheckCircle2 className="mr-1.5 size-4" />Answered
@@ -92,7 +95,7 @@ export default function RFIDetailPage() {
       </div>
 
       {/* Info grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         {[
           { label: 'Submitted By', value: submitter?.full_name ?? '—' },
           { label: 'Assigned To', value: assignee?.full_name ?? '—' },
@@ -155,7 +158,7 @@ export default function RFIDetailPage() {
           })}
 
           {/* Add response */}
-          {canRespond && !submitted && (
+          {canRespond && !submitted && can(ACTIONS.RFI_RESPOND) && (
             <div className="pt-4 border-t border-rc-border space-y-3">
               <Textarea
                 placeholder="Write a response..."
@@ -163,7 +166,7 @@ export default function RFIDetailPage() {
                 onChange={(e) => setNewResponse(e.target.value)}
                 rows={3}
               />
-              <Button onClick={handleSubmitResponse} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Button onClick={handleSubmitResponse} className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">
                 Submit Response
               </Button>
             </div>

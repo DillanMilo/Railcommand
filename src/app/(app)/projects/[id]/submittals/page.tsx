@@ -13,7 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { getSubmittals, seedProfiles } from '@/lib/store';
+import { getSubmittals, getProfiles } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 import type { SubmittalStatus } from '@/lib/types';
 
 const STATUS_TABS: { label: string; value: string }[] = [
@@ -37,11 +39,12 @@ function isOverdue(dueDate: string): boolean {
 export default function SubmittalsListPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const { can } = usePermissions(projectId);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    let items = [...getSubmittals()].sort(
+    let items = [...getSubmittals(projectId)].sort(
       (a, b) => new Date(b.submit_date).getTime() - new Date(a.submit_date).getTime()
     );
     if (statusFilter !== 'all') {
@@ -64,13 +67,15 @@ export default function SubmittalsListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-2xl font-bold">Submittals</h1>
-          <Badge variant="secondary" className="text-xs">{getSubmittals().length}</Badge>
+          <Badge variant="secondary" className="text-xs">{getSubmittals(projectId).length}</Badge>
         </div>
-        <Link href={`/projects/${projectId}/submittals/new`}>
-          <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-            <Plus className="size-4" /> New Submittal
-          </Button>
-        </Link>
+        {can(ACTIONS.SUBMITTAL_CREATE) && (
+          <Link href={`/projects/${projectId}/submittals/new`}>
+            <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Plus className="size-4" /> New Submittal
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -96,7 +101,7 @@ export default function SubmittalsListPage() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block mt-6">
+      <div className="hidden lg:block mt-6">
         <Table>
           <TableHeader>
             <TableRow>
@@ -111,18 +116,18 @@ export default function SubmittalsListPage() {
           </TableHeader>
           <TableBody>
             {filtered.map((sub) => {
-              const profile = seedProfiles.find((p) => p.id === sub.submitted_by);
+              const profile = getProfiles().find((p) => p.id === sub.submitted_by);
               const days = getAgingDays(sub.submit_date);
               const overdue = isOverdue(sub.due_date);
               return (
                 <TableRow key={sub.id}>
                   <TableCell>
-                    <Link href={`/projects/${projectId}/submittals/${sub.id}`} className="font-medium text-rc-blue hover:underline">
+                    <Link href={`/projects/${projectId}/submittals/${sub.id}`} className="font-medium text-rc-blue hover:underline py-1 inline-block">
                       {sub.number}
                     </Link>
                   </TableCell>
                   <TableCell className="max-w-[260px] truncate">
-                    <Link href={`/projects/${projectId}/submittals/${sub.id}`} className="hover:underline">
+                    <Link href={`/projects/${projectId}/submittals/${sub.id}`} className="hover:underline py-1 inline-block">
                       {sub.title}
                     </Link>
                   </TableCell>
@@ -146,9 +151,9 @@ export default function SubmittalsListPage() {
       </div>
 
       {/* Mobile cards */}
-      <div className="md:hidden mt-6 space-y-3">
+      <div className="lg:hidden mt-6 space-y-3">
         {filtered.map((sub) => {
-          const profile = seedProfiles.find((p) => p.id === sub.submitted_by);
+          const profile = getProfiles().find((p) => p.id === sub.submitted_by);
           const days = getAgingDays(sub.submit_date);
           const overdue = isOverdue(sub.due_date);
           return (
@@ -159,7 +164,7 @@ export default function SubmittalsListPage() {
                     <span className="text-xs font-medium text-rc-blue">{sub.number}</span>
                     <StatusBadge status={sub.status} type="submittal" />
                   </div>
-                  <p className="font-medium text-sm leading-tight">{sub.title}</p>
+                  <p className="font-medium text-sm leading-tight line-clamp-2">{sub.title}</p>
                   <p className="text-xs text-muted-foreground">{sub.spec_section}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                     <span>{profile?.full_name}</span>

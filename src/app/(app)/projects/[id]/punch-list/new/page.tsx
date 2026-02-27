@@ -10,7 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { seedProfiles, addPunchListItem } from '@/lib/store';
+import { getProfiles, addPunchListItem } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 import type { Priority } from '@/lib/types';
 
 const PRIORITIES: { label: string; value: Priority }[] = [
@@ -23,6 +25,7 @@ const PRIORITIES: { label: string; value: Priority }[] = [
 export default function NewPunchListItemPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
+  const { can } = usePermissions(projectId);
   const basePath = `/projects/${projectId}/punch-list`;
 
   const [title, setTitle] = useState('');
@@ -33,9 +36,25 @@ export default function NewPunchListItemPage() {
   const [dueDate, setDueDate] = useState('');
   const [success, setSuccess] = useState(false);
 
+  if (!can(ACTIONS.PUNCH_LIST_CREATE)) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Punch List', href: basePath },
+          { label: 'New Item' },
+        ]} />
+        <div className="text-center py-20 text-muted-foreground">
+          <p className="text-lg font-medium">Access Denied</p>
+          <p className="text-sm mt-1">You do not have permission to perform this action.</p>
+        </div>
+      </div>
+    );
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    addPunchListItem({
+    addPunchListItem(projectId, {
       title,
       description,
       location,
@@ -65,13 +84,13 @@ export default function NewPunchListItemPage() {
         { label: 'New Item' },
       ]} />
 
-      <Link href={basePath} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link href={basePath} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground py-2">
         <ArrowLeft className="size-4" />Back to Punch List
       </Link>
 
       <h1 className="font-heading text-2xl font-bold">New Punch List Item</h1>
 
-      <Card>
+      <Card className="max-w-3xl">
         <CardHeader><CardTitle className="text-base">Item Details</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,7 +121,7 @@ export default function NewPunchListItemPage() {
                 <Select value={assignedTo} onValueChange={setAssignedTo}>
                   <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="Select team member" /></SelectTrigger>
                   <SelectContent>
-                    {seedProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                    {getProfiles().map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -111,9 +130,9 @@ export default function NewPunchListItemPage() {
                 <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white">Create Item</Button>
-              <Button type="button" variant="outline" asChild><Link href={basePath}>Cancel</Link></Button>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">Create Item</Button>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" asChild><Link href={basePath}>Cancel</Link></Button>
             </div>
           </form>
         </CardContent>

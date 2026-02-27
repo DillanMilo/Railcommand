@@ -11,7 +11,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getPunchListItems, seedProfiles } from '@/lib/store';
+import { getPunchListItems, getProfiles } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus, Priority } from '@/lib/types';
 
 const STATUS_TABS: { label: string; value: PunchListStatus | 'all' }[] = [
@@ -38,15 +40,16 @@ const BORDER_COLOR: Record<Priority, string> = {
 };
 
 function getName(id: string) {
-  return seedProfiles.find((p) => p.id === id)?.full_name ?? '—';
+  return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
 }
 
 export default function PunchListPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const { can } = usePermissions(projectId);
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
 
-  const items = getPunchListItems();
+  const items = getPunchListItems(projectId);
   const counts = useMemo(() => ({
     open: items.filter((i) => i.status === 'open').length,
     in_progress: items.filter((i) => i.status === 'in_progress').length,
@@ -76,9 +79,11 @@ export default function PunchListPage() {
             {items.length} items &mdash; {counts.open} open, {counts.in_progress} in progress, {counts.resolved} resolved, {counts.verified} verified
           </p>
         </div>
-        <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-          <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New Item</Link>
-        </Button>
+        {can(ACTIONS.PUNCH_LIST_CREATE) && (
+          <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New Item</Link>
+          </Button>
+        )}
       </div>
 
       {/* Status tabs */}
@@ -87,7 +92,7 @@ export default function PunchListPage() {
           <button
             key={t.value}
             onClick={() => setStatusFilter(t.value)}
-            className={`whitespace-nowrap px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px min-h-[44px] ${
               statusFilter === t.value ? 'border-rc-orange text-rc-orange' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -102,7 +107,7 @@ export default function PunchListPage() {
           <button
             key={p.value}
             onClick={() => setPriorityFilter(p.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors min-h-[36px] inline-flex items-center ${
               priorityFilter === p.value
                 ? 'bg-rc-navy text-white border-rc-navy'
                 : 'bg-rc-card text-muted-foreground border-rc-border hover:border-rc-steel'
@@ -114,7 +119,7 @@ export default function PunchListPage() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block rounded-lg border border-rc-border overflow-hidden">
+      <div className="hidden lg:block rounded-lg border border-rc-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-rc-card">
@@ -131,10 +136,10 @@ export default function PunchListPage() {
             {filtered.map((item) => (
               <TableRow key={item.id} className={item.priority === 'critical' ? 'bg-red-50/60 dark:bg-red-950/20' : undefined}>
                 <TableCell>
-                  <Link href={`${basePath}/${item.id}`} className="font-medium text-rc-blue hover:underline">{item.number}</Link>
+                  <Link href={`${basePath}/${item.id}`} className="font-medium text-rc-blue hover:underline py-1 inline-block">{item.number}</Link>
                 </TableCell>
                 <TableCell className="max-w-[260px] truncate">
-                  <Link href={`${basePath}/${item.id}`} className="hover:underline">{item.title}</Link>
+                  <Link href={`${basePath}/${item.id}`} className="hover:underline py-1 inline-block">{item.title}</Link>
                 </TableCell>
                 <TableCell className="max-w-[180px] truncate text-muted-foreground">{item.location}</TableCell>
                 <TableCell><StatusBadge status={item.status} type="punch_list" /></TableCell>
@@ -151,7 +156,7 @@ export default function PunchListPage() {
       </div>
 
       {/* Mobile cards */}
-      <div className="md:hidden space-y-3">
+      <div className="lg:hidden space-y-3">
         {filtered.map((item) => (
           <Link key={item.id} href={`${basePath}/${item.id}`}>
             <Card className={`transition-shadow hover:shadow-md border-l-4 ${BORDER_COLOR[item.priority]} ${item.priority === 'critical' ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>

@@ -11,7 +11,10 @@
       "Bash(git:*)",
       "Bash(gh repo:*)",
       "Bash(gh auth:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run:*)",
+      "Bash(find:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

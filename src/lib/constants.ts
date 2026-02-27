@@ -13,7 +13,7 @@ export const SUBMITTAL_STATUS_COLORS: Record<string, string> = {
   approved_as_noted: "bg-lime-100 text-lime-700",
   rejected: "bg-red-100 text-red-700",
   revise_resubmit: "bg-orange-100 text-orange-700",
-  closed: "bg-gray-200 text-gray-500",
+  closed: "bg-gray-200 text-gray-700",
 };
 
 /**
@@ -24,7 +24,7 @@ export const RFI_STATUS_COLORS: Record<string, string> = {
   open: "bg-blue-100 text-blue-700",
   pending: "bg-amber-100 text-amber-700",
   answered: "bg-emerald-100 text-emerald-700",
-  closed: "bg-gray-200 text-gray-500",
+  closed: "bg-gray-200 text-gray-700",
   overdue: "bg-red-100 text-red-700",
 };
 
@@ -38,7 +38,7 @@ export const PUNCH_LIST_STATUS_COLORS: Record<string, string> = {
   verified: "bg-emerald-100 text-emerald-700",
   ready_for_review: "bg-blue-100 text-blue-700",
   completed: "bg-emerald-100 text-emerald-700",
-  closed: "bg-gray-200 text-gray-500",
+  closed: "bg-gray-200 text-gray-700",
 };
 
 /**
@@ -97,16 +97,24 @@ export const PROJECT_ROLES = [
 export type ProjectRole = (typeof PROJECT_ROLES)[number];
 
 /**
- * Main navigation items
+ * Main navigation items (dynamic per project)
  */
-export const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
-  { label: "Submittals", href: "/projects/proj-001/submittals", icon: "FileCheck" },
-  { label: "RFIs", href: "/projects/proj-001/rfis", icon: "MessageSquareMore" },
-  { label: "Daily Logs", href: "/projects/proj-001/daily-logs", icon: "ClipboardList" },
-  { label: "Punch List", href: "/projects/proj-001/punch-list", icon: "ListChecks" },
-  { label: "Schedule", href: "/projects/proj-001/schedule", icon: "CalendarRange" },
-  { label: "Team", href: "/projects/proj-001/team", icon: "Users" },
-] as const;
+export interface NavItem {
+  label: string;
+  href: string;
+  icon: string;
+}
 
-export type NavItem = (typeof NAV_ITEMS)[number];
+export function getNavItems(projectId: string): NavItem[] {
+  return [
+    { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
+    { label: "Submittals", href: `/projects/${projectId}/submittals`, icon: "FileCheck" },
+    { label: "RFIs", href: `/projects/${projectId}/rfis`, icon: "MessageSquareMore" },
+    { label: "Daily Logs", href: `/projects/${projectId}/daily-logs`, icon: "ClipboardList" },
+    { label: "Punch List", href: `/projects/${projectId}/punch-list`, icon: "ListChecks" },
+    { label: "Schedule", href: `/projects/${projectId}/schedule`, icon: "CalendarRange" },
+    { label: "Team", href: `/projects/${projectId}/team`, icon: "Users" },
+  ];
+}
+
+export const NAV_ITEMS = getNavItems("proj-001");

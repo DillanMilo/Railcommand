@@ -34,15 +34,15 @@ export default function KPICard({
   const iconClasses = colorMap[color] ?? colorMap.navy;
 
   return (
-    <Card className="gap-0 py-4">
-      <CardContent className="flex items-center gap-3 px-4">
-        <div className={cn('flex shrink-0 items-center justify-center rounded-lg p-2.5', iconClasses)}>
-          <Icon className="size-5" />
+    <Card className="gap-0 py-3 sm:py-4">
+      <CardContent className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4">
+        <div className={cn('flex shrink-0 items-center justify-center rounded-lg p-2 sm:p-2.5', iconClasses)}>
+          <Icon className="size-4 sm:size-5" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="font-heading text-2xl font-bold leading-tight">{value}</p>
-          <p className="text-sm text-rc-steel truncate">{title}</p>
+          <p className="font-heading text-lg sm:text-2xl font-bold leading-tight">{value}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
           {trend && trendValue && (
             <div
               className={cn(
@@ -62,8 +62,8 @@ export default function KPICard({
       </CardContent>
 
       {subtitle && (
-        <div className="px-4 pt-1">
-          <p className="text-xs text-rc-steel">{subtitle}</p>
+        <div className="px-3 sm:px-4 pt-1">
+          <p className="text-xs text-rc-steel truncate">{subtitle}</p>
         </div>
       )}
     </Card>

@@ -75,7 +75,7 @@ function DetailLoading() {
 
       <div className="rounded-lg border border-rc-border bg-rc-card p-5 space-y-4">
         <Skeleton className="h-5 w-40" />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-4 w-32" />

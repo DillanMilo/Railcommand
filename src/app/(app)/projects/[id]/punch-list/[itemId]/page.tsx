@@ -11,16 +11,19 @@ import { Textarea } from '@/components/ui/textarea';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getPunchListItems, seedProfiles, updatePunchListStatus } from '@/lib/store';
+import { getPunchListItems, getProfiles, updatePunchListStatus } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus } from '@/lib/types';
 
 function getName(id: string) {
-  return seedProfiles.find((p) => p.id === id)?.full_name ?? '—';
+  return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
 }
 
 export default function PunchListDetailPage() {
   const { id: projectId, itemId } = useParams<{ id: string; itemId: string }>();
-  const item = getPunchListItems().find((i) => i.id === itemId);
+  const { can } = usePermissions(projectId);
+  const item = getPunchListItems(projectId).find((i) => i.id === itemId);
   const [status, setStatus] = useState<PunchListStatus>(item?.status ?? 'open');
   const [notes, setNotes] = useState(item?.resolution_notes ?? '');
   const [resolutionInput, setResolutionInput] = useState('');
@@ -57,7 +60,7 @@ export default function PunchListDetailPage() {
         { label: item.number },
       ]} />
 
-      <Link href={basePath} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link href={basePath} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground py-2">
         <ArrowLeft className="size-4" />Back to Punch List
       </Link>
 
@@ -96,12 +99,12 @@ export default function PunchListDetailPage() {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Resolution</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          {status === 'open' && (
+          {status === 'open' && can(ACTIONS.PUNCH_LIST_RESOLVE) && (
             <Button onClick={handleStart} className="bg-rc-blue hover:bg-rc-blue/90 text-white">
               <Play className="mr-2 size-4" />Start Work
             </Button>
           )}
-          {status === 'in_progress' && (
+          {status === 'in_progress' && can(ACTIONS.PUNCH_LIST_RESOLVE) && (
             <>
               <Textarea placeholder="Resolution notes..." value={resolutionInput} onChange={(e) => setResolutionInput(e.target.value)} rows={3} />
               <Button onClick={handleResolve} className="bg-rc-emerald hover:bg-rc-emerald/90 text-white">
@@ -113,12 +116,16 @@ export default function PunchListDetailPage() {
             <div className="space-y-3">
               {notes && <p className="rounded-md bg-muted p-3 text-sm">{notes}</p>}
               <div className="flex flex-wrap gap-2">
-                <Button onClick={handleVerify} className="bg-rc-emerald hover:bg-rc-emerald/90 text-white">
-                  <ShieldCheck className="mr-2 size-4" />Verify
-                </Button>
-                <Button variant="outline" onClick={handleReopen}>
-                  <RotateCcw className="mr-2 size-4" />Reopen
-                </Button>
+                {can(ACTIONS.PUNCH_LIST_VERIFY) && (
+                  <Button onClick={handleVerify} className="bg-rc-emerald hover:bg-rc-emerald/90 text-white">
+                    <ShieldCheck className="mr-2 size-4" />Verify
+                  </Button>
+                )}
+                {can(ACTIONS.PUNCH_LIST_RESOLVE) && (
+                  <Button variant="outline" onClick={handleReopen}>
+                    <RotateCcw className="mr-2 size-4" />Reopen
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -141,7 +148,7 @@ export default function PunchListDetailPage() {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Photos</CardTitle></CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-rc-border py-10 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-rc-border py-6 sm:py-10 text-muted-foreground">
             <Camera className="size-8 mb-2" />
             <p className="text-sm">No photos attached yet</p>
           </div>

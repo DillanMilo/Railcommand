@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useProject } from '@/components/providers/ProjectProvider';
 import {
   LayoutDashboard,
   FileCheck,
@@ -22,32 +23,33 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
-const MOBILE_TABS = [
-  { label: 'Dashboard', href: '/dashboard', Icon: LayoutDashboard },
-  { label: 'Submittals', href: '/projects/proj-001/submittals', Icon: FileCheck },
-  { label: 'RFIs', href: '/projects/proj-001/rfis', Icon: MessageSquareMore },
-  { label: 'Logs', href: '/projects/proj-001/daily-logs', Icon: CalendarDays },
-  { label: 'More', href: '#more', Icon: MoreHorizontal },
-] as const;
-
-const MORE_ITEMS = [
-  { label: 'Punch List', href: '/projects/proj-001/punch-list', Icon: ClipboardCheck },
-  { label: 'Schedule', href: '/projects/proj-001/schedule', Icon: GanttChart },
-  { label: 'Team', href: '/projects/proj-001/team', Icon: Users },
-];
-
 export default function MobileNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { currentProjectId } = useProject();
 
-  const isMoreActive = MORE_ITEMS.some(
+  const mobileTabs = [
+    { label: 'Dashboard', href: '/dashboard', Icon: LayoutDashboard },
+    { label: 'Submittals', href: `/projects/${currentProjectId}/submittals`, Icon: FileCheck },
+    { label: 'RFIs', href: `/projects/${currentProjectId}/rfis`, Icon: MessageSquareMore },
+    { label: 'Logs', href: `/projects/${currentProjectId}/daily-logs`, Icon: CalendarDays },
+    { label: 'More', href: '#more', Icon: MoreHorizontal },
+  ];
+
+  const moreItems = [
+    { label: 'Punch List', href: `/projects/${currentProjectId}/punch-list`, Icon: ClipboardCheck },
+    { label: 'Schedule', href: `/projects/${currentProjectId}/schedule`, Icon: GanttChart },
+    { label: 'Team', href: `/projects/${currentProjectId}/team`, Icon: Users },
+  ];
+
+  const isMoreActive = moreItems.some(
     (item) => pathname === item.href || pathname.startsWith(item.href + '/')
   );
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-rc-card border-t border-rc-border pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around">
-        {MOBILE_TABS.map(({ label, href, Icon }) => {
+        {mobileTabs.map(({ label, href, Icon }) => {
           if (href === '#more') {
             return (
               <Sheet key="more" open={moreOpen} onOpenChange={setMoreOpen}>
@@ -67,7 +69,7 @@ export default function MobileNav() {
                     <SheetTitle>More</SheetTitle>
                   </SheetHeader>
                   <div className="grid grid-cols-3 gap-4 mt-4 pb-4">
-                    {MORE_ITEMS.map((item) => {
+                    {moreItems.map((item) => {
                       const active = pathname === item.href || pathname.startsWith(item.href + '/');
                       return (
                         <Link

@@ -12,7 +12,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getRFIs, seedProfiles } from '@/lib/store';
+import { getRFIs, getProfiles } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 import type { RFI, RFIStatus } from '@/lib/types';
 
 const TABS: { label: string; value: RFIStatus | 'all' }[] = [
@@ -24,7 +26,7 @@ const TABS: { label: string; value: RFIStatus | 'all' }[] = [
 ];
 
 function getProfile(id: string) {
-  return seedProfiles.find((p) => p.id === id);
+  return getProfiles().find((p) => p.id === id);
 }
 
 function daysOpen(rfi: RFI): number {
@@ -34,11 +36,12 @@ function daysOpen(rfi: RFI): number {
 
 export default function RFIsPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const { can } = usePermissions(projectId);
   const [tab, setTab] = useState<RFIStatus | 'all'>('all');
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    return getRFIs().filter((r) => {
+    return getRFIs(projectId).filter((r) => {
       if (tab !== 'all' && r.status !== tab) return false;
       if (search) {
         const q = search.toLowerCase();
@@ -64,9 +67,11 @@ export default function RFIsPage() {
           <h1 className="font-heading text-2xl font-bold">RFIs</h1>
           <p className="text-sm text-muted-foreground">{filtered.length} items</p>
         </div>
-        <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-          <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New RFI</Link>
-        </Button>
+        {can(ACTIONS.RFI_CREATE) && (
+          <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New RFI</Link>
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -75,7 +80,7 @@ export default function RFIsPage() {
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`whitespace-nowrap px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px min-h-[44px] ${
               tab === t.value
                 ? 'border-rc-orange text-rc-orange'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -93,7 +98,7 @@ export default function RFIsPage() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block rounded-lg border border-rc-border overflow-hidden">
+      <div className="hidden lg:block rounded-lg border border-rc-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-rc-card">
@@ -114,10 +119,10 @@ export default function RFIsPage() {
               return (
                 <TableRow key={rfi.id} className={isOverdue ? 'bg-red-50/60 dark:bg-red-950/20' : undefined}>
                   <TableCell>
-                    <Link href={`${basePath}/${rfi.id}`} className="font-medium text-rc-blue hover:underline">{rfi.number}</Link>
+                    <Link href={`${basePath}/${rfi.id}`} className="font-medium text-rc-blue hover:underline py-1 inline-block">{rfi.number}</Link>
                   </TableCell>
                   <TableCell className="max-w-[260px] truncate">
-                    <Link href={`${basePath}/${rfi.id}`} className="hover:underline">{rfi.subject}</Link>
+                    <Link href={`${basePath}/${rfi.id}`} className="hover:underline py-1 inline-block">{rfi.subject}</Link>
                   </TableCell>
                   <TableCell><StatusBadge status={rfi.status} type="rfi" /></TableCell>
                   <TableCell><PriorityBadge priority={rfi.priority} /></TableCell>
@@ -136,7 +141,7 @@ export default function RFIsPage() {
       </div>
 
       {/* Mobile cards */}
-      <div className="md:hidden space-y-3">
+      <div className="lg:hidden space-y-3">
         {filtered.map((rfi) => {
           const isOverdue = rfi.status === 'overdue';
           const days = daysOpen(rfi);

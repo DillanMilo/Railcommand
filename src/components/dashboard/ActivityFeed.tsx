@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getActivityLog, seedProfiles } from '@/lib/store';
+import { getActivityLog, getProfiles } from '@/lib/store';
 import { formatDistanceToNow } from 'date-fns';
 import {
   FileCheck,
@@ -24,12 +24,16 @@ const entityConfig: Record<string, { icon: typeof FileCheck; dotColor: string }>
 };
 
 function getProfileName(profileId: string): string {
-  const profile = seedProfiles.find((p) => p.id === profileId);
+  const profile = getProfiles().find((p) => p.id === profileId);
   return profile?.full_name ?? 'Unknown';
 }
 
-export default function ActivityFeed() {
-  const recentActivities = [...getActivityLog()]
+interface ActivityFeedProps {
+  projectId: string;
+}
+
+export default function ActivityFeed({ projectId }: ActivityFeedProps) {
+  const recentActivities = [...getActivityLog(projectId)]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10);
 
@@ -41,7 +45,7 @@ export default function ActivityFeed() {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="max-h-[420px] overflow-y-auto">
+        <div className="max-h-[320px] sm:max-h-[380px] lg:max-h-[420px] overflow-y-auto">
           {recentActivities.map((activity) => {
             const config = entityConfig[activity.entity_type] ?? entityConfig.project;
             const Icon = config.icon;
@@ -52,7 +56,7 @@ export default function ActivityFeed() {
             return (
               <div
                 key={activity.id}
-                className="flex items-start gap-3 border-b last:border-b-0 px-5 py-3"
+                className="flex items-start gap-3 border-b last:border-b-0 px-3 sm:px-5 py-3"
               >
                 <div className="mt-1.5 shrink-0">
                   <div className={cn('size-2 rounded-full', config.dotColor)} />
@@ -73,9 +77,9 @@ export default function ActivityFeed() {
             );
           })}
         </div>
-        <div className="border-t px-5 py-3">
+        <div className="border-t px-3 sm:px-5 py-3">
           <Link
-            href="/projects/proj-001/daily-logs"
+            href={`/projects/${projectId}/daily-logs`}
             className="text-sm font-medium text-rc-orange hover:text-rc-orange-dark transition-colors"
           >
             View all activity

@@ -12,7 +12,7 @@ import BudgetTracker from '@/components/schedule/BudgetTracker';
 import TimelineView from '@/components/schedule/TimelineView';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { seedMilestones } from '@/lib/store';
+import { getMilestones, getProjectById } from '@/lib/store';
 import type { Milestone, MilestoneStatus } from '@/lib/types';
 
 const STATUS_BAR_COLOR: Record<MilestoneStatus, string> = {
@@ -52,7 +52,8 @@ function useKPIs(milestones: Milestone[]) {
 export default function SchedulePage() {
   const params = useParams();
   const projectId = params.id as string;
-  const milestones = [...seedMilestones].sort((a, b) => a.sort_order - b.sort_order);
+  const project = getProjectById(projectId);
+  const milestones = [...getMilestones(projectId)].sort((a, b) => a.sort_order - b.sort_order);
   const kpis = useKPIs(milestones);
 
   return (
@@ -67,7 +68,7 @@ export default function SchedulePage() {
       <h1 className="font-heading text-2xl font-bold mt-4">Schedule &amp; Milestones</h1>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-6">
         <KPICard title="Overall Progress" value={`${kpis.weightedProgress}%`} icon={TrendingUp} color="blue" />
         <KPICard title="On Track" value={kpis.onTrack} icon={Flag} color="emerald" />
         <KPICard title="At Risk / Behind" value={kpis.atRiskBehind} icon={AlertTriangle} color={kpis.atRiskBehind > 0 ? 'red' : 'emerald'} />
@@ -94,7 +95,11 @@ export default function SchedulePage() {
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-4">
-          <TimelineView milestones={milestones} />
+          <TimelineView
+            milestones={milestones}
+            startDate={project?.start_date ?? '2025-08-26'}
+            endDate={project?.target_end_date ?? '2026-02-26'}
+          />
         </TabsContent>
       </Tabs>
     </div>

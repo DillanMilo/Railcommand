@@ -11,6 +11,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { addDailyLog } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -23,6 +25,7 @@ type WorkItemRow = { description: string; quantity: number; unit: string; locati
 export default function NewDailyLogPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
+  const { can } = usePermissions(projectId);
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [temp, setTemp] = useState<number | ''>('');
@@ -35,6 +38,22 @@ export default function NewDailyLogPage() {
   const [safetyNotes, setSafetyNotes] = useState('');
   const [success, setSuccess] = useState(false);
 
+  if (!can(ACTIONS.DAILY_LOG_CREATE)) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Daily Logs', href: `/projects/${projectId}/daily-logs` },
+          { label: 'New Log' },
+        ]} />
+        <div className="text-center py-20 text-muted-foreground">
+          <p className="text-lg font-medium">Access Denied</p>
+          <p className="text-sm mt-1">You do not have permission to perform this action.</p>
+        </div>
+      </div>
+    );
+  }
+
   const updateRow = <T,>(arr: T[], i: number, patch: Partial<T>, setter: (v: T[]) => void) => {
     const next = [...arr];
     next[i] = { ...next[i], ...patch };
@@ -46,7 +65,7 @@ export default function NewDailyLogPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <Breadcrumbs items={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Daily Logs', href: `/projects/${projectId}/daily-logs` },
@@ -88,7 +107,7 @@ export default function NewDailyLogPage() {
         <CardHeader><CardTitle>Personnel</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {personnel.map((p, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_80px_1fr_40px] items-end">
+            <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_40px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Role</label>
                 <Select value={p.role} onValueChange={(v) => updateRow(personnel, i, { role: v }, setPersonnel)}>
@@ -120,7 +139,7 @@ export default function NewDailyLogPage() {
         <CardHeader><CardTitle>Equipment</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {equipment.map((e, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_80px_1fr_40px] items-end">
+            <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_40px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Equipment Type</label>
                 <Input placeholder="e.g. Excavator" value={e.type} onChange={(ev) => updateRow(equipment, i, { type: ev.target.value }, setEquipment)} />
@@ -149,7 +168,7 @@ export default function NewDailyLogPage() {
         <CardHeader><CardTitle>Work Items</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {workItems.map((w, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_80px_100px_1fr_40px] items-end">
+            <div key={i} className="grid gap-2 grid-cols-2 sm:grid-cols-[1fr_80px_100px_1fr_40px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Description</label>
                 <Input placeholder="Work description" value={w.description} onChange={(e) => updateRow(workItems, i, { description: e.target.value }, setWorkItems)} />
@@ -198,13 +217,13 @@ export default function NewDailyLogPage() {
         </Alert>
       )}
 
-      <div className="flex gap-3 justify-end pb-8">
-        <Button variant="outline" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
+      <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pb-8">
+        <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
           disabled={success}
           onClick={() => {
-            addDailyLog({
+            addDailyLog(projectId, {
               log_date: date,
               weather_temp: typeof temp === 'number' ? temp : 0,
               weather_conditions: conditions,

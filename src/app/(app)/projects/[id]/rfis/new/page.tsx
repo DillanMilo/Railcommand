@@ -10,7 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { seedProfiles, seedMilestones, addRFI } from '@/lib/store';
+import { getProfiles, getMilestones, addRFI } from '@/lib/store';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ACTIONS } from '@/lib/permissions';
 import type { Priority } from '@/lib/types';
 
 const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low'];
@@ -18,6 +20,7 @@ const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low'];
 export default function NewRFIPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
+  const { can } = usePermissions(projectId);
   const basePath = `/projects/${projectId}/rfis`;
 
   const [subject, setSubject] = useState('');
@@ -28,10 +31,26 @@ export default function NewRFIPage() {
   const [milestoneId, setMilestoneId] = useState('');
   const [success, setSuccess] = useState(false);
 
+  if (!can(ACTIONS.RFI_CREATE)) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'RFIs', href: basePath },
+          { label: 'New RFI' },
+        ]} />
+        <div className="text-center py-20 text-muted-foreground">
+          <p className="text-lg font-medium">Access Denied</p>
+          <p className="text-sm mt-1">You do not have permission to perform this action.</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !question.trim()) return;
-    addRFI({
+    addRFI(projectId, {
       subject,
       question,
       priority,
@@ -104,7 +123,7 @@ export default function NewRFIPage() {
                 <Select value={assignTo} onValueChange={setAssignTo}>
                   <SelectTrigger><SelectValue placeholder="Select team member" /></SelectTrigger>
                   <SelectContent>
-                    {seedProfiles.map((p) => (
+                    {getProfiles().map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -123,7 +142,7 @@ export default function NewRFIPage() {
                 <Select value={milestoneId} onValueChange={setMilestoneId}>
                   <SelectTrigger><SelectValue placeholder="Select milestone" /></SelectTrigger>
                   <SelectContent>
-                    {seedMilestones.map((m) => (
+                    {getMilestones(projectId).map((m) => (
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -132,9 +151,9 @@ export default function NewRFIPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white">Create RFI</Button>
-              <Button type="button" variant="outline" asChild>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">Create RFI</Button>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" asChild>
                 <Link href={basePath}>Cancel</Link>
               </Button>
             </div>
