@@ -402,6 +402,20 @@ These capabilities span the entire application and are available across all modu
 - **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments
 - **Per-Module Toggles** -- Users can enable or disable notifications for each module independently
 
+### Role-Based Access Control (RBAC) -- Implemented
+
+RailCommand enforces role-based permissions across every module in the application. This is not just a design concept -- it is fully implemented in the current MVP frontend.
+
+- **Permission Matrix Engine** -- A centralized permission module defines 12 distinct actions (create submittals, review submittals, create RFIs, respond to RFIs, close RFIs, create daily logs, create punch items, resolve punch items, verify punch items, manage team, manage project, view budget) mapped to all 7 project roles
+- **Per-Page Enforcement** -- Every page in the app checks the current user's project role before rendering action buttons. Unauthorized actions are hidden entirely (not grayed out), keeping the interface clean and role-appropriate
+- **URL Protection** -- Direct navigation to create/edit pages (e.g., typing `/submittals/new` in the browser) is also gated -- unauthorized users see an "Access Denied" message instead of the form
+- **Budget Restriction** -- Financial data (budget KPI on dashboard, milestone budgets) is only visible to Project Managers, Superintendents, Engineers, and Owner/Client roles. Other roles see a "Restricted" placeholder
+- **Quick Actions Filtering** -- Dashboard quick-action shortcuts dynamically show only the actions permitted for the current user's role
+- **Project Management Gating** -- Sidebar actions (Mark Complete, Archive, Delete project) are only visible to users with the Project Manager role
+- **Team Management Gating** -- Add/remove team member controls are restricted to Project Managers only
+
+**MVP Demo Note:** The current MVP includes a **User Switcher** in the top-right dropdown menu. This development tool allows you to switch between all 10 seed users to demonstrate how the interface adapts to each role in real time. This switcher will be removed before production deployment -- in the shipped product, the user's role is determined automatically by their Supabase authentication credentials and project membership. The switcher exists solely for client demos and internal testing.
+
 ### Navigation & Usability
 
 - **Global Search** -- Search across all modules from the top bar
@@ -491,11 +505,22 @@ The following features are planned for future releases of RailCommand:
 | Feature | Description | Status |
 |---------|-------------|--------|
 | **AI Assistant (RailBot)** | Natural language queries, guided data entry (create RFIs and punch items via conversation), project summarization, and daily log summaries -- powered by AI and accessible from any page via a slide-over chat panel. | In Development |
-| **Photo & Document Management** | Centralized document repository with GPS tagging for field photos, organized by module and date. | Planned |
+| **Photo & Document Management** | Photo upload (standard + thermal) with GPS geo-tagging on punch list items and daily logs. Photo gallery with lightbox viewer. Geo-tag capture for job-level location tracking. Backend storage via Supabase Storage buckets pending connection. | MVP UI Complete |
 | **Custom Reporting & Export** | Generate custom reports across modules with PDF and CSV export. Filterable by date range, status, role, and more. | Planned |
 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Planned |
 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Planned |
 | **Email Digests & Scheduled Notifications** | Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones. | Planned |
+
+### Pre-Production Cleanup
+
+The following items will be removed or replaced before the production release:
+
+| Item | Current State | Production State |
+|------|--------------|-----------------|
+| **Demo User Switcher** | Dropdown in top-right menu allows switching between 10 demo users to test RBAC | Removed -- user identity determined by Supabase authentication |
+| **Seed Data** | In-memory store with pre-populated demo data (projects, submittals, RFIs, etc.) | Replaced with live Supabase database |
+| **Simulated Auth** | Form submission redirects to dashboard without real authentication | Full Supabase Auth with email/password and Google OAuth |
+| **Simulated Save Actions** | Profile updates and settings changes use setTimeout to mimic API calls | Wired to Supabase server actions with real persistence |
 
 ---
 

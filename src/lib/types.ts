@@ -118,6 +118,7 @@ export interface DailyLog {
   weather_wind: string;
   work_summary: string;
   safety_notes: string;
+  geo_tag: GeoTag | null;
   personnel: DailyLogPersonnel[];
   equipment: DailyLogEquipment[];
   work_items: DailyLogWorkItem[];
@@ -158,6 +159,7 @@ export interface PunchListItem {
   title: string;
   description: string;
   location: string;
+  geo_tag: GeoTag | null;
   status: PunchListStatus;
   priority: Priority;
   assigned_to: string;
@@ -196,6 +198,8 @@ export interface Milestone {
 export type MilestoneStatus = 'on_track' | 'at_risk' | 'behind' | 'complete' | 'not_started';
 
 // Attachment
+export type PhotoCategory = 'standard' | 'thermal' | 'document';
+
 export interface Attachment {
   id: string;
   entity_type: 'submittal' | 'rfi' | 'daily_log' | 'punch_list';
@@ -204,11 +208,21 @@ export interface Attachment {
   file_url: string;
   file_type: string;
   file_size: number;
+  photo_category: PhotoCategory;
   uploaded_by: string;
   geo_lat: number | null;
   geo_lng: number | null;
   captured_at: string | null;
   created_at: string;
+}
+
+// Geo-tag for jobs and work items
+export interface GeoTag {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  altitude?: number;
+  timestamp: string;
 }
 
 // Activity Log

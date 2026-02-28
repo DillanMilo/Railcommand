@@ -10,10 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { getProfiles, addPunchListItem } from '@/lib/store';
+import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
+import GeoTagInput from '@/components/shared/GeoTagInput';
+import { getProfiles, addPunchListItem, addAttachment } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { Priority } from '@/lib/types';
+import type { Priority, GeoTag } from '@/lib/types';
 
 const PRIORITIES: { label: string; value: Priority }[] = [
   { label: 'Critical', value: 'critical' },
@@ -34,6 +36,8 @@ export default function NewPunchListItemPage() {
   const [priority, setPriority] = useState<Priority>('medium');
   const [assignedTo, setAssignedTo] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
+  const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
 
   if (!can(ACTIONS.PUNCH_LIST_CREATE)) {
@@ -54,14 +58,31 @@ export default function NewPunchListItemPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    addPunchListItem(projectId, {
+    const item = addPunchListItem(projectId, {
       title,
       description,
       location,
       priority,
       assigned_to: assignedTo,
       due_date: dueDate,
+      geo_tag: geoTag,
     });
+
+    // Save photo attachments
+    for (const photo of photos) {
+      addAttachment({
+        entity_type: 'punch_list',
+        entity_id: item.id,
+        file_name: photo.file.name,
+        file_url: photo.preview,
+        file_type: photo.file.type,
+        file_size: photo.file.size,
+        photo_category: photo.category,
+        geo_lat: photo.geo_lat,
+        geo_lng: photo.geo_lng,
+      });
+    }
+
     setSuccess(true);
     setTimeout(() => router.push(basePath), 1500);
   }
@@ -130,6 +151,9 @@ export default function NewPunchListItemPage() {
                 <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1" />
               </div>
             </div>
+            {/* Geo-tag */}
+            <GeoTagInput value={geoTag} onChange={setGeoTag} />
+
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">Create Item</Button>
               <Button type="button" variant="outline" className="w-full sm:w-auto" asChild><Link href={basePath}>Cancel</Link></Button>
@@ -137,6 +161,9 @@ export default function NewPunchListItemPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Photo upload */}
+      <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
     </div>
   );
 }

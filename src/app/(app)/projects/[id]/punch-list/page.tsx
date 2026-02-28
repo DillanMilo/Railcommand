@@ -107,7 +107,7 @@ export default function PunchListPage() {
           <button
             key={p.value}
             onClick={() => setPriorityFilter(p.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors min-h-[36px] inline-flex items-center ${
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors min-h-[40px] inline-flex items-center ${
               priorityFilter === p.value
                 ? 'bg-rc-navy text-white border-rc-navy'
                 : 'bg-rc-card text-muted-foreground border-rc-border hover:border-rc-steel'

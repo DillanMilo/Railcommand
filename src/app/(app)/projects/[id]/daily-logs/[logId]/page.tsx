@@ -3,11 +3,12 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, ImageOff } from 'lucide-react';
+import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { getDailyLogs, getProfiles } from '@/lib/store';
+import PhotoGallery from '@/components/shared/PhotoGallery';
+import { getDailyLogs, getProfiles, getAttachments } from '@/lib/store';
 import type { DailyLog } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
@@ -131,16 +132,23 @@ export default function DailyLogDetailPage() {
         </Card>
       )}
 
+      {/* Geo-tag display */}
+      {log.geo_tag && (
+        <Card>
+          <CardContent className="flex items-center gap-2 p-4">
+            <MapPin className="size-4 text-rc-emerald shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-rc-emerald">GPS Location Tagged</p>
+              <p className="text-xs text-muted-foreground">
+                {log.geo_tag.lat.toFixed(6)}, {log.geo_tag.lng.toFixed(6)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Photos */}
-      <Card>
-        <CardHeader><CardTitle>Photos</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <ImageOff className="size-8 mb-2" />
-            <p className="text-sm">No photos attached</p>
-          </div>
-        </CardContent>
-      </Card>
+      <PhotoGallery attachments={getAttachments('daily_log', logId)} />
     </div>
   );
 }

@@ -30,6 +30,9 @@ import type {
   Milestone,
   ProjectMember,
   ActivityLogEntry,
+  Attachment,
+  GeoTag,
+  PhotoCategory,
   SubmittalStatus,
   RFIStatus,
   PunchListStatus,
@@ -263,6 +266,7 @@ export function addDailyLog(projectId: string, data: {
   weather_wind: string;
   work_summary: string;
   safety_notes: string;
+  geo_tag?: GeoTag | null;
   personnel: { role: string; headcount: number; company: string }[];
   equipment: { type: string; count: number; notes: string }[];
   work_items: { description: string; quantity: number; unit: string; location: string }[];
@@ -279,6 +283,7 @@ export function addDailyLog(projectId: string, data: {
     weather_wind: data.weather_wind,
     work_summary: data.work_summary,
     safety_notes: data.safety_notes,
+    geo_tag: data.geo_tag ?? null,
     personnel: data.personnel.filter(p => p.role).map((p, i) => ({
       id: `dlp-${num}-${i}`,
       daily_log_id: `dl-${num}`,
@@ -316,6 +321,7 @@ export function addPunchListItem(projectId: string, data: {
   priority: 'critical' | 'high' | 'medium' | 'low';
   assigned_to: string;
   due_date: string;
+  geo_tag?: GeoTag | null;
 }): PunchListItem {
   punchListCounter++;
   const num = String(punchListCounter).padStart(3, '0');
@@ -326,6 +332,7 @@ export function addPunchListItem(projectId: string, data: {
     title: data.title,
     description: data.description,
     location: data.location,
+    geo_tag: data.geo_tag ?? null,
     status: 'open',
     priority: data.priority,
     assigned_to: data.assigned_to || getCurrentUserId(),
@@ -439,6 +446,49 @@ export function addOrganization(data: {
   };
   organizations = [...organizations, newOrg];
   return newOrg;
+}
+
+// --- Attachment operations ---
+let attachments: Attachment[] = [];
+let attachmentCounter = 0;
+
+export function getAttachments(entityType: Attachment['entity_type'], entityId: string): Attachment[] {
+  return attachments.filter((a) => a.entity_type === entityType && a.entity_id === entityId);
+}
+
+export function addAttachment(data: {
+  entity_type: Attachment['entity_type'];
+  entity_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  photo_category: PhotoCategory;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+}): Attachment {
+  attachmentCounter++;
+  const newAttachment: Attachment = {
+    id: `att-${attachmentCounter}`,
+    entity_type: data.entity_type,
+    entity_id: data.entity_id,
+    file_name: data.file_name,
+    file_url: data.file_url,
+    file_type: data.file_type,
+    file_size: data.file_size,
+    photo_category: data.photo_category,
+    uploaded_by: getCurrentUserId(),
+    geo_lat: data.geo_lat ?? null,
+    geo_lng: data.geo_lng ?? null,
+    captured_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  };
+  attachments = [...attachments, newAttachment];
+  return newAttachment;
+}
+
+export function removeAttachment(id: string): void {
+  attachments = attachments.filter((a) => a.id !== id);
 }
 
 // --- Activity Log ---

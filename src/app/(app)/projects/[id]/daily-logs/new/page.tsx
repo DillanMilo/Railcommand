@@ -10,9 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { addDailyLog } from '@/lib/store';
+import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
+import GeoTagInput from '@/components/shared/GeoTagInput';
+import { addDailyLog, addAttachment } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
+import type { GeoTag } from '@/lib/types';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -36,6 +39,8 @@ export default function NewDailyLogPage() {
   const [workItems, setWorkItems] = useState<WorkItemRow[]>([{ description: '', quantity: 0, unit: '', location: '' }]);
   const [workSummary, setWorkSummary] = useState('');
   const [safetyNotes, setSafetyNotes] = useState('');
+  const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
+  const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
 
   if (!can(ACTIONS.DAILY_LOG_CREATE)) {
@@ -107,7 +112,7 @@ export default function NewDailyLogPage() {
         <CardHeader><CardTitle>Personnel</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {personnel.map((p, i) => (
-            <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_40px] items-end">
+            <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_44px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Role</label>
                 <Select value={p.role} onValueChange={(v) => updateRow(personnel, i, { role: v }, setPersonnel)}>
@@ -139,7 +144,7 @@ export default function NewDailyLogPage() {
         <CardHeader><CardTitle>Equipment</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {equipment.map((e, i) => (
-            <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_40px] items-end">
+            <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_44px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Equipment Type</label>
                 <Input placeholder="e.g. Excavator" value={e.type} onChange={(ev) => updateRow(equipment, i, { type: ev.target.value }, setEquipment)} />
@@ -168,7 +173,7 @@ export default function NewDailyLogPage() {
         <CardHeader><CardTitle>Work Items</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {workItems.map((w, i) => (
-            <div key={i} className="grid gap-2 grid-cols-2 sm:grid-cols-[1fr_80px_100px_1fr_40px] items-end">
+            <div key={i} className="grid gap-2 grid-cols-2 sm:grid-cols-[1fr_80px_100px_1fr_44px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Description</label>
                 <Input placeholder="Work description" value={w.description} onChange={(e) => updateRow(workItems, i, { description: e.target.value }, setWorkItems)} />
@@ -209,6 +214,17 @@ export default function NewDailyLogPage() {
         <CardContent><Textarea rows={3} placeholder="Any safety observations, incidents, or notes..." value={safetyNotes} onChange={(e) => setSafetyNotes(e.target.value)} /></CardContent>
       </Card>
 
+      {/* GPS Location */}
+      <Card>
+        <CardHeader><CardTitle>Location</CardTitle></CardHeader>
+        <CardContent>
+          <GeoTagInput value={geoTag} onChange={setGeoTag} label="Job Site GPS Location" />
+        </CardContent>
+      </Card>
+
+      {/* Photo Upload */}
+      <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+
       {success && (
         <Alert className="border-emerald-300 bg-emerald-50">
           <CheckCircle2 className="size-4 text-emerald-600" />
@@ -223,17 +239,34 @@ export default function NewDailyLogPage() {
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
           disabled={success}
           onClick={() => {
-            addDailyLog(projectId, {
+            const log = addDailyLog(projectId, {
               log_date: date,
               weather_temp: typeof temp === 'number' ? temp : 0,
               weather_conditions: conditions,
               weather_wind: wind,
               work_summary: workSummary,
               safety_notes: safetyNotes,
+              geo_tag: geoTag,
               personnel,
               equipment: equipment.map((e) => ({ type: e.type, count: e.count, notes: e.notes })),
               work_items: workItems,
             });
+
+            // Save photo attachments
+            for (const photo of photos) {
+              addAttachment({
+                entity_type: 'daily_log',
+                entity_id: log.id,
+                file_name: photo.file.name,
+                file_url: photo.preview,
+                file_type: photo.file.type,
+                file_size: photo.file.size,
+                photo_category: photo.category,
+                geo_lat: photo.geo_lat,
+                geo_lng: photo.geo_lng,
+              });
+            }
+
             setSuccess(true);
             setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
           }}

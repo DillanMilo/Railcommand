@@ -173,7 +173,7 @@ export default function NewSubmittalPage() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-7 shrink-0"
+                        className="size-8 shrink-0"
                         onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
                       >
                         <span className="text-xs text-muted-foreground">&times;</span>

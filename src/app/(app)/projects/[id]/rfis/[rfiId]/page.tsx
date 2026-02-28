@@ -95,7 +95,7 @@ export default function RFIDetailPage() {
       </div>
 
       {/* Info grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
         {[
           { label: 'Submitted By', value: submitter?.full_name ?? '—' },
           { label: 'Assigned To', value: assignee?.full_name ?? '—' },

@@ -4,14 +4,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, Camera } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getPunchListItems, getProfiles, updatePunchListStatus } from '@/lib/store';
+import PhotoGallery from '@/components/shared/PhotoGallery';
+import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
+import { getPunchListItems, getProfiles, updatePunchListStatus, getAttachments, addAttachment } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus } from '@/lib/types';
@@ -27,6 +29,8 @@ export default function PunchListDetailPage() {
   const [status, setStatus] = useState<PunchListStatus>(item?.status ?? 'open');
   const [notes, setNotes] = useState(item?.resolution_notes ?? '');
   const [resolutionInput, setResolutionInput] = useState('');
+  const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
+  const existingAttachments = item ? getAttachments('punch_list', item.id) : [];
 
   if (!item) {
     return (
@@ -65,7 +69,7 @@ export default function PunchListDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="flex flex-wrap items-start gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="flex-1 min-w-0">
           <h1 className="font-heading text-xl font-bold md:text-2xl">
             <span className="text-rc-blue">{item.number}</span> &mdash; {item.title}
@@ -79,7 +83,7 @@ export default function PunchListDetailPage() {
 
       {/* Info grid */}
       <Card>
-        <CardContent className="p-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <CardContent className="p-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
           {info.map((f) => (
             <div key={f.label}>
               <p className="text-xs text-muted-foreground">{f.label}</p>
@@ -144,16 +148,48 @@ export default function PunchListDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Photos placeholder */}
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Photos</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-rc-border py-6 sm:py-10 text-muted-foreground">
-            <Camera className="size-8 mb-2" />
-            <p className="text-sm">No photos attached yet</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Geo-tag display */}
+      {item.geo_tag && (
+        <Card>
+          <CardContent className="flex items-center gap-2 p-4">
+            <MapPin className="size-4 text-rc-emerald shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-rc-emerald">GPS Location Tagged</p>
+              <p className="text-xs text-muted-foreground">
+                {item.geo_tag.lat.toFixed(6)}, {item.geo_tag.lng.toFixed(6)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Photos */}
+      <PhotoGallery attachments={existingAttachments} />
+
+      {/* Add more photos */}
+      {(can(ACTIONS.PUNCH_LIST_RESOLVE) || can(ACTIONS.PUNCH_LIST_CREATE)) && (
+        <PhotoUpload
+          photos={newPhotos}
+          onPhotosChange={(updated) => {
+            // Auto-save new photos as attachments
+            const added = updated.filter((p) => !newPhotos.some((np) => np.id === p.id));
+            for (const photo of added) {
+              addAttachment({
+                entity_type: 'punch_list',
+                entity_id: itemId,
+                file_name: photo.file.name,
+                file_url: photo.preview,
+                file_type: photo.file.type,
+                file_size: photo.file.size,
+                photo_category: photo.category,
+                geo_lat: photo.geo_lat,
+                geo_lng: photo.geo_lng,
+              });
+            }
+            setNewPhotos(updated);
+          }}
+        />
+      )}
     </div>
   );
 }

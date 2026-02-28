@@ -24,6 +24,16 @@
 14. [User Preferences](#14-user-preferences)
 15. [Profile & Settings Testing Plan](#15-profile--settings-testing-plan)
 16. [Role-Based Access Control (RBAC)](#16-role-based-access-control-rbac)
+17. [Photo & Attachment Storage](#17-photo--attachment-storage-supabase-storage)
+18. [Activity Log Database Triggers](#18-activity-log-database-triggers)
+19. [Supabase Type Generation](#19-supabase-type-generation)
+20. [Seed Data & Migration Strategy](#20-seed-data--migration-strategy)
+21. [Real-Time Subscriptions (Optional Enhancement)](#21-real-time-subscriptions-optional-enhancement)
+22. [Environment Variable Addendum](#22-environment-variable-addendum)
+23. [Complete Data Table Schemas](#23-complete-data-table-schemas)
+24. [RLS Policies for Data Tables](#24-rls-policies-for-data-tables)
+25. [Core Data Server Actions](#25-core-data-server-actions)
+26. [Master Implementation Order](#26-master-implementation-order)
 
 ---
 
@@ -40,6 +50,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 
 # Supabase -- Server only (NEVER expose to the browser)
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+
+# Site URL -- Used in auth email redirect URLs
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 Set the same variables in **Vercel > Project Settings > Environment Variables** for `Production`, `Preview`, and `Development` environments.
@@ -3373,6 +3386,2178 @@ For each of these 7 project roles, verify:
 
 ---
 
-*Document created: February 27, 2026*
+## 17. Photo & Attachment Storage (Supabase Storage)
+
+### 17.1 Storage Buckets
+
+Create the following storage buckets in the Supabase Dashboard under **Storage**:
+
+| Bucket | Public | Description |
+|---|---|---|
+| `project-photos` | No (private) | Standard field photos attached to daily logs, punch list items, RFIs, submittals |
+| `thermal-photos` | No (private) | Thermal/infrared images (FLIR, radiometric JPEG, etc.) |
+| `project-documents` | No (private) | PDFs, DWGs, and other non-image attachments |
+
+**Bucket Configuration (all buckets):**
+```
+File size limit: 25 MB
+Allowed MIME types (project-photos): image/jpeg, image/png, image/webp, image/heic, image/heif
+Allowed MIME types (thermal-photos): image/jpeg, image/png, application/octet-stream
+Allowed MIME types (project-documents): application/pdf, image/jpeg, image/png, application/octet-stream
+```
+
+### 17.2 Attachments Table (Extended)
+
+The existing `attachments` table must be extended to support photo categories and geo-tagging:
+
+```sql
+-- ============================================================
+-- ATTACHMENTS TABLE (Extended for Photos & Geo-tagging)
+-- ============================================================
+CREATE TABLE public.attachments (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_type     TEXT NOT NULL
+                    CHECK (entity_type IN ('submittal', 'rfi', 'daily_log', 'punch_list')),
+  entity_id       UUID NOT NULL,
+  file_name       TEXT NOT NULL,
+  file_url        TEXT NOT NULL,
+  file_type       TEXT NOT NULL,        -- MIME type
+  file_size       BIGINT NOT NULL,      -- bytes
+  photo_category  TEXT NOT NULL DEFAULT 'standard'
+                    CHECK (photo_category IN ('standard', 'thermal', 'document')),
+  uploaded_by     UUID NOT NULL REFERENCES public.profiles(id),
+  geo_lat         DOUBLE PRECISION,     -- WGS84 latitude
+  geo_lng         DOUBLE PRECISION,     -- WGS84 longitude
+  captured_at     TIMESTAMPTZ,          -- when the photo was taken
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Index for querying attachments by entity
+CREATE INDEX idx_attachments_entity
+  ON public.attachments (entity_type, entity_id);
+
+-- Index for filtering by photo category
+CREATE INDEX idx_attachments_photo_category
+  ON public.attachments (photo_category);
+
+-- Index for geo-spatial queries (lat/lng bounding box)
+CREATE INDEX idx_attachments_geo
+  ON public.attachments (geo_lat, geo_lng)
+  WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL;
+
+-- Index for uploaded_by lookups
+CREATE INDEX idx_attachments_uploaded_by
+  ON public.attachments (uploaded_by);
+```
+
+### 17.3 Geo-tagging Support for Jobs
+
+Add geo-tag columns to `punch_list_items` and `daily_logs` for job-level location tracking:
+
+```sql
+-- ============================================================
+-- ADD GEO-TAG COLUMNS TO PUNCH LIST ITEMS
+-- ============================================================
+ALTER TABLE public.punch_list_items
+  ADD COLUMN geo_lat       DOUBLE PRECISION,
+  ADD COLUMN geo_lng       DOUBLE PRECISION,
+  ADD COLUMN geo_accuracy  DOUBLE PRECISION,
+  ADD COLUMN geo_altitude  DOUBLE PRECISION,
+  ADD COLUMN geo_timestamp TIMESTAMPTZ;
+
+-- Spatial index for punch list geo queries
+CREATE INDEX idx_punch_list_geo
+  ON public.punch_list_items (geo_lat, geo_lng)
+  WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL;
+
+-- ============================================================
+-- ADD GEO-TAG COLUMNS TO DAILY LOGS
+-- ============================================================
+ALTER TABLE public.daily_logs
+  ADD COLUMN geo_lat       DOUBLE PRECISION,
+  ADD COLUMN geo_lng       DOUBLE PRECISION,
+  ADD COLUMN geo_accuracy  DOUBLE PRECISION,
+  ADD COLUMN geo_altitude  DOUBLE PRECISION,
+  ADD COLUMN geo_timestamp TIMESTAMPTZ;
+
+-- Spatial index for daily log geo queries
+CREATE INDEX idx_daily_logs_geo
+  ON public.daily_logs (geo_lat, geo_lng)
+  WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL;
+```
+
+### 17.4 Storage RLS Policies
+
+```sql
+-- ============================================================
+-- RLS POLICIES FOR project-photos BUCKET
+-- ============================================================
+
+-- Project members can upload photos (INSERT)
+CREATE POLICY "Project members can upload photos"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'project-photos'
+    AND auth.role() = 'authenticated'
+  );
+
+-- Project members can view photos from their projects (SELECT)
+CREATE POLICY "Project members can view project photos"
+  ON storage.objects
+  FOR SELECT
+  USING (
+    bucket_id = 'project-photos'
+    AND auth.role() = 'authenticated'
+  );
+
+-- Users can delete their own uploads (DELETE)
+CREATE POLICY "Users can delete own photo uploads"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'project-photos'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Repeat similar policies for thermal-photos and project-documents buckets
+-- (Same structure, different bucket_id)
+```
+
+### 17.5 Attachment RLS Policies
+
+```sql
+-- ============================================================
+-- RLS POLICIES FOR ATTACHMENTS TABLE
+-- ============================================================
+ALTER TABLE public.attachments ENABLE ROW LEVEL SECURITY;
+
+-- Project members can view attachments for their project entities
+CREATE POLICY "Members can view project attachments"
+  ON public.attachments
+  FOR SELECT
+  USING (
+    -- Check if the user is a member of the project that owns the entity
+    EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.profile_id = auth.uid()
+        AND pm.project_id = (
+          CASE
+            WHEN entity_type = 'submittal' THEN (SELECT project_id FROM public.submittals WHERE id = entity_id)
+            WHEN entity_type = 'rfi' THEN (SELECT project_id FROM public.rfis WHERE id = entity_id)
+            WHEN entity_type = 'daily_log' THEN (SELECT project_id FROM public.daily_logs WHERE id = entity_id)
+            WHEN entity_type = 'punch_list' THEN (SELECT project_id FROM public.punch_list_items WHERE id = entity_id)
+          END
+        )
+    )
+  );
+
+-- Authenticated users can insert attachments
+CREATE POLICY "Authenticated users can add attachments"
+  ON public.attachments
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() = uploaded_by
+  );
+
+-- Users can delete their own attachments
+CREATE POLICY "Users can delete own attachments"
+  ON public.attachments
+  FOR DELETE
+  USING (
+    auth.uid() = uploaded_by
+  );
+```
+
+### 17.6 File Upload Utility
+
+```typescript
+// src/lib/photo-upload.ts
+import { createClient } from '@/lib/supabase/client';
+import type { PhotoCategory } from '@/lib/types';
+
+const BUCKET_MAP: Record<PhotoCategory, string> = {
+  standard: 'project-photos',
+  thermal: 'thermal-photos',
+  document: 'project-documents',
+};
+
+interface UploadResult {
+  url: string | null;
+  error: string | null;
+}
+
+export async function uploadPhoto(
+  file: File,
+  entityType: string,
+  entityId: string,
+  category: PhotoCategory,
+  geoLat?: number | null,
+  geoLng?: number | null,
+): Promise<UploadResult> {
+  const supabase = createClient();
+  const bucket = BUCKET_MAP[category];
+  const fileExt = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const timestamp = Date.now();
+  const filePath = `${entityType}/${entityId}/${timestamp}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    });
+
+  if (uploadError) {
+    return { url: null, error: uploadError.message };
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+  return { url: data.publicUrl, error: null };
+}
+```
+
+### 17.7 Thermal Photo Handling
+
+Thermal photos from FLIR and similar thermal cameras require special handling:
+
+**Supported Thermal Formats:**
+| Format | Extension | Description |
+|---|---|---|
+| FLIR Radiometric JPEG | `.jpg` | Standard JPEG with embedded thermal data in EXIF |
+| FLIR Sequence | `.seq` | Multi-frame thermal video sequence |
+| FLIR IS2 | `.is2` | FLIR proprietary inspection format |
+| FLIR CSQ | `.csq` | Compressed FLIR sequence |
+| Radiometric PNG | `.png` | 16-bit thermal data in PNG container |
+
+**Storage Notes:**
+- Thermal images are stored in the `thermal-photos` bucket
+- The `photo_category` field is set to `'thermal'` for thermal uploads
+- EXIF metadata (if present) is preserved during upload
+- Frontend renders thermal images like standard images (visual representation)
+- Raw radiometric data extraction (temperature readings) is a future enhancement
+
+### 17.8 File Path Convention
+
+All uploaded files follow a consistent path structure inside storage buckets:
+
+```
+{bucket}/
+  {entity_type}/
+    {entity_id}/
+      {timestamp}.{ext}
+```
+
+**Example paths:**
+```
+project-photos/punch_list/pl-001/1709132400000.jpg
+project-photos/daily_log/dl-025/1709132400001.png
+thermal-photos/punch_list/pl-003/1709132400002.jpg
+project-documents/submittal/sub-001/1709132400003.pdf
+```
+
+### 17.9 Implementation Order (Photo & Geo-tagging)
+
+```
+Step 1:  Create storage buckets in Supabase Dashboard (project-photos, thermal-photos, project-documents)
+Step 2:  Run ALTER TABLE migrations to add geo columns to punch_list_items and daily_logs
+Step 3:  Run CREATE TABLE for attachments (if not exists) with extended schema
+Step 4:  Create storage RLS policies for all 3 buckets
+Step 5:  Create attachment table RLS policies
+Step 6:  Create src/lib/photo-upload.ts utility
+Step 7:  Replace in-memory attachment storage (store.ts) with Supabase calls
+Step 8:  Wire PhotoUpload component to real Supabase upload
+Step 9:  Wire PhotoGallery component to fetch from Supabase
+Step 10: Test upload/download/delete for all entity types
+Step 11: Test geo-tagging capture on mobile devices
+Step 12: Test thermal photo upload with FLIR files
+Step 13: Verify RLS blocks cross-project attachment access
+```
+
+### 17.10 New Files (Photo & Geo-tagging)
+
+| # | File | Purpose |
+|---|---|---|
+| 1 | `src/lib/photo-upload.ts` | Supabase Storage upload/delete utility |
+| 2 | `src/hooks/useGeolocation.ts` | Browser Geolocation API hook |
+| 3 | `src/components/shared/PhotoUpload.tsx` | Reusable photo upload component (standard + thermal) |
+| 4 | `src/components/shared/PhotoGallery.tsx` | Photo display grid with lightbox |
+| 5 | `src/components/shared/GeoTagInput.tsx` | GPS location capture input |
+
+### 17.11 Modified Files (Photo & Geo-tagging)
+
+| # | File | Changes |
+|---|---|---|
+| 1 | `src/lib/types.ts` | Added `PhotoCategory`, `GeoTag` types; extended `Attachment`, `PunchListItem`, `DailyLog` |
+| 2 | `src/lib/store.ts` | Added attachment CRUD operations; updated `addPunchListItem`, `addDailyLog` with geo_tag |
+| 3 | `src/lib/seed-data.ts` | Added `geo_tag: null` to all seed punch list items and daily logs |
+| 4 | `src/app/(app)/projects/[id]/punch-list/new/page.tsx` | Added PhotoUpload + GeoTagInput to creation form |
+| 5 | `src/app/(app)/projects/[id]/punch-list/[itemId]/page.tsx` | Replaced photo placeholder with PhotoGallery + geo display |
+| 6 | `src/app/(app)/projects/[id]/daily-logs/new/page.tsx` | Added PhotoUpload + GeoTagInput to creation form |
+| 7 | `src/app/(app)/projects/[id]/daily-logs/[logId]/page.tsx` | Replaced photo placeholder with PhotoGallery + geo display |
+
+---
+
+## 18. Activity Log Database Triggers
+
+These PostgreSQL trigger functions automatically insert rows into `public.activity_log` whenever relevant data is created or updated. Each trigger fires in the context of an authenticated Supabase user, so `auth.uid()` captures who performed the action.
+
+### 18.1 Activity Log Table (Reference)
+
+```sql
+-- ============================================================
+-- ACTIVITY LOG TABLE (for reference -- may already exist)
+-- ============================================================
+CREATE TABLE public.activity_log (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id     UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  entity_type    TEXT NOT NULL
+                   CHECK (entity_type IN (
+                     'submittal', 'rfi', 'daily_log', 'punch_list', 'milestone', 'project'
+                   )),
+  entity_id      UUID NOT NULL,
+  action         TEXT NOT NULL
+                   CHECK (action IN (
+                     'created', 'updated', 'status_changed', 'commented',
+                     'approved', 'rejected', 'submitted', 'assigned'
+                   )),
+  description    TEXT NOT NULL DEFAULT '',
+  performed_by   UUID NOT NULL REFERENCES public.profiles(id),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_activity_log_project_id ON public.activity_log (project_id);
+CREATE INDEX idx_activity_log_entity ON public.activity_log (entity_type, entity_id);
+CREATE INDEX idx_activity_log_created_at ON public.activity_log (created_at DESC);
+```
+
+### 18.2 Submittals Trigger
+
+```sql
+-- ============================================================
+-- TRIGGER: Log submittal creation and status changes
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_submittal_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'submittal',
+      NEW.id,
+      'created',
+      'New submittal created: ' || NEW.number || ' — ' || NEW.title,
+      auth.uid()
+    );
+  ELSIF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'submittal',
+      NEW.id,
+      'status_changed',
+      'Submittal ' || NEW.number || ' status changed to ' || NEW.status,
+      auth.uid()
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_submittal_change
+  AFTER INSERT OR UPDATE ON public.submittals
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_submittal_activity();
+```
+
+### 18.3 RFIs Trigger
+
+```sql
+-- ============================================================
+-- TRIGGER: Log RFI creation and status changes
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_rfi_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'rfi',
+      NEW.id,
+      'created',
+      'New RFI created: ' || NEW.number || ' — ' || NEW.subject,
+      auth.uid()
+    );
+  ELSIF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'rfi',
+      NEW.id,
+      'status_changed',
+      'RFI ' || NEW.number || ' status changed to ' || NEW.status,
+      auth.uid()
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_rfi_change
+  AFTER INSERT OR UPDATE ON public.rfis
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_rfi_activity();
+```
+
+### 18.4 RFI Responses Trigger
+
+```sql
+-- ============================================================
+-- TRIGGER: Log RFI response (comment) creation
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_rfi_response_activity()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_project_id UUID;
+  v_rfi_number TEXT;
+BEGIN
+  -- Look up the parent RFI to get project_id and number
+  SELECT project_id, number INTO v_project_id, v_rfi_number
+  FROM public.rfis
+  WHERE id = NEW.rfi_id;
+
+  INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+  VALUES (
+    v_project_id,
+    'rfi',
+    NEW.rfi_id,
+    'commented',
+    'New response added to RFI ' || v_rfi_number,
+    auth.uid()
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_rfi_response_created
+  AFTER INSERT ON public.rfi_responses
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_rfi_response_activity();
+```
+
+### 18.5 Daily Logs Trigger
+
+```sql
+-- ============================================================
+-- TRIGGER: Log daily log creation
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_daily_log_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+  VALUES (
+    NEW.project_id,
+    'daily_log',
+    NEW.id,
+    'created',
+    'Daily log created for ' || TO_CHAR(NEW.log_date, 'Mon DD, YYYY'),
+    auth.uid()
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_daily_log_created
+  AFTER INSERT ON public.daily_logs
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_daily_log_activity();
+```
+
+### 18.6 Punch List Items Trigger
+
+```sql
+-- ============================================================
+-- TRIGGER: Log punch list item creation and status changes
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_punch_list_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'punch_list',
+      NEW.id,
+      'created',
+      'New punch list item created: ' || NEW.number || ' — ' || NEW.title,
+      auth.uid()
+    );
+  ELSIF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'punch_list',
+      NEW.id,
+      'status_changed',
+      'Punch list item ' || NEW.number || ' status changed to ' || NEW.status,
+      auth.uid()
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_punch_list_change
+  AFTER INSERT OR UPDATE ON public.punch_list_items
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_punch_list_activity();
+```
+
+### 18.7 Milestones Trigger
+
+```sql
+-- ============================================================
+-- TRIGGER: Log milestone creation and status changes
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_milestone_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'milestone',
+      NEW.id,
+      'created',
+      'New milestone created: ' || NEW.name,
+      auth.uid()
+    );
+  ELSIF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.project_id,
+      'milestone',
+      NEW.id,
+      'status_changed',
+      'Milestone "' || NEW.name || '" status changed to ' || REPLACE(NEW.status, '_', ' '),
+      auth.uid()
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_milestone_change
+  AFTER INSERT OR UPDATE ON public.milestones
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_milestone_activity();
+```
+
+### 18.8 Projects Trigger (Status Changes Only)
+
+```sql
+-- ============================================================
+-- TRIGGER: Log project status changes
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.log_project_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.activity_log (project_id, entity_type, entity_id, action, description, performed_by)
+    VALUES (
+      NEW.id,
+      'project',
+      NEW.id,
+      'status_changed',
+      'Project "' || NEW.name || '" status changed to ' || REPLACE(NEW.status, '_', ' '),
+      auth.uid()
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_project_status_change
+  AFTER UPDATE ON public.projects
+  FOR EACH ROW
+  EXECUTE FUNCTION public.log_project_status_change();
+```
+
+### 18.9 Notes on Activity Log Triggers
+
+- All trigger functions use `SECURITY DEFINER` so they can insert into `activity_log` even when the calling user does not have direct INSERT access (RLS policies on `activity_log` are typically read-only for non-admin users).
+- `auth.uid()` returns the UUID of the currently authenticated user from the Supabase session context. This works because these triggers fire as a result of mutations made through the Supabase client, which carries the user's JWT.
+- `IS DISTINCT FROM` is used instead of `!=` to correctly handle `NULL` values in status comparisons.
+- The `REPLACE(NEW.status, '_', ' ')` call in milestones and projects converts statuses like `on_hold` to `on hold` for human-readable descriptions.
+- These triggers fire on both client-side and server-side mutations. If a server action uses the admin client (service role), `auth.uid()` will be `NULL`. For admin-initiated changes, consider setting `performed_by` to a system UUID or wrapping the admin call with `SET LOCAL role = 'authenticated'; SET LOCAL request.jwt.claim.sub = '<admin-user-id>';`.
+
+---
+
+## 19. Supabase Type Generation
+
+Supabase provides a CLI command to introspect your database schema and generate TypeScript types. This ensures type-safe queries across the entire app.
+
+### 19.1 Install the Supabase CLI
+
+If not already installed:
+
+```bash
+npm install -D supabase
+```
+
+Or install globally:
+
+```bash
+npm install -g supabase
+```
+
+### 19.2 Generate Types
+
+Run the following command to generate types from your remote Supabase project:
+
+```bash
+npx supabase gen types typescript --project-id <your-project-ref> --schema public > src/lib/supabase/database.types.ts
+```
+
+Replace `<your-project-ref>` with your Supabase project reference ID (the subdomain portion of your Supabase URL, e.g., `abcdefghijklmnop`).
+
+### 19.3 Add a Package Script
+
+Add the following script to `package.json` for convenience:
+
+```json
+{
+  "scripts": {
+    "db:types": "supabase gen types typescript --project-id <your-project-ref> --schema public > src/lib/supabase/database.types.ts"
+  }
+}
+```
+
+Then run it anytime the schema changes:
+
+```bash
+npm run db:types
+```
+
+### 19.4 Using Generated Types with the Supabase Client
+
+Update the Supabase client factories to use the generated `Database` type for full type safety on all queries:
+
+```typescript
+// src/lib/supabase/client.ts
+import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from './database.types';
+
+export function createClient() {
+  return createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+```typescript
+// src/lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import type { Database } from './database.types';
+
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Safe to ignore in Server Components
+          }
+        },
+      },
+    }
+  );
+}
+```
+
+```typescript
+// src/lib/supabase/admin.ts
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from './database.types';
+
+export function createAdminClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
+```
+
+### 19.5 Type-Safe Query Examples
+
+With generated types, all queries are fully typed:
+
+```typescript
+// Fully typed — the result is automatically typed as Submittal row(s)
+const { data: submittals, error } = await supabase
+  .from('submittals')
+  .select('*')
+  .eq('project_id', projectId)
+  .order('created_at', { ascending: false });
+
+// Insert — TypeScript enforces required columns and valid values
+const { data, error } = await supabase
+  .from('rfis')
+  .insert({
+    project_id: projectId,
+    number: 'RFI-015',
+    subject: 'Ballast depth clarification',
+    question: 'What is the required ballast depth under turnout #24?',
+    status: 'open',
+    priority: 'high',
+    submitted_by: userId,
+    assigned_to: engineerId,
+    submit_date: new Date().toISOString(),
+    due_date: '2026-03-15',
+  })
+  .select()
+  .single();
+
+// Join queries — use explicit select to type the response
+const { data: rfiWithResponses } = await supabase
+  .from('rfis')
+  .select(`
+    *,
+    responses:rfi_responses(*),
+    submitted_by_profile:profiles!submitted_by(full_name, email),
+    assigned_to_profile:profiles!assigned_to(full_name, email)
+  `)
+  .eq('id', rfiId)
+  .single();
+```
+
+### 19.6 Re-generate Types After Schema Changes
+
+Run `npm run db:types` after any of these events:
+
+- Running a new Supabase migration
+- Adding or altering tables, columns, or constraints in the dashboard
+- Changing RLS policies (does not affect types but good practice to keep in sync)
+- Adding new enums or check constraints
+
+---
+
+## 20. Seed Data & Migration Strategy
+
+### 20.1 Transition from In-Memory to Supabase
+
+The app currently uses an in-memory store (`src/lib/store.ts`) backed by TypeScript seed data (`src/lib/seed-data.ts`). The transition to Supabase follows this approach:
+
+1. **Keep seed data as reference** -- The existing `seed-data.ts` file documents the exact data shape expected by every component. Do not delete it until all components are migrated to fetch from Supabase.
+
+2. **Create a SQL seed script** -- Translate the TypeScript seed data into a SQL file that can be run against the Supabase database for development environments.
+
+3. **Swap store functions incrementally** -- Replace each function in `store.ts` one at a time with Supabase queries (e.g., replace `getSubmittals()` with a server action that calls `supabase.from('submittals').select()`). This allows component-by-component migration without breaking the app.
+
+4. **Remove the in-memory store** -- Once all components fetch from Supabase, delete `store.ts` and `seed-data.ts`.
+
+### 20.2 Seed SQL Script
+
+Create a seed script at `supabase/seed.sql` that inserts demo data for development. This file is automatically run by `supabase db reset`.
+
+```sql
+-- ============================================================
+-- SEED DATA FOR DEVELOPMENT
+-- supabase/seed.sql
+-- ============================================================
+-- This script mirrors the data in src/lib/seed-data.ts.
+-- Run with: supabase db reset (runs migrations + seed)
+-- Or manually: psql -f supabase/seed.sql
+-- ============================================================
+
+-- Organizations
+INSERT INTO public.organizations (id, name, type, created_at) VALUES
+  ('a0000000-0000-0000-0000-000000000001', 'A5 Rail', 'owner', '2025-01-15T00:00:00Z'),
+  ('a0000000-0000-0000-0000-000000000002', 'Mountain West Track Services', 'contractor', '2025-02-01T00:00:00Z'),
+  ('a0000000-0000-0000-0000-000000000003', 'Front Range Signal Co.', 'contractor', '2025-02-01T00:00:00Z'),
+  ('a0000000-0000-0000-0000-000000000004', 'Summit Grade Construction', 'contractor', '2025-03-01T00:00:00Z'),
+  ('a0000000-0000-0000-0000-000000000005', 'Colorado DOT', 'inspector', '2025-01-01T00:00:00Z'),
+  ('a0000000-0000-0000-0000-000000000006', 'Kensington Engineering Group', 'engineer', '2025-01-10T00:00:00Z');
+
+-- Seed Profiles
+-- NOTE: In production, profiles are created by the auth trigger. For seeding,
+-- you must first create corresponding entries in auth.users (via Supabase Dashboard
+-- or the admin API), then insert profiles with matching UUIDs. The UUIDs below
+-- are placeholders; replace them with real auth.users IDs when seeding.
+--
+-- For local development with `supabase db reset`, you can create test users
+-- using the Supabase Management API or insert directly:
+--
+-- INSERT INTO auth.users (id, email, ...) VALUES (...);
+
+-- Projects
+INSERT INTO public.projects (id, name, description, status, start_date, target_end_date, budget_total, budget_spent, location, client, created_by, created_at)
+VALUES (
+  'b0000000-0000-0000-0000-000000000001',
+  'Englewood Yard Expansion — Phase 2',
+  'Track expansion including 3 new sidings, signal upgrades with wayside signals and grade crossing protection, and yard reconfiguration for increased capacity at Englewood Yard.',
+  'active',
+  '2025-08-26',
+  '2026-02-26',
+  4200000,
+  2100000,
+  'Englewood, CO',
+  'Colorado & Western Railroad',
+  '00000000-0000-0000-0000-000000000001', -- Replace with real auth user UUID
+  '2025-07-15T00:00:00Z'
+);
+
+-- Submittals (example — repeat for all seed submittals)
+INSERT INTO public.submittals (id, project_id, number, title, description, spec_section, status, submitted_by, reviewed_by, submit_date, due_date, review_date, review_notes, milestone_id, created_at)
+VALUES (
+  'c0000000-0000-0000-0000-000000000001',
+  'b0000000-0000-0000-0000-000000000001',
+  'SUB-001',
+  '136RE Rail — 2,400 LF',
+  'Shop drawings and mill certifications for 136RE continuous welded rail per AREMA specifications. Quantity: 2,400 linear feet for Sidings 1-3.',
+  '34 11 13 - Track Construction',
+  'approved',
+  '00000000-0000-0000-0000-000000000004', -- Travis Mitchell
+  '00000000-0000-0000-0000-000000000010', -- Dr. Nathan Park
+  '2025-09-15T00:00:00Z',
+  '2025-09-29',
+  '2025-09-25T00:00:00Z',
+  'Approved. Mill certs verified against AREMA Ch. 4 requirements.',
+  NULL,
+  '2025-09-14T00:00:00Z'
+);
+
+-- Continue for all submittals, RFIs, daily logs, punch list items,
+-- milestones, project members, and activity log entries from seed-data.ts.
+-- See src/lib/seed-data.ts for the complete dataset.
+```
+
+> **Tip:** To generate the full seed SQL from the TypeScript seed data, write a one-off Node script that imports from `seed-data.ts` and outputs SQL INSERT statements. This avoids manual translation errors.
+
+### 20.3 Supabase Migrations for Schema Versioning
+
+Use Supabase migrations to version-control all schema changes:
+
+```bash
+# Initialize Supabase locally (if not already done)
+npx supabase init
+
+# Link to your remote project
+npx supabase link --project-ref <your-project-ref>
+
+# Create a new migration
+npx supabase migration new create_core_tables
+
+# This creates: supabase/migrations/<timestamp>_create_core_tables.sql
+# Paste your CREATE TABLE statements into this file.
+
+# Apply migrations locally
+npx supabase db reset
+
+# Push migrations to remote (production/staging)
+npx supabase db push
+```
+
+Recommended migration file structure:
+
+```
+supabase/
+  migrations/
+    20260228000001_create_organizations.sql
+    20260228000002_create_profiles_and_trigger.sql
+    20260228000003_create_projects.sql
+    20260228000004_create_project_members.sql
+    20260228000005_create_submittals.sql
+    20260228000006_create_rfis_and_responses.sql
+    20260228000007_create_daily_logs.sql
+    20260228000008_create_punch_list_items.sql
+    20260228000009_create_milestones.sql
+    20260228000010_create_attachments.sql
+    20260228000011_create_activity_log.sql
+    20260228000012_create_rls_policies.sql
+    20260228000013_create_activity_log_triggers.sql
+    20260228000014_create_storage_buckets.sql
+  seed.sql
+```
+
+Add useful scripts to `package.json`:
+
+```json
+{
+  "scripts": {
+    "db:types": "supabase gen types typescript --project-id <your-project-ref> --schema public > src/lib/supabase/database.types.ts",
+    "db:reset": "supabase db reset",
+    "db:migrate": "supabase db push",
+    "db:new-migration": "supabase migration new"
+  }
+}
+```
+
+### 20.4 Environment-Based Seeding
+
+| Environment | Seeding Approach |
+|---|---|
+| **Local dev** (`supabase db reset`) | Automatically runs all migrations + `supabase/seed.sql`. Full demo data is inserted for development and testing. |
+| **Preview / Staging** | Run migrations via `supabase db push`. Optionally run a stripped-down seed script with minimal test data. Do not include production user data. |
+| **Production** | Run migrations via `supabase db push` only. **Never run seed data in production.** The database starts empty; real users and data are created through the app. |
+
+To conditionally control seeding, use environment variables in any server-side setup scripts:
+
+```typescript
+// scripts/seed-check.ts (optional — run as part of CI/CD)
+const env = process.env.NODE_ENV ?? 'development';
+const allowSeed = process.env.ALLOW_SEED === 'true';
+
+if (env === 'production' && allowSeed) {
+  console.warn('WARNING: ALLOW_SEED is true in production. This should never happen.');
+  process.exit(1);
+}
+
+if (env === 'development' || env === 'test') {
+  console.log('Seeding is permitted for environment:', env);
+  // Run seed logic here if needed
+}
+```
+
+> **Important:** The `supabase/seed.sql` file is only executed by `supabase db reset`, which drops and recreates the local database. It is never automatically run on remote databases.
+
+---
+
+## 21. Real-Time Subscriptions (Optional Enhancement)
+
+Supabase Realtime enables live data streaming over WebSockets. This section covers how to subscribe to database changes for live activity feeds, RFI responses, and punch list status updates.
+
+### 21.1 Enable Realtime on Tables
+
+In the Supabase Dashboard, go to **Database > Replication** and enable Realtime for the tables you want to subscribe to:
+
+- `activity_log` -- Live activity feed on the dashboard
+- `rfi_responses` -- Real-time RFI discussion updates
+- `punch_list_items` -- Live punch list status changes
+- `rfis` -- RFI status change notifications
+
+Or enable via SQL:
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.activity_log;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.rfi_responses;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.punch_list_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.rfis;
+```
+
+### 21.2 Generic Realtime Subscription Hook
+
+A reusable React hook for subscribing to Supabase Realtime changes:
+
+```typescript
+// src/hooks/useRealtimeSubscription.ts
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+
+type PostgresChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+
+interface UseRealtimeOptions<T extends Record<string, unknown>> {
+  /** The database table to subscribe to */
+  table: string;
+  /** The schema (default: 'public') */
+  schema?: string;
+  /** The event type to listen for (default: '*' for all) */
+  event?: PostgresChangeEvent;
+  /** Optional filter expression (e.g., 'project_id=eq.abc-123') */
+  filter?: string;
+  /** Callback fired when a matching change occurs */
+  onPayload: (payload: RealtimePostgresChangesPayload<T>) => void;
+}
+
+export function useRealtimeSubscription<T extends Record<string, unknown>>({
+  table,
+  schema = 'public',
+  event = '*',
+  filter,
+  onPayload,
+}: UseRealtimeOptions<T>) {
+  const callbackRef = useRef(onPayload);
+  callbackRef.current = onPayload;
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channelConfig: Record<string, string> = {
+      event,
+      schema,
+      table,
+    };
+
+    if (filter) {
+      channelConfig.filter = filter;
+    }
+
+    const channel = supabase
+      .channel(`realtime:${table}:${filter ?? 'all'}`)
+      .on(
+        'postgres_changes' as any,
+        channelConfig,
+        (payload: RealtimePostgresChangesPayload<T>) => {
+          callbackRef.current(payload);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [table, schema, event, filter]);
+}
+```
+
+### 21.3 Live Activity Feed
+
+Subscribe to new activity log entries for a specific project:
+
+```typescript
+// Usage in a dashboard component
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import type { ActivityLogEntry } from '@/lib/types';
+
+export function LiveActivityFeed({ projectId }: { projectId: string }) {
+  const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
+
+  useRealtimeSubscription<ActivityLogEntry>({
+    table: 'activity_log',
+    event: 'INSERT',
+    filter: `project_id=eq.${projectId}`,
+    onPayload: useCallback((payload) => {
+      if (payload.new && 'id' in payload.new) {
+        setActivities((prev) => [payload.new as ActivityLogEntry, ...prev]);
+      }
+    }, []),
+  });
+
+  return (
+    <ul>
+      {activities.map((activity) => (
+        <li key={activity.id}>{activity.description}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 21.4 Real-Time RFI Responses
+
+Subscribe to new responses on a specific RFI:
+
+```typescript
+// Usage in an RFI detail page
+useRealtimeSubscription<RFIResponse>({
+  table: 'rfi_responses',
+  event: 'INSERT',
+  filter: `rfi_id=eq.${rfiId}`,
+  onPayload: useCallback((payload) => {
+    if (payload.new && 'id' in payload.new) {
+      setResponses((prev) => [...prev, payload.new as RFIResponse]);
+    }
+  }, []),
+});
+```
+
+### 21.5 Punch List Status Changes
+
+Subscribe to punch list item updates for a project:
+
+```typescript
+// Usage in a punch list view
+useRealtimeSubscription<PunchListItem>({
+  table: 'punch_list_items',
+  event: 'UPDATE',
+  filter: `project_id=eq.${projectId}`,
+  onPayload: useCallback((payload) => {
+    if (payload.new && 'id' in payload.new) {
+      const updated = payload.new as PunchListItem;
+      setPunchListItems((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
+    }
+  }, []),
+});
+```
+
+### 21.6 Realtime Considerations
+
+- **RLS applies to Realtime** -- Users only receive events for rows they can read per their RLS policies. No additional authorization is needed.
+- **Performance** -- Only enable Realtime on tables that benefit from it. High-write tables (like detailed audit logs) may generate excessive WebSocket traffic.
+- **Reconnection** -- The Supabase client automatically handles reconnections. The hook above uses the `useEffect` cleanup to remove channels on component unmount.
+- **Channel limits** -- Supabase has a default limit of 100 concurrent Realtime connections per project on the free tier. Monitor usage if scaling.
+
+---
+
+## 22. Environment Variable Addendum
+
+### 22.1 Missing Variable: NEXT_PUBLIC_SITE_URL
+
+The `NEXT_PUBLIC_SITE_URL` environment variable is required for auth actions that construct email redirect URLs (password reset, email confirmation, etc.). It is referenced in `src/lib/actions/auth.ts` by the `resetPassword` function.
+
+Add it to `.env.local`:
+
+```env
+# Site URL — used for auth email redirect URLs
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+For production, set the value to your deployed domain:
+
+```env
+NEXT_PUBLIC_SITE_URL=https://your-production-domain.com
+```
+
+Set this variable in **Vercel > Project Settings > Environment Variables** for all environments:
+
+| Environment | Value |
+|---|---|
+| **Development** | `http://localhost:3000` |
+| **Preview** | `https://<project-name>-git-<branch>.vercel.app` (or use `VERCEL_URL`) |
+| **Production** | `https://your-production-domain.com` |
+
+> **Note for Vercel Preview deployments:** You can dynamically construct the URL using the `VERCEL_URL` environment variable that Vercel injects automatically. However, since `NEXT_PUBLIC_SITE_URL` is a build-time variable (prefixed with `NEXT_PUBLIC_`), you may need a wrapper:
+>
+> ```typescript
+> // src/lib/utils/site-url.ts
+> export function getSiteUrl(): string {
+>   // Explicit env var takes priority
+>   if (process.env.NEXT_PUBLIC_SITE_URL) {
+>     return process.env.NEXT_PUBLIC_SITE_URL;
+>   }
+>   // Fallback for Vercel preview deployments (server-side only)
+>   if (process.env.VERCEL_URL) {
+>     return `https://${process.env.VERCEL_URL}`;
+>   }
+>   // Local development fallback
+>   return 'http://localhost:3000';
+> }
+> ```
+
+Update the existing environment variables section (Section 1.1) to include this variable. The complete set of required environment variables is:
+
+```env
+# Supabase -- Public (exposed to browser)
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+
+# Supabase -- Server only (NEVER expose to the browser)
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+
+# Site URL -- used for auth email redirect URLs
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+---
+
+## 23. Complete Data Table Schemas
+
+This section contains every CREATE TABLE statement needed for the full RailCommand database. Run these in the Supabase SQL Editor **in order** (dependencies flow top to bottom).
+
+> **Note:** The tables from Sections 2.1--2.6 (organizations, profiles, projects, project_members) are already documented above. This section covers all remaining data tables that were missing from the original schema.
+
+### 23.1 Human-Readable Number Sequence Infrastructure
+
+Per-project sequences for `SUB-NNN`, `RFI-NNN`, `PL-NNN` using a counter table and trigger function.
+
+```sql
+-- ============================================================
+-- ENTITY NUMBER SEQUENCES (counter table)
+-- One row per (project_id, entity_type) pair
+-- ============================================================
+CREATE TABLE public.entity_number_sequences (
+  project_id    UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  entity_type   TEXT NOT NULL CHECK (entity_type IN ('submittal', 'rfi', 'punch_list')),
+  current_value INT  NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, entity_type)
+);
+
+-- Generic function: increments the counter and returns the next
+-- formatted number (e.g. 'SUB-001', 'RFI-042', 'PL-007').
+CREATE OR REPLACE FUNCTION public.assign_entity_number()
+RETURNS TRIGGER AS $$
+DECLARE
+  _prefix TEXT;
+  _type   TEXT;
+  _next   INT;
+BEGIN
+  CASE TG_TABLE_NAME
+    WHEN 'submittals'       THEN _prefix := 'SUB'; _type := 'submittal';
+    WHEN 'rfis'             THEN _prefix := 'RFI'; _type := 'rfi';
+    WHEN 'punch_list_items' THEN _prefix := 'PL';  _type := 'punch_list';
+    ELSE RAISE EXCEPTION 'assign_entity_number: unsupported table %', TG_TABLE_NAME;
+  END CASE;
+
+  -- Upsert the counter row and atomically increment
+  INSERT INTO public.entity_number_sequences (project_id, entity_type, current_value)
+  VALUES (NEW.project_id, _type, 1)
+  ON CONFLICT (project_id, entity_type)
+  DO UPDATE SET current_value = public.entity_number_sequences.current_value + 1
+  RETURNING current_value INTO _next;
+
+  -- Format as PREFIX-NNN (zero-padded to 3 digits, grows beyond 3 naturally)
+  NEW.number := _prefix || '-' || LPAD(_next::TEXT, 3, '0');
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 23.2 Milestones Table
+
+```sql
+-- ============================================================
+-- MILESTONES TABLE
+-- ============================================================
+CREATE TABLE public.milestones (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id       UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  name             TEXT NOT NULL,
+  description      TEXT NOT NULL DEFAULT '',
+  target_date      DATE NOT NULL,
+  actual_date      DATE,
+  status           TEXT NOT NULL DEFAULT 'not_started'
+                     CHECK (status IN ('on_track', 'at_risk', 'behind', 'complete', 'not_started')),
+  percent_complete NUMERIC(5,2) NOT NULL DEFAULT 0
+                     CHECK (percent_complete >= 0 AND percent_complete <= 100),
+  budget_planned   NUMERIC(14,2) NOT NULL DEFAULT 0,
+  budget_actual    NUMERIC(14,2) NOT NULL DEFAULT 0,
+  sort_order       INT NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_milestones_project_id ON public.milestones (project_id);
+CREATE INDEX idx_milestones_status ON public.milestones (status);
+CREATE INDEX idx_milestones_sort_order ON public.milestones (project_id, sort_order);
+
+CREATE TRIGGER milestones_updated_at
+  BEFORE UPDATE ON public.milestones
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at();
+```
+
+### 23.3 Submittals Table
+
+```sql
+-- ============================================================
+-- SUBMITTALS TABLE
+-- ============================================================
+CREATE TABLE public.submittals (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id       UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  number           TEXT NOT NULL,           -- assigned by trigger, e.g. 'SUB-001'
+  title            TEXT NOT NULL,
+  description      TEXT NOT NULL DEFAULT '',
+  spec_section     TEXT NOT NULL DEFAULT '',
+  status           TEXT NOT NULL DEFAULT 'draft'
+                     CHECK (status IN ('draft', 'submitted', 'under_review', 'approved', 'conditional', 'rejected')),
+  submitted_by     UUID NOT NULL REFERENCES public.profiles(id),
+  reviewed_by      UUID REFERENCES public.profiles(id),
+  submit_date      DATE NOT NULL DEFAULT CURRENT_DATE,
+  due_date         DATE NOT NULL,
+  review_date      DATE,
+  review_notes     TEXT,
+  milestone_id     UUID REFERENCES public.milestones(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, number)
+);
+
+CREATE INDEX idx_submittals_project_id ON public.submittals (project_id);
+CREATE INDEX idx_submittals_status ON public.submittals (status);
+CREATE INDEX idx_submittals_submitted_by ON public.submittals (submitted_by);
+CREATE INDEX idx_submittals_reviewed_by ON public.submittals (reviewed_by);
+CREATE INDEX idx_submittals_milestone_id ON public.submittals (milestone_id) WHERE milestone_id IS NOT NULL;
+
+CREATE TRIGGER submittals_updated_at
+  BEFORE UPDATE ON public.submittals
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at();
+
+CREATE TRIGGER submittals_assign_number
+  BEFORE INSERT ON public.submittals
+  FOR EACH ROW
+  EXECUTE FUNCTION public.assign_entity_number();
+```
+
+### 23.4 RFIs Table
+
+```sql
+-- ============================================================
+-- RFIS TABLE
+-- ============================================================
+CREATE TABLE public.rfis (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id       UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  number           TEXT NOT NULL,           -- assigned by trigger, e.g. 'RFI-001'
+  subject          TEXT NOT NULL,
+  question         TEXT NOT NULL,
+  answer           TEXT,
+  status           TEXT NOT NULL DEFAULT 'open'
+                     CHECK (status IN ('open', 'answered', 'closed', 'overdue')),
+  priority         TEXT NOT NULL DEFAULT 'medium'
+                     CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  submitted_by     UUID NOT NULL REFERENCES public.profiles(id),
+  assigned_to      UUID NOT NULL REFERENCES public.profiles(id),
+  submit_date      DATE NOT NULL DEFAULT CURRENT_DATE,
+  due_date         DATE NOT NULL,
+  response_date    DATE,
+  milestone_id     UUID REFERENCES public.milestones(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, number)
+);
+
+CREATE INDEX idx_rfis_project_id ON public.rfis (project_id);
+CREATE INDEX idx_rfis_status ON public.rfis (status);
+CREATE INDEX idx_rfis_priority ON public.rfis (priority);
+CREATE INDEX idx_rfis_submitted_by ON public.rfis (submitted_by);
+CREATE INDEX idx_rfis_assigned_to ON public.rfis (assigned_to);
+CREATE INDEX idx_rfis_milestone_id ON public.rfis (milestone_id) WHERE milestone_id IS NOT NULL;
+
+CREATE TRIGGER rfis_updated_at
+  BEFORE UPDATE ON public.rfis
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at();
+
+CREATE TRIGGER rfis_assign_number
+  BEFORE INSERT ON public.rfis
+  FOR EACH ROW
+  EXECUTE FUNCTION public.assign_entity_number();
+```
+
+### 23.5 RFI Responses Table
+
+```sql
+-- ============================================================
+-- RFI_RESPONSES TABLE
+-- ============================================================
+CREATE TABLE public.rfi_responses (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rfi_id                UUID NOT NULL REFERENCES public.rfis(id) ON DELETE CASCADE,
+  author_id             UUID NOT NULL REFERENCES public.profiles(id),
+  content               TEXT NOT NULL,
+  is_official_response  BOOLEAN NOT NULL DEFAULT false,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_rfi_responses_rfi_id ON public.rfi_responses (rfi_id);
+CREATE INDEX idx_rfi_responses_author_id ON public.rfi_responses (author_id);
+```
+
+### 23.6 Daily Logs Table
+
+```sql
+-- ============================================================
+-- DAILY_LOGS TABLE
+-- ============================================================
+CREATE TABLE public.daily_logs (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id          UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  log_date            DATE NOT NULL,
+  created_by          UUID NOT NULL REFERENCES public.profiles(id),
+  weather_temp        NUMERIC(5,1) NOT NULL DEFAULT 0,
+  weather_conditions  TEXT NOT NULL DEFAULT '',
+  weather_wind        TEXT NOT NULL DEFAULT '',
+  work_summary        TEXT NOT NULL DEFAULT '',
+  safety_notes        TEXT NOT NULL DEFAULT '',
+  geo_tag             JSONB,                -- { lat, lng, accuracy?, altitude?, timestamp }
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, log_date)             -- one log per project per day
+);
+
+CREATE INDEX idx_daily_logs_project_id ON public.daily_logs (project_id);
+CREATE INDEX idx_daily_logs_log_date ON public.daily_logs (log_date);
+CREATE INDEX idx_daily_logs_created_by ON public.daily_logs (created_by);
+
+CREATE TRIGGER daily_logs_updated_at
+  BEFORE UPDATE ON public.daily_logs
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at();
+```
+
+### 23.7 Daily Log Sub-Entity Tables
+
+```sql
+-- ============================================================
+-- DAILY_LOG_PERSONNEL TABLE
+-- ============================================================
+CREATE TABLE public.daily_log_personnel (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  daily_log_id  UUID NOT NULL REFERENCES public.daily_logs(id) ON DELETE CASCADE,
+  role          TEXT NOT NULL,
+  headcount     INT  NOT NULL DEFAULT 0 CHECK (headcount >= 0),
+  company       TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_daily_log_personnel_daily_log_id ON public.daily_log_personnel (daily_log_id);
+
+-- ============================================================
+-- DAILY_LOG_EQUIPMENT TABLE
+-- ============================================================
+CREATE TABLE public.daily_log_equipment (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  daily_log_id    UUID NOT NULL REFERENCES public.daily_logs(id) ON DELETE CASCADE,
+  equipment_type  TEXT NOT NULL,
+  count           INT  NOT NULL DEFAULT 0 CHECK (count >= 0),
+  notes           TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_daily_log_equipment_daily_log_id ON public.daily_log_equipment (daily_log_id);
+
+-- ============================================================
+-- DAILY_LOG_WORK_ITEMS TABLE
+-- ============================================================
+CREATE TABLE public.daily_log_work_items (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  daily_log_id  UUID NOT NULL REFERENCES public.daily_logs(id) ON DELETE CASCADE,
+  description   TEXT NOT NULL,
+  quantity      NUMERIC(12,2) NOT NULL DEFAULT 0,
+  unit          TEXT NOT NULL DEFAULT '',
+  location      TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX idx_daily_log_work_items_daily_log_id ON public.daily_log_work_items (daily_log_id);
+```
+
+### 23.8 Punch List Items Table
+
+```sql
+-- ============================================================
+-- PUNCH_LIST_ITEMS TABLE
+-- ============================================================
+CREATE TABLE public.punch_list_items (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id        UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  number            TEXT NOT NULL,           -- assigned by trigger, e.g. 'PL-001'
+  title             TEXT NOT NULL,
+  description       TEXT NOT NULL DEFAULT '',
+  location          TEXT NOT NULL DEFAULT '',
+  geo_tag           JSONB,                   -- { lat, lng, accuracy?, altitude?, timestamp }
+  status            TEXT NOT NULL DEFAULT 'open'
+                      CHECK (status IN ('open', 'in_progress', 'resolved', 'verified')),
+  priority          TEXT NOT NULL DEFAULT 'medium'
+                      CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  assigned_to       UUID NOT NULL REFERENCES public.profiles(id),
+  created_by        UUID NOT NULL REFERENCES public.profiles(id),
+  due_date          DATE NOT NULL,
+  resolved_date     DATE,
+  verified_date     DATE,
+  resolution_notes  TEXT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, number)
+);
+
+CREATE INDEX idx_punch_list_items_project_id ON public.punch_list_items (project_id);
+CREATE INDEX idx_punch_list_items_status ON public.punch_list_items (status);
+CREATE INDEX idx_punch_list_items_priority ON public.punch_list_items (priority);
+CREATE INDEX idx_punch_list_items_assigned_to ON public.punch_list_items (assigned_to);
+CREATE INDEX idx_punch_list_items_created_by ON public.punch_list_items (created_by);
+
+CREATE TRIGGER punch_list_items_updated_at
+  BEFORE UPDATE ON public.punch_list_items
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at();
+
+CREATE TRIGGER punch_list_items_assign_number
+  BEFORE INSERT ON public.punch_list_items
+  FOR EACH ROW
+  EXECUTE FUNCTION public.assign_entity_number();
+```
+
+### 23.9 Milestone Junction Tables
+
+```sql
+-- ============================================================
+-- MILESTONE_SUBMITTALS JUNCTION TABLE
+-- ============================================================
+CREATE TABLE public.milestone_submittals (
+  milestone_id  UUID NOT NULL REFERENCES public.milestones(id) ON DELETE CASCADE,
+  submittal_id  UUID NOT NULL REFERENCES public.submittals(id) ON DELETE CASCADE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (milestone_id, submittal_id)
+);
+
+CREATE INDEX idx_milestone_submittals_submittal_id ON public.milestone_submittals (submittal_id);
+
+-- ============================================================
+-- MILESTONE_RFIS JUNCTION TABLE
+-- ============================================================
+CREATE TABLE public.milestone_rfis (
+  milestone_id  UUID NOT NULL REFERENCES public.milestones(id) ON DELETE CASCADE,
+  rfi_id        UUID NOT NULL REFERENCES public.rfis(id) ON DELETE CASCADE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (milestone_id, rfi_id)
+);
+
+CREATE INDEX idx_milestone_rfis_rfi_id ON public.milestone_rfis (rfi_id);
+```
+
+### 23.10 Activity Log Table
+
+```sql
+-- ============================================================
+-- ACTIVITY_LOG TABLE
+-- ============================================================
+CREATE TABLE public.activity_log (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id     UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  entity_type    TEXT NOT NULL
+                   CHECK (entity_type IN ('submittal', 'rfi', 'daily_log', 'punch_list', 'milestone', 'project')),
+  entity_id      UUID NOT NULL,
+  action         TEXT NOT NULL
+                   CHECK (action IN ('created', 'updated', 'status_changed', 'commented', 'approved', 'rejected', 'submitted', 'assigned')),
+  description    TEXT NOT NULL DEFAULT '',
+  performed_by   UUID NOT NULL REFERENCES public.profiles(id),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_activity_log_project_id ON public.activity_log (project_id, created_at DESC);
+CREATE INDEX idx_activity_log_entity ON public.activity_log (entity_type, entity_id);
+CREATE INDEX idx_activity_log_performed_by ON public.activity_log (performed_by);
+```
+
+### 23.11 Enable RLS on All New Tables
+
+```sql
+ALTER TABLE public.entity_number_sequences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.milestones              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.submittals              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rfis                    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rfi_responses           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_logs              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_log_personnel     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_log_equipment     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_log_work_items    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.punch_list_items        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.milestone_submittals    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.milestone_rfis          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activity_log            ENABLE ROW LEVEL SECURITY;
+```
+
+### 23.12 SQL Execution Order
+
+Run the SQL from this document in this exact order:
+
+```
+ 1. Section 2.2  -- organizations table
+ 2. Section 2.1  -- profiles table
+ 3. Section 2.5  -- update_updated_at() function + profiles trigger
+ 4. Section 2.3  -- projects table
+ 5. Section 2.6  -- project_members table
+ 6. Section 2.4  -- handle_new_user() trigger
+ 7. Section 14.1 -- user_preferences table
+ 8. Section 14.2 -- updated handle_new_user() with preferences
+ 9. Section 23.1 -- entity_number_sequences + assign_entity_number()
+10. Section 23.2 -- milestones table
+11. Section 23.3 -- submittals table
+12. Section 23.4 -- rfis table
+13. Section 23.5 -- rfi_responses table
+14. Section 23.6 -- daily_logs table
+15. Section 23.7 -- daily_log_personnel, daily_log_equipment, daily_log_work_items
+16. Section 23.8 -- punch_list_items table
+17. Section 23.9 -- milestone_submittals, milestone_rfis junction tables
+18. Section 23.10 -- activity_log table
+19. Section 17.2 -- attachments table (extended)
+20. Section 23.11 -- enable RLS on all new tables
+21. Section 3    -- all RLS policies (Sections 3.1--3.5)
+22. Section 24   -- RLS policies for data tables
+23. Section 13.2 -- storage policies for avatars
+24. Section 17.4 -- storage policies for project-photos
+25. Section 17.5 -- attachment table RLS policies
+26. Section 18   -- activity log triggers
+```
+
+---
+
+## 24. RLS Policies for Data Tables
+
+These policies complement the existing policies in Section 3. Apply these after all tables have been created and RLS has been enabled.
+
+### 24.1 Milestones Policies
+
+```sql
+-- Project members can read milestones
+CREATE POLICY "Project members can read milestones"
+  ON public.milestones
+  FOR SELECT
+  USING (
+    project_id IN (
+      SELECT project_id FROM public.project_members
+      WHERE profile_id = auth.uid()
+    )
+  );
+
+-- Project editors can create milestones
+CREATE POLICY "Project editors can create milestones"
+  ON public.milestones
+  FOR INSERT
+  WITH CHECK (
+    project_id IN (
+      SELECT project_id FROM public.project_members
+      WHERE profile_id = auth.uid() AND can_edit = true
+    )
+  );
+
+-- Project editors can update milestones
+CREATE POLICY "Project editors can update milestones"
+  ON public.milestones
+  FOR UPDATE
+  USING (
+    project_id IN (
+      SELECT project_id FROM public.project_members
+      WHERE profile_id = auth.uid() AND can_edit = true
+    )
+  );
+```
+
+### 24.2 RFI Responses Policies
+
+```sql
+-- Project members can read RFI responses
+CREATE POLICY "Project members can read rfi responses"
+  ON public.rfi_responses
+  FOR SELECT
+  USING (
+    rfi_id IN (
+      SELECT r.id FROM public.rfis r
+      JOIN public.project_members pm ON pm.project_id = r.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+
+-- Project members can create RFI responses
+CREATE POLICY "Project members can create rfi responses"
+  ON public.rfi_responses
+  FOR INSERT
+  WITH CHECK (
+    rfi_id IN (
+      SELECT r.id FROM public.rfis r
+      JOIN public.project_members pm ON pm.project_id = r.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+```
+
+### 24.3 Daily Log Sub-Entity Policies
+
+All three daily log child tables follow the same pattern: access is based on the parent daily log's project membership.
+
+```sql
+-- ============================================================
+-- DAILY_LOG_PERSONNEL POLICIES
+-- ============================================================
+CREATE POLICY "Project members can read daily log personnel"
+  ON public.daily_log_personnel
+  FOR SELECT
+  USING (
+    daily_log_id IN (
+      SELECT dl.id FROM public.daily_logs dl
+      JOIN public.project_members pm ON pm.project_id = dl.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Daily log creators can insert personnel"
+  ON public.daily_log_personnel
+  FOR INSERT
+  WITH CHECK (
+    daily_log_id IN (
+      SELECT dl.id FROM public.daily_logs dl
+      WHERE dl.created_by = auth.uid()
+    )
+  );
+
+-- ============================================================
+-- DAILY_LOG_EQUIPMENT POLICIES
+-- ============================================================
+CREATE POLICY "Project members can read daily log equipment"
+  ON public.daily_log_equipment
+  FOR SELECT
+  USING (
+    daily_log_id IN (
+      SELECT dl.id FROM public.daily_logs dl
+      JOIN public.project_members pm ON pm.project_id = dl.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Daily log creators can insert equipment"
+  ON public.daily_log_equipment
+  FOR INSERT
+  WITH CHECK (
+    daily_log_id IN (
+      SELECT dl.id FROM public.daily_logs dl
+      WHERE dl.created_by = auth.uid()
+    )
+  );
+
+-- ============================================================
+-- DAILY_LOG_WORK_ITEMS POLICIES
+-- ============================================================
+CREATE POLICY "Project members can read daily log work items"
+  ON public.daily_log_work_items
+  FOR SELECT
+  USING (
+    daily_log_id IN (
+      SELECT dl.id FROM public.daily_logs dl
+      JOIN public.project_members pm ON pm.project_id = dl.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Daily log creators can insert work items"
+  ON public.daily_log_work_items
+  FOR INSERT
+  WITH CHECK (
+    daily_log_id IN (
+      SELECT dl.id FROM public.daily_logs dl
+      WHERE dl.created_by = auth.uid()
+    )
+  );
+```
+
+### 24.4 Milestone Junction Table Policies
+
+```sql
+-- Project members can read milestone links
+CREATE POLICY "Project members can read milestone submittals"
+  ON public.milestone_submittals
+  FOR SELECT
+  USING (
+    milestone_id IN (
+      SELECT m.id FROM public.milestones m
+      JOIN public.project_members pm ON pm.project_id = m.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Project editors can manage milestone submittals"
+  ON public.milestone_submittals
+  FOR ALL
+  USING (
+    milestone_id IN (
+      SELECT m.id FROM public.milestones m
+      JOIN public.project_members pm ON pm.project_id = m.project_id
+      WHERE pm.profile_id = auth.uid() AND pm.can_edit = true
+    )
+  );
+
+CREATE POLICY "Project members can read milestone rfis"
+  ON public.milestone_rfis
+  FOR SELECT
+  USING (
+    milestone_id IN (
+      SELECT m.id FROM public.milestones m
+      JOIN public.project_members pm ON pm.project_id = m.project_id
+      WHERE pm.profile_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Project editors can manage milestone rfis"
+  ON public.milestone_rfis
+  FOR ALL
+  USING (
+    milestone_id IN (
+      SELECT m.id FROM public.milestones m
+      JOIN public.project_members pm ON pm.project_id = m.project_id
+      WHERE pm.profile_id = auth.uid() AND pm.can_edit = true
+    )
+  );
+```
+
+### 24.5 Activity Log Policies
+
+```sql
+-- Project members can read activity log
+CREATE POLICY "Project members can read activity log"
+  ON public.activity_log
+  FOR SELECT
+  USING (
+    project_id IN (
+      SELECT project_id FROM public.project_members
+      WHERE profile_id = auth.uid()
+    )
+  );
+
+-- Authenticated users can insert activity log entries
+CREATE POLICY "Authenticated users can insert activity log"
+  ON public.activity_log
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() = performed_by
+  );
+```
+
+### 24.6 Entity Number Sequences Policy
+
+```sql
+-- Allow the trigger function to manage sequences (service role)
+-- Regular users don't need direct access to this table
+CREATE POLICY "Allow sequence management"
+  ON public.entity_number_sequences
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+```
+
+---
+
+## 25. Core Data Server Actions
+
+All core data operations are implemented as Next.js Server Actions in `src/lib/actions/`. Each file follows the same patterns:
+
+- `'use server'` directive
+- Auth check via `getAuthenticatedUser()`
+- Permission checks via `checkPermission()` or `checkProjectMembership()`
+- Admin bypass for org-level admins
+- Structured returns: `ActionResult<T>` = `{ error: string }` | `{ success: true, data: T }`
+- Activity logging via `logActivity()` after mutations
+- `revalidatePath()` for Next.js cache invalidation
+
+### 25.1 Shared Permission Helper
+
+```
+File: src/lib/actions/permissions-helper.ts
+```
+
+Exports:
+- `ActionResult<T>` -- Discriminated union return type
+- `getAuthenticatedUser(supabase)` -- Get current user or return error
+- `checkPermission(supabase, userId, projectId, action)` -- Verify org + project role permissions
+- `checkProjectMembership(supabase, userId, projectId)` -- Verify read access
+- `logActivity(supabase, ...)` -- Insert activity log entry
+
+### 25.2 Projects
+
+```
+File: src/lib/actions/projects.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getProjects()` | Membership | All projects for current user (admins see all) |
+| `getProjectById(projectId)` | Membership | Single project |
+| `createProject(data)` | admin/manager org role | Create project + auto-add creator as manager |
+| `updateProject(projectId, data)` | project:edit | Update project fields |
+| `updateProjectStatus(projectId, status)` | project:edit | Change status, auto-set actual_end_date on completion |
+| `deleteProject(projectId)` | admin org role | Delete project (cascading via DB) |
+
+### 25.3 Submittals
+
+```
+File: src/lib/actions/submittals.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getSubmittals(projectId)` | Membership | All submittals with profile joins |
+| `getSubmittalById(projectId, submittalId)` | Membership | Single submittal with attachments |
+| `createSubmittal(projectId, data)` | submittal:create | Create with auto-generated SUB-NNN number |
+| `updateSubmittalStatus(projectId, submittalId, status, reviewNotes?)` | submittal:review for approve/reject | Update status, auto-set reviewer |
+
+### 25.4 RFIs
+
+```
+File: src/lib/actions/rfis.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getRFIs(projectId)` | Membership | All RFIs with profile joins |
+| `getRFIById(projectId, rfiId)` | Membership | Single RFI with responses + attachments |
+| `createRFI(projectId, data)` | rfi:create | Create with auto-generated RFI-NNN number |
+| `updateRFIStatus(projectId, rfiId, status)` | rfi:close for closing | Update status, set response_date |
+| `addRFIResponse(projectId, rfiId, content, isOfficial)` | rfi:respond for official | Add response, auto-update RFI if official |
+
+### 25.5 Daily Logs
+
+```
+File: src/lib/actions/daily-logs.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getDailyLogs(projectId)` | Membership | All logs with creator profile |
+| `getDailyLogById(projectId, logId)` | Membership | Single log with personnel, equipment, work items, attachments |
+| `createDailyLog(projectId, data)` | daily_log:create | Create log + nested personnel, equipment, work items |
+
+### 25.6 Punch List
+
+```
+File: src/lib/actions/punch-list.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getPunchListItems(projectId)` | Membership | All items with profile joins |
+| `getPunchListItemById(projectId, itemId)` | Membership | Single item with attachments |
+| `createPunchListItem(projectId, data)` | punch_list:create | Create with auto-generated PL-NNN, optional geo_tag |
+| `updatePunchListStatus(projectId, itemId, status, resolutionNotes?)` | punch_list:resolve or punch_list:verify | Update status, auto-set resolved/verified dates |
+
+### 25.7 Team Management
+
+```
+File: src/lib/actions/team.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getProjectMembers(projectId)` | Membership | All members with profiles + organizations |
+| `addProjectMember(projectId, profileId, role)` | team:manage | Add member, check duplicates, auto-set can_edit |
+| `removeProjectMember(projectId, memberId)` | team:manage | Remove member (cannot self-remove) |
+| `updateMemberRole(projectId, memberId, role)` | team:manage | Change role + update can_edit |
+
+### 25.8 Milestones
+
+```
+File: src/lib/actions/milestones.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getMilestones(projectId)` | Membership | All milestones ordered by sort_order |
+| `createMilestone(projectId, data)` | schedule:edit | Create with auto sort_order |
+| `updateMilestone(projectId, milestoneId, data)` | schedule:edit | Update, auto-set actual_date on complete |
+
+### 25.9 Activity Log
+
+```
+File: src/lib/actions/activity-log.ts
+```
+
+| Function | Permission | Description |
+|---|---|---|
+| `getActivityLog(projectId, limit?)` | Membership | Recent activity with performer profiles (max 200) |
+
+### 25.10 Updated Permissions File
+
+The permissions file (`src/lib/permissions.ts`) has been updated with two additional actions:
+
+```typescript
+PROJECT_EDIT: 'project:edit',
+SCHEDULE_EDIT: 'schedule:edit',
+```
+
+These are granted to the `manager` role (via `ALL_ACTIONS`), and `SCHEDULE_EDIT` is also granted to `superintendent`.
+
+### 25.11 Files Created (Server Actions)
+
+| # | File | Purpose |
+|---|---|---|
+| 1 | `src/lib/actions/permissions-helper.ts` | Shared auth, permission, and logging utilities |
+| 2 | `src/lib/actions/projects.ts` | Project CRUD server actions |
+| 3 | `src/lib/actions/submittals.ts` | Submittal CRUD server actions |
+| 4 | `src/lib/actions/rfis.ts` | RFI CRUD + response server actions |
+| 5 | `src/lib/actions/daily-logs.ts` | Daily log CRUD with nested inserts |
+| 6 | `src/lib/actions/punch-list.ts` | Punch list CRUD server actions |
+| 7 | `src/lib/actions/team.ts` | Team management server actions |
+| 8 | `src/lib/actions/milestones.ts` | Milestone CRUD server actions |
+| 9 | `src/lib/actions/activity-log.ts` | Activity log read server action |
+
+---
+
+## 26. Master Implementation Order
+
+This is the complete end-to-end order for implementing the full Supabase backend. Follow these phases in sequence.
+
+### Phase 1: Database Setup (Supabase Dashboard)
+
+```
+Step 1:  Set environment variables (.env.local + Vercel)
+           - NEXT_PUBLIC_SUPABASE_URL
+           - NEXT_PUBLIC_SUPABASE_ANON_KEY
+           - SUPABASE_SERVICE_ROLE_KEY
+           - NEXT_PUBLIC_SITE_URL
+Step 2:  Enable Email provider in Supabase Auth
+Step 3:  Configure Google OAuth (Google Cloud Console + Supabase)
+Step 4:  Set Site URL + Redirect URLs in Supabase Auth
+```
+
+### Phase 2: Core Schema (SQL Editor -- run in order)
+
+```
+Step 5:  Create update_updated_at() function (Section 2.5)
+Step 6:  Create organizations table (Section 2.2)
+Step 7:  Create profiles table (Section 2.1) + indexes + trigger
+Step 8:  Create projects table (Section 2.3)
+Step 9:  Create project_members table (Section 2.6)
+Step 10: Create handle_new_user() trigger (Section 2.4)
+Step 11: Create user_preferences table (Section 14.1)
+Step 12: Update handle_new_user() to include preferences (Section 14.2)
+```
+
+### Phase 3: Data Tables (SQL Editor -- run in order)
+
+```
+Step 13: Create entity_number_sequences + assign_entity_number() (Section 23.1)
+Step 14: Create milestones table (Section 23.2)
+Step 15: Create submittals table (Section 23.3)
+Step 16: Create rfis table (Section 23.4)
+Step 17: Create rfi_responses table (Section 23.5)
+Step 18: Create daily_logs table (Section 23.6)
+Step 19: Create daily_log_personnel, daily_log_equipment, daily_log_work_items (Section 23.7)
+Step 20: Create punch_list_items table (Section 23.8)
+Step 21: Create milestone_submittals, milestone_rfis (Section 23.9)
+Step 22: Create activity_log table (Section 23.10)
+Step 23: Create attachments table (Section 17.2)
+```
+
+### Phase 4: Security (SQL Editor)
+
+```
+Step 24: Enable RLS on all tables (Section 23.11 + Section 3.1)
+Step 25: Create profiles RLS policies (Section 3.2)
+Step 26: Create projects RLS policies (Section 3.3)
+Step 27: Create project-scoped data RLS policies (Section 3.4)
+Step 28: Create project_members RLS policies (Section 3.5)
+Step 29: Create milestones RLS policies (Section 24.1)
+Step 30: Create rfi_responses RLS policies (Section 24.2)
+Step 31: Create daily log sub-entity RLS policies (Section 24.3)
+Step 32: Create milestone junction RLS policies (Section 24.4)
+Step 33: Create activity log RLS policies (Section 24.5)
+Step 34: Create entity number sequences policy (Section 24.6)
+Step 35: Create user_preferences RLS policies (Section 14.3)
+```
+
+### Phase 5: Storage (Supabase Dashboard + SQL)
+
+```
+Step 36: Create avatars bucket (Section 13.1)
+Step 37: Create avatar storage policies (Section 13.2)
+Step 38: Create project-photos, thermal-photos, project-documents buckets (Section 17.1)
+Step 39: Create storage RLS policies for all 3 buckets (Section 17.4)
+Step 40: Create attachment table RLS policies (Section 17.5)
+```
+
+### Phase 6: Activity Log Triggers (SQL Editor)
+
+```
+Step 41: Create all activity log trigger functions (Section 18)
+```
+
+### Phase 7: Authentication Code
+
+```
+Step 42: Create src/middleware.ts (Section 4.1)
+Step 43: Create src/app/auth/callback/route.ts (Section 4.3)
+Step 44: Create src/lib/supabase/admin.ts (Section 3.6)
+Step 45: Create src/lib/supabase/auth-helpers.ts (Section 4.4)
+Step 46: Create src/lib/auth-errors.ts (Section 8.1)
+Step 47: Create src/lib/actions/auth.ts (Section 4.6)
+Step 48: Update src/app/(auth)/login/page.tsx (Section 5.2)
+Step 49: Create src/app/(auth)/update-password/page.tsx (Section 5.3)
+Step 50: Create src/components/providers/AuthProvider.tsx (Section 6.1)
+Step 51: Create src/hooks/useUser.ts (Section 6.3)
+Step 52: Update src/app/(app)/layout.tsx (Section 6.2)
+```
+
+### Phase 8: Profile & Settings
+
+```
+Step 53: Create src/lib/actions/profile.ts (Section 12.1)
+Step 54: Create src/lib/actions/preferences.ts (Section 14.4)
+Step 55: Create src/lib/avatar-upload.ts (Section 12.2)
+Step 56: Wire profile page to real data (Section 12.3--12.4)
+Step 57: Wire settings page to real data (Section 12.5, 14.5)
+```
+
+### Phase 9: Core Data Server Actions
+
+```
+Step 58: Create src/lib/actions/permissions-helper.ts (Section 25.1)
+Step 59: Update src/lib/permissions.ts with new actions (Section 25.10)
+Step 60: Create src/lib/actions/projects.ts (Section 25.2)
+Step 61: Create src/lib/actions/submittals.ts (Section 25.3)
+Step 62: Create src/lib/actions/rfis.ts (Section 25.4)
+Step 63: Create src/lib/actions/daily-logs.ts (Section 25.5)
+Step 64: Create src/lib/actions/punch-list.ts (Section 25.6)
+Step 65: Create src/lib/actions/team.ts (Section 25.7)
+Step 66: Create src/lib/actions/milestones.ts (Section 25.8)
+Step 67: Create src/lib/actions/activity-log.ts (Section 25.9)
+```
+
+### Phase 10: Wire Pages to Server Actions
+
+```
+Step 68: Update Dashboard page -- replace store calls with server actions
+Step 69: Update Submittals pages (list, detail, new)
+Step 70: Update RFI pages (list, detail, new)
+Step 71: Update Daily Log pages (list, detail, new)
+Step 72: Update Punch List pages (list, detail, new)
+Step 73: Update Schedule/Milestones page
+Step 74: Update Team page
+Step 75: Update Sidebar + Topbar to use auth context
+Step 76: Create src/lib/photo-upload.ts (Section 17.6)
+Step 77: Wire PhotoUpload + PhotoGallery components to Supabase Storage
+```
+
+### Phase 11: Permissions UI Integration
+
+```
+Step 78: Update usePermissions hook (Section 16.3)
+Step 79: Update AuthProvider to fetch project memberships (Section 16.7)
+Step 80: Wire permission checks into all page components (Section 16.9)
+```
+
+### Phase 12: Email Templates + Final Configuration
+
+```
+Step 81: Configure email templates in Supabase Dashboard (Section 7)
+Step 82: Generate TypeScript types from Supabase schema (Section 19)
+Step 83: Set up Supabase migrations (Section 20)
+Step 84: (Optional) Enable Realtime subscriptions (Section 21)
+```
+
+### Phase 13: Testing
+
+```
+Step 85: Test auth flows (Section 11)
+Step 86: Test profile & settings (Section 15)
+Step 87: Test RBAC for all 7 project roles (Section 16.11)
+Step 88: Test photo upload/download for all entity types
+Step 89: Test RLS: verify cross-project data isolation
+Step 90: Test cascading deletes (delete project, verify all child data removed)
+```
+
+---
+
+*Document updated: February 28, 2026*
 *Product: RailCommand -- by A5 Rail*
 *Developer: Dillan Milosevich, CTO -- Creative Currents LLC*

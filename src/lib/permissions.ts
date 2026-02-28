@@ -12,6 +12,8 @@ export const ACTIONS = {
   PUNCH_LIST_VERIFY: 'punch_list:verify',
   TEAM_MANAGE: 'team:manage',
   PROJECT_MANAGE: 'project:manage',
+  PROJECT_EDIT: 'project:edit',
+  SCHEDULE_EDIT: 'schedule:edit',
   BUDGET_VIEW: 'budget:view',
 } as const;
 
@@ -33,6 +35,8 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.PUNCH_LIST_CREATE,
     ACTIONS.PUNCH_LIST_RESOLVE,
     ACTIONS.PUNCH_LIST_VERIFY,
+    ACTIONS.PROJECT_EDIT,
+    ACTIONS.SCHEDULE_EDIT,
     ACTIONS.BUDGET_VIEW,
   ],
   foreman: [
@@ -47,6 +51,8 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.RFI_CREATE,
     ACTIONS.RFI_RESPOND,
     ACTIONS.PUNCH_LIST_VERIFY,
+    ACTIONS.PROJECT_EDIT,
+    ACTIONS.SCHEDULE_EDIT,
     ACTIONS.BUDGET_VIEW,
   ],
   contractor: [
