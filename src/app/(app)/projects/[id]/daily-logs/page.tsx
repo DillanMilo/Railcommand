@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
 import { Plus, Calendar, List, Cloud, Users, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,8 +14,9 @@ import { ACTIONS } from '@/lib/permissions';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-export default function DailyLogsPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+export default function DailyLogsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const basePath = `/projects/${projectId}/daily-logs`;

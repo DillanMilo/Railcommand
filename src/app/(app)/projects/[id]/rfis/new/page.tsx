@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,9 @@ import type { Priority } from '@/lib/types';
 
 const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low'];
 
-export default function NewRFIPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+export default function NewRFIPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const router = useRouter();
   const { can } = usePermissions(projectId);
   const basePath = `/projects/${projectId}/rfis`;

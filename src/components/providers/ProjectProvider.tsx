@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { getProjects, getProjectById, getCurrentUserId, setCurrentUserId as setStoreUserId } from '@/lib/store';
 import type { Project } from '@/lib/types';
 
@@ -39,8 +39,8 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     setCurrentUserIdState(profileId);
   }, []);
 
-  const params = useParams();
-  const urlProjectId = params?.id as string | undefined;
+  const pathname = usePathname();
+  const urlProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1];
 
   // Initialize from localStorage on mount
   useEffect(() => {

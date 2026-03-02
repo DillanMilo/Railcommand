@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,8 +21,9 @@ function getName(id: string) {
   return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
 }
 
-export default function PunchListDetailPage() {
-  const { id: projectId, itemId } = useParams<{ id: string; itemId: string }>();
+export default function PunchListDetailPage({ params, searchParams }: { params: Promise<{ id: string; itemId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId, itemId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const item = getPunchListItems(projectId).find((i) => i.id === itemId);
   const [status, setStatus] = useState<PunchListStatus>(item?.status ?? 'open');

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useMemo, use } from 'react';
 import { Plus, Mail, Phone, X, UserPlus, Users } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
@@ -80,9 +79,9 @@ function formatRole(role: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function TeamPage() {
-  const params = useParams();
-  const projectId = params.id as string;
+export default function TeamPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState('');

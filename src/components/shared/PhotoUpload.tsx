@@ -148,7 +148,7 @@ export default function PhotoUpload({
               {showGeoCapture && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <MapPin className="size-3" />
-                  GPS location will be captured automatically
+                  GPS location will be attached when permitted
                 </p>
               )}
             </>

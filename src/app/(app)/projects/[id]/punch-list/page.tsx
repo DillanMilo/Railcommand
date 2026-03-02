@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,8 +42,9 @@ function getName(id: string) {
   return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
 }
 
-export default function PunchListPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+export default function PunchListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');

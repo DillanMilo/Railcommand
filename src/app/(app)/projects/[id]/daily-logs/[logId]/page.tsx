@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { use } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin } from 'lucide-react';
@@ -18,8 +18,9 @@ function weatherIcon(conditions: string) {
   return <Cloud className="size-6 text-gray-400" />;
 }
 
-export default function DailyLogDetailPage() {
-  const { id: projectId, logId } = useParams<{ id: string; logId: string }>();
+export default function DailyLogDetailPage({ params, searchParams }: { params: Promise<{ id: string; logId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId, logId } = use(params);
+  use(searchParams);
   const log = getDailyLogs(projectId).find((l) => l.id === logId) as DailyLog | undefined;
 
   if (!log) {

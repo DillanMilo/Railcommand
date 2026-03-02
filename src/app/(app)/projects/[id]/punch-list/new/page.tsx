@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,8 +24,9 @@ const PRIORITIES: { label: string; value: Priority }[] = [
   { label: 'Low', value: 'low' },
 ];
 
-export default function NewPunchListItemPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+export default function NewPunchListItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const router = useRouter();
   const { can } = usePermissions(projectId);
   const basePath = `/projects/${projectId}/punch-list`;

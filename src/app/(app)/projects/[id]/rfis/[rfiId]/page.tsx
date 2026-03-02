@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, use } from 'react';
 import { format, differenceInCalendarDays } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Lock, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,8 +24,9 @@ function getMilestoneById(id: string | null, projectId: string) {
   return id ? getMilestones(projectId).find((m) => m.id === id) : null;
 }
 
-export default function RFIDetailPage() {
-  const { id: projectId, rfiId } = useParams<{ id: string; rfiId: string }>();
+export default function RFIDetailPage({ params, searchParams }: { params: Promise<{ id: string; rfiId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId, rfiId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const [newResponse, setNewResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);

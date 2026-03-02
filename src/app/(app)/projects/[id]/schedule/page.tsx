@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import { Flag, Calendar, DollarSign, TrendingUp, AlertTriangle, FileCheck, MessageSquareMore } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -49,9 +48,9 @@ function useKPIs(milestones: Milestone[]) {
 }
 
 /* ---------- page ---------- */
-export default function SchedulePage() {
-  const params = useParams();
-  const projectId = params.id as string;
+export default function SchedulePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const project = getProjectById(projectId);
   const milestones = [...getMilestones(projectId)].sort((a, b) => a.sort_order - b.sort_order);
   const kpis = useKPIs(milestones);

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Upload, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -26,10 +26,10 @@ const SPEC_SECTIONS = [
   '26 56 00 - Exterior Lighting',
 ];
 
-export default function NewSubmittalPage() {
-  const params = useParams();
+export default function NewSubmittalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const router = useRouter();
-  const projectId = params.id as string;
   const { can } = usePermissions(projectId);
 
   const [title, setTitle] = useState('');

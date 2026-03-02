@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { format, differenceInCalendarDays } from 'date-fns';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,8 +33,9 @@ function daysOpen(rfi: RFI): number {
   return differenceInCalendarDays(end, new Date(rfi.submit_date));
 }
 
-export default function RFIsPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+export default function RFIsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const [tab, setTab] = useState<RFIStatus | 'all'>('all');
   const [search, setSearch] = useState('');

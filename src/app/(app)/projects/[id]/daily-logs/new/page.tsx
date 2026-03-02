@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,8 +25,9 @@ type PersonnelRow = { role: string; headcount: number; company: string };
 type EquipmentRow = { type: string; count: number; notes: string };
 type WorkItemRow = { description: string; quantity: number; unit: string; location: string };
 
-export default function NewDailyLogPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+export default function NewDailyLogPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const router = useRouter();
   const { can } = usePermissions(projectId);
 

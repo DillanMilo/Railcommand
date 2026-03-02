@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, use } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowLeft, Paperclip, Calendar, User, Flag } from 'lucide-react';
@@ -16,10 +15,9 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { SubmittalStatus } from '@/lib/types';
 
-export default function SubmittalDetailPage() {
-  const params = useParams();
-  const projectId = params.id as string;
-  const submittalId = params.submittalId as string;
+export default function SubmittalDetailPage({ params, searchParams }: { params: Promise<{ id: string; submittalId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId, submittalId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
 
   const original = getSubmittals(projectId).find((s) => s.id === submittalId);

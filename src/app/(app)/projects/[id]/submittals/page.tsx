@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { format, differenceInDays } from 'date-fns';
 import { Plus, Search } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -36,9 +35,9 @@ function isOverdue(dueDate: string): boolean {
   return new Date(dueDate) < new Date();
 }
 
-export default function SubmittalsListPage() {
-  const params = useParams();
-  const projectId = params.id as string;
+export default function SubmittalsListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { id: projectId } = use(params);
+  use(searchParams);
   const { can } = usePermissions(projectId);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
