@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, Settings, LogOut, User, X, Check, Users } from 'lucide-react';
+import { Bell, Search, Settings, LogOut, User, X, Check, ChevronDown, Plus, Train } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import {
   Sheet,
@@ -28,11 +29,19 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import ThemeToggle from './ThemeToggle';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
+import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { getActivityLog, getProfiles, getProjectMembers } from '@/lib/store';
 import { formatDistanceToNow } from 'date-fns';
+import type { Project } from '@/lib/types';
+
+const STATUS_DOT_COLORS: Record<Project['status'], string> = {
+  active: 'bg-rc-emerald',
+  on_hold: 'bg-amber-400',
+  completed: 'bg-gray-400',
+  archived: 'bg-slate-500',
+};
 
 interface TopbarProps {
   children?: React.ReactNode;
@@ -52,15 +61,17 @@ function formatProjectRole(role: string): string {
 
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
-  const { currentProjectId, currentUserId, setCurrentUser } = useProject();
+  const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId } = useProject();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
+
+  const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'on_hold');
+  const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
   const recentActivity = getActivityLog(currentProjectId).slice(0, 5);
 
-  const allProfiles = getProfiles();
-  const currentProfile = allProfiles.find((p) => p.id === currentUserId);
-  const projectMembers = getProjectMembers(currentProjectId);
-  const currentMembership = projectMembers.find((m) => m.profile_id === currentUserId);
+  const currentProfile = getProfiles().find((p) => p.id === currentUserId);
+  const currentMembership = getProjectMembers(currentProjectId).find((m) => m.profile_id === currentUserId);
 
   const searchResults = searchQuery.trim()
     ? [
@@ -81,8 +92,81 @@ export default function Topbar({ children }: TopbarProps) {
   return (
     <>
       <header className="flex items-center justify-between h-16 px-4 md:px-6 bg-rc-card border-b border-rc-border shrink-0">
-        {/* Left: Breadcrumbs slot */}
-        <div className="flex items-center min-w-0">{children}</div>
+        {/* Left: Mobile project switcher + Breadcrumbs slot */}
+        <div className="flex items-center min-w-0 gap-2">
+          {/* Mobile project switcher - hidden on desktop where sidebar handles it */}
+          <div className="md:hidden shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-rc-navy text-white text-sm font-medium hover:bg-rc-navy/90 transition-colors">
+                <Train className="size-4 shrink-0" />
+                <span className="max-w-[120px] truncate">
+                  {currentProject?.name ?? 'Select'}
+                </span>
+                <ChevronDown className="size-3.5 shrink-0 opacity-70" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72">
+                {activeProjects.length > 0 && (
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      Active Projects
+                    </DropdownMenuLabel>
+                    {activeProjects.map((project) => (
+                      <DropdownMenuItem
+                        key={project.id}
+                        onClick={() => {
+                          setCurrentProjectId(project.id);
+                          router.push(`/projects/${project.id}/submittals`);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <span className={cn('size-2 rounded-full shrink-0', STATUS_DOT_COLORS[project.status])} />
+                        <span className="truncate">{project.name}</span>
+                        {project.id === currentProjectId && (
+                          <Check className="size-4 text-rc-orange shrink-0 ml-auto" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                )}
+                {inactiveProjects.length > 0 && (
+                  <>
+                    {activeProjects.length > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        Completed / Archived
+                      </DropdownMenuLabel>
+                      {inactiveProjects.map((project) => (
+                        <DropdownMenuItem
+                          key={project.id}
+                          onClick={() => {
+                            setCurrentProjectId(project.id);
+                            router.push(`/projects/${project.id}/submittals`);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <span className={cn('size-2 rounded-full shrink-0', STATUS_DOT_COLORS[project.status])} />
+                          <span className="truncate">{project.name}</span>
+                          {project.id === currentProjectId && (
+                            <Check className="size-4 text-rc-orange shrink-0 ml-auto" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </>
+                )}
+                {projects.length === 0 && (
+                  <div className="px-2 py-3 text-center text-sm text-muted-foreground">No projects yet</div>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setNewProjectOpen(true)}>
+                  <Plus className="size-4" />
+                  New Project
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {children}
+        </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1 md:gap-2 shrink-0">
@@ -155,7 +239,7 @@ export default function Topbar({ children }: TopbarProps) {
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <p className="font-medium">{currentProfile?.full_name ?? 'Unknown'}</p>
                 <p className="text-xs text-muted-foreground font-normal">
@@ -171,40 +255,6 @@ export default function Topbar({ children }: TopbarProps) {
                 <Settings className="size-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
-                <Users className="size-3" />
-                Switch User (Demo)
-              </DropdownMenuLabel>
-              {allProfiles.map((p) => {
-                const mem = projectMembers.find((m) => m.profile_id === p.id);
-                return (
-                  <DropdownMenuItem
-                    key={p.id}
-                    onClick={() => setCurrentUser(p.id)}
-                    className={cn('cursor-pointer', p.id === currentUserId && 'bg-accent')}
-                  >
-                    <div className="flex items-center gap-2 w-full min-w-0">
-                      <Avatar className="size-6 shrink-0">
-                        <AvatarFallback className="bg-rc-slate text-white text-[10px] font-semibold">
-                          {getInitials(p.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm truncate">{p.full_name}</span>
-                      {mem ? (
-                        <Badge variant="secondary" className="text-[10px] ml-auto shrink-0 px-1.5 py-0">
-                          {formatProjectRole(mem.project_role)}
-                        </Badge>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
-                          Not on project
-                        </span>
-                      )}
-                      {p.id === currentUserId && <Check className="size-3.5 shrink-0 text-rc-emerald" />}
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
                 <LogOut className="size-4" />
@@ -265,6 +315,8 @@ export default function Topbar({ children }: TopbarProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <NewProjectDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} />
     </>
   );
 }
