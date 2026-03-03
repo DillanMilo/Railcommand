@@ -35,21 +35,19 @@ export const useProject = () => useContext(ProjectContext);
 const STORAGE_KEY = 'rc-current-project';
 const MODE_KEY = 'rc-mode';
 
-/** Rehydrate the store from localStorage mode flag on page reload */
+/** Rehydrate the store from localStorage mode flag on page reload.
+ *  Only runs for explicit demo/fresh modes — real auth users skip this entirely. */
 function rehydrateMode(): void {
   try {
     const mode = localStorage.getItem(MODE_KEY);
     if (mode === 'fresh') {
-      // Restore fresh state — we don't have the user's name/email on reload,
-      // but initFreshData was already called during sign-up. On a full page
-      // reload the module re-initialises with seed data, so we need to clear it.
       const storedName = localStorage.getItem('rc-user-name') ?? 'User';
       const storedEmail = localStorage.getItem('rc-user-email') ?? '';
       initFreshData(storedName, storedEmail);
-    } else {
-      // demo or missing → seed data is already loaded at module level
+    } else if (mode === 'demo') {
       initDemoData();
     }
+    // mode is null → real auth user, don't touch the in-memory store
   } catch { /* noop */ }
 }
 
@@ -76,9 +74,12 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
   const router = useRouter();
   const urlProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1];
 
-  // Rehydrate store from localStorage mode on first mount (runs once per session)
+  // Rehydrate store from localStorage mode on first mount (only for demo/fresh)
   if (!modeRehydrated && typeof window !== 'undefined') {
-    rehydrateMode();
+    const mode = localStorage.getItem(MODE_KEY);
+    if (mode === 'demo' || mode === 'fresh') {
+      rehydrateMode();
+    }
     modeRehydrated = true;
   }
 
