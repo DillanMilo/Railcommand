@@ -208,6 +208,7 @@ export default function LoginPage() {
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const signInForm = useForm<SignInData>({
     resolver: zodResolver(signInSchema),
@@ -236,9 +237,15 @@ export default function LoginPage() {
         setAuthError(error.message);
         return;
       }
+      // Set remember cookie — persistent if checked, session-only if not
+      if (rememberMe) {
+        document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
+      } else {
+        document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
+      }
       router.push('/dashboard');
     },
-    [router]
+    [router, rememberMe]
   );
 
   const handleSignUp = useCallback(
@@ -266,6 +273,12 @@ export default function LoginPage() {
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
     setAuthError(null);
+    // Set remember cookie before redirect — persistent if checked, session-only if not
+    if (rememberMe) {
+      document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
+    } else {
+      document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -278,7 +291,7 @@ export default function LoginPage() {
       setAuthError(error.message);
     }
     // Browser will redirect to Google — no need to setIsLoading(false) on success
-  }, []);
+  }, [rememberMe]);
 
   const handleTryDemo = useCallback(async () => {
     setIsLoading(true);
@@ -664,6 +677,17 @@ export default function LoginPage() {
                       </p>
                     )}
                   </div>
+
+                  {/* Remember me */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="size-4 rounded border-rc-border text-rc-orange focus:ring-rc-orange/30 accent-rc-orange"
+                    />
+                    <span className="text-sm text-muted-foreground">Remember me</span>
+                  </label>
 
                   <Button
                     type="submit"

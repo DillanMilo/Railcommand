@@ -151,6 +151,9 @@ export default function ProfilePage() {
   }
 
   function handleSignOut() {
+    try {
+      document.cookie = 'rc-remember=; path=/; max-age=0';
+    } catch { /* noop */ }
     router.push('/login');
   }
 

@@ -51,8 +51,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If authenticated and visiting /login → redirect to dashboard
-  if (user && pathname === '/login') {
+  // If authenticated but "Remember me" was not checked (session cookie expired
+  // after browser close), sign out and redirect to login
+  const hasRememberCookie = request.cookies.get('rc-remember')?.value === 'true';
+  if (user && !hasRememberCookie && !isPublicRoute) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    const response = NextResponse.redirect(url);
+    // Clear Supabase auth cookies
+    request.cookies.getAll().forEach(({ name }) => {
+      if (name.startsWith('sb-')) {
+        response.cookies.delete(name);
+      }
+    });
+    return response;
+  }
+
+  // If authenticated + remembered and visiting /login → redirect to dashboard
+  if (user && hasRememberCookie && pathname === '/login') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

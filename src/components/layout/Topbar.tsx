@@ -98,6 +98,7 @@ export default function Topbar({ children }: TopbarProps) {
       localStorage.removeItem('rc-user-email');
       localStorage.removeItem('rc-current-project');
       document.cookie = 'rc-mode=; path=/; max-age=0';
+      document.cookie = 'rc-remember=; path=/; max-age=0';
     } catch { /* noop */ }
     router.push('/login');
   }
