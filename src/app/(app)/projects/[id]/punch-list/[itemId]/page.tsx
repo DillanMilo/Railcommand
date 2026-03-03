@@ -12,7 +12,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import PhotoGallery from '@/components/shared/PhotoGallery';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
-import { getPunchListItems, getProfiles, updatePunchListStatus, getAttachments, addAttachment } from '@/lib/store';
+import { getPunchListItems, getProfiles, updatePunchListStatus, getAttachments, addAttachment, removeAttachment } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus } from '@/lib/types';
@@ -30,6 +30,16 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
   const [notes, setNotes] = useState(item?.resolution_notes ?? '');
   const [resolutionInput, setResolutionInput] = useState('');
   const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
+
+  // Reset state when navigating to a different punch list item
+  const [prevItemId, setPrevItemId] = useState(itemId);
+  if (itemId !== prevItemId) {
+    setPrevItemId(itemId);
+    setStatus(item?.status ?? 'open');
+    setNotes(item?.resolution_notes ?? '');
+    setResolutionInput('');
+    setNewPhotos([]);
+  }
   const existingAttachments = item ? getAttachments('punch_list', item.id) : [];
 
   if (!item) {
@@ -187,6 +197,13 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
               });
             }
             setNewPhotos(updated);
+          }}
+          onPhotoRemove={(photo) => {
+            // Remove the matching attachment from the store
+            const att = getAttachments('punch_list', itemId).find(
+              (a) => a.file_name === photo.file.name && a.file_url === photo.preview
+            );
+            if (att) removeAttachment(att.id);
           }}
         />
       )}

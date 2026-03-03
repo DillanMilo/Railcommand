@@ -10,19 +10,14 @@ export const SUBMITTAL_STATUS_COLORS: Record<string, string> = {
   under_review: "bg-amber-100 text-amber-700",
   approved: "bg-emerald-100 text-emerald-700",
   conditional: "bg-amber-100 text-amber-700",
-  approved_as_noted: "bg-lime-100 text-lime-700",
   rejected: "bg-red-100 text-red-700",
-  revise_resubmit: "bg-orange-100 text-orange-700",
-  closed: "bg-gray-200 text-gray-700",
 };
 
 /**
  * Status colors for RFIs
  */
 export const RFI_STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
   open: "bg-blue-100 text-blue-700",
-  pending: "bg-amber-100 text-amber-700",
   answered: "bg-emerald-100 text-emerald-700",
   closed: "bg-gray-200 text-gray-700",
   overdue: "bg-red-100 text-red-700",
@@ -36,9 +31,6 @@ export const PUNCH_LIST_STATUS_COLORS: Record<string, string> = {
   in_progress: "bg-amber-100 text-amber-700",
   resolved: "bg-blue-100 text-blue-700",
   verified: "bg-emerald-100 text-emerald-700",
-  ready_for_review: "bg-blue-100 text-blue-700",
-  completed: "bg-emerald-100 text-emerald-700",
-  closed: "bg-gray-200 text-gray-700",
 };
 
 /**
@@ -46,12 +38,9 @@ export const PUNCH_LIST_STATUS_COLORS: Record<string, string> = {
  */
 export const MILESTONE_STATUS_COLORS: Record<string, string> = {
   not_started: "bg-gray-100 text-gray-700",
-  in_progress: "bg-blue-100 text-blue-700",
   on_track: "bg-emerald-100 text-emerald-700",
   at_risk: "bg-amber-100 text-amber-700",
-  delayed: "bg-red-100 text-red-700",
   behind: "bg-red-100 text-red-700",
-  completed: "bg-emerald-200 text-emerald-800",
   complete: "bg-emerald-200 text-emerald-800",
 };
 

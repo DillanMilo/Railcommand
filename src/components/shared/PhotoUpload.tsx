@@ -19,6 +19,7 @@ export interface PhotoFile {
 interface PhotoUploadProps {
   photos: PhotoFile[];
   onPhotosChange: (photos: PhotoFile[]) => void;
+  onPhotoRemove?: (photo: PhotoFile) => void;
   maxFiles?: number;
   showGeoCapture?: boolean;
 }
@@ -30,6 +31,7 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 export default function PhotoUpload({
   photos,
   onPhotosChange,
+  onPhotoRemove,
   maxFiles = 20,
   showGeoCapture = true,
 }: PhotoUploadProps) {
@@ -79,9 +81,12 @@ export default function PhotoUpload({
 
   const removePhoto = useCallback((id: string) => {
     const photo = photos.find((p) => p.id === id);
-    if (photo) URL.revokeObjectURL(photo.preview);
+    if (photo) {
+      URL.revokeObjectURL(photo.preview);
+      onPhotoRemove?.(photo);
+    }
     onPhotosChange(photos.filter((p) => p.id !== id));
-  }, [photos, onPhotosChange]);
+  }, [photos, onPhotosChange, onPhotoRemove]);
 
   const acceptTypes = category === 'thermal'
     ? THERMAL_TYPES

@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'date-fns';
-import { CheckCircle2, Circle, Clock, XCircle, AlertTriangle, Send, FileEdit } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, AlertTriangle, Send, FileEdit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Submittal, Profile } from '@/lib/types';
 

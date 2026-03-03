@@ -4346,6 +4346,15 @@ if (env === 'development' || env === 'test') {
 
 > **Important:** The `supabase/seed.sql` file is only executed by `supabase db reset`, which drops and recreates the local database. It is never automatically run on remote databases.
 
+### 20.4 Demo Account in Production
+
+When Supabase auth is connected, the "Explore Demo Project" flow on the login page should use a dedicated demo account:
+
+1. **Dedicated demo user** -- Create a Supabase auth user with a fixed email (e.g., `demo@railcommand.app`) and seed their data via SQL. This account is read-only or resets nightly via a cron job.
+2. **RLS naturally isolates** -- Fresh sign-ups see zero data because RLS policies filter by `auth.uid()`. No special "fresh mode" logic is needed server-side.
+3. **Demo data seeding** -- The `supabase/seed.sql` script already provides the demo project data. In production, run the demo-specific subset once against the demo user's profile.
+4. **localStorage flag removed** -- Once real auth is in place, the `rc-mode` localStorage flag and `initDemoData()`/`initFreshData()` functions in `store.ts` can be deleted. Auth state replaces them entirely.
+
 ---
 
 ## 21. Real-Time Subscriptions (Optional Enhancement)

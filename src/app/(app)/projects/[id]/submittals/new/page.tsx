@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { getMilestones, addSubmittal } from '@/lib/store';
+import { getMilestones, addSubmittal, addAttachment } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
@@ -62,12 +62,23 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    addSubmittal(projectId, {
+    const submittal = addSubmittal(projectId, {
       title,
       description,
       spec_section: specSection,
       milestone_id: milestoneId || null,
     });
+    // Save file attachments
+    for (const file of files) {
+      addAttachment({
+        entity_type: 'submittal',
+        entity_id: submittal.id,
+        file_name: file.name,
+        file_url: URL.createObjectURL(file),
+        file_type: file.type,
+        file_size: file.size,
+      });
+    }
     setSuccess(true);
     setTimeout(() => {
       router.push(`/projects/${projectId}/submittals`);

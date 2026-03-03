@@ -1,7 +1,6 @@
 'use client';
 
 import { use } from 'react';
-import Link from 'next/link';
 import { format } from 'date-fns';
 import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

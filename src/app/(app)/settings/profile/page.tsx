@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -34,7 +34,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { getProfileWithOrg, getProjectMembers } from '@/lib/store';
+import { getProfileWithOrg, getProjectMembers, updateProfile } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 
 /* ------------------------------------------------------------------ */
@@ -119,8 +119,8 @@ export default function ProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      fullName: profile.full_name,
-      phone: profile.phone,
+      fullName: profile?.full_name ?? '',
+      phone: profile?.phone ?? '',
     },
   });
 
@@ -131,20 +131,27 @@ export default function ProfilePage() {
     return () => clearTimeout(timer);
   }, [successMessage]);
 
-  const onSubmit = useCallback(
-    async (_data: ProfileFormData) => {
-      setIsSaving(true);
-      // Simulate API call
-      await new Promise((r) => setTimeout(r, 600));
-      setIsSaving(false);
-      setSuccessMessage('Profile updated successfully');
-    },
-    []
-  );
+  if (!profile) {
+    return <div className="py-20 text-center text-muted-foreground">Profile not found.</div>;
+  }
 
-  const handleSignOut = useCallback(() => {
+  async function onSubmit(data: ProfileFormData) {
+    setIsSaving(true);
+    // Simulate network delay
+    await new Promise((r) => setTimeout(r, 600));
+    updateProfile(currentUserId, {
+      full_name: data.fullName,
+      phone: data.phone,
+    });
+    setIsSaving(false);
+    setSuccessMessage('Profile updated successfully');
+    // Force re-render so header/avatar reflect the new name
+    router.refresh();
+  }
+
+  function handleSignOut() {
     router.push('/login');
-  }, [router]);
+  }
 
   return (
     <div className="space-y-8">
@@ -397,7 +404,7 @@ export default function ProfilePage() {
                 asChild
                 className="gap-1.5 text-xs"
               >
-                <Link href="/projects/proj-001/team">
+                <Link href={`/projects/${currentProjectId}/team`}>
                   <Users className="size-3.5" />
                   View Project Team
                   <ExternalLink className="size-3" />

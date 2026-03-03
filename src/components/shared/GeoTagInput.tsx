@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { MapPin, Loader2, X, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -19,9 +20,11 @@ export default function GeoTagInput({ value, onChange, label = 'GPS Location' }:
   };
 
   // Sync hook state → parent when captured
-  if (geoTag && (!value || value.lat !== geoTag.lat || value.lng !== geoTag.lng)) {
-    onChange(geoTag);
-  }
+  useEffect(() => {
+    if (geoTag && (!value || value.lat !== geoTag.lat || value.lng !== geoTag.lng)) {
+      onChange(geoTag);
+    }
+  }, [geoTag]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClear = () => {
     clearLocation();

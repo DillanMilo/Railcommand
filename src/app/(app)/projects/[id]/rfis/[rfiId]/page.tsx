@@ -34,6 +34,15 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   const rfi = getRFIs(projectId).find((r) => r.id === rfiId);
   const [status, setStatus] = useState(rfi?.status ?? 'open');
 
+  // Reset state when navigating to a different RFI
+  const [prevRfiId, setPrevRfiId] = useState(rfiId);
+  if (rfiId !== prevRfiId) {
+    setPrevRfiId(rfiId);
+    setStatus(rfi?.status ?? 'open');
+    setNewResponse('');
+    setSubmitted(false);
+  }
+
   if (!rfi) return <p className="p-8 text-muted-foreground">RFI not found.</p>;
 
   const submitter = getProfile(rfi.submitted_by);

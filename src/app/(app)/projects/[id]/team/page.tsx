@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -174,9 +176,18 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     forceUpdate((n) => n + 1);
   }
 
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+
   function handleRemoveMember(memberId: string) {
-    removeProjectMember(memberId);
-    forceUpdate((n) => n + 1);
+    setPendingRemoveId(memberId);
+  }
+
+  function confirmRemoveMember() {
+    if (pendingRemoveId) {
+      removeProjectMember(pendingRemoveId);
+      setPendingRemoveId(null);
+      forceUpdate((n) => n + 1);
+    }
   }
 
   function handleOrgSelectChange(value: string) {
@@ -461,6 +472,26 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
           );
         })}
       </div>
+
+      {/* Remove member confirmation dialog */}
+      <Dialog open={pendingRemoveId !== null} onOpenChange={(open) => { if (!open) setPendingRemoveId(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this member from the project? They will lose access to all project data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setPendingRemoveId(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmRemoveMember}>
+              Remove Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -16,7 +16,9 @@
       "Bash(find:*)",
       "Bash(npx tsc:*)",
       "Bash(python3:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)"
     ]
   }
 }

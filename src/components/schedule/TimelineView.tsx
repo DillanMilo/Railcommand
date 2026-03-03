@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import type { Milestone, MilestoneStatus } from '@/lib/types';
 
@@ -11,6 +12,14 @@ const TIMELINE_BAR_COLOR: Record<MilestoneStatus, string> = {
   not_started: 'bg-gray-300',
 };
 
+// useSyncExternalStore provides a clean way to differ between server and client
+const emptySubscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+function useIsMounted() {
+  return useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
+}
+
 interface TimelineViewProps {
   milestones: Milestone[];
   startDate: string;
@@ -21,11 +30,12 @@ export default function TimelineView({ milestones, startDate, endDate }: Timelin
   const projectStart = parseISO(startDate);
   const projectEnd = parseISO(endDate);
   const totalDays = differenceInCalendarDays(projectEnd, projectStart);
-  const today = new Date();
-  const todayPct = Math.min(
-    Math.max((differenceInCalendarDays(today, projectStart) / totalDays) * 100, 0),
-    100
-  );
+  const isMounted = useIsMounted();
+
+  // Only compute "today" on the client to avoid hydration mismatch
+  const todayPct = isMounted
+    ? Math.min(Math.max((differenceInCalendarDays(new Date(), projectStart) / totalDays) * 100, 0), 100)
+    : null;
 
   // generate month labels
   const months: { label: string; pct: number }[] = [];
@@ -51,13 +61,15 @@ export default function TimelineView({ milestones, startDate, endDate }: Timelin
           </div>
         ))}
 
-        {/* today marker */}
-        <div className="absolute top-0 bottom-0 z-10" style={{ left: `${todayPct}%` }}>
-          <div className="h-full border-l-2 border-dashed border-red-500" />
-          <span className="absolute -top-0.5 -translate-x-1/2 text-[10px] font-semibold text-red-600 bg-rc-card px-1 rounded">
-            Today
-          </span>
-        </div>
+        {/* today marker (client-only to avoid hydration mismatch) */}
+        {todayPct !== null && (
+          <div className="absolute top-0 bottom-0 z-10" style={{ left: `${todayPct}%` }}>
+            <div className="h-full border-l-2 border-dashed border-red-500" />
+            <span className="absolute -top-0.5 -translate-x-1/2 text-[10px] font-semibold text-red-600 bg-rc-card px-1 rounded">
+              Today
+            </span>
+          </div>
+        )}
 
         {/* milestone bars */}
         {milestones.map((ms, idx) => {

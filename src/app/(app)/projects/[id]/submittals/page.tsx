@@ -15,7 +15,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getSubmittals, getProfiles } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { SubmittalStatus } from '@/lib/types';
 
 const STATUS_TABS: { label: string; value: string }[] = [
   { label: 'All', value: 'all' },
@@ -56,7 +55,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
       );
     }
     return items;
-  }, [statusFilter, search]);
+  }, [statusFilter, search, projectId]);
 
   return (
     <div>

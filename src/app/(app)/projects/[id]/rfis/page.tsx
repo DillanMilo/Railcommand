@@ -53,7 +53,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
       }
       return true;
     });
-  }, [tab, search]);
+  }, [tab, search, projectId]);
 
   const basePath = `/projects/${projectId}/rfis`;
 

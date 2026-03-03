@@ -48,6 +48,82 @@ let projectMembers: ProjectMember[] = [...seedProjectMembers];
 let activityLog: ActivityLogEntry[] = [...seedActivityLog];
 let milestones: Milestone[] = [...seedMilestones];
 
+// --- Demo / Fresh mode ---
+let demoMode = true;
+
+export function isDemoMode(): boolean { return demoMode; }
+
+/** Reset all data to seed (demo) state */
+export function initDemoData(): void {
+  demoMode = true;
+  projects = [{ ...seedProject }];
+  submittals = [...seedSubmittals];
+  rfis = [...seedRFIs];
+  dailyLogs = [...seedDailyLogs];
+  punchListItems = [...seedPunchListItems];
+  projectMembers = [...seedProjectMembers];
+  activityLog = [...seedActivityLog];
+  milestones = [...seedMilestones];
+  profiles = [...seedProfiles];
+  organizations = [...seedOrganizations];
+  attachments = [];
+  currentUserId = 'prof-001';
+  projectCounter = projects.length;
+  submittalCounter = submittals.length;
+  rfiCounter = rfis.length;
+  dailyLogCounter = dailyLogs.length;
+  punchListCounter = punchListItems.length;
+  memberCounter = projectMembers.length;
+  activityCounter = activityLog.length;
+  profileCounter = profiles.length;
+  orgCounter = organizations.length;
+  responseCounter = 0;
+  attachmentCounter = 0;
+}
+
+/** Clear all data for a fresh sign-up */
+export function initFreshData(name: string, email: string): string {
+  demoMode = false;
+  projects = [];
+  submittals = [];
+  rfis = [];
+  dailyLogs = [];
+  punchListItems = [];
+  projectMembers = [];
+  activityLog = [];
+  milestones = [];
+  attachments = [];
+
+  // Create a fresh org and profile for the new user
+  organizations = [{ id: 'org-001', name: 'My Organization', type: 'contractor', created_at: new Date().toISOString() }];
+  const freshProfile: Profile = {
+    id: 'prof-001',
+    full_name: name,
+    email,
+    phone: '',
+    role: 'admin',
+    organization_id: 'org-001',
+    avatar_url: '',
+    created_at: new Date().toISOString(),
+  };
+  profiles = [freshProfile];
+
+  currentUserId = freshProfile.id;
+  projectCounter = 0;
+  submittalCounter = 0;
+  rfiCounter = 0;
+  dailyLogCounter = 0;
+  punchListCounter = 0;
+  memberCounter = 0;
+  activityCounter = 0;
+  profileCounter = 1;
+  orgCounter = 1;
+  responseCounter = 0;
+  attachmentCounter = 0;
+
+  return freshProfile.id;
+}
+
 // --- Current user (switchable for demo) ---
 let currentUserId = 'prof-001';
 export function getCurrentUserId(): string { return currentUserId; }
@@ -98,6 +174,12 @@ export function addProject(data: {
     created_at: new Date().toISOString(),
   };
   projects = [...projects, newProject];
+
+  // Auto-add the creator as a project member with manager role
+  addProjectMember(newProject.id, getCurrentUserId(), 'Project Manager');
+
+  addActivity(newProject.id, 'project', newProject.id, 'created', `created project ${newProject.name}`);
+
   return newProject;
 }
 
@@ -145,9 +227,11 @@ export function getProfiles(): Profile[] { return profiles; }
 export function getOrganizations(): Organization[] { return organizations; }
 
 // Updated getProfileWithOrg that uses mutable data
-export function getProfileWithOrg(profileId: string): Profile & { organization: Organization } {
-  const profile = profiles.find((p) => p.id === profileId)!;
-  const org = organizations.find((o) => o.id === profile.organization_id)!;
+export function getProfileWithOrg(profileId: string): (Profile & { organization: Organization }) | null {
+  const profile = profiles.find((p) => p.id === profileId);
+  if (!profile) return null;
+  const org = organizations.find((o) => o.id === profile.organization_id);
+  if (!org) return null;
   return { ...profile, organization: org };
 }
 
@@ -245,7 +329,7 @@ export function addRFIResponse(rfiId: string, content: string): void {
   rfis = rfis.map((r) => {
     if (r.id !== rfiId) return r;
     const resp: RFIResponse = {
-      id: `resp-${Date.now()}`,
+      id: `resp-${String(++responseCounter).padStart(3, '0')}`,
       rfi_id: rfiId,
       author_id: getCurrentUserId(),
       content,
@@ -398,6 +482,13 @@ export function updateProjectStatus(id: string, status: Project['status']): void
 }
 
 export function deleteProject(id: string): void {
+  // Collect entity IDs to clean up orphaned attachments
+  const deletedEntityIds = new Set<string>([
+    ...submittals.filter((s) => s.project_id === id).map((s) => s.id),
+    ...rfis.filter((r) => r.project_id === id).map((r) => r.id),
+    ...dailyLogs.filter((d) => d.project_id === id).map((d) => d.id),
+    ...punchListItems.filter((p) => p.project_id === id).map((p) => p.id),
+  ]);
   projects = projects.filter((p) => p.id !== id);
   submittals = submittals.filter((s) => s.project_id !== id);
   rfis = rfis.filter((r) => r.project_id !== id);
@@ -406,9 +497,16 @@ export function deleteProject(id: string): void {
   projectMembers = projectMembers.filter((m) => m.project_id !== id);
   activityLog = activityLog.filter((a) => a.project_id !== id);
   milestones = milestones.filter((m) => m.project_id !== id);
+  attachments = attachments.filter((a) => !deletedEntityIds.has(a.entity_id));
 }
 
 // --- Profile / Organization creation ---
+export function updateProfile(profileId: string, data: { full_name?: string; phone?: string }): void {
+  profiles = profiles.map((p) =>
+    p.id === profileId ? { ...p, ...data } : p
+  );
+}
+
 export function addProfile(data: {
   full_name: string;
   email: string;
@@ -450,6 +548,7 @@ export function addOrganization(data: {
 
 // --- Attachment operations ---
 let attachments: Attachment[] = [];
+let responseCounter = 0;
 let attachmentCounter = 0;
 
 export function getAttachments(entityType: Attachment['entity_type'], entityId: string): Attachment[] {
@@ -463,20 +562,20 @@ export function addAttachment(data: {
   file_url: string;
   file_type: string;
   file_size: number;
-  photo_category: PhotoCategory;
+  photo_category?: PhotoCategory;
   geo_lat?: number | null;
   geo_lng?: number | null;
 }): Attachment {
   attachmentCounter++;
   const newAttachment: Attachment = {
-    id: `att-${attachmentCounter}`,
+    id: `att-${String(attachmentCounter).padStart(3, '0')}`,
     entity_type: data.entity_type,
     entity_id: data.entity_id,
     file_name: data.file_name,
     file_url: data.file_url,
     file_type: data.file_type,
     file_size: data.file_size,
-    photo_category: data.photo_category,
+    photo_category: data.photo_category ?? 'document',
     uploaded_by: getCurrentUserId(),
     geo_lat: data.geo_lat ?? null,
     geo_lng: data.geo_lng ?? null,

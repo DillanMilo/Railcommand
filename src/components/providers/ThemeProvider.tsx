@@ -47,25 +47,26 @@ function applyTheme(theme: 'light' | 'dark') {
   }
 }
 
+function getInitialMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
+    if (stored && ['light', 'dark', 'auto'].includes(stored)) return stored;
+  } catch { /* noop */ }
+  return 'light';
+}
+
 export default function ThemeProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [mode, setModeState] = useState<ThemeMode>('light');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+  const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => resolveTheme(getInitialMode()));
 
-  // Initialize from localStorage on mount
+  // Apply theme to DOM on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    const initial = stored && ['light', 'dark', 'auto'].includes(stored)
-      ? stored
-      : 'light';
-    setModeState(initial);
-    const resolved = resolveTheme(initial);
-    setResolvedTheme(resolved);
-    applyTheme(resolved);
-  }, []);
+    applyTheme(resolveTheme(mode));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-check auto mode every minute
   useEffect(() => {

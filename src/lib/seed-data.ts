@@ -29,9 +29,11 @@ export const seedProfiles: Profile[] = [
 ];
 
 // Helper to attach org data to profiles
-export const getProfileWithOrg = (profileId: string): Profile & { organization: Organization } => {
-  const profile = seedProfiles.find(p => p.id === profileId)!;
-  const org = seedOrganizations.find(o => o.id === profile.organization_id)!;
+export const getProfileWithOrg = (profileId: string): (Profile & { organization: Organization }) | null => {
+  const profile = seedProfiles.find(p => p.id === profileId);
+  if (!profile) return null;
+  const org = seedOrganizations.find(o => o.id === profile.organization_id);
+  if (!org) return null;
   return { ...profile, organization: org };
 };
 
@@ -47,7 +49,7 @@ export const seedProject: Project = {
   target_end_date: '2026-02-26',
   actual_end_date: null,
   budget_total: 4200000,
-  budget_spent: 2100000,
+  budget_spent: 1620000,
   location: 'Englewood, CO',
   client: 'Colorado & Western Railroad',
   created_by: 'prof-001',

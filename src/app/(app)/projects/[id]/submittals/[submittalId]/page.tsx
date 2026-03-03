@@ -35,7 +35,7 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
   const milestone = getMilestones(projectId).find((m) => m.id === submittal.milestone_id);
 
   const infoItems = [
-    { label: 'Submitted By', value: submitter.full_name, sub: submitter.organization?.name, icon: <User className="size-4" /> },
+    { label: 'Submitted By', value: submitter?.full_name ?? '—', sub: submitter?.organization?.name, icon: <User className="size-4" /> },
     { label: 'Submit Date', value: format(new Date(submittal.submit_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
     { label: 'Due Date', value: format(new Date(submittal.due_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
     { label: 'Reviewed By', value: reviewer?.full_name ?? '—', sub: reviewer?.organization?.name, icon: <User className="size-4" /> },

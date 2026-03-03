@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,8 @@ export default function DashboardPage() {
   const { currentProject, currentProjectId } = useProject();
   const { can } = usePermissions(currentProjectId);
 
+  const [now] = useState(() => Date.now());
+
   if (!currentProject) {
     return (
       <div className="space-y-6">
@@ -51,8 +54,10 @@ export default function DashboardPage() {
 
   const totalDays =
     new Date(project.target_end_date).getTime() - new Date(project.start_date).getTime();
-  const elapsed = Date.now() - new Date(project.start_date).getTime();
-  const schedulePercent = Math.min(100, Math.round((elapsed / totalDays) * 100));
+  const elapsed = now - new Date(project.start_date).getTime();
+  const schedulePercent = totalDays > 0
+    ? Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)))
+    : 100;
 
   const allSubmittals = getSubmittals(currentProjectId);
   const totalSubmittals = allSubmittals.length;

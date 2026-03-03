@@ -212,9 +212,14 @@ export default function Sidebar() {
             <Train className="size-5 text-white" />
           </div>
           {!collapsed && (
-            <span className="font-heading font-bold text-lg tracking-tight whitespace-nowrap">
-              RailCommand
-            </span>
+            <div className="whitespace-nowrap">
+              <span className="font-heading font-bold text-lg tracking-tight block leading-tight">
+                RailCommand
+              </span>
+              <span className="text-[10px] text-white/40 tracking-wide uppercase">
+                by A5
+              </span>
+            </div>
           )}
         </div>
 

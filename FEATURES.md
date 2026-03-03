@@ -372,6 +372,8 @@ These capabilities span the entire application and are available across all modu
 - **256-Bit Encryption** -- All data encrypted in transit and at rest
 - **US Data Residency** -- All data stored exclusively within the United States
 - **Session Management** -- View and manage active sessions across devices
+- **Demo Mode** -- "Explore Demo Project" button on the login page loads a fully populated railroad project with seed data so testers can explore all features without signing up
+- **Fresh Account** -- New sign-ups get a clean canvas with zero pre-populated data, ready to create their own projects from scratch
 
 ### Progressive Web App (PWA)
 

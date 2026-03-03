@@ -2,8 +2,8 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay } from 'date-fns';
-import { Plus, Calendar, List, Cloud, Users, ClipboardList } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
+import { Plus, Calendar, List, Cloud, Users, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   use(searchParams);
   const { can } = usePermissions(projectId);
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date());
   const basePath = `/projects/${projectId}/daily-logs`;
 
   const logs = useMemo(
@@ -26,8 +27,8 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
     [projectId],
   );
 
-  // Calendar: February 2026
-  const monthStart = startOfMonth(new Date(2026, 1, 1));
+  // Calendar grid for the selected month
+  const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
@@ -72,7 +73,39 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
       {/* Calendar View */}
       {view === 'calendar' && (
         <div>
-          <h2 className="font-heading text-lg font-semibold mb-4">February 2026</h2>
+          {/* Month navigation */}
+          <div className="flex items-center gap-3 mb-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-8"
+              onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <h2 className="font-heading text-lg font-semibold min-w-[160px] text-center">
+              {format(monthStart, 'MMMM yyyy')}
+            </h2>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-8"
+              onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+              aria-label="Next month"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground hover:text-foreground ml-1"
+              onClick={() => setCurrentMonth(new Date())}
+            >
+              Today
+            </Button>
+          </div>
+
           <div className="grid grid-cols-5 gap-px bg-rc-border rounded-lg overflow-hidden border border-rc-border max-w-4xl">
             {WEEKDAYS.map((d) => (
               <div key={d} className="bg-rc-card px-2 py-2 text-center text-xs font-medium text-muted-foreground">
@@ -84,20 +117,23 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
               .map((day) => {
                 const log = logForDay(day);
                 const inMonth = isSameMonth(day, monthStart);
+                const today = isToday(day);
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`bg-rc-card min-h-[72px] p-2 ${!inMonth ? 'opacity-40' : ''}`}
+                    className={`bg-rc-card min-h-[72px] p-2 ${!inMonth ? 'opacity-40' : ''} ${today ? 'ring-2 ring-inset ring-rc-blue' : ''}`}
                   >
                     {log ? (
                       <Link href={`${basePath}/${log.id}`} className="block h-full group">
-                        <span className="text-sm font-medium group-hover:text-rc-orange transition-colors">
+                        <span className={`text-sm font-medium group-hover:text-rc-orange transition-colors ${today ? 'text-rc-blue font-bold' : ''}`}>
                           {format(day, 'd')}
                         </span>
                         <span className="block mt-1 size-2.5 rounded-full bg-rc-emerald" />
                       </Link>
                     ) : (
-                      <span className="text-sm text-muted-foreground">{format(day, 'd')}</span>
+                      <span className={`text-sm ${today ? 'text-rc-blue font-bold' : 'text-muted-foreground'}`}>
+                        {format(day, 'd')}
+                      </span>
                     )}
                   </div>
                 );

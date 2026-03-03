@@ -24,8 +24,9 @@ import {
   Chrome,
   MoreVertical,
   Check,
-  X,
+  Play,
 } from 'lucide-react';
+import { initDemoData, initFreshData } from '@/lib/store';
 
 /* ------------------------------------------------------------------ */
 /*  Schemas                                                            */
@@ -220,10 +221,12 @@ export default function LoginPage() {
   const strength = getPasswordStrength(watchPassword || '');
 
   const handleSignIn = useCallback(
-    async (_data: SignInData) => {
+    async () => {
       setIsLoading(true);
       // Simulate network delay — replace with Supabase auth
       await new Promise((r) => setTimeout(r, 600));
+      initDemoData();
+      try { localStorage.setItem('rc-mode', 'demo'); } catch { /* noop */ }
       setIsLoading(false);
       router.push('/dashboard');
     },
@@ -231,10 +234,16 @@ export default function LoginPage() {
   );
 
   const handleSignUp = useCallback(
-    async (_data: SignUpData) => {
+    async (data: SignUpData) => {
       setIsLoading(true);
       // Simulate network delay — replace with Supabase auth
       await new Promise((r) => setTimeout(r, 800));
+      initFreshData(data.fullName, data.email);
+      try {
+        localStorage.setItem('rc-mode', 'fresh');
+        localStorage.setItem('rc-user-name', data.fullName);
+        localStorage.setItem('rc-user-email', data.email);
+      } catch { /* noop */ }
       setIsLoading(false);
       setShowInstall(true);
     },
@@ -245,6 +254,17 @@ export default function LoginPage() {
     setIsLoading(true);
     // Replace with Supabase OAuth
     await new Promise((r) => setTimeout(r, 600));
+    initDemoData();
+    try { localStorage.setItem('rc-mode', 'demo'); } catch { /* noop */ }
+    setIsLoading(false);
+    router.push('/dashboard');
+  }, [router]);
+
+  const handleTryDemo = useCallback(async () => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 400));
+    initDemoData();
+    try { localStorage.setItem('rc-mode', 'demo'); } catch { /* noop */ }
     setIsLoading(false);
     router.push('/dashboard');
   }, [router]);
@@ -362,9 +382,14 @@ export default function LoginPage() {
             <div className="flex items-center justify-center size-10 rounded-xl bg-rc-orange">
               <Train className="size-5 text-white" />
             </div>
-            <h1 className="font-heading text-xl font-bold text-foreground tracking-tight">
-              RailCommand
-            </h1>
+            <div>
+              <h1 className="font-heading text-xl font-bold text-foreground tracking-tight">
+                RailCommand
+              </h1>
+              <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase">
+                by A5 Rail
+              </p>
+            </div>
           </div>
 
           {showInstall ? (
@@ -480,6 +505,33 @@ export default function LoginPage() {
                 >
                   Sign Up
                 </button>
+              </div>
+
+              {/* Try Demo */}
+              <Button
+                type="button"
+                onClick={handleTryDemo}
+                disabled={isLoading}
+                className="w-full h-12 gap-2.5 text-sm font-semibold mb-3 bg-rc-emerald hover:bg-rc-emerald/90 text-white"
+                aria-label="Try demo project"
+              >
+                <Play className="size-4" />
+                Explore Demo Project
+              </Button>
+              <p className="text-[11px] text-muted-foreground text-center mb-4">
+                See a fully populated railroad project — no sign-up required
+              </p>
+
+              {/* Divider */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-rc-border dark:border-rc-border" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
+                    or sign in to your account
+                  </span>
+                </div>
               </div>
 
               {/* Google Sign In */}

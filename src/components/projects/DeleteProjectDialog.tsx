@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Project } from '@/lib/types';
 import {
   Dialog,
@@ -29,19 +29,17 @@ export default function DeleteProjectDialog({
 }: DeleteProjectDialogProps) {
   const [confirmText, setConfirmText] = useState('');
 
-  // Reset confirmation text when dialog opens/closes
-  useEffect(() => {
-    if (!open) {
-      setConfirmText('');
-    }
-  }, [open]);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) setConfirmText('');
+    onOpenChange(nextOpen);
+  };
 
   if (!project) return null;
 
   const isConfirmed = confirmText === project.name;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">

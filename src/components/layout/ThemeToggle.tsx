@@ -17,9 +17,7 @@ const OPTIONS: { value: ThemeMode; label: string; Icon: typeof Sun }[] = [
 ];
 
 export default function ThemeToggle() {
-  const { mode, resolvedTheme, setMode } = useTheme();
-
-  const ActiveIcon = resolvedTheme === 'dark' ? Moon : Sun;
+  const { mode, setMode } = useTheme();
 
   return (
     <DropdownMenu>
@@ -29,8 +27,12 @@ export default function ThemeToggle() {
           size="icon"
           className="text-rc-steel"
           aria-label="Toggle theme"
+          suppressHydrationWarning
         >
-          <ActiveIcon className="size-5" />
+          {/* Render both icons; CSS hides the wrong one based on the html.dark class.
+              This avoids hydration mismatch since both icons are in the DOM. */}
+          <Sun className="size-5 dark:hidden" />
+          <Moon className="size-5 hidden dark:block" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

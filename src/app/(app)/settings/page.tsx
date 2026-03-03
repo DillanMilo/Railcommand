@@ -121,16 +121,25 @@ const notificationSettings: NotificationSetting[] = [
 export default function SettingsPage() {
   const { mode, setMode } = useTheme();
 
-  // Notification toggles
+  // Notification toggles -- persisted to localStorage
   const [notifications, setNotifications] = useState<Record<string, boolean>>(
-    () =>
-      Object.fromEntries(
+    () => {
+      try {
+        const stored = localStorage.getItem('rc-notification-prefs');
+        if (stored) return JSON.parse(stored);
+      } catch { /* noop */ }
+      return Object.fromEntries(
         notificationSettings.map((n) => [n.key, n.defaultOn])
-      )
+      );
+    }
   );
 
   const toggleNotification = useCallback((key: string) => {
-    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+    setNotifications((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem('rc-notification-prefs', JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
   }, []);
 
   // Password form
@@ -286,6 +295,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-semibold text-foreground">
               Change Password
             </h3>
+            <p className="text-xs text-muted-foreground">Password management will be available when authentication is connected.</p>
 
             {/* Current password */}
             <div className="space-y-1.5">
@@ -474,6 +484,8 @@ export default function SettingsPage() {
             <Button
               variant="outline"
               className="border-rc-red text-rc-red hover:bg-rc-red/5 shrink-0"
+              disabled
+              title="Available when authentication is connected"
             >
               Sign Out All Devices
             </Button>
