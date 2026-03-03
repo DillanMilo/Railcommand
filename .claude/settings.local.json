@@ -18,7 +18,8 @@
       "Bash(python3:*)",
       "Bash(cat:*)",
       "Bash(grep:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(head:*)"
     ]
   }
 }

@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import ThemeToggle from './ThemeToggle';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
@@ -85,7 +86,17 @@ export default function Topbar({ children }: TopbarProps) {
       ].filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    // Clear demo mode state
+    try {
+      localStorage.removeItem('rc-mode');
+      localStorage.removeItem('rc-user-name');
+      localStorage.removeItem('rc-user-email');
+      localStorage.removeItem('rc-current-project');
+      document.cookie = 'rc-mode=; path=/; max-age=0';
+    } catch { /* noop */ }
     router.push('/login');
   }
 

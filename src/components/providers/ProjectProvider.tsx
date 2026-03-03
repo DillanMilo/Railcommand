@@ -1,9 +1,11 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getProjects, getProjectById, getCurrentUserId, setCurrentUserId as setStoreUserId, initDemoData, initFreshData } from '@/lib/store';
 import type { Project } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 interface ProjectContextValue {
   currentProject: Project | null;
@@ -13,6 +15,7 @@ interface ProjectContextValue {
   refreshProjects: () => void;
   currentUserId: string;
   setCurrentUser: (profileId: string) => void;
+  isDemo: boolean;
 }
 
 const ProjectContext = createContext<ProjectContextValue>({
@@ -23,6 +26,7 @@ const ProjectContext = createContext<ProjectContextValue>({
   refreshProjects: () => {},
   currentUserId: 'prof-001',
   setCurrentUser: () => {},
+  isDemo: true,
 });
 
 export const useProject = () => useContext(ProjectContext);
@@ -67,6 +71,7 @@ let modeRehydrated = false;
 
 export default function ProjectProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const urlProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1];
 
   // Rehydrate store from localStorage mode on first mount (runs once per session)
@@ -78,6 +83,11 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
   const [storedProjectId, setStoredProjectId] = useState<string>(getStoredProjectId);
   const [projects, setProjects] = useState<Project[]>(() => getProjects());
   const [currentUserId, setCurrentUserIdState] = useState<string>(() => getCurrentUserId());
+  const [isDemo, setIsDemo] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const mode = localStorage.getItem(MODE_KEY);
+    return mode === 'demo' || mode === 'fresh' || !mode;
+  });
 
   // URL takes priority over stored project ID
   const validUrlProject = urlProjectId && getProjectById(urlProjectId) ? urlProjectId : null;
@@ -89,6 +99,26 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
       try { localStorage.setItem(STORAGE_KEY, validUrlProject); } catch { /* noop */ }
     }
   }, [validUrlProject]);
+
+  // Check Supabase session for non-demo users
+  useEffect(() => {
+    const mode = localStorage.getItem(MODE_KEY);
+    if (mode === 'demo' || mode === 'fresh') {
+      setIsDemo(true);
+      return;
+    }
+
+    // No demo mode flag — check for real Supabase session
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setIsDemo(false);
+      } else {
+        // No session and no demo mode — redirect to login
+        router.push('/login');
+      }
+    });
+  }, [router]);
 
   function setCurrentUser(profileId: string) {
     setStoreUserId(profileId);
@@ -131,6 +161,7 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
       refreshProjects,
       currentUserId,
       setCurrentUser,
+      isDemo,
     }}>
       {children}
     </ProjectContext.Provider>

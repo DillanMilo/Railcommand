@@ -27,6 +27,7 @@ import {
   Play,
 } from 'lucide-react';
 import { initDemoData, initFreshData } from '@/lib/store';
+import { createClient } from '@/lib/supabase/client';
 
 /* ------------------------------------------------------------------ */
 /*  Schemas                                                            */
@@ -206,6 +207,7 @@ export default function LoginPage() {
   const [showInstall, setShowInstall] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const signInForm = useForm<SignInData>({
     resolver: zodResolver(signInSchema),
@@ -221,13 +223,19 @@ export default function LoginPage() {
   const strength = getPasswordStrength(watchPassword || '');
 
   const handleSignIn = useCallback(
-    async () => {
+    async (data: SignInData) => {
       setIsLoading(true);
-      // Simulate network delay — replace with Supabase auth
-      await new Promise((r) => setTimeout(r, 600));
-      initDemoData();
-      try { localStorage.setItem('rc-mode', 'demo'); } catch { /* noop */ }
+      setAuthError(null);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
       setIsLoading(false);
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
       router.push('/dashboard');
     },
     [router]
@@ -236,15 +244,20 @@ export default function LoginPage() {
   const handleSignUp = useCallback(
     async (data: SignUpData) => {
       setIsLoading(true);
-      // Simulate network delay — replace with Supabase auth
-      await new Promise((r) => setTimeout(r, 800));
-      initFreshData(data.fullName, data.email);
-      try {
-        localStorage.setItem('rc-mode', 'fresh');
-        localStorage.setItem('rc-user-name', data.fullName);
-        localStorage.setItem('rc-user-email', data.email);
-      } catch { /* noop */ }
+      setAuthError(null);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: { full_name: data.fullName },
+        },
+      });
       setIsLoading(false);
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
       setShowInstall(true);
     },
     []
@@ -252,19 +265,29 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
-    // Replace with Supabase OAuth
-    await new Promise((r) => setTimeout(r, 600));
-    initDemoData();
-    try { localStorage.setItem('rc-mode', 'demo'); } catch { /* noop */ }
-    setIsLoading(false);
-    router.push('/dashboard');
-  }, [router]);
+    setAuthError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setIsLoading(false);
+      setAuthError(error.message);
+    }
+    // Browser will redirect to Google — no need to setIsLoading(false) on success
+  }, []);
 
   const handleTryDemo = useCallback(async () => {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 400));
     initDemoData();
-    try { localStorage.setItem('rc-mode', 'demo'); } catch { /* noop */ }
+    try {
+      localStorage.setItem('rc-mode', 'demo');
+      document.cookie = 'rc-mode=demo; path=/; max-age=604800; SameSite=Lax';
+    } catch { /* noop */ }
     setIsLoading(false);
     router.push('/dashboard');
   }, [router]);
@@ -272,7 +295,15 @@ export default function LoginPage() {
   const handleForgotPassword = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
+    setAuthError(null);
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem('reset-email') as HTMLInputElement)?.value;
+    if (email) {
+      const supabase = createClient();
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
+      });
+    }
     setIsLoading(false);
     setResetSent(true);
   }, []);
@@ -281,6 +312,7 @@ export default function LoginPage() {
     setMode(newMode);
     setForgotMode(false);
     setResetSent(false);
+    setAuthError(null);
     signInForm.reset();
     signUpForm.reset();
   }, [signInForm, signUpForm]);
@@ -481,6 +513,12 @@ export default function LoginPage() {
                     ? 'Sign in to continue to your projects'
                     : 'Get started with RailCommand for free'}
                 </p>
+
+              {authError && (
+                <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                  {authError}
+                </div>
+              )}
               </div>
 
               {/* Mode toggle */}
