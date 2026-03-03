@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoGallery from '@/components/shared/PhotoGallery';
-import { getDailyLogs, getProfiles, getAttachments } from '@/lib/store';
+import { getProfiles, getAttachments } from '@/lib/store';
+import { useDailyLogDetail } from '@/hooks/useData';
 import type { DailyLog } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
@@ -20,7 +21,16 @@ function weatherIcon(conditions: string) {
 export default function DailyLogDetailPage({ params, searchParams }: { params: Promise<{ id: string; logId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId, logId } = use(params);
   use(searchParams);
-  const log = getDailyLogs(projectId).find((l) => l.id === logId) as DailyLog | undefined;
+  const { data: log, loading } = useDailyLogDetail(projectId, logId);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs', href: `/projects/${projectId}/daily-logs` }, { label: '…' }]} />
+        <p className="text-muted-foreground">Loading daily log…</p>
+      </div>
+    );
+  }
 
   if (!log) {
     return (
@@ -34,8 +44,12 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const dateObj = new Date(log.log_date);
   const dateLabel = format(dateObj, 'MMM d, yyyy');
   const dateFull = format(dateObj, 'EEEE, MMMM d, yyyy');
-  const author = getProfiles().find((p) => p.id === log.created_by);
+  const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
+    ?? getProfiles().find((p) => p.id === log.created_by)?.full_name;
   const totalHeadcount = log.personnel.reduce((s, r) => s + r.headcount, 0);
+  const attachments = (log as DailyLog & { attachments?: unknown[] }).attachments?.length
+    ? (log as DailyLog & { attachments?: unknown[] }).attachments!
+    : getAttachments('daily_log', logId);
 
   return (
     <div className="space-y-6">
@@ -48,7 +62,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       {/* Header */}
       <div>
         <h1 className="font-heading text-2xl font-bold">{dateFull}</h1>
-        {author && <p className="text-sm text-muted-foreground mt-1">Created by {author.full_name}</p>}
+        {authorName && <p className="text-sm text-muted-foreground mt-1">Created by {authorName}</p>}
       </div>
 
       {/* Weather */}
@@ -148,7 +162,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       )}
 
       {/* Photos */}
-      <PhotoGallery attachments={getAttachments('daily_log', logId)} />
+      <PhotoGallery attachments={attachments} />
     </div>
   );
 }

@@ -11,7 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getRFIs, getProfiles } from '@/lib/store';
+import { getProfiles } from '@/lib/store';
+import { useRFIs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { RFI, RFIStatus } from '@/lib/types';
@@ -40,22 +41,33 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
   const [tab, setTab] = useState<RFIStatus | 'all'>('all');
   const [search, setSearch] = useState('');
 
+  const { data: rfis, loading } = useRFIs(projectId);
+
   const filtered = useMemo(() => {
-    return getRFIs(projectId).filter((r) => {
+    return rfis.filter((r) => {
       if (tab !== 'all' && r.status !== tab) return false;
       if (search) {
         const q = search.toLowerCase();
+        const submitterName = (r as any).submitted_by_profile?.full_name ?? getProfile(r.submitted_by)?.full_name ?? '';
         return (
           r.number.toLowerCase().includes(q) ||
           r.subject.toLowerCase().includes(q) ||
-          (getProfile(r.submitted_by)?.full_name ?? '').toLowerCase().includes(q)
+          submitterName.toLowerCase().includes(q)
         );
       }
       return true;
     });
-  }, [tab, search, projectId]);
+  }, [tab, search, rfis]);
 
   const basePath = `/projects/${projectId}/rfis`;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -126,8 +138,8 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </TableCell>
                   <TableCell><StatusBadge status={rfi.status} type="rfi" /></TableCell>
                   <TableCell><PriorityBadge priority={rfi.priority} /></TableCell>
-                  <TableCell>{getProfile(rfi.submitted_by)?.full_name ?? '—'}</TableCell>
-                  <TableCell>{getProfile(rfi.assigned_to)?.full_name ?? '—'}</TableCell>
+                  <TableCell>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by)?.full_name ?? '—'}</TableCell>
+                  <TableCell>{(rfi as any).assigned_to_profile?.full_name ?? getProfile(rfi.assigned_to)?.full_name ?? '—'}</TableCell>
                   <TableCell>{format(new Date(rfi.due_date), 'MMM d, yyyy')}</TableCell>
                   <TableCell className={`text-right font-medium ${isOverdue ? 'text-red-600' : ''}`}>{days}</TableCell>
                 </TableRow>
@@ -155,7 +167,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </div>
                   <p className="font-medium text-sm line-clamp-2">{rfi.subject}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{getProfile(rfi.submitted_by)?.full_name}</span>
+                    <span>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by)?.full_name}</span>
                     <span className={isOverdue ? 'text-red-600 font-medium' : ''}>{days}d open</span>
                   </div>
                   <div className="flex items-center gap-2">

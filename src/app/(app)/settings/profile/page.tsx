@@ -34,8 +34,9 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { getProfileWithOrg, getProjectMembers, updateProfile } from '@/lib/store';
+import { getProfileWithOrg, updateProfile } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { useProjectMembers } from '@/hooks/useData';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -105,7 +106,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { currentProject, currentProjectId, currentUserId } = useProject();
   const profile = getProfileWithOrg(currentUserId);
-  const projectMembers = getProjectMembers(currentProjectId);
+  const { data: projectMembers } = useProjectMembers(currentProjectId);
   const membership = projectMembers.find((pm) => pm.profile_id === currentUserId);
 
   const [isSaving, setIsSaving] = useState(false);

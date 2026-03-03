@@ -10,7 +10,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getPunchListItems, getProfiles } from '@/lib/store';
+import { getProfiles } from '@/lib/store';
+import { usePunchListItems } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus, Priority } from '@/lib/types';
@@ -38,7 +39,8 @@ const BORDER_COLOR: Record<Priority, string> = {
   low: 'border-l-blue-500',
 };
 
-function getName(id: string) {
+function getName(id: string, profileName?: string) {
+  if (profileName) return profileName;
   return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
 }
 
@@ -49,7 +51,7 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
 
-  const items = getPunchListItems(projectId);
+  const { data: items, loading } = usePunchListItems(projectId);
   const counts = useMemo(() => ({
     open: items.filter((i) => i.status === 'open').length,
     in_progress: items.filter((i) => i.status === 'in_progress').length,
@@ -66,6 +68,14 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
   }, [items, statusFilter, priorityFilter]);
 
   const basePath = `/projects/${projectId}/punch-list`;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -144,7 +154,7 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
                 <TableCell className="max-w-[180px] truncate text-muted-foreground">{item.location}</TableCell>
                 <TableCell><StatusBadge status={item.status} type="punch_list" /></TableCell>
                 <TableCell><PriorityBadge priority={item.priority} /></TableCell>
-                <TableCell>{getName(item.assigned_to)}</TableCell>
+                <TableCell>{getName(item.assigned_to, item.assigned_to_profile?.full_name)}</TableCell>
                 <TableCell>{format(new Date(item.due_date), 'MMM d, yyyy')}</TableCell>
               </TableRow>
             ))}

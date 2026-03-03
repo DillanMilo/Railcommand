@@ -10,7 +10,10 @@ import SubmittalTimeline from '@/components/submittals/SubmittalTimeline';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { getSubmittals, getProfiles, getMilestones, getProfileWithOrg, updateSubmittalStatus } from '@/lib/store';
+import { getProfiles, getMilestones, getProfileWithOrg, updateSubmittalStatus as storeUpdateSubmittalStatus } from '@/lib/store';
+import { useSubmittalDetail } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { updateSubmittalStatus as serverUpdateSubmittalStatus } from '@/lib/actions/submittals';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { SubmittalStatus } from '@/lib/types';
@@ -19,9 +22,20 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
   const { id: projectId, submittalId } = use(params);
   use(searchParams);
   const { can } = usePermissions(projectId);
+  const { isDemo } = useProject();
+  const { data: original, loading, refetch } = useSubmittalDetail(projectId, submittalId);
+  const [status, setStatus] = useState<SubmittalStatus | null>(null);
 
-  const original = getSubmittals(projectId).find((s) => s.id === submittalId);
-  const [status, setStatus] = useState<SubmittalStatus>(original?.status ?? 'draft');
+  // Sync local status when data loads or changes
+  const effectiveStatus: SubmittalStatus = status ?? original?.status ?? 'draft';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rc-orange" />
+      </div>
+    );
+  }
 
   if (!original) {
     return (
@@ -29,10 +43,31 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
     );
   }
 
-  const submittal = { ...original, status };
-  const submitter = getProfileWithOrg(submittal.submitted_by);
-  const reviewer = submittal.reviewed_by ? getProfileWithOrg(submittal.reviewed_by) : null;
+  const submittal = { ...original, status: effectiveStatus };
+  const submitter = original.submitted_by_profile
+    ? { ...original.submitted_by_profile, organization: { name: '' } as { name: string } }
+    : getProfileWithOrg(submittal.submitted_by);
+  const reviewer = submittal.reviewed_by
+    ? (original.reviewed_by_profile
+        ? { ...original.reviewed_by_profile, organization: { name: '' } as { name: string } }
+        : getProfileWithOrg(submittal.reviewed_by))
+    : null;
   const milestone = getMilestones(projectId).find((m) => m.id === submittal.milestone_id);
+
+  async function handleStatusChange(newStatus: SubmittalStatus) {
+    setStatus(newStatus);
+    if (isDemo) {
+      storeUpdateSubmittalStatus(submittalId, newStatus);
+      refetch();
+    } else {
+      const result = await serverUpdateSubmittalStatus(projectId, submittalId, newStatus);
+      if (result.error) {
+        setStatus(original?.status ?? 'draft');
+        return;
+      }
+      refetch();
+    }
+  }
 
   const infoItems = [
     { label: 'Submitted By', value: submitter?.full_name ?? '—', sub: submitter?.organization?.name, icon: <User className="size-4" /> },
@@ -60,7 +95,7 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-1">
           <h1 className="font-heading text-xl sm:text-2xl font-bold">{submittal.number}: {submittal.title}</h1>
-          <StatusBadge status={status} type="submittal" />
+          <StatusBadge status={effectiveStatus} type="submittal" />
         </div>
         <p className="text-sm text-muted-foreground">{submittal.spec_section}</p>
       </div>
@@ -138,16 +173,16 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
         <>
           <Separator className="my-6" />
           <div className="flex flex-col sm:flex-row flex-wrap gap-3">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto" onClick={() => { setStatus('approved'); updateSubmittalStatus(submittalId, 'approved'); }}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto" onClick={() => handleStatusChange('approved')}>
               Approve
             </Button>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto" onClick={() => { setStatus('conditional'); updateSubmittalStatus(submittalId, 'conditional'); }}>
+            <Button className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto" onClick={() => handleStatusChange('conditional')}>
               Approve with Conditions
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto" onClick={() => { setStatus('rejected'); updateSubmittalStatus(submittalId, 'rejected'); }}>
+            <Button className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto" onClick={() => handleStatusChange('rejected')}>
               Reject
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setStatus('submitted'); updateSubmittalStatus(submittalId, 'submitted'); }}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => handleStatusChange('submitted')}>
               Request Revision
             </Button>
           </div>

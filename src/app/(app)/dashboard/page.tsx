@@ -12,11 +12,11 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import {
-  getSubmittals,
-  getRFIs,
-  getPunchListItems,
-  getDailyLogs,
-} from '@/lib/store';
+  useSubmittals,
+  useRFIs,
+  usePunchListItems,
+  useDailyLogs,
+} from '@/hooks/useData';
 import {
   DollarSign,
   Calendar,
@@ -46,6 +46,19 @@ export default function DashboardPage() {
 
   const project = currentProject;
 
+  const { data: allSubmittals, loading: submittalsLoading } = useSubmittals(currentProjectId);
+  const { data: allRFIs, loading: rfisLoading } = useRFIs(currentProjectId);
+  const { data: allPunch, loading: punchLoading } = usePunchListItems(currentProjectId);
+  const { data: allLogs, loading: logsLoading } = useDailyLogs(currentProjectId);
+
+  if (submittalsLoading || rfisLoading || punchLoading || logsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   const budgetDisplay = `$${(project.budget_total / 1_000_000).toFixed(1)}M`;
   const budgetSpent = `$${(project.budget_spent / 1_000_000).toFixed(1)}M spent`;
   const budgetPercent = project.budget_total > 0
@@ -59,19 +72,16 @@ export default function DashboardPage() {
     ? Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)))
     : 100;
 
-  const allSubmittals = getSubmittals(currentProjectId);
   const totalSubmittals = allSubmittals.length;
   const pendingSubmittals = allSubmittals.filter(
     (s) => s.status === 'submitted' || s.status === 'under_review'
   ).length;
 
-  const allRFIs = getRFIs(currentProjectId);
   const openRFIs = allRFIs.filter(
     (r) => r.status === 'open' || r.status === 'overdue'
   ).length;
   const overdueRFIs = allRFIs.filter((r) => r.status === 'overdue').length;
 
-  const allPunch = getPunchListItems(currentProjectId);
   const openPunch = allPunch.filter(
     (p) => p.status === 'open' || p.status === 'in_progress'
   ).length;
@@ -80,7 +90,6 @@ export default function DashboardPage() {
       (p.status === 'open' || p.status === 'in_progress') && p.priority === 'critical'
   ).length;
 
-  const allLogs = getDailyLogs(currentProjectId);
   const totalLogs = allLogs.length;
   const lastLog = [...allLogs].sort(
     (a, b) => new Date(b.log_date).getTime() - new Date(a.log_date).getTime()

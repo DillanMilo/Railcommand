@@ -13,6 +13,9 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { getProfiles, addPunchListItem, addAttachment } from '@/lib/store';
+import { useProjectMembers } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { createPunchListItem as serverCreatePunchListItem } from '@/lib/actions/punch-list';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { Priority, GeoTag } from '@/lib/types';
@@ -29,6 +32,8 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
   use(searchParams);
   const router = useRouter();
   const { can } = usePermissions(projectId);
+  const { isDemo } = useProject();
+  const { data: members } = useProjectMembers(projectId);
   const basePath = `/projects/${projectId}/punch-list`;
 
   const [title, setTitle] = useState('');
@@ -40,6 +45,11 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
+
+  // Build assignable profiles: prefer members with embedded profile, fall back to store
+  const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
+    ? members.map((m) => m.profile!).filter(Boolean)
+    : getProfiles();
 
   if (!can(ACTIONS.PUNCH_LIST_CREATE)) {
     return (
@@ -57,31 +67,45 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const item = addPunchListItem(projectId, {
-      title,
-      description,
-      location,
-      priority,
-      assigned_to: assignedTo,
-      due_date: dueDate,
-      geo_tag: geoTag,
-    });
 
-    // Save photo attachments
-    for (const photo of photos) {
-      addAttachment({
-        entity_type: 'punch_list',
-        entity_id: item.id,
-        file_name: photo.file.name,
-        file_url: photo.preview,
-        file_type: photo.file.type,
-        file_size: photo.file.size,
-        photo_category: photo.category,
-        geo_lat: photo.geo_lat,
-        geo_lng: photo.geo_lng,
+    if (isDemo) {
+      const item = addPunchListItem(projectId, {
+        title,
+        description,
+        location,
+        priority,
+        assigned_to: assignedTo,
+        due_date: dueDate,
+        geo_tag: geoTag,
       });
+
+      // Save photo attachments
+      for (const photo of photos) {
+        addAttachment({
+          entity_type: 'punch_list',
+          entity_id: item.id,
+          file_name: photo.file.name,
+          file_url: photo.preview,
+          file_type: photo.file.type,
+          file_size: photo.file.size,
+          photo_category: photo.category,
+          geo_lat: photo.geo_lat,
+          geo_lng: photo.geo_lng,
+        });
+      }
+    } else {
+      const result = await serverCreatePunchListItem(projectId, {
+        title,
+        description,
+        location,
+        priority,
+        assigned_to: assignedTo,
+        due_date: dueDate,
+        geo_tag: geoTag,
+      });
+      if (result.error) { return; }
     }
 
     setSuccess(true);
@@ -143,7 +167,7 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
                 <Select value={assignedTo} onValueChange={setAssignedTo}>
                   <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="Select team member" /></SelectTrigger>
                   <SelectContent>
-                    {getProfiles().map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                    {assignableProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

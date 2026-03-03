@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getActivityLog, getProfiles } from '@/lib/store';
+import { useActivityLog } from '@/hooks/useData';
+import { getProfiles } from '@/lib/store';
 import { formatDistanceToNow } from 'date-fns';
 import {
   FileCheck,
@@ -33,7 +34,17 @@ interface ActivityFeedProps {
 }
 
 export default function ActivityFeed({ projectId }: ActivityFeedProps) {
-  const recentActivities = [...getActivityLog(projectId)]
+  const { data: activityLog, loading: activityLoading } = useActivityLog(projectId, 10);
+
+  if (activityLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const recentActivities = [...activityLog]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10);
 
@@ -64,7 +75,7 @@ export default function ActivityFeed({ projectId }: ActivityFeedProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm leading-snug">
                     <span className="font-medium">
-                      {getProfileName(activity.performed_by)}
+                      {activity.performed_by_profile?.full_name ?? getProfileName(activity.performed_by)}
                     </span>{' '}
                     <span className="text-rc-steel">{activity.description}</span>
                   </p>

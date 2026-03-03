@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { getSubmittals, getProfiles } from '@/lib/store';
+import { getProfiles } from '@/lib/store';
+import { useSubmittals } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
@@ -38,11 +39,12 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
   const { id: projectId } = use(params);
   use(searchParams);
   const { can } = usePermissions(projectId);
+  const { data: submittals, loading } = useSubmittals(projectId);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    let items = [...getSubmittals(projectId)].sort(
+    let items = [...submittals].sort(
       (a, b) => new Date(b.submit_date).getTime() - new Date(a.submit_date).getTime()
     );
     if (statusFilter !== 'all') {
@@ -55,7 +57,15 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
       );
     }
     return items;
-  }, [statusFilter, search, projectId]);
+  }, [statusFilter, search, submittals]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rc-orange" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -65,7 +75,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-2xl font-bold">Submittals</h1>
-          <Badge variant="secondary" className="text-xs">{getSubmittals(projectId).length}</Badge>
+          <Badge variant="secondary" className="text-xs">{submittals.length}</Badge>
         </div>
         {can(ACTIONS.SUBMITTAL_CREATE) && (
           <Link href={`/projects/${projectId}/submittals/new`}>
@@ -114,7 +124,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
           </TableHeader>
           <TableBody>
             {filtered.map((sub) => {
-              const profile = getProfiles().find((p) => p.id === sub.submitted_by);
+              const profileName = sub.submitted_by_profile?.full_name ?? getProfiles().find((p) => p.id === sub.submitted_by)?.full_name ?? 'Unknown';
               const days = getAgingDays(sub.submit_date);
               const overdue = isOverdue(sub.due_date);
               return (
@@ -131,7 +141,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{sub.spec_section}</TableCell>
                   <TableCell><StatusBadge status={sub.status} type="submittal" /></TableCell>
-                  <TableCell className="text-sm">{profile?.full_name ?? '—'}</TableCell>
+                  <TableCell className="text-sm">{profileName}</TableCell>
                   <TableCell className="text-sm">{format(new Date(sub.due_date), 'MMM d, yyyy')}</TableCell>
                   <TableCell className={`text-right text-sm font-medium ${overdue && !['approved', 'rejected'].includes(sub.status) ? 'text-red-600' : 'text-muted-foreground'}`}>
                     {days}d
@@ -151,7 +161,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
       {/* Mobile cards */}
       <div className="lg:hidden mt-6 space-y-3">
         {filtered.map((sub) => {
-          const profile = getProfiles().find((p) => p.id === sub.submitted_by);
+          const profileName = sub.submitted_by_profile?.full_name ?? getProfiles().find((p) => p.id === sub.submitted_by)?.full_name ?? 'Unknown';
           const days = getAgingDays(sub.submit_date);
           const overdue = isOverdue(sub.due_date);
           return (
@@ -165,7 +175,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
                   <p className="font-medium text-sm leading-tight line-clamp-2">{sub.title}</p>
                   <p className="text-xs text-muted-foreground">{sub.spec_section}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                    <span>{profile?.full_name}</span>
+                    <span>{profileName}</span>
                     <span className={overdue && !['approved', 'rejected'].includes(sub.status) ? 'text-red-600 font-medium' : ''}>
                       Due {format(new Date(sub.due_date), 'MMM d')} ({days}d)
                     </span>

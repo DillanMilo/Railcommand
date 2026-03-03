@@ -8,7 +8,8 @@ import { getNavItems } from '@/lib/constants';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import { updateProjectStatus, deleteProject } from '@/lib/store';
+import { updateProjectStatus as storeUpdateProjectStatus, deleteProject as storeDeleteProject } from '@/lib/store';
+import { updateProjectStatus as serverUpdateProjectStatus, deleteProject as serverDeleteProject } from '@/lib/actions/projects';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import DeleteProjectDialog from '@/components/projects/DeleteProjectDialog';
 import type { Project } from '@/lib/types';
@@ -73,7 +74,7 @@ export default function Sidebar() {
   const [deleteDialogProject, setDeleteDialogProject] = useState<Project | null>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const { currentProject, currentProjectId, projects, setCurrentProjectId, refreshProjects } = useProject();
+  const { currentProject, currentProjectId, projects, setCurrentProjectId, refreshProjects, isDemo } = useProject();
   const { can } = usePermissions(currentProjectId);
 
   const navItems = getNavItems(currentProjectId);
@@ -86,19 +87,31 @@ export default function Sidebar() {
     (p) => p.status === 'completed' || p.status === 'archived'
   );
 
-  const handleMarkComplete = (project: Project) => {
-    updateProjectStatus(project.id, 'completed');
+  const handleMarkComplete = async (project: Project) => {
+    if (isDemo) {
+      storeUpdateProjectStatus(project.id, 'completed');
+    } else {
+      await serverUpdateProjectStatus(project.id, 'completed');
+    }
     refreshProjects();
   };
 
-  const handleArchive = (project: Project) => {
-    updateProjectStatus(project.id, 'archived');
+  const handleArchive = async (project: Project) => {
+    if (isDemo) {
+      storeUpdateProjectStatus(project.id, 'archived');
+    } else {
+      await serverUpdateProjectStatus(project.id, 'archived');
+    }
     refreshProjects();
   };
 
-  const handleDeleteConfirmed = (projectId: string) => {
+  const handleDeleteConfirmed = async (projectId: string) => {
     const wasCurrentProject = projectId === currentProjectId;
-    deleteProject(projectId);
+    if (isDemo) {
+      storeDeleteProject(projectId);
+    } else {
+      await serverDeleteProject(projectId);
+    }
     refreshProjects();
 
     if (wasCurrentProject) {

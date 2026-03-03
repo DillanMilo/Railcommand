@@ -13,6 +13,8 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { addDailyLog, addAttachment } from '@/lib/store';
+import { createDailyLog as serverCreateDailyLog } from '@/lib/actions/daily-logs';
+import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { GeoTag } from '@/lib/types';
@@ -29,6 +31,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const { id: projectId } = use(params);
   use(searchParams);
   const router = useRouter();
+  const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -43,6 +46,8 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!can(ACTIONS.DAILY_LOG_CREATE)) {
     return (
@@ -226,6 +231,13 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
       {/* Photo Upload */}
       <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
 
+      {errorMsg && (
+        <Alert className="border-red-300 bg-red-50">
+          <AlertTitle className="text-red-800">Error</AlertTitle>
+          <AlertDescription className="text-red-700">{errorMsg}</AlertDescription>
+        </Alert>
+      )}
+
       {success && (
         <Alert className="border-emerald-300 bg-emerald-50">
           <CheckCircle2 className="size-4 text-emerald-600" />
@@ -238,41 +250,68 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success}
-          onClick={() => {
-            const log = addDailyLog(projectId, {
-              log_date: date,
-              weather_temp: typeof temp === 'number' ? temp : 0,
-              weather_conditions: conditions,
-              weather_wind: wind,
-              work_summary: workSummary,
-              safety_notes: safetyNotes,
-              geo_tag: geoTag,
-              personnel,
-              equipment: equipment.map((e) => ({ type: e.type, count: e.count, notes: e.notes })),
-              work_items: workItems,
-            });
+          disabled={success || submitting}
+          onClick={async () => {
+            setErrorMsg(null);
+            setSubmitting(true);
 
-            // Save photo attachments
-            for (const photo of photos) {
-              addAttachment({
-                entity_type: 'daily_log',
-                entity_id: log.id,
-                file_name: photo.file.name,
-                file_url: photo.preview,
-                file_type: photo.file.type,
-                file_size: photo.file.size,
-                photo_category: photo.category,
-                geo_lat: photo.geo_lat,
-                geo_lng: photo.geo_lng,
+            if (isDemo) {
+              const log = addDailyLog(projectId, {
+                log_date: date,
+                weather_temp: typeof temp === 'number' ? temp : 0,
+                weather_conditions: conditions,
+                weather_wind: wind,
+                work_summary: workSummary,
+                safety_notes: safetyNotes,
+                geo_tag: geoTag,
+                personnel,
+                equipment: equipment.map((e) => ({ type: e.type, count: e.count, notes: e.notes })),
+                work_items: workItems,
               });
-            }
 
-            setSuccess(true);
-            setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
+              // Save photo attachments (demo)
+              for (const photo of photos) {
+                addAttachment({
+                  entity_type: 'daily_log',
+                  entity_id: log.id,
+                  file_name: photo.file.name,
+                  file_url: photo.preview,
+                  file_type: photo.file.type,
+                  file_size: photo.file.size,
+                  photo_category: photo.category,
+                  geo_lat: photo.geo_lat,
+                  geo_lng: photo.geo_lng,
+                });
+              }
+
+              setSuccess(true);
+              setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
+            } else {
+              const result = await serverCreateDailyLog(projectId, {
+                log_date: date,
+                weather_temp: typeof temp === 'number' ? temp : 0,
+                weather_conditions: conditions,
+                weather_wind: wind,
+                work_summary: workSummary,
+                safety_notes: safetyNotes,
+                geo_tag: geoTag,
+                personnel,
+                equipment: equipment.map((e) => ({ equipment_type: e.type, count: e.count, notes: e.notes })),
+                work_items: workItems,
+              });
+
+              if (result.error) {
+                setErrorMsg(result.error);
+                setSubmitting(false);
+                return;
+              }
+
+              setSuccess(true);
+              setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
+            }
           }}
         >
-          Submit Log
+          {submitting && !success ? 'Submitting…' : 'Submit Log'}
         </Button>
       </div>
     </div>

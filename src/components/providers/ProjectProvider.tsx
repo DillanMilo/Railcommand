@@ -3,7 +3,8 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { getProjects, getProjectById, getCurrentUserId, setCurrentUserId as setStoreUserId, initDemoData, initFreshData } from '@/lib/store';
+import { getProjects as getStoreProjects, getProjectById as getStoreProjectById, getCurrentUserId, setCurrentUserId as setStoreUserId, initDemoData, initFreshData } from '@/lib/store';
+import { getProjects as fetchProjects } from '@/lib/actions/projects';
 import type { Project } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 
@@ -52,19 +53,20 @@ function rehydrateMode(): void {
   } catch { /* noop */ }
 }
 
-function getStoredProjectId(): string {
+function getStoredProjectId(isDemoMode: boolean): string {
   try {
-    const mode = localStorage.getItem(MODE_KEY);
-    if (mode === 'fresh') {
-      // Fresh users have no projects — return empty
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && getProjectById(stored)) return stored;
-      return '';
-    }
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && getProjectById(stored)) return stored;
+    if (isDemoMode) {
+      const mode = localStorage.getItem(MODE_KEY);
+      if (mode === 'fresh') {
+        return stored && getStoreProjectById(stored) ? stored : '';
+      }
+      return stored && getStoreProjectById(stored) ? stored : 'proj-001';
+    }
+    // Real auth — return stored ID; will be validated after projects fetch
+    return stored ?? '';
   } catch { /* noop */ }
-  return 'proj-001';
+  return isDemoMode ? 'proj-001' : '';
 }
 
 let modeRehydrated = false;
@@ -80,17 +82,17 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     modeRehydrated = true;
   }
 
-  const [storedProjectId, setStoredProjectId] = useState<string>(getStoredProjectId);
-  const [projects, setProjects] = useState<Project[]>(() => getProjects());
-  const [currentUserId, setCurrentUserIdState] = useState<string>(() => getCurrentUserId());
   const [isDemo, setIsDemo] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     const mode = localStorage.getItem(MODE_KEY);
-    return mode === 'demo' || mode === 'fresh' || !mode;
+    return mode === 'demo' || mode === 'fresh';
   });
+  const [storedProjectId, setStoredProjectId] = useState<string>(() => getStoredProjectId(isDemo));
+  const [projects, setProjects] = useState<Project[]>(() => (isDemo ? getStoreProjects() : []));
+  const [currentUserId, setCurrentUserIdState] = useState<string>(() => getCurrentUserId());
 
   // URL takes priority over stored project ID
-  const validUrlProject = urlProjectId && getProjectById(urlProjectId) ? urlProjectId : null;
+  const validUrlProject = urlProjectId && projects.find((p) => p.id === urlProjectId) ? urlProjectId : null;
   const currentProjectId = validUrlProject ?? storedProjectId;
 
   // Persist URL project ID to localStorage as a side effect
@@ -100,7 +102,7 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     }
   }, [validUrlProject]);
 
-  // Check Supabase session for non-demo users
+  // Check Supabase session and load projects for real auth users
   useEffect(() => {
     const mode = localStorage.getItem(MODE_KEY);
     if (mode === 'demo' || mode === 'fresh') {
@@ -113,6 +115,18 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setIsDemo(false);
+        // Fetch projects from the database
+        fetchProjects().then((result) => {
+          if (result.data) {
+            setProjects(result.data);
+            // If no stored project, select the first one
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if ((!stored || !result.data.find((p) => p.id === stored)) && result.data.length > 0) {
+              setStoredProjectId(result.data[0].id);
+              try { localStorage.setItem(STORAGE_KEY, result.data[0].id); } catch { /* noop */ }
+            }
+          }
+        });
       } else {
         // No session and no demo mode — redirect to login
         router.push('/login');
@@ -134,8 +148,14 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     }
   }
 
-  function refreshProjects() {
-    const updatedProjects = getProjects();
+  const refreshProjects = useCallback(async () => {
+    let updatedProjects: Project[];
+    if (isDemo) {
+      updatedProjects = getStoreProjects();
+    } else {
+      const result = await fetchProjects();
+      updatedProjects = result.data ?? projects;
+    }
     setProjects(updatedProjects);
 
     // If current project was deleted, switch to first remaining project
@@ -148,9 +168,9 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
         // localStorage may not be available
       }
     }
-  }
+  }, [isDemo, currentProjectId, projects]);
 
-  const currentProject = getProjectById(currentProjectId) ?? null;
+  const currentProject = projects.find((p) => p.id === currentProjectId) ?? null;
 
   return (
     <ProjectContext.Provider value={{

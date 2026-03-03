@@ -10,7 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { getProfiles, getMilestones, addRFI } from '@/lib/store';
+import { getProfiles, addRFI as storeAddRFI } from '@/lib/store';
+import { useProjectMembers, useMilestones } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { createRFI as serverCreateRFI } from '@/lib/actions/rfis';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { Priority } from '@/lib/types';
@@ -22,7 +25,15 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   use(searchParams);
   const router = useRouter();
   const { can } = usePermissions(projectId);
+  const { isDemo } = useProject();
   const basePath = `/projects/${projectId}/rfis`;
+
+  const { data: members, loading: membersLoading } = useProjectMembers(projectId);
+  const { data: milestones, loading: milestonesLoading } = useMilestones(projectId);
+
+  const profiles = members.map((m) => (m as any).profile).filter(Boolean);
+  // In demo mode member.profile may not be populated, fall back to store
+  const assignableProfiles = profiles.length > 0 ? profiles : getProfiles();
 
   const [subject, setSubject] = useState('');
   const [question, setQuestion] = useState('');
@@ -31,6 +42,14 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const [dueDate, setDueDate] = useState('');
   const [milestoneId, setMilestoneId] = useState('');
   const [success, setSuccess] = useState(false);
+
+  if (membersLoading || milestonesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!can(ACTIONS.RFI_CREATE)) {
     return (
@@ -48,17 +67,23 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !question.trim()) return;
-    addRFI(projectId, {
+    const data = {
       subject,
       question,
       priority,
       assigned_to: assignTo,
       due_date: dueDate,
       milestone_id: milestoneId || null,
-    });
+    };
+    if (isDemo) {
+      storeAddRFI(projectId, data);
+    } else {
+      const result = await serverCreateRFI(projectId, data);
+      if (result.error) return;
+    }
     setSuccess(true);
     setTimeout(() => router.push(basePath), 1500);
   };
@@ -124,7 +149,7 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
                 <Select value={assignTo} onValueChange={setAssignTo}>
                   <SelectTrigger><SelectValue placeholder="Select team member" /></SelectTrigger>
                   <SelectContent>
-                    {getProfiles().map((p) => (
+                    {assignableProfiles.map((p: any) => (
                       <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -143,7 +168,7 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
                 <Select value={milestoneId} onValueChange={setMilestoneId}>
                   <SelectTrigger><SelectValue placeholder="Select milestone" /></SelectTrigger>
                   <SelectContent>
-                    {getMilestones(projectId).map((m) => (
+                    {milestones.map((m) => (
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                     ))}
                   </SelectContent>

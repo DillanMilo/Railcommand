@@ -11,7 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { getMilestones, addSubmittal, addAttachment } from '@/lib/store';
+import { addSubmittal, addAttachment } from '@/lib/store';
+import { useMilestones } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { createSubmittal as serverCreateSubmittal } from '@/lib/actions/submittals';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
@@ -31,6 +34,8 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
   use(searchParams);
   const router = useRouter();
   const { can } = usePermissions(projectId);
+  const { isDemo } = useProject();
+  const { data: milestones, loading: milestonesLoading } = useMilestones(projectId);
 
   const [title, setTitle] = useState('');
   const [specSection, setSpecSection] = useState('');
@@ -38,8 +43,17 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
   const [milestoneId, setMilestoneId] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const canSubmit = title.trim() && specSection;
+
+  if (milestonesLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rc-orange" />
+      </div>
+    );
+  }
 
   if (!can(ACTIONS.SUBMITTAL_CREATE)) {
     return (
@@ -59,30 +73,50 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    const submittal = addSubmittal(projectId, {
-      title,
-      description,
-      spec_section: specSection,
-      milestone_id: milestoneId || null,
-    });
-    // Save file attachments
-    for (const file of files) {
-      addAttachment({
-        entity_type: 'submittal',
-        entity_id: submittal.id,
-        file_name: file.name,
-        file_url: URL.createObjectURL(file),
-        file_type: file.type,
-        file_size: file.size,
+    setSubmitError(null);
+
+    if (isDemo) {
+      const submittal = addSubmittal(projectId, {
+        title,
+        description,
+        spec_section: specSection,
+        milestone_id: milestoneId || null,
       });
+      // Save file attachments
+      for (const file of files) {
+        addAttachment({
+          entity_type: 'submittal',
+          entity_id: submittal.id,
+          file_name: file.name,
+          file_url: URL.createObjectURL(file),
+          file_type: file.type,
+          file_size: file.size,
+        });
+      }
+      setSuccess(true);
+      setTimeout(() => {
+        router.push(`/projects/${projectId}/submittals`);
+      }, 1500);
+    } else {
+      const result = await serverCreateSubmittal(projectId, {
+        title,
+        description,
+        spec_section: specSection,
+        due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        milestone_id: milestoneId || null,
+      });
+      if (result.error) {
+        setSubmitError(result.error);
+        return;
+      }
+      setSuccess(true);
+      setTimeout(() => {
+        router.push(`/projects/${projectId}/submittals`);
+      }, 1500);
     }
-    setSuccess(true);
-    setTimeout(() => {
-      router.push(`/projects/${projectId}/submittals`);
-    }, 1500);
   }
 
   return (
@@ -107,6 +141,13 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
           <CheckCircle2 className="size-4 text-emerald-600" />
           <AlertTitle className="text-emerald-800">Submittal created</AlertTitle>
           <AlertDescription className="text-emerald-700">Redirecting to submittals list...</AlertDescription>
+        </Alert>
+      )}
+
+      {submitError && (
+        <Alert className="mt-6 border-red-300 bg-red-50">
+          <AlertTitle className="text-red-800">Error</AlertTitle>
+          <AlertDescription className="text-red-700">{submitError}</AlertDescription>
         </Alert>
       )}
 
@@ -151,7 +192,7 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
                   <SelectValue placeholder="Select milestone (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getMilestones(projectId).map((m) => (
+                  {milestones.map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { getProjectMembers } from '@/lib/store';
+import { useProjectMembers } from '@/hooks/useData';
 import { canPerform, getAllowedActions, type Action } from '@/lib/permissions';
 import type { ProjectMember } from '@/lib/types';
 
@@ -15,7 +15,7 @@ interface UsePermissionsResult {
 
 export function usePermissions(projectId: string): UsePermissionsResult {
   const { currentUserId } = useProject();
-  const members = getProjectMembers(projectId);
+  const { data: members } = useProjectMembers(projectId);
 
   const membership = useMemo(
     () => members.find((m) => m.profile_id === currentUserId) ?? null,

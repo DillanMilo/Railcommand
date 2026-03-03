@@ -10,7 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getRFIs, getProfiles, getOrganizations, getMilestones, updateRFIStatus, addRFIResponse } from '@/lib/store';
+import { getProfiles, getOrganizations, getMilestones, updateRFIStatus as storeUpdateRFIStatus, addRFIResponse as storeAddRFIResponse } from '@/lib/store';
+import { useRFIDetail } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { updateRFIStatus as serverUpdateRFIStatus, addRFIResponse as serverAddRFIResponse } from '@/lib/actions/rfis';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
@@ -28,10 +31,11 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   const { id: projectId, rfiId } = use(params);
   use(searchParams);
   const { can } = usePermissions(projectId);
+  const { isDemo } = useProject();
   const [newResponse, setNewResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const rfi = getRFIs(projectId).find((r) => r.id === rfiId);
+  const { data: rfi, loading, refetch } = useRFIDetail(projectId, rfiId);
   const [status, setStatus] = useState(rfi?.status ?? 'open');
 
   // Reset state when navigating to a different RFI
@@ -43,25 +47,54 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
     setSubmitted(false);
   }
 
+  // Sync status when rfi data loads/changes
+  const [prevRfiStatus, setPrevRfiStatus] = useState(rfi?.status);
+  if (rfi?.status && rfi.status !== prevRfiStatus) {
+    setPrevRfiStatus(rfi.status);
+    setStatus(rfi.status);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!rfi) return <p className="p-8 text-muted-foreground">RFI not found.</p>;
 
-  const submitter = getProfile(rfi.submitted_by);
-  const assignee = getProfile(rfi.assigned_to);
+  const submitter = (rfi as any).submitted_by_profile ?? getProfile(rfi.submitted_by);
+  const assignee = (rfi as any).assigned_to_profile ?? getProfile(rfi.assigned_to);
   const milestone = getMilestoneById(rfi.milestone_id, projectId);
   const isOverdue = status === 'overdue';
   const canRespond = status === 'open' || status === 'overdue';
   const overdueDays = isOverdue ? differenceInCalendarDays(new Date(), new Date(rfi.due_date)) : 0;
   const basePath = `/projects/${projectId}/rfis`;
 
-  const handleSubmitResponse = () => {
+  const handleSubmitResponse = async () => {
     if (!newResponse.trim()) return;
-    addRFIResponse(rfiId, newResponse);
+    if (isDemo) {
+      storeAddRFIResponse(rfiId, newResponse);
+      refetch();
+    } else {
+      const result = await serverAddRFIResponse(projectId, rfiId, newResponse, false);
+      if (result.error) return;
+      refetch();
+    }
     setSubmitted(true);
     setNewResponse('');
   };
 
-  const handleStatusChange = (newStatus: 'answered' | 'closed') => {
-    updateRFIStatus(rfiId, newStatus);
+  const handleStatusChange = async (newStatus: 'answered' | 'closed') => {
+    if (isDemo) {
+      storeUpdateRFIStatus(rfiId, newStatus);
+      refetch();
+    } else {
+      const result = await serverUpdateRFIStatus(projectId, rfiId, newStatus);
+      if (result.error) return;
+      refetch();
+    }
     setStatus(newStatus);
   };
 
@@ -142,7 +175,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
             <p className="text-sm text-muted-foreground py-4 text-center">No responses yet.</p>
           )}
           {rfi.responses?.map((resp) => {
-            const author = getProfile(resp.author_id);
+            const author = (resp as any).author ?? getProfile(resp.author_id);
             const org = author ? getOrg(author.organization_id) : null;
             return (
               <div

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import StatusBadge from '@/components/shared/StatusBadge';
-import { getMilestones } from '@/lib/store';
+import { useMilestones } from '@/hooks/useData';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +20,17 @@ interface MilestoneWidgetProps {
 }
 
 export default function MilestoneWidget({ projectId }: MilestoneWidgetProps) {
-  const sortedMilestones = [...getMilestones(projectId)].sort(
+  const { data: milestones, loading: milestonesLoading } = useMilestones(projectId);
+
+  if (milestonesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const sortedMilestones = [...milestones].sort(
     (a, b) => new Date(a.target_date).getTime() - new Date(b.target_date).getTime()
   );
 

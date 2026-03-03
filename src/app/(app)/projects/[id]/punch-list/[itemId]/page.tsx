@@ -12,12 +12,16 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import PhotoGallery from '@/components/shared/PhotoGallery';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
-import { getPunchListItems, getProfiles, updatePunchListStatus, getAttachments, addAttachment, removeAttachment } from '@/lib/store';
+import { getProfiles, updatePunchListStatus as storeUpdatePunchListStatus, getAttachments, addAttachment, removeAttachment } from '@/lib/store';
+import { usePunchListDetail } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { updatePunchListStatus as serverUpdatePunchListStatus } from '@/lib/actions/punch-list';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus } from '@/lib/types';
 
-function getName(id: string) {
+function getName(id: string, profileName?: string) {
+  if (profileName) return profileName;
   return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
 }
 
@@ -25,7 +29,8 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
   const { id: projectId, itemId } = use(params);
   use(searchParams);
   const { can } = usePermissions(projectId);
-  const item = getPunchListItems(projectId).find((i) => i.id === itemId);
+  const { isDemo } = useProject();
+  const { data: item, loading, refetch } = usePunchListDetail(projectId, itemId);
   const [status, setStatus] = useState<PunchListStatus>(item?.status ?? 'open');
   const [notes, setNotes] = useState(item?.resolution_notes ?? '');
   const [resolutionInput, setResolutionInput] = useState('');
@@ -40,7 +45,15 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
     setResolutionInput('');
     setNewPhotos([]);
   }
-  const existingAttachments = item ? getAttachments('punch_list', item.id) : [];
+  const existingAttachments = item?.attachments ?? (item ? getAttachments('punch_list', item.id) : []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!item) {
     return (
@@ -53,15 +66,28 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
 
   const basePath = `/projects/${projectId}/punch-list`;
 
-  function handleStart() { setStatus('in_progress'); updatePunchListStatus(itemId, 'in_progress'); }
-  function handleResolve() { const n = resolutionInput || 'Resolved.'; setStatus('resolved'); setNotes(n); updatePunchListStatus(itemId, 'resolved', n); }
-  function handleVerify() { setStatus('verified'); updatePunchListStatus(itemId, 'verified'); }
-  function handleReopen() { setStatus('open'); setNotes(''); setResolutionInput(''); updatePunchListStatus(itemId, 'open', ''); }
+  async function handleStatusChange(newStatus: PunchListStatus, resolutionNotes?: string) {
+    setStatus(newStatus);
+    if (resolutionNotes !== undefined) setNotes(resolutionNotes);
+    if (isDemo) {
+      storeUpdatePunchListStatus(itemId, newStatus, resolutionNotes);
+      refetch();
+    } else {
+      const result = await serverUpdatePunchListStatus(projectId, itemId, newStatus, resolutionNotes);
+      if (result.error) { /* revert on error */ setStatus(item?.status ?? 'open'); setNotes(item?.resolution_notes ?? ''); return; }
+      refetch();
+    }
+  }
+
+  function handleStart() { handleStatusChange('in_progress'); }
+  function handleResolve() { const n = resolutionInput || 'Resolved.'; handleStatusChange('resolved', n); }
+  function handleVerify() { handleStatusChange('verified'); }
+  function handleReopen() { setResolutionInput(''); handleStatusChange('open', ''); }
 
   const info = [
     { label: 'Location', value: item.location },
-    { label: 'Assigned To', value: getName(item.assigned_to) },
-    { label: 'Created By', value: getName(item.created_by) },
+    { label: 'Assigned To', value: getName(item.assigned_to, item.assigned_to_profile?.full_name) },
+    { label: 'Created By', value: getName(item.created_by, item.created_by_profile?.full_name) },
     { label: 'Due Date', value: format(new Date(item.due_date), 'MMM d, yyyy') },
     { label: 'Created', value: format(new Date(item.created_at), 'MMM d, yyyy') },
   ];

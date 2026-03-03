@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { getDailyLogs } from '@/lib/store';
+import { useDailyLogs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
@@ -22,9 +22,11 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date());
   const basePath = `/projects/${projectId}/daily-logs`;
 
+  const { data: rawLogs, loading } = useDailyLogs(projectId);
+
   const logs = useMemo(
-    () => [...getDailyLogs(projectId)].sort((a, b) => b.log_date.localeCompare(a.log_date)),
-    [projectId],
+    () => [...rawLogs].sort((a, b) => b.log_date.localeCompare(a.log_date)),
+    [rawLogs],
   );
 
   // Calendar grid for the selected month
@@ -35,10 +37,19 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const calDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
   function logForDay(day: Date) {
-    return getDailyLogs(projectId).find((l) => isSameDay(new Date(l.log_date), day));
+    return rawLogs.find((l) => isSameDay(new Date(l.log_date), day));
   }
 
   const totalHeadcount = (p: { headcount: number }[]) => p.reduce((s, r) => s + r.headcount, 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs' }]} />
+        <p className="text-muted-foreground">Loading daily logs…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { addProject } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { createProject as serverCreateProject } from '@/lib/actions/projects';
 
 interface NewProjectDialogProps {
   open: boolean;
@@ -21,7 +22,7 @@ interface NewProjectDialogProps {
 
 export default function NewProjectDialog({ open, onOpenChange }: NewProjectDialogProps) {
   const router = useRouter();
-  const { setCurrentProjectId, refreshProjects } = useProject();
+  const { setCurrentProjectId, refreshProjects, isDemo } = useProject();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -41,11 +42,11 @@ export default function NewProjectDialog({ open, onOpenChange }: NewProjectDialo
     setBudgetTotal('');
   }
 
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !startDate || !targetEndDate) return;
 
-    const project = addProject({
+    const projectData = {
       name: name.trim(),
       description: description.trim(),
       location: location.trim(),
@@ -53,13 +54,24 @@ export default function NewProjectDialog({ open, onOpenChange }: NewProjectDialo
       start_date: startDate,
       target_end_date: targetEndDate,
       budget_total: budgetTotal ? parseFloat(budgetTotal) : 0,
-    });
+    };
+
+    let projectId: string;
+
+    if (isDemo) {
+      const project = addProject(projectData);
+      projectId = project.id;
+    } else {
+      const result = await serverCreateProject(projectData);
+      if (result.error || !result.data) return;
+      projectId = result.data.id;
+    }
 
     refreshProjects();
-    setCurrentProjectId(project.id);
+    setCurrentProjectId(projectId);
     onOpenChange(false);
     resetForm();
-    router.push(`/projects/${project.id}/submittals`);
+    router.push(`/projects/${projectId}/submittals`);
   }
 
   return (

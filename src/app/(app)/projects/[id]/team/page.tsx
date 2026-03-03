@@ -32,15 +32,18 @@ import {
 import {
   getProfiles,
   getOrganizations,
-  getProjectMembers,
-  addProjectMember,
-  removeProjectMember,
+  addProjectMember as storeAddProjectMember,
+  removeProjectMember as storeRemoveProjectMember,
   addProfile,
   addOrganization,
 } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
+import { useProjectMembers } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember } from '@/lib/actions/team';
+import type { ProjectMember } from '@/lib/types';
 
 const ROLE_COLORS: Record<string, string> = {
   manager: 'bg-purple-100 text-purple-700',
@@ -84,11 +87,12 @@ function formatRole(role: string) {
 export default function TeamPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
+  const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
+  const { data: projectMembers, refetch } = useProjectMembers(projectId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
-  const [, forceUpdate] = useState(0);
 
   // New member form state
   const [newFullName, setNewFullName] = useState('');
@@ -99,8 +103,6 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   const [creatingNewOrg, setCreatingNewOrg] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [newOrgType, setNewOrgType] = useState('');
-
-  const projectMembers = getProjectMembers(projectId);
 
   const members = useMemo(() => {
     return projectMembers.map((pm, idx) => {
@@ -134,15 +136,19 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     if (!open) resetDialogState();
   }
 
-  function handleAddExistingMember() {
+  async function handleAddExistingMember() {
     if (!selectedProfile || !selectedRole) return;
-    addProjectMember(projectId, selectedProfile, selectedRole);
+    if (isDemo) {
+      storeAddProjectMember(projectId, selectedProfile, selectedRole);
+    } else {
+      await serverAddProjectMember(projectId, selectedProfile, selectedRole as ProjectMember['project_role']);
+    }
     resetDialogState();
     setDialogOpen(false);
-    forceUpdate((n) => n + 1);
+    refetch();
   }
 
-  function handleAddNewMember() {
+  async function handleAddNewMember() {
     if (!newFullName.trim() || !newEmail.trim() || !newProjectRole) return;
 
     let organizationId = newOrgId;
@@ -169,11 +175,15 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     });
 
     // Add to project
-    addProjectMember(projectId, profile.id, newProjectRole);
+    if (isDemo) {
+      storeAddProjectMember(projectId, profile.id, newProjectRole);
+    } else {
+      await serverAddProjectMember(projectId, profile.id, newProjectRole as ProjectMember['project_role']);
+    }
 
     resetDialogState();
     setDialogOpen(false);
-    forceUpdate((n) => n + 1);
+    refetch();
   }
 
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
@@ -182,11 +192,15 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     setPendingRemoveId(memberId);
   }
 
-  function confirmRemoveMember() {
+  async function confirmRemoveMember() {
     if (pendingRemoveId) {
-      removeProjectMember(pendingRemoveId);
+      if (isDemo) {
+        storeRemoveProjectMember(pendingRemoveId);
+      } else {
+        await serverRemoveProjectMember(projectId, pendingRemoveId);
+      }
       setPendingRemoveId(null);
-      forceUpdate((n) => n + 1);
+      refetch();
     }
   }
 

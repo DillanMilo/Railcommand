@@ -33,7 +33,8 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
-import { getActivityLog, getProfiles, getProjectMembers } from '@/lib/store';
+import { getProfiles } from '@/lib/store';
+import { useActivityLog, useProjectMembers } from '@/hooks/useData';
 import { formatDistanceToNow } from 'date-fns';
 import type { Project } from '@/lib/types';
 
@@ -48,8 +49,8 @@ interface TopbarProps {
   children?: React.ReactNode;
 }
 
-function getProfileName(id: string) {
-  return getProfiles().find((p) => p.id === id)?.full_name ?? 'Unknown';
+function getProfileName(id: string, performedByProfile?: { full_name?: string } | null) {
+  return performedByProfile?.full_name ?? getProfiles().find((p) => p.id === id)?.full_name ?? 'Unknown';
 }
 
 function getInitials(name: string): string {
@@ -69,10 +70,11 @@ export default function Topbar({ children }: TopbarProps) {
 
   const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'on_hold');
   const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
-  const recentActivity = getActivityLog(currentProjectId).slice(0, 5);
+  const { data: recentActivity } = useActivityLog(currentProjectId, 5);
+  const { data: projectMembersData } = useProjectMembers(currentProjectId);
 
   const currentProfile = getProfiles().find((p) => p.id === currentUserId);
-  const currentMembership = getProjectMembers(currentProjectId).find((m) => m.profile_id === currentUserId);
+  const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
   const searchResults = searchQuery.trim()
     ? [
@@ -215,7 +217,7 @@ export default function Topbar({ children }: TopbarProps) {
                 {recentActivity.map((activity) => (
                   <div key={activity.id} className="rounded-lg border p-3 space-y-1">
                     <p className="text-sm">
-                      <span className="font-medium">{getProfileName(activity.performed_by)}</span>{' '}
+                      <span className="font-medium">{getProfileName(activity.performed_by, activity.performed_by_profile)}</span>{' '}
                       <span className="text-muted-foreground">{activity.description}</span>
                     </p>
                     <p className="text-xs text-muted-foreground">

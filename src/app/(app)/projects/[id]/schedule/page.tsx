@@ -11,7 +11,8 @@ import BudgetTracker from '@/components/schedule/BudgetTracker';
 import TimelineView from '@/components/schedule/TimelineView';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { getMilestones, getProjectById } from '@/lib/store';
+import { useMilestones } from '@/hooks/useData';
+import { useProject } from '@/components/providers/ProjectProvider';
 import type { Milestone, MilestoneStatus } from '@/lib/types';
 
 const STATUS_BAR_COLOR: Record<MilestoneStatus, string> = {
@@ -51,8 +52,9 @@ function useKPIs(milestones: Milestone[]) {
 export default function SchedulePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const project = getProjectById(projectId);
-  const milestones = [...getMilestones(projectId)].sort((a, b) => a.sort_order - b.sort_order);
+  const { currentProject } = useProject();
+  const { data: rawMilestones } = useMilestones(projectId);
+  const milestones = [...rawMilestones].sort((a, b) => a.sort_order - b.sort_order);
   const kpis = useKPIs(milestones);
 
   return (
@@ -96,8 +98,8 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         <TabsContent value="timeline" className="mt-4">
           <TimelineView
             milestones={milestones}
-            startDate={project?.start_date ?? '2025-08-26'}
-            endDate={project?.target_end_date ?? '2026-02-26'}
+            startDate={currentProject?.start_date ?? '2025-08-26'}
+            endDate={currentProject?.target_end_date ?? '2026-02-26'}
           />
         </TabsContent>
       </Tabs>
