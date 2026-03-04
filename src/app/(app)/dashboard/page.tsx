@@ -39,6 +39,12 @@ export default function DashboardPage() {
   const [now, setNow] = useState<number>(0);
   useEffect(() => { setNow(Date.now()); }, []);
 
+  // Always call hooks unconditionally (React rules of hooks)
+  const { data: allSubmittals, loading: submittalsLoading } = useSubmittals(currentProjectId);
+  const { data: allRFIs, loading: rfisLoading } = useRFIs(currentProjectId);
+  const { data: allPunch, loading: punchLoading } = usePunchListItems(currentProjectId);
+  const { data: allLogs, loading: logsLoading } = useDailyLogs(currentProjectId);
+
   if (!currentProject) {
     // Real auth user with no projects — show welcome state
     if (!isDemo && projects.length === 0) {
@@ -79,11 +85,6 @@ export default function DashboardPage() {
   }
 
   const project = currentProject;
-
-  const { data: allSubmittals, loading: submittalsLoading } = useSubmittals(currentProjectId);
-  const { data: allRFIs, loading: rfisLoading } = useRFIs(currentProjectId);
-  const { data: allPunch, loading: punchLoading } = usePunchListItems(currentProjectId);
-  const { data: allLogs, loading: logsLoading } = useDailyLogs(currentProjectId);
 
   if (submittalsLoading || rfisLoading || punchLoading || logsLoading) {
     return (

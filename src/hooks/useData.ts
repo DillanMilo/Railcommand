@@ -106,10 +106,10 @@ export function useProjects() {
   );
 }
 
-export function useSubmittals(projectId: string) {
+export function useSubmittals(projectId: string | null) {
   return useQuery<Submittal[]>(
-    () => store.getSubmittals(projectId),
-    () => fetchSubmittals(projectId),
+    () => (projectId ? store.getSubmittals(projectId) : []),
+    () => (projectId ? fetchSubmittals(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
   );
@@ -124,10 +124,10 @@ export function useSubmittalDetail(projectId: string, submittalId: string) {
   );
 }
 
-export function useRFIs(projectId: string) {
+export function useRFIs(projectId: string | null) {
   return useQuery<RFI[]>(
-    () => store.getRFIs(projectId),
-    () => fetchRFIs(projectId),
+    () => (projectId ? store.getRFIs(projectId) : []),
+    () => (projectId ? fetchRFIs(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
   );
@@ -142,10 +142,10 @@ export function useRFIDetail(projectId: string, rfiId: string) {
   );
 }
 
-export function useDailyLogs(projectId: string) {
+export function useDailyLogs(projectId: string | null) {
   return useQuery<DailyLog[]>(
-    () => store.getDailyLogs(projectId),
-    () => fetchDailyLogs(projectId),
+    () => (projectId ? store.getDailyLogs(projectId) : []),
+    () => (projectId ? fetchDailyLogs(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
   );
@@ -160,10 +160,10 @@ export function useDailyLogDetail(projectId: string, logId: string) {
   );
 }
 
-export function usePunchListItems(projectId: string) {
+export function usePunchListItems(projectId: string | null) {
   return useQuery<PunchListItem[]>(
-    () => store.getPunchListItems(projectId),
-    () => fetchPunchList(projectId),
+    () => (projectId ? store.getPunchListItems(projectId) : []),
+    () => (projectId ? fetchPunchList(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
   );
