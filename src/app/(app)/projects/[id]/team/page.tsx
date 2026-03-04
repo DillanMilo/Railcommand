@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, use } from 'react';
-import { Plus, Mail, Phone, X, UserPlus, Users } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback, use } from 'react';
+import { Plus, Mail, Phone, X, UserPlus, Users, Mail as MailIcon, Clock, Send, CheckCircle2 } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,10 @@ import {
   removeProjectMember as storeRemoveProjectMember,
   addProfile,
   addOrganization,
+  getProjectInvitations as storeGetProjectInvitations,
+  addInvitation as storeAddInvitation,
+  updateInvitationStatus,
+  getProjectById,
 } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -43,7 +47,9 @@ import { ACTIONS } from '@/lib/permissions';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember } from '@/lib/actions/team';
-import type { ProjectMember } from '@/lib/types';
+import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation } from '@/lib/actions/invitations';
+import { TIER_LIMITS } from '@/lib/types';
+import type { ProjectInvitation, Tier, ProjectMember } from '@/lib/types';
 
 const ROLE_COLORS: Record<string, string> = {
   manager: 'bg-purple-100 text-purple-700',
@@ -104,6 +110,48 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   const [newOrgName, setNewOrgName] = useState('');
   const [newOrgType, setNewOrgType] = useState('');
 
+  // Invite by email state
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState('');
+  const [inviteError, setInviteError] = useState('');
+  const [projectInvitations, setProjectInvitations] = useState<ProjectInvitation[]>([]);
+
+  // Fetch invitations
+  const fetchInvitations = useCallback(async () => {
+    if (isDemo) {
+      setProjectInvitations(storeGetProjectInvitations(projectId));
+    } else {
+      const result = await serverGetProjectInvitations(projectId);
+      if (result.data) setProjectInvitations(result.data);
+    }
+  }, [isDemo, projectId]);
+
+  useEffect(() => {
+    fetchInvitations();
+  }, [fetchInvitations]);
+
+  // Tier info
+  const tierInfo = useMemo(() => {
+    if (isDemo) {
+      const project = getProjectById(projectId);
+      if (project) {
+        const org = getOrganizations().find((o) => o.id === project.organization_id);
+        const tier: Tier = org?.tier ?? 'free';
+        const limit = TIER_LIMITS[tier];
+        return { tier, limit };
+      }
+    }
+    // Fallback: default to pro
+    return { tier: 'pro' as Tier, limit: TIER_LIMITS.pro };
+  }, [isDemo, projectId]);
+
+  const pendingInvitations = useMemo(
+    () => projectInvitations.filter((i) => i.status === 'pending'),
+    [projectInvitations]
+  );
+
   const members = useMemo(() => {
     return projectMembers.map((pm, idx) => {
       const profile = getProfiles().find((p) => p.id === pm.profile_id);
@@ -113,6 +161,9 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
       return { member: pm, profile, org, colorIdx: idx };
     });
   }, [projectMembers]);
+
+  const totalCount = members.length + pendingInvitations.length;
+  const atLimit = totalCount >= tierInfo.limit;
 
   const availableProfiles = getProfiles().filter(
     (p) => !projectMembers.some((pm) => pm.profile_id === p.id)
@@ -129,6 +180,11 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     setCreatingNewOrg(false);
     setNewOrgName('');
     setNewOrgType('');
+    setInviteEmail('');
+    setInviteRole('');
+    setInviteSending(false);
+    setInviteSuccess('');
+    setInviteError('');
   }
 
   function handleDialogOpenChange(open: boolean) {
@@ -146,6 +202,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     resetDialogState();
     setDialogOpen(false);
     refetch();
+    fetchInvitations();
   }
 
   async function handleAddNewMember() {
@@ -184,6 +241,58 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     resetDialogState();
     setDialogOpen(false);
     refetch();
+    fetchInvitations();
+  }
+
+  // Send email invitation handler
+  async function handleSendInvitation() {
+    if (!inviteEmail.trim() || !inviteRole) return;
+    setInviteSending(true);
+    setInviteError('');
+    setInviteSuccess('');
+    try {
+      if (isDemo) {
+        // Check tier limit in demo mode
+        if (atLimit) {
+          setInviteError(`Your ${tierInfo.tier} plan allows up to ${tierInfo.limit} members per project. Upgrade to add more.`);
+          setInviteSending(false);
+          return;
+        }
+        storeAddInvitation({
+          project_id: projectId,
+          email: inviteEmail.trim(),
+          project_role: inviteRole as ProjectMember['project_role'],
+        });
+        setInviteSuccess(`Invitation sent to ${inviteEmail.trim()}`);
+        setInviteEmail('');
+        setInviteRole('');
+        fetchInvitations();
+      } else {
+        const result = await createInvitation(projectId, inviteEmail.trim(), inviteRole as ProjectMember['project_role']);
+        if (result.error) {
+          setInviteError(result.error);
+        } else {
+          setInviteSuccess(`Invitation sent to ${inviteEmail.trim()}`);
+          setInviteEmail('');
+          setInviteRole('');
+          fetchInvitations();
+        }
+      }
+    } catch {
+      setInviteError('Failed to send invitation');
+    } finally {
+      setInviteSending(false);
+    }
+  }
+
+  // Cancel invitation handler
+  async function handleCancelInvitation(invitationId: string) {
+    if (isDemo) {
+      updateInvitationStatus(invitationId, 'expired');
+    } else {
+      await serverCancelInvitation(invitationId, projectId);
+    }
+    fetchInvitations();
   }
 
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
@@ -201,6 +310,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
       }
       setPendingRemoveId(null);
       refetch();
+      fetchInvitations();
     }
   }
 
@@ -236,6 +346,15 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
           <Badge variant="secondary" className="text-xs">
             {members.length} members
           </Badge>
+          <Badge
+            variant="outline"
+            className={cn(
+              'text-xs',
+              atLimit ? 'border-red-300 text-red-600 bg-red-50' : 'text-muted-foreground'
+            )}
+          >
+            {totalCount}/{tierInfo.limit === Infinity ? '\u221E' : tierInfo.limit} members ({tierInfo.tier.charAt(0).toUpperCase() + tierInfo.tier.slice(1)} plan)
+          </Badge>
         </div>
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           {can(ACTIONS.TEAM_MANAGE) && (
@@ -255,9 +374,9 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                   <Users className="size-3.5" />
                   Existing Member
                 </TabsTrigger>
-                <TabsTrigger value="new" className="flex-1 gap-1.5">
-                  <UserPlus className="size-3.5" />
-                  New Member
+                <TabsTrigger value="invite" className="flex-1 gap-1.5">
+                  <Send className="size-3.5" />
+                  Invite by Email
                 </TabsTrigger>
               </TabsList>
 
@@ -299,93 +418,20 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                 </div>
               </TabsContent>
 
-              {/* Tab 2: New Member */}
-              <TabsContent value="new">
+              {/* Tab 2: Invite by Email */}
+              <TabsContent value="invite">
                 <div className="space-y-4 mt-3">
-                  {/* Full Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="John Smith"
-                      value={newFullName}
-                      onChange={(e) => setNewFullName(e.target.value)}
-                    />
-                  </div>
-
                   {/* Email */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">
-                      Email <span className="text-red-500">*</span>
+                      Email Address <span className="text-red-500">*</span>
                     </label>
                     <Input
                       type="email"
-                      placeholder="john@example.com"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="colleague@example.com"
+                      value={inviteEmail}
+                      onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }}
                     />
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Phone</label>
-                    <Input
-                      type="tel"
-                      placeholder="(555) 123-4567"
-                      value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Organization */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">
-                      Organization <span className="text-red-500">*</span>
-                    </label>
-                    <Select
-                      value={creatingNewOrg ? '__new__' : newOrgId}
-                      onValueChange={handleOrgSelectChange}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select organization" /></SelectTrigger>
-                      <SelectContent>
-                        {getOrganizations().map((o) => (
-                          <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-                        ))}
-                        <SelectItem value="__new__">+ Create New Organization</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {/* Inline new org fields */}
-                    {creatingNewOrg && (
-                      <div className="space-y-3 rounded-md border p-3 mt-2 bg-muted/30">
-                        <div className="space-y-1.5">
-                          <label className="text-sm font-medium">
-                            Organization Name <span className="text-red-500">*</span>
-                          </label>
-                          <Input
-                            type="text"
-                            placeholder="Acme Construction"
-                            value={newOrgName}
-                            onChange={(e) => setNewOrgName(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-sm font-medium">
-                            Organization Type <span className="text-red-500">*</span>
-                          </label>
-                          <Select value={newOrgType} onValueChange={setNewOrgType}>
-                            <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                            <SelectContent>
-                              {ORG_TYPES.map((t) => (
-                                <SelectItem key={t} value={t}>{formatRole(t)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Project Role */}
@@ -393,7 +439,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                     <label className="text-sm font-medium">
                       Project Role <span className="text-red-500">*</span>
                     </label>
-                    <Select value={newProjectRole} onValueChange={setNewProjectRole}>
+                    <Select value={inviteRole} onValueChange={(v) => { setInviteRole(v); setInviteError(''); }}>
                       <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                       <SelectContent>
                         {PROJECT_ROLES.map((r) => (
@@ -403,12 +449,27 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                     </Select>
                   </div>
 
+                  {/* Success message */}
+                  {inviteSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 rounded-md px-3 py-2">
+                      <CheckCircle2 className="size-4 shrink-0" />
+                      {inviteSuccess}
+                    </div>
+                  )}
+
+                  {/* Error message */}
+                  {inviteError && (
+                    <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
+                      {inviteError}
+                    </div>
+                  )}
+
                   <Button
-                    onClick={handleAddNewMember}
-                    disabled={!canSubmitNew}
+                    onClick={handleSendInvitation}
+                    disabled={!inviteEmail.trim() || !inviteRole || inviteSending}
                     className="w-full bg-rc-orange hover:bg-rc-orange-dark text-white"
                   >
-                    Create & Add Member
+                    {inviteSending ? 'Sending...' : 'Send Invitation'}
                   </Button>
                 </div>
               </TabsContent>
@@ -486,6 +547,61 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
           );
         })}
       </div>
+
+      {/* Pending Invitations */}
+      {pendingInvitations.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-heading text-lg font-semibold">Pending Invitations</h2>
+            <Badge variant="secondary" className="text-xs">
+              {pendingInvitations.length}
+            </Badge>
+          </div>
+          <div className="rounded-md border">
+            <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground border-b">
+              <span>Email</span>
+              <span>Role</span>
+              <span>Sent</span>
+              <span />
+            </div>
+            {pendingInvitations.map((invitation) => (
+              <div
+                key={invitation.id}
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-4 py-3 border-b last:border-b-0"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <MailIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="text-sm truncate">{invitation.email}</span>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'border-0 text-[10px]',
+                    ROLE_COLORS[invitation.project_role] ?? ROLE_COLORS.owner
+                  )}
+                >
+                  {formatRole(invitation.project_role)}
+                </Badge>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                  <Clock className="size-3" />
+                  {new Date(invitation.created_at).toLocaleDateString()}
+                </div>
+                {can(ACTIONS.TEAM_MANAGE) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground hover:text-red-500 h-7 px-2"
+                    onClick={() => handleCancelInvitation(invitation.id)}
+                  >
+                    <X className="size-3 mr-1" />
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Remove member confirmation dialog */}
       <Dialog open={pendingRemoveId !== null} onOpenChange={(open) => { if (!open) setPendingRemoveId(null); }}>

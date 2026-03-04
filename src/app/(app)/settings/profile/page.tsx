@@ -34,7 +34,9 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import type { Profile, Organization } from '@/lib/types';
 import { getProfileWithOrg, updateProfile } from '@/lib/store';
+import { getMyProfile, updateMyProfile } from '@/lib/actions/profiles';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectMembers } from '@/hooks/useData';
 
@@ -104,10 +106,23 @@ function formatProjectRole(role: string): string {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { currentProject, currentProjectId, currentUserId } = useProject();
-  const profile = getProfileWithOrg(currentUserId);
+  const { currentProject, currentProjectId, currentUserId, isDemo } = useProject();
+  const [authProfile, setAuthProfile] = useState<(Profile & { organization?: Organization }) | null>(null);
+  const [profileLoading, setProfileLoading] = useState(!isDemo);
   const { data: projectMembers } = useProjectMembers(currentProjectId);
   const membership = projectMembers.find((pm) => pm.profile_id === currentUserId);
+
+  // For real auth, fetch profile from Supabase
+  useEffect(() => {
+    if (isDemo) return;
+    setProfileLoading(true);
+    getMyProfile().then((result) => {
+      if (result.data) setAuthProfile(result.data);
+      setProfileLoading(false);
+    });
+  }, [isDemo]);
+
+  const profile = isDemo ? getProfileWithOrg(currentUserId) : authProfile;
 
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -117,6 +132,7 @@ export default function ProfilePage() {
     register,
     handleSubmit,
     formState: { errors, isDirty },
+    reset,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -125,6 +141,13 @@ export default function ProfilePage() {
     },
   });
 
+  // Reset form defaults when profile loads
+  useEffect(() => {
+    if (profile) {
+      reset({ fullName: profile.full_name ?? '', phone: profile.phone ?? '' });
+    }
+  }, [profile, reset]);
+
   // Auto-dismiss success message
   useEffect(() => {
     if (!successMessage) return;
@@ -132,21 +155,35 @@ export default function ProfilePage() {
     return () => clearTimeout(timer);
   }, [successMessage]);
 
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!profile) {
     return <div className="py-20 text-center text-muted-foreground">Profile not found.</div>;
   }
 
   async function onSubmit(data: ProfileFormData) {
     setIsSaving(true);
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 600));
-    updateProfile(currentUserId, {
-      full_name: data.fullName,
-      phone: data.phone,
-    });
+    if (isDemo) {
+      await new Promise((r) => setTimeout(r, 600));
+      updateProfile(currentUserId, {
+        full_name: data.fullName,
+        phone: data.phone,
+      });
+    } else {
+      const result = await updateMyProfile({
+        full_name: data.fullName,
+        phone: data.phone,
+      });
+      if (result.data) setAuthProfile(result.data);
+    }
     setIsSaving(false);
     setSuccessMessage('Profile updated successfully');
-    // Force re-render so header/avatar reflect the new name
     router.refresh();
   }
 

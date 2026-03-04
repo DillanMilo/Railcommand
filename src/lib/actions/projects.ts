@@ -85,7 +85,7 @@ export async function getProjectById(projectId: string): Promise<ActionResult<Pr
 }
 
 // ---------------------------------------------------------------------------
-// createProject -- requires admin or manager org role
+// createProject -- any authenticated user can create a project
 // ---------------------------------------------------------------------------
 export async function createProject(data: {
   name: string;
@@ -100,19 +100,6 @@ export async function createProject(data: {
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
-
-    // Only admin or manager org role can create projects
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) return { error: 'Profile not found' };
-
-    if (!['admin', 'manager'].includes(profile.role)) {
-      return { error: 'Permission denied: only admins and managers can create projects' };
-    }
 
     const { data: project, error } = await supabase
       .from('projects')

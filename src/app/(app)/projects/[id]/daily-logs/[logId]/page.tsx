@@ -8,6 +8,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFoo
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoGallery from '@/components/shared/PhotoGallery';
 import { getProfiles, getAttachments } from '@/lib/store';
+import { useProject } from '@/components/providers/ProjectProvider';
 import { useDailyLogDetail } from '@/hooks/useData';
 import type { DailyLog } from '@/lib/types';
 
@@ -21,6 +22,7 @@ function weatherIcon(conditions: string) {
 export default function DailyLogDetailPage({ params, searchParams }: { params: Promise<{ id: string; logId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId, logId } = use(params);
   use(searchParams);
+  const { isDemo } = useProject();
   const { data: log, loading } = useDailyLogDetail(projectId, logId);
 
   if (loading) {
@@ -45,11 +47,11 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const dateLabel = format(dateObj, 'MMM d, yyyy');
   const dateFull = format(dateObj, 'EEEE, MMMM d, yyyy');
   const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
-    ?? getProfiles().find((p) => p.id === log.created_by)?.full_name;
+    ?? (isDemo ? getProfiles().find((p) => p.id === log.created_by)?.full_name : undefined);
   const totalHeadcount = log.personnel.reduce((s, r) => s + r.headcount, 0);
   const attachments = (log as DailyLog & { attachments?: unknown[] }).attachments?.length
     ? (log as DailyLog & { attachments?: unknown[] }).attachments!
-    : getAttachments('daily_log', logId);
+    : isDemo ? getAttachments('daily_log', logId) : [];
 
   return (
     <div className="space-y-6">

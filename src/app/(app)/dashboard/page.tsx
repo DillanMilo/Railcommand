@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import PendingInvitations from '@/components/dashboard/PendingInvitations';
 import KPICard from '@/components/dashboard/KPICard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import QuickActions from '@/components/dashboard/QuickActions';
 import MilestoneWidget from '@/components/dashboard/MilestoneWidget';
 import { useProject } from '@/components/providers/ProjectProvider';
+import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import {
@@ -24,15 +27,45 @@ import {
   MessageSquareMore,
   ClipboardCheck,
   CalendarDays,
+  Plus,
+  Rocket,
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { currentProject, currentProjectId } = useProject();
+  const { currentProject, currentProjectId, projects, isDemo } = useProject();
   const { can } = usePermissions(currentProjectId);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
 
   const [now] = useState(() => Date.now());
 
   if (!currentProject) {
+    // Real auth user with no projects — show welcome state
+    if (!isDemo && projects.length === 0) {
+      return (
+        <div className="space-y-6">
+          <Breadcrumbs items={[{ label: 'Dashboard' }]} />
+          <PendingInvitations />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="rounded-full bg-rc-orange/10 p-4 mb-4">
+              <Rocket className="size-8 text-rc-orange" />
+            </div>
+            <h2 className="font-heading text-2xl font-bold">Welcome to Railcommand</h2>
+            <p className="text-muted-foreground mt-2 max-w-md">
+              Get started by creating your first project. You can manage submittals, RFIs, daily logs, and more.
+            </p>
+            <Button
+              className="mt-6 bg-rc-orange hover:bg-rc-orange-dark text-white gap-2"
+              onClick={() => setNewProjectOpen(true)}
+            >
+              <Plus className="size-4" />
+              New Project
+            </Button>
+            <NewProjectDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <Breadcrumbs items={[{ label: 'Dashboard' }]} />
@@ -104,6 +137,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <Breadcrumbs items={[{ label: 'Dashboard' }]} />
+
+      {/* Pending invitations banner (real auth only) */}
+      {!isDemo && <PendingInvitations />}
 
       {/* Project header */}
       <div>

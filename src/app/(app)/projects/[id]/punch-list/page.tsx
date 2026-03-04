@@ -11,6 +11,7 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import { getProfiles } from '@/lib/store';
+import { useProject } from '@/components/providers/ProjectProvider';
 import { usePunchListItems } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -39,14 +40,16 @@ const BORDER_COLOR: Record<Priority, string> = {
   low: 'border-l-blue-500',
 };
 
-function getName(id: string, profileName?: string) {
+function getName(id: string, profileName?: string, demo?: boolean) {
   if (profileName) return profileName;
-  return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
+  if (demo) return getProfiles().find((p) => p.id === id)?.full_name ?? '—';
+  return '—';
 }
 
 export default function PunchListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
+  const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
@@ -154,7 +157,7 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
                 <TableCell className="max-w-[180px] truncate text-muted-foreground">{item.location}</TableCell>
                 <TableCell><StatusBadge status={item.status} type="punch_list" /></TableCell>
                 <TableCell><PriorityBadge priority={item.priority} /></TableCell>
-                <TableCell>{getName(item.assigned_to, item.assigned_to_profile?.full_name)}</TableCell>
+                <TableCell>{getName(item.assigned_to, item.assigned_to_profile?.full_name, isDemo)}</TableCell>
                 <TableCell>{format(new Date(item.due_date), 'MMM d, yyyy')}</TableCell>
               </TableRow>
             ))}

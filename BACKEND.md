@@ -34,6 +34,7 @@
 24. [RLS Policies for Data Tables](#24-rls-policies-for-data-tables)
 25. [Core Data Server Actions](#25-core-data-server-actions)
 26. [Master Implementation Order](#26-master-implementation-order)
+27. [Tier System & Project Invitations](#27-tier-system--project-invitations)
 
 ---
 
@@ -158,6 +159,8 @@ CREATE TABLE public.organizations (
   name          TEXT NOT NULL,
   type          TEXT NOT NULL DEFAULT 'contractor'
                   CHECK (type IN ('contractor', 'engineer', 'owner', 'inspector')),
+  tier          TEXT NOT NULL DEFAULT 'free'
+                  CHECK (tier IN ('free', 'pro', 'enterprise')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
@@ -172,6 +175,7 @@ This table stores all projects managed within RailCommand. All project-scoped da
 -- ============================================================
 CREATE TABLE public.projects (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id  UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
   name             TEXT NOT NULL,
   description      TEXT DEFAULT '',
   status           TEXT NOT NULL DEFAULT 'active'
@@ -5567,6 +5571,199 @@ Step 90: Test cascading deletes (delete project, verify all child data removed)
 
 ---
 
-*Document updated: February 28, 2026*
+## 27. Tier System & Project Invitations
+
+### 27.1 Schema Migrations
+
+These migrations extend the existing schema to support organization tiers and email-based project invitations.
+
+```sql
+-- ============================================================
+-- ADD TIER COLUMN TO ORGANIZATIONS
+-- ============================================================
+ALTER TABLE public.organizations
+  ADD COLUMN tier TEXT NOT NULL DEFAULT 'free'
+    CHECK (tier IN ('free', 'pro', 'enterprise'));
+
+-- ============================================================
+-- ADD ORGANIZATION_ID TO PROJECTS
+-- ============================================================
+ALTER TABLE public.projects
+  ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_projects_organization_id ON public.projects (organization_id);
+
+-- ============================================================
+-- PROJECT INVITATIONS TABLE
+-- ============================================================
+CREATE TABLE public.project_invitations (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id    UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  email         TEXT NOT NULL,
+  project_role  TEXT NOT NULL DEFAULT 'member'
+                  CHECK (project_role IN ('engineer', 'contractor', 'owner', 'inspector', 'manager', 'superintendent', 'foreman')),
+  invited_by    UUID NOT NULL REFERENCES auth.users(id),
+  status        TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+  token         UUID NOT NULL DEFAULT gen_random_uuid(),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at    TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '7 days')
+);
+
+-- Unique constraint: one pending invitation per email per project
+CREATE UNIQUE INDEX idx_invitations_unique_pending
+  ON public.project_invitations (project_id, email)
+  WHERE status = 'pending';
+
+-- Index for token lookups (accept/decline flow)
+CREATE INDEX idx_invitations_token ON public.project_invitations (token);
+
+-- Index for user's pending invitations
+CREATE INDEX idx_invitations_email_status ON public.project_invitations (email, status);
+
+-- Enable RLS
+ALTER TABLE public.project_invitations ENABLE ROW LEVEL SECURITY;
+```
+
+### 27.2 RLS Policies for Project Invitations
+
+```sql
+-- Invitees can read their own invitations
+CREATE POLICY "Users can read own invitations"
+  ON public.project_invitations
+  FOR SELECT
+  USING (
+    email = (SELECT email FROM public.profiles WHERE id = auth.uid())
+    OR
+    project_id IN (
+      SELECT project_id FROM public.project_members
+      WHERE profile_id = auth.uid()
+    )
+  );
+
+-- Project managers can create invitations
+CREATE POLICY "Project managers can create invitations"
+  ON public.project_invitations
+  FOR INSERT
+  WITH CHECK (
+    invited_by = auth.uid()
+    AND project_id IN (
+      SELECT pm.project_id FROM public.project_members pm
+      WHERE pm.profile_id = auth.uid()
+        AND pm.project_role IN ('manager', 'superintendent')
+    )
+  );
+
+-- Invitees can update their own invitations (accept/decline)
+CREATE POLICY "Invitees can update own invitations"
+  ON public.project_invitations
+  FOR UPDATE
+  USING (
+    email = (SELECT email FROM public.profiles WHERE id = auth.uid())
+  )
+  WITH CHECK (
+    status IN ('accepted', 'declined')
+  );
+
+-- Project managers can update invitations (cancel)
+CREATE POLICY "Project managers can cancel invitations"
+  ON public.project_invitations
+  FOR UPDATE
+  USING (
+    project_id IN (
+      SELECT pm.project_id FROM public.project_members pm
+      WHERE pm.profile_id = auth.uid()
+        AND pm.project_role IN ('manager', 'superintendent')
+    )
+  );
+```
+
+### 27.3 Tier Limits
+
+| Tier       | Members per Project | Price   |
+|------------|--------------------:|---------|
+| Free       | 5                   | $0/mo   |
+| Pro        | 25                  | TBD     |
+| Enterprise | Unlimited           | TBD     |
+
+Tier is stored on `organizations.tier` and enforced in the `createInvitation()` server action. The count includes both active members (`project_members`) and pending invitations (`project_invitations WHERE status = 'pending'`).
+
+### 27.4 Invitation Flow
+
+#### New User (email not in auth.users)
+1. Manager calls `createInvitation(projectId, email, role)`
+2. Server action creates `project_invitations` record
+3. Server action calls `adminClient.auth.admin.inviteUserByEmail()` with `redirectTo: /auth/callback?next=/invite/{token}`
+4. New user receives Supabase auth email → clicks link → creates account
+5. Auth callback redirects to `/invite/{token}`
+6. Middleware detects no `organization_id` → redirects to `/onboarding?next=/invite/{token}`
+7. User completes business setup → redirected to `/invite/{token}`
+8. User accepts invitation → added to `project_members` → redirected to project
+
+#### Existing User (already has account)
+1. Manager calls `createInvitation(projectId, email, role)`
+2. Server action creates `project_invitations` record
+3. Existing user sees invitation on dashboard (`PendingInvitations` component)
+4. User clicks "View Invitation" → navigates to `/invite/{token}`
+5. User accepts → added to `project_members` → redirected to project
+
+### 27.5 Onboarding Flow
+
+New users who sign up (either directly or via invitation) are redirected to `/onboarding` if their profile has no `organization_id`. The onboarding page collects:
+
+- **Business Name** (required)
+- **Business Type** (required): contractor, engineer, owner, inspector
+
+On submit, the `setupBusiness()` server action:
+1. Creates a new organization with `tier: 'free'`
+2. Updates the user's `profiles.organization_id`
+3. Sets `rc-onboarded` cookie to skip future middleware checks
+4. Redirects to `?next` URL or `/dashboard`
+
+### 27.6 Server Actions
+
+| Action | File | Purpose |
+|--------|------|---------|
+| `setupBusiness(name, type)` | `src/lib/actions/onboarding.ts` | Create org + link profile |
+| `checkOnboardingStatus()` | `src/lib/actions/onboarding.ts` | Check if onboarding needed |
+| `createInvitation(projectId, email, role)` | `src/lib/actions/invitations.ts` | Invite user to project |
+| `acceptInvitation(token)` | `src/lib/actions/invitations.ts` | Accept via token |
+| `declineInvitation(token)` | `src/lib/actions/invitations.ts` | Decline via token |
+| `getPendingInvitationsForUser()` | `src/lib/actions/invitations.ts` | Dashboard pending list |
+| `getProjectInvitations(projectId)` | `src/lib/actions/invitations.ts` | Team page invitation list |
+| `cancelInvitation(invitationId, projectId)` | `src/lib/actions/invitations.ts` | Manager cancels invite |
+
+### 27.7 Service-Role Admin Client
+
+The file `src/lib/supabase/admin.ts` creates a Supabase client using `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS). Used only in server actions for:
+- `auth.admin.inviteUserByEmail()` — sends auth email to new users
+- Querying `profiles` table to check if a user exists before sending invite
+
+### 27.8 New Routes
+
+| Route | Layout Group | Purpose |
+|-------|-------------|---------|
+| `/onboarding` | `(onboarding)` | Business setup form |
+| `/invite/[token]` | `(onboarding)` | Accept/decline invitation |
+
+### 27.9 Middleware Updates
+
+The middleware (`src/middleware.ts`) now includes onboarding checks after auth verification:
+1. Skip for exempt paths: `/onboarding`, `/invite/*`, `/auth/*`, `/login`
+2. Check `rc-onboarded` cookie (fast path)
+3. If missing: query `profiles.organization_id`
+4. If null → redirect to `/onboarding?next={currentPath}`
+5. If set → set `rc-onboarded` cookie (30 days) for future requests
+
+### 27.10 Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Service-role key for admin operations (invitation emails) |
+| `NEXT_PUBLIC_SITE_URL` | Yes | Base URL for invitation email redirect links |
+
+---
+
+*Document updated: March 3, 2026*
 *Product: RailCommand -- by A5 Rail*
 *Developer: Dillan Milosevich, CTO -- Creative Currents LLC*

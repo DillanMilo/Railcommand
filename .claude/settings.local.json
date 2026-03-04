@@ -19,7 +19,8 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(wc:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(done)"
     ]
   }
 }

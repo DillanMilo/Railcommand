@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Search, Settings, LogOut, User, X, Check, ChevronDown, Plus, Train } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,9 +34,10 @@ import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { getProfiles } from '@/lib/store';
+import { getMyProfile } from '@/lib/actions/profiles';
 import { useActivityLog, useProjectMembers } from '@/hooks/useData';
 import { formatDistanceToNow } from 'date-fns';
-import type { Project } from '@/lib/types';
+import type { Project, Profile } from '@/lib/types';
 
 const STATUS_DOT_COLORS: Record<Project['status'], string> = {
   active: 'bg-rc-emerald',
@@ -49,8 +50,10 @@ interface TopbarProps {
   children?: React.ReactNode;
 }
 
-function getProfileName(id: string, performedByProfile?: { full_name?: string } | null) {
-  return performedByProfile?.full_name ?? getProfiles().find((p) => p.id === id)?.full_name ?? 'Unknown';
+function getProfileName(id: string, performedByProfile?: { full_name?: string } | null, demo?: boolean) {
+  if (performedByProfile?.full_name) return performedByProfile.full_name;
+  if (demo) return getProfiles().find((p) => p.id === id)?.full_name ?? 'Unknown';
+  return 'Unknown';
 }
 
 function getInitials(name: string): string {
@@ -63,17 +66,28 @@ function formatProjectRole(role: string): string {
 
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
-  const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId } = useProject();
+  const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId, isDemo } = useProject();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [authProfile, setAuthProfile] = useState<Profile | null>(null);
 
   const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'on_hold');
   const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
   const { data: recentActivity } = useActivityLog(currentProjectId, 5);
   const { data: projectMembersData } = useProjectMembers(currentProjectId);
 
-  const currentProfile = getProfiles().find((p) => p.id === currentUserId);
+  // For real auth users, fetch profile from Supabase
+  useEffect(() => {
+    if (isDemo) return;
+    getMyProfile().then((result) => {
+      if (result.data) setAuthProfile(result.data);
+    });
+  }, [isDemo]);
+
+  const currentProfile = isDemo
+    ? getProfiles().find((p) => p.id === currentUserId) ?? null
+    : authProfile;
   const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
   const searchResults = searchQuery.trim()
@@ -218,7 +232,7 @@ export default function Topbar({ children }: TopbarProps) {
                 {recentActivity.map((activity) => (
                   <div key={activity.id} className="rounded-lg border p-3 space-y-1">
                     <p className="text-sm">
-                      <span className="font-medium">{getProfileName(activity.performed_by, activity.performed_by_profile)}</span>{' '}
+                      <span className="font-medium">{getProfileName(activity.performed_by, activity.performed_by_profile, isDemo)}</span>{' '}
                       <span className="text-muted-foreground">{activity.description}</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -242,20 +256,22 @@ export default function Topbar({ children }: TopbarProps) {
               >
                 <Avatar>
                   <AvatarFallback className="bg-rc-navy text-white text-xs font-semibold">
-                    {currentProfile ? getInitials(currentProfile.full_name) : '??'}
+                    {currentProfile?.full_name ? getInitials(currentProfile.full_name) : '??'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium leading-tight">{currentProfile?.full_name ?? 'Unknown'}</p>
+                  <p className="text-sm font-medium leading-tight">
+                    {currentProfile?.full_name || currentProfile?.email || 'New User'}
+                  </p>
                   <p className="text-xs text-muted-foreground leading-tight">
-                    {currentMembership ? formatProjectRole(currentMembership.project_role) : 'No Role'}
+                    {currentMembership ? formatProjectRole(currentMembership.project_role) : (currentProfile?.role ? formatProjectRole(currentProfile.role) : 'No Role')}
                   </p>
                 </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
-                <p className="font-medium">{currentProfile?.full_name ?? 'Unknown'}</p>
+                <p className="font-medium">{currentProfile?.full_name || currentProfile?.email || 'New User'}</p>
                 <p className="text-xs text-muted-foreground font-normal">
                   {currentProfile?.email ?? ''}
                 </p>

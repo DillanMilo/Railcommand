@@ -12,6 +12,7 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import { getProfiles } from '@/lib/store';
+import { useProject } from '@/components/providers/ProjectProvider';
 import { useRFIs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -25,7 +26,8 @@ const TABS: { label: string; value: RFIStatus | 'all' }[] = [
   { label: 'Overdue', value: 'overdue' },
 ];
 
-function getProfile(id: string) {
+function getProfile(id: string, demo?: boolean) {
+  if (!demo) return undefined;
   return getProfiles().find((p) => p.id === id);
 }
 
@@ -37,6 +39,7 @@ function daysOpen(rfi: RFI): number {
 export default function RFIsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
+  const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
   const [tab, setTab] = useState<RFIStatus | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -48,7 +51,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
       if (tab !== 'all' && r.status !== tab) return false;
       if (search) {
         const q = search.toLowerCase();
-        const submitterName = (r as any).submitted_by_profile?.full_name ?? getProfile(r.submitted_by)?.full_name ?? '';
+        const submitterName = (r as any).submitted_by_profile?.full_name ?? getProfile(r.submitted_by, isDemo)?.full_name ?? '';
         return (
           r.number.toLowerCase().includes(q) ||
           r.subject.toLowerCase().includes(q) ||
@@ -138,8 +141,8 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </TableCell>
                   <TableCell><StatusBadge status={rfi.status} type="rfi" /></TableCell>
                   <TableCell><PriorityBadge priority={rfi.priority} /></TableCell>
-                  <TableCell>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by)?.full_name ?? '—'}</TableCell>
-                  <TableCell>{(rfi as any).assigned_to_profile?.full_name ?? getProfile(rfi.assigned_to)?.full_name ?? '—'}</TableCell>
+                  <TableCell>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by, isDemo)?.full_name ?? '—'}</TableCell>
+                  <TableCell>{(rfi as any).assigned_to_profile?.full_name ?? getProfile(rfi.assigned_to, isDemo)?.full_name ?? '—'}</TableCell>
                   <TableCell>{format(new Date(rfi.due_date), 'MMM d, yyyy')}</TableCell>
                   <TableCell className={`text-right font-medium ${isOverdue ? 'text-red-600' : ''}`}>{days}</TableCell>
                 </TableRow>
@@ -167,7 +170,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </div>
                   <p className="font-medium text-sm line-clamp-2">{rfi.subject}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by)?.full_name}</span>
+                    <span>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by, isDemo)?.full_name}</span>
                     <span className={isOverdue ? 'text-red-600 font-medium' : ''}>{days}d open</span>
                   </div>
                   <div className="flex items-center gap-2">

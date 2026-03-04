@@ -1,8 +1,17 @@
+// Tier limits for organization plans
+export type Tier = 'free' | 'pro' | 'enterprise';
+export const TIER_LIMITS: Record<Tier, number> = {
+  free: 5,
+  pro: 25,
+  enterprise: Infinity,
+} as const;
+
 // Organization
 export interface Organization {
   id: string;
   name: string;
   type: 'contractor' | 'engineer' | 'owner' | 'inspector';
+  tier: Tier;
   created_at: string;
 }
 
@@ -22,6 +31,7 @@ export interface Profile {
 // Project
 export interface Project {
   id: string;
+  organization_id: string;
   name: string;
   description: string;
   status: 'active' | 'on_hold' | 'completed' | 'archived';
@@ -34,6 +44,23 @@ export interface Project {
   client: string;
   created_by: string;
   created_at: string;
+}
+
+// Project Invitation
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired';
+
+export interface ProjectInvitation {
+  id: string;
+  project_id: string;
+  project?: Pick<Project, 'id' | 'name'>;
+  email: string;
+  project_role: ProjectMember['project_role'];
+  invited_by: string;
+  invited_by_profile?: Pick<Profile, 'id' | 'full_name'>;
+  status: InvitationStatus;
+  token: string;
+  created_at: string;
+  expires_at: string;
 }
 
 // Project Member

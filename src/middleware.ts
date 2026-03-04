@@ -75,6 +75,44 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Onboarding check: redirect users without an organization to /onboarding
+  if (user && hasRememberCookie && !isDemoMode) {
+    const hasOnboardedCookie = request.cookies.get('rc-onboarded')?.value === 'true';
+
+    // Paths exempt from onboarding redirect
+    const isOnboardingExempt =
+      pathname === '/onboarding' ||
+      pathname.startsWith('/invite/') ||
+      pathname.startsWith('/auth/') ||
+      pathname === '/login';
+
+    if (!hasOnboardedCookie && !isOnboardingExempt) {
+      // Check if user has completed onboarding (has an organization)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.organization_id) {
+        // Redirect to onboarding, preserving the original destination
+        const url = request.nextUrl.clone();
+        url.pathname = '/onboarding';
+        if (pathname !== '/dashboard' && pathname !== '/') {
+          url.searchParams.set('next', pathname);
+        }
+        return NextResponse.redirect(url);
+      } else {
+        // User has org - set cookie so we skip the DB check next time
+        supabaseResponse.cookies.set('rc-onboarded', 'true', {
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          sameSite: 'lax',
+        });
+      }
+    }
+  }
+
   return supabaseResponse;
 }
 

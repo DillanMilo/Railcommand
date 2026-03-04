@@ -22,6 +22,7 @@ import type {
   Organization,
   Profile,
   Project,
+  ProjectInvitation,
   Submittal,
   RFI,
   RFIResponse,
@@ -67,6 +68,7 @@ export function initDemoData(): void {
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
+  invitations = [];
   currentUserId = 'prof-001';
   projectCounter = projects.length;
   submittalCounter = submittals.length;
@@ -79,6 +81,7 @@ export function initDemoData(): void {
   orgCounter = organizations.length;
   responseCounter = 0;
   attachmentCounter = 0;
+  invitationCounter = 0;
 }
 
 /** Clear all data for a fresh sign-up */
@@ -93,9 +96,10 @@ export function initFreshData(name: string, email: string): string {
   activityLog = [];
   milestones = [];
   attachments = [];
+  invitations = [];
 
   // Create a fresh org and profile for the new user
-  organizations = [{ id: 'org-001', name: 'My Organization', type: 'contractor', created_at: new Date().toISOString() }];
+  organizations = [{ id: 'org-001', name: 'My Organization', type: 'contractor', tier: 'free', created_at: new Date().toISOString() }];
   const freshProfile: Profile = {
     id: 'prof-001',
     full_name: name,
@@ -120,6 +124,7 @@ export function initFreshData(name: string, email: string): string {
   orgCounter = 1;
   responseCounter = 0;
   attachmentCounter = 0;
+  invitationCounter = 0;
 
   return freshProfile.id;
 }
@@ -158,8 +163,11 @@ export function addProject(data: {
 }): Project {
   projectCounter++;
   const num = String(projectCounter).padStart(3, '0');
+  // Get the current user's organization
+  const creatorProfile = profiles.find((p) => p.id === getCurrentUserId());
   const newProject: Project = {
     id: `proj-${num}`,
+    organization_id: creatorProfile?.organization_id ?? 'org-001',
     name: data.name,
     description: data.description,
     status: 'active',
@@ -540,10 +548,55 @@ export function addOrganization(data: {
     id: `org-${num}`,
     name: data.name,
     type: data.type,
+    tier: 'free',
     created_at: new Date().toISOString(),
   };
   organizations = [...organizations, newOrg];
   return newOrg;
+}
+
+// --- Invitation operations ---
+let invitations: ProjectInvitation[] = [];
+let invitationCounter = 0;
+
+export function getProjectInvitations(projectId: string): ProjectInvitation[] {
+  return invitations.filter((i) => i.project_id === projectId);
+}
+
+export function getUserInvitations(email: string): ProjectInvitation[] {
+  return invitations.filter(
+    (i) => i.email === email && i.status === 'pending' && new Date(i.expires_at) > new Date()
+  );
+}
+
+export function addInvitation(data: {
+  project_id: string;
+  email: string;
+  project_role: ProjectMember['project_role'];
+}): ProjectInvitation {
+  invitationCounter++;
+  const num = String(invitationCounter).padStart(3, '0');
+  const project = projects.find((p) => p.id === data.project_id);
+  const inviterProfile = profiles.find((p) => p.id === getCurrentUserId());
+  const invitation: ProjectInvitation = {
+    id: `inv-${num}`,
+    project_id: data.project_id,
+    project: project ? { id: project.id, name: project.name } : undefined,
+    email: data.email,
+    project_role: data.project_role,
+    invited_by: getCurrentUserId(),
+    invited_by_profile: inviterProfile ? { id: inviterProfile.id, full_name: inviterProfile.full_name } : undefined,
+    status: 'pending',
+    token: `demo-token-${num}`,
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+  };
+  invitations = [...invitations, invitation];
+  return invitation;
+}
+
+export function updateInvitationStatus(id: string, status: ProjectInvitation['status']): void {
+  invitations = invitations.map((i) => (i.id === id ? { ...i, status } : i));
 }
 
 // --- Attachment operations ---

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +25,7 @@ import {
   MoreVertical,
   Check,
   Play,
+  RefreshCw,
 } from 'lucide-react';
 import { initDemoData, initFreshData } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
@@ -195,20 +196,131 @@ function Step({ number, icon, text }: { number: number; icon: React.ReactNode; t
 }
 
 /* ------------------------------------------------------------------ */
+/*  Email Confirmation Screen                                          */
+/* ------------------------------------------------------------------ */
+
+function EmailConfirmation({
+  email,
+  onBack,
+  onResend,
+  isResending,
+}: {
+  email: string;
+  onBack: () => void;
+  onResend: () => void;
+  isResending: boolean;
+}) {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-rc-orange/10 dark:bg-rc-orange/20 mb-3">
+          <Mail className="size-7 text-rc-orange" />
+        </div>
+        <h3 className="font-heading text-xl font-bold text-foreground">
+          Check your email
+        </h3>
+        <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+          We sent a confirmation link to
+        </p>
+        <p className="text-sm font-semibold text-foreground mt-1">
+          {email}
+        </p>
+      </div>
+
+      <div className="space-y-3 mb-6">
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40 dark:bg-white/5">
+          <div className="flex items-center justify-center size-8 rounded-lg bg-rc-orange/10 dark:bg-rc-orange/20 text-rc-orange shrink-0 mt-0.5">
+            <Mail className="size-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">Step 1</p>
+            <p className="text-sm text-foreground mt-0.5">Open the email we just sent you</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40 dark:bg-white/5">
+          <div className="flex items-center justify-center size-8 rounded-lg bg-rc-orange/10 dark:bg-rc-orange/20 text-rc-orange shrink-0 mt-0.5">
+            <ArrowRight className="size-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">Step 2</p>
+            <p className="text-sm text-foreground mt-0.5">Click the confirmation link</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40 dark:bg-white/5">
+          <div className="flex items-center justify-center size-8 rounded-lg bg-rc-emerald/10 dark:bg-rc-emerald/20 text-rc-emerald shrink-0 mt-0.5">
+            <Check className="size-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">Step 3</p>
+            <p className="text-sm text-foreground mt-0.5">You&apos;ll be signed in automatically</p>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center mb-4">
+        Didn&apos;t receive the email? Check your spam folder or try again.
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={onBack}
+          className="flex-1 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+        >
+          Back to sign in
+        </button>
+        <Button
+          onClick={onResend}
+          disabled={isResending}
+          variant="outline"
+          className="flex-1 h-11 gap-2 font-semibold"
+        >
+          {isResending ? (
+            <RefreshCw className="size-4 animate-spin" />
+          ) : (
+            <RefreshCw className="size-4" />
+          )}
+          Resend email
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main Page                                                          */
 /* ------------------------------------------------------------------ */
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showInstall, setShowInstall] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Show errors from auth callback redirects (e.g. ?error=auth_callback_error)
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'auth_callback_error') {
+      setAuthError('Something went wrong confirming your account. Please try again.');
+    }
+  }, [searchParams]);
 
   const signInForm = useForm<SignInData>({
     resolver: zodResolver(signInSchema),
@@ -253,11 +365,12 @@ export default function LoginPage() {
       setIsLoading(true);
       setAuthError(null);
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: { full_name: data.fullName },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       setIsLoading(false);
@@ -265,10 +378,40 @@ export default function LoginPage() {
         setAuthError(error.message);
         return;
       }
-      setShowInstall(true);
+
+      // If Supabase returned a session, the user is auto-confirmed (e.g. email
+      // confirmation is disabled in project settings). Log them straight in.
+      if (signUpData.session) {
+        document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
+        initFreshData(data.fullName, data.email);
+        try {
+          localStorage.setItem('rc-mode', 'fresh');
+          document.cookie = 'rc-mode=fresh; path=/; max-age=604800; SameSite=Lax';
+        } catch { /* noop */ }
+        router.push('/dashboard');
+        return;
+      }
+
+      // Email confirmation required — show the "check your email" screen
+      setSignUpEmail(data.email);
+      setShowEmailConfirmation(true);
     },
-    []
+    [router]
   );
+
+  const handleResendConfirmation = useCallback(async () => {
+    if (!signUpEmail) return;
+    setIsResending(true);
+    const supabase = createClient();
+    await supabase.auth.resend({
+      type: 'signup',
+      email: signUpEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    setIsResending(false);
+  }, [signUpEmail]);
 
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
@@ -325,6 +468,8 @@ export default function LoginPage() {
     setMode(newMode);
     setForgotMode(false);
     setResetSent(false);
+    setShowEmailConfirmation(false);
+    setShowInstall(false);
     setAuthError(null);
     signInForm.reset();
     signUpForm.reset();
@@ -437,7 +582,15 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {showInstall ? (
+          {showEmailConfirmation ? (
+            /* ====== Email Confirmation ====== */
+            <EmailConfirmation
+              email={signUpEmail}
+              onBack={() => switchMode('signin')}
+              onResend={handleResendConfirmation}
+              isResending={isResending}
+            />
+          ) : showInstall ? (
             /* ====== PWA Install Guide ====== */
             <InstallGuide onDismiss={() => router.push('/dashboard')} />
           ) : forgotMode ? (
@@ -580,7 +733,7 @@ export default function LoginPage() {
                 </div>
                 <div className="relative flex justify-center text-xs">
                   <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
-                    or sign in to your account
+                    {mode === 'signin' ? 'or sign in to your account' : 'or create your account'}
                   </span>
                 </div>
               </div>
@@ -866,7 +1019,7 @@ export default function LoginPage() {
           )}
 
           {/* Footer */}
-          {!showInstall && !forgotMode && (
+          {!showInstall && !showEmailConfirmation && !forgotMode && (
             <p className="text-center text-xs text-muted-foreground mt-8">
               {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
               <button

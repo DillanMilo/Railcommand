@@ -5,6 +5,7 @@ import { useProject } from '@/components/providers/ProjectProvider';
 
 import type {
   Project,
+  ProjectInvitation,
   Submittal,
   RFI,
   DailyLog,
@@ -38,6 +39,10 @@ import {
 import { getProjectMembers as fetchMembers } from '@/lib/actions/team';
 import { getMilestones as fetchMilestones } from '@/lib/actions/milestones';
 import { getActivityLog as fetchActivity } from '@/lib/actions/activity-log';
+import {
+  getProjectInvitations as fetchProjectInvitations,
+  getPendingInvitationsForUser as fetchPendingInvitations,
+} from '@/lib/actions/invitations';
 
 /* ------------------------------------------------------------------ */
 /*  Generic query hook                                                 */
@@ -196,6 +201,30 @@ export function useActivityLog(projectId: string, limit?: number) {
     () => store.getActivityLog(projectId).slice(0, limit),
     () => fetchActivity(projectId, limit),
     [projectId, limit],
+    [],
+  );
+}
+
+export function useProjectInvitations(projectId: string) {
+  return useQuery<ProjectInvitation[]>(
+    () => store.getProjectInvitations(projectId),
+    async () => {
+      const result = await fetchProjectInvitations(projectId);
+      return { data: result.data ?? [], error: result.error };
+    },
+    [projectId],
+    [],
+  );
+}
+
+export function usePendingInvitations() {
+  return useQuery<ProjectInvitation[]>(
+    () => store.getUserInvitations('demo@railcommand.app'),
+    async () => {
+      const result = await fetchPendingInvitations();
+      return { data: result.data ?? [], error: result.error };
+    },
+    [],
     [],
   );
 }

@@ -4,12 +4,12 @@ import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIRespo
 // ORGANIZATIONS
 // ============================================================
 export const seedOrganizations: Organization[] = [
-  { id: 'org-001', name: 'A5 Rail', type: 'owner', created_at: '2025-01-15T00:00:00Z' },
-  { id: 'org-002', name: 'Mountain West Track Services', type: 'contractor', created_at: '2025-02-01T00:00:00Z' },
-  { id: 'org-003', name: 'Front Range Signal Co.', type: 'contractor', created_at: '2025-02-01T00:00:00Z' },
-  { id: 'org-004', name: 'Summit Grade Construction', type: 'contractor', created_at: '2025-03-01T00:00:00Z' },
-  { id: 'org-005', name: 'Colorado DOT', type: 'inspector', created_at: '2025-01-01T00:00:00Z' },
-  { id: 'org-006', name: 'Kensington Engineering Group', type: 'engineer', created_at: '2025-01-10T00:00:00Z' },
+  { id: 'org-001', name: 'A5 Rail', type: 'owner', tier: 'pro', created_at: '2025-01-15T00:00:00Z' },
+  { id: 'org-002', name: 'Mountain West Track Services', type: 'contractor', tier: 'free', created_at: '2025-02-01T00:00:00Z' },
+  { id: 'org-003', name: 'Front Range Signal Co.', type: 'contractor', tier: 'free', created_at: '2025-02-01T00:00:00Z' },
+  { id: 'org-004', name: 'Summit Grade Construction', type: 'contractor', tier: 'free', created_at: '2025-03-01T00:00:00Z' },
+  { id: 'org-005', name: 'Colorado DOT', type: 'inspector', tier: 'free', created_at: '2025-01-01T00:00:00Z' },
+  { id: 'org-006', name: 'Kensington Engineering Group', type: 'engineer', tier: 'free', created_at: '2025-01-10T00:00:00Z' },
 ];
 
 // ============================================================
@@ -42,6 +42,7 @@ export const getProfileWithOrg = (profileId: string): (Profile & { organization:
 // ============================================================
 export const seedProject: Project = {
   id: 'proj-001',
+  organization_id: 'org-001',
   name: 'Englewood Yard Expansion — Phase 2',
   description: 'Track expansion including 3 new sidings, signal upgrades with wayside signals and grade crossing protection, and yard reconfiguration for increased capacity at Englewood Yard.',
   status: 'active',

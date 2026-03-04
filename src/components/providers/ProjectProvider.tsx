@@ -90,7 +90,7 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
   });
   const [storedProjectId, setStoredProjectId] = useState<string>(() => getStoredProjectId(isDemo));
   const [projects, setProjects] = useState<Project[]>(() => (isDemo ? getStoreProjects() : []));
-  const [currentUserId, setCurrentUserIdState] = useState<string>(() => getCurrentUserId());
+  const [currentUserId, setCurrentUserIdState] = useState<string>(() => (isDemo ? getCurrentUserId() : ''));
 
   // URL takes priority over stored project ID
   const validUrlProject = urlProjectId && projects.find((p) => p.id === urlProjectId) ? urlProjectId : null;
@@ -116,6 +116,7 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setIsDemo(false);
+        setCurrentUserIdState(user.id);
         // Fetch projects from the database
         fetchProjects().then((result) => {
           if (result.data) {

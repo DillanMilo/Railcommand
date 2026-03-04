@@ -10,7 +10,15 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const response = NextResponse.redirect(`${origin}${next}`);
+      // Set rc-remember cookie so middleware doesn't sign the user out.
+      // Users arriving via email confirmation or OAuth should stay logged in.
+      response.cookies.set('rc-remember', 'true', {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        sameSite: 'lax',
+      });
+      return response;
     }
   }
 

@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { getProfiles } from '@/lib/store';
+import { useProject } from '@/components/providers/ProjectProvider';
 import { useSubmittals } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -38,6 +39,7 @@ function isOverdue(dueDate: string): boolean {
 export default function SubmittalsListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
+  const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
   const { data: submittals, loading } = useSubmittals(projectId);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -124,7 +126,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
           </TableHeader>
           <TableBody>
             {filtered.map((sub) => {
-              const profileName = sub.submitted_by_profile?.full_name ?? getProfiles().find((p) => p.id === sub.submitted_by)?.full_name ?? 'Unknown';
+              const profileName = sub.submitted_by_profile?.full_name ?? (isDemo ? getProfiles().find((p) => p.id === sub.submitted_by)?.full_name : null) ?? 'Unknown';
               const days = getAgingDays(sub.submit_date);
               const overdue = isOverdue(sub.due_date);
               return (
@@ -161,7 +163,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
       {/* Mobile cards */}
       <div className="lg:hidden mt-6 space-y-3">
         {filtered.map((sub) => {
-          const profileName = sub.submitted_by_profile?.full_name ?? getProfiles().find((p) => p.id === sub.submitted_by)?.full_name ?? 'Unknown';
+          const profileName = sub.submitted_by_profile?.full_name ?? (isDemo ? getProfiles().find((p) => p.id === sub.submitted_by)?.full_name : null) ?? 'Unknown';
           const days = getAgingDays(sub.submit_date);
           const overdue = isOverdue(sub.due_date);
           return (
