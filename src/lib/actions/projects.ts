@@ -89,7 +89,7 @@ export async function getProjectById(projectId: string): Promise<ActionResult<Pr
 // ---------------------------------------------------------------------------
 export async function createProject(data: {
   name: string;
-  descr: string;
+  description: string;
   location: string;
   client: string;
   start_date: string;
