@@ -20,32 +20,17 @@ export async function setupBusiness(
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
 
-    // Create the organization
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .insert({
-        name,
-        type,
-        tier: 'free',
-      })
-      .select()
-      .single();
+    // Use SECURITY DEFINER rpc to atomically create org + link profile
+    const { data, error: rpcError } = await supabase.rpc('setup_organization', {
+      org_name: name,
+      org_type: type,
+    });
 
-    if (orgError || !organization) {
-      return { error: orgError?.message ?? 'Failed to create organization' };
+    if (rpcError || !data) {
+      return { error: rpcError?.message ?? 'Failed to create organization' };
     }
 
-    // Link the user's profile to the new organization
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ organization_id: organization.id })
-      .eq('id', user.id);
-
-    if (profileError) {
-      return { error: profileError.message };
-    }
-
-    return { success: true, data: organization as Organization };
+    return { success: true, data: data as Organization };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to set up business' };
   }
