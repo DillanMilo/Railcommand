@@ -89,7 +89,7 @@ export async function getProjectById(projectId: string): Promise<ActionResult<Pr
 // ---------------------------------------------------------------------------
 export async function createProject(data: {
   name: string;
-  description: string;
+  descr: string;
   location: string;
   client: string;
   start_date: string;
@@ -100,34 +100,17 @@ export async function createProject(data: {
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
-
-    const { data: project, error } = await supabase
-      .from('projects')
-      .insert({
-        name: data.name,
-        description: data.description,
-        location: data.location,
-        client: data.client,
-        start_date: data.start_date,
-        target_end_date: data.target_end_date,
-        budget_total: data.budget_total,
-        budget_spent: 0,
-        status: 'active',
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (error) return { error: error.message };
-
-    // Auto-add the creator as a project manager
-    await supabase.from('project_members').insert({
-      project_id: project.id,
-      profile_id: user.id,
-      project_role: 'manager',
-      can_edit: true,
+    const { data: project, error } = await supabase.rpc('create_project', {
+      p_name: data.name,
+      p_description: data.description,
+      p_location: data.location,
+      p_client: data.client,
+      p_start_date: data.start_date,
+      p_target_end_date: data.target_end_date,
+      p_budget_total: data.budget_total,
     });
-
+    if (error) return { error: error.message };
+    if (!project) return { error: 'Failed to create project' };
     await logActivity(
       supabase,
       project.id,
@@ -137,10 +120,8 @@ export async function createProject(data: {
       `created project: ${project.name}`,
       user.id
     );
-
     revalidatePath('/dashboard');
     revalidatePath('/projects');
-
     return { success: true, data: project as Project };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to create project' };

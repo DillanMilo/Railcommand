@@ -63,7 +63,11 @@ export default function NewProjectDialog({ open, onOpenChange }: NewProjectDialo
       projectId = project.id;
     } else {
       const result = await serverCreateProject(projectData);
-      if (result.error || !result.data) return;
+      if (result.error || !result.data) {
+        console.error('Failed to create project:', result.error);
+        alert(`Failed to create project: ${result.error}`);
+        return;
+      }
       projectId = result.data.id;
     }
 

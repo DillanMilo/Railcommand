@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -36,7 +36,8 @@ export default function DashboardPage() {
   const { can } = usePermissions(currentProjectId);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
 
-  const [now] = useState(() => Date.now());
+  const [now, setNow] = useState<number>(0);
+  useEffect(() => { setNow(Date.now()); }, []);
 
   if (!currentProject) {
     // Real auth user with no projects — show welcome state
