@@ -51,6 +51,8 @@ export default function PhotoUpload({
   const [category, setCategory] = useState<PhotoCategory>('standard');
   const [geoLoading, setGeoLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
 
   const captureGeoForPhoto = useCallback((): Promise<{ lat: number; lng: number } | null> => {
     if (!showGeoCapture || !navigator.geolocation) return Promise.resolve(null);
@@ -115,13 +117,11 @@ export default function PhotoUpload({
         const result = await uploadAttachment(formData);
 
         if (result.error) {
-          onPhotosChange((prev: PhotoFile[]) =>
-            prev.filter((p) => p.id !== photo.id)
-          );
+          onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
           alert(`Upload failed: ${result.error}`);
         } else {
-          onPhotosChange((prev: PhotoFile[]) =>
-            prev.map((p) =>
+          onPhotosChange(
+            photosRef.current.map((p) =>
               p.id === photo.id
                 ? { ...p, uploading: false, file: compressed }
                 : p
@@ -130,9 +130,7 @@ export default function PhotoUpload({
           if (result.data) onUploadComplete?.(result.data);
         }
       } catch {
-        onPhotosChange((prev: PhotoFile[]) =>
-          prev.filter((p) => p.id !== photo.id)
-        );
+        onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
         alert(`Upload failed for ${photo.file.name}`);
       }
     }
