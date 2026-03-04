@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Organization } from '@/lib/types';
+import type { Organization, Profile } from '@/lib/types';
 import {
   type ActionResult,
   getAuthenticatedUser,
@@ -13,7 +13,8 @@ import {
 // ---------------------------------------------------------------------------
 export async function setupBusiness(
   name: string,
-  type: Organization['type']
+  type: Organization['type'],
+  role: Profile['role'] = 'member'
 ): Promise<ActionResult<Organization>> {
   try {
     const supabase = await createClient();
@@ -28,6 +29,16 @@ export async function setupBusiness(
 
     if (rpcError || !data) {
       return { error: rpcError?.message ?? 'Failed to create organization' };
+    }
+
+    // Update the user's role on their profile
+    const { error: roleError } = await supabase
+      .from('profiles')
+      .update({ role })
+      .eq('id', user.id);
+
+    if (roleError) {
+      return { error: roleError.message };
     }
 
     return { success: true, data: data as Organization };

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { setupBusiness } from '@/lib/actions/onboarding';
-import type { Organization } from '@/lib/types';
+import type { Organization, Profile } from '@/lib/types';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -33,6 +33,15 @@ const ORG_TYPE_LABELS: Record<Organization['type'], string> = {
   inspector: 'Inspector',
 };
 
+const ROLES: Profile['role'][] = ['admin', 'manager', 'member'];
+
+const ROLE_LABELS: Record<Profile['role'], string> = {
+  admin: 'Admin',
+  manager: 'Manager',
+  member: 'Member',
+  viewer: 'Viewer',
+};
+
 /* ------------------------------------------------------------------ */
 /*  Inner form (needs useSearchParams, so wrapped in Suspense)         */
 /* ------------------------------------------------------------------ */
@@ -43,19 +52,20 @@ function OnboardingForm() {
 
   const [name, setName] = useState('');
   const [type, setType] = useState<Organization['type'] | ''>('');
+  const [role, setRole] = useState<Profile['role'] | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!name.trim() || !type) return;
+      if (!name.trim() || !type || !role) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
-        const result = await setupBusiness(name.trim(), type as Organization['type']);
+        const result = await setupBusiness(name.trim(), type as Organization['type'], role as Profile['role']);
 
         if (result.error) {
           setError(result.error);
@@ -75,7 +85,7 @@ function OnboardingForm() {
         setIsLoading(false);
       }
     },
-    [name, type, searchParams, router],
+    [name, type, role, searchParams, router],
   );
 
   return (
@@ -164,10 +174,36 @@ function OnboardingForm() {
           </Select>
         </div>
 
+        {/* Your Role */}
+        <div className="space-y-2">
+          <label
+            htmlFor="role"
+            className="text-sm font-medium text-foreground"
+          >
+            Your Role
+          </label>
+          <Select
+            value={role}
+            onValueChange={(val) => setRole(val as Profile['role'])}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="h-12 w-full" id="role">
+              <SelectValue placeholder="Select your role" />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Submit */}
         <Button
           type="submit"
-          disabled={isLoading || !name.trim() || !type}
+          disabled={isLoading || !name.trim() || !type || !role}
           className="w-full h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
         >
           {isLoading ? (

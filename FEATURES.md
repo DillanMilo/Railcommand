@@ -1,8 +1,8 @@
 # RailCommand -- Feature Overview & Role-Based Access Guide
 
 **Prepared for:** A5 Rail Leadership
-**Date:** February 27, 2026
-**Version:** 1.0
+**Date:** March 4, 2026
+**Version:** 1.1 -- Updated with current development status
 
 ---
 
@@ -21,7 +21,7 @@
    - [3.8 Settings & Profile](#38-settings--profile)
 4. [Cross-Cutting Features](#4-cross-cutting-features)
 5. [Permission Matrix (Complete Reference)](#5-permission-matrix-complete-reference)
-6. [Roadmap / Planned Features](#6-roadmap--planned-features)
+6. [Current Development Status](#6-current-development-status)
 
 ---
 
@@ -81,7 +81,7 @@ RailCommand uses two layers of access control:
 
 ## 3. Module Features
 
-### 3.1 Dashboard
+### 3.1 Dashboard -- *Complete*
 
 **Overview**
 
@@ -114,7 +114,7 @@ The Dashboard is the command center for every project. It provides a real-time, 
 
 ---
 
-### 3.2 Submittals Module
+### 3.2 Submittals Module -- *Complete (file attachment storage coming soon)*
 
 **Overview**
 
@@ -144,7 +144,7 @@ The Submittals module manages the full lifecycle of construction submittals -- f
 
 ---
 
-### 3.3 RFIs Module
+### 3.3 RFIs Module -- *Complete (file attachment storage coming soon)*
 
 **Overview**
 
@@ -175,7 +175,7 @@ The RFIs (Requests for Information) module enables structured communication for 
 
 ---
 
-### 3.4 Daily Logs Module
+### 3.4 Daily Logs Module -- *Complete*
 
 **Overview**
 
@@ -209,7 +209,7 @@ The Daily Logs module provides a structured, digital replacement for paper-based
 
 ---
 
-### 3.5 Punch List Module
+### 3.5 Punch List Module -- *Complete*
 
 **Overview**
 
@@ -246,7 +246,7 @@ The Punch List module tracks deficiencies, incomplete work, and corrective actio
 
 ---
 
-### 3.6 Schedule & Milestones
+### 3.6 Schedule & Milestones -- *Complete*
 
 **Overview**
 
@@ -281,7 +281,7 @@ The Schedule & Milestones module provides a high-level view of project timelines
 
 ---
 
-### 3.7 Team Management
+### 3.7 Team Management -- *Complete*
 
 **Overview**
 
@@ -313,7 +313,7 @@ The Team Management module provides a directory of all project team members, the
 
 ---
 
-### 3.8 Settings & Profile
+### 3.8 Settings & Profile -- *Complete*
 
 **Overview**
 
@@ -362,7 +362,7 @@ Settings and Profile pages allow every user to manage their personal information
 
 These capabilities span the entire application and are available across all modules.
 
-### Authentication & Security
+### Authentication & Security -- *Complete*
 
 - **Email/Password Sign-In** -- Standard email and password authentication with form validation
 - **Google OAuth** -- One-click sign-in with Google for faster access
@@ -372,24 +372,25 @@ These capabilities span the entire application and are available across all modu
 - **256-Bit Encryption** -- All data encrypted in transit and at rest
 - **US Data Residency** -- All data stored exclusively within the United States
 - **Session Management** -- View and manage active sessions across devices
+- **Remember Me** -- Persistent login sessions with secure cookie-based session management
 - **Demo Mode** -- "Explore Demo Project" button on the login page loads a fully populated railroad project with seed data so testers can explore all features without signing up
 - **Fresh Account** -- New sign-ups get a clean canvas with zero pre-populated data, ready to create their own projects from scratch
 
-### Progressive Web App (PWA)
+### Progressive Web App (PWA) -- *In Progress*
 
-- **Add to Home Screen** -- Install RailCommand on any device directly from the browser, no app store required
-- **Device-Specific Instructions** -- Guided installation steps for iOS (Safari), Android (Chrome), and Desktop (Chrome/Edge)
-- **Native-Like Experience** -- Runs in its own window without browser chrome once installed
-- **Instant Access** -- Launch from your home screen or app drawer like any other app
+- **Add to Home Screen** -- Install RailCommand on any device directly from the browser, no app store required *(coming soon -- manifest and service worker pending)*
+- **Device-Specific Instructions** -- Guided installation steps for iOS (Safari), Android (Chrome), and Desktop (Chrome/Edge) *(complete)*
+- **Native-Like Experience** -- Runs in its own window without browser chrome once installed *(coming soon)*
+- **Instant Access** -- Launch from your home screen or app drawer like any other app *(coming soon)*
 
-### Dark Mode
+### Dark Mode -- *Complete*
 
 - **Three Modes** -- Light, Dark, and Auto
 - **Auto Mode** -- Intelligent scheduling that activates dark mode from 7 PM to 6 AM
 - **System-Wide** -- Every screen, component, and module fully supports dark mode
 - **Field-Friendly** -- Reduces glare and eye strain for outdoor and low-light field conditions
 
-### Responsive Design
+### Responsive Design -- *Complete*
 
 - **Mobile-First** -- Every screen designed for mobile viewports first, then enhanced for larger screens
 - **Desktop Optimization** -- Full-width layouts, multi-column grids, and sidebar navigation on desktop
@@ -398,13 +399,15 @@ These capabilities span the entire application and are available across all modu
 - **Touch Targets** -- Minimum 44px touch targets throughout for accessibility
 - **Responsive Grids** -- KPI cards, team members, and list views adapt from 1 to 6 columns based on screen size
 
-### Real-Time Notifications
+### In-App Notifications -- *Partially Complete*
 
-- **In-App Notification Panel** -- Bell icon in the top bar with recent activity stream
-- **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments
-- **Per-Module Toggles** -- Users can enable or disable notifications for each module independently
+- **In-App Notification Panel** -- Bell icon in the top bar with recent activity stream *(complete)*
+- **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments *(complete)*
+- **Per-Module Toggles** -- Users can enable or disable notifications for each module independently *(complete)*
+- **Email Notifications** -- Automated email alerts for assignments and status changes *(coming soon)*
+- **Push Notifications** -- Real-time browser push notifications *(coming soon)*
 
-### Role-Based Access Control (RBAC) -- Implemented
+### Role-Based Access Control (RBAC) -- *Complete*
 
 RailCommand enforces role-based permissions across every module in the application. This is not just a design concept -- it is fully implemented in the current MVP frontend.
 
@@ -418,9 +421,9 @@ RailCommand enforces role-based permissions across every module in the applicati
 
 **MVP Demo Note:** The current MVP includes a **User Switcher** in the top-right dropdown menu. This development tool allows you to switch between all 10 seed users to demonstrate how the interface adapts to each role in real time. This switcher will be removed before production deployment -- in the shipped product, the user's role is determined automatically by their Supabase authentication credentials and project membership. The switcher exists solely for client demos and internal testing.
 
-### Navigation & Usability
+### Navigation & Usability -- *Complete*
 
-- **Global Search** -- Search across all modules from the top bar
+- **Global Search** -- Search across all modules from the top bar *(page-level navigation complete; full-text cross-module search coming soon)*
 - **Breadcrumb Navigation** -- Persistent breadcrumbs on every page showing the user's location in the app
 - **Skeleton Loading Screens** -- Polished placeholder content displayed while data loads
 - **Empty States** -- Helpful messaging when no data exists, with guidance on next steps
@@ -500,18 +503,63 @@ The following table provides a comprehensive reference of every action in RailCo
 
 ---
 
-## 6. Roadmap / Planned Features
+## 6. Current Development Status
 
-The following features are planned for future releases of RailCommand:
+### Overall Progress: ~85% Complete -- Alpha Ready
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| **AI Assistant (RailBot)** | Natural language queries, guided data entry (create RFIs and punch items via conversation), project summarization, and daily log summaries -- powered by AI and accessible from any page via a slide-over chat panel. | In Development |
-| **Photo & Document Management** | Photo upload (standard + thermal) with GPS geo-tagging on punch list items and daily logs. Photo gallery with lightbox viewer. Geo-tag capture for job-level location tracking. Backend storage via Supabase Storage buckets pending connection. | MVP UI Complete |
-| **Custom Reporting & Export** | Generate custom reports across modules with PDF and CSV export. Filterable by date range, status, role, and more. | Planned |
-| **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Planned |
-| **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Planned |
-| **Email Digests & Scheduled Notifications** | Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones. | Planned |
+RailCommand has reached **Alpha readiness** as of March 2026. All eight core modules are fully functional with complete role-based access control, responsive design, and Supabase backend integration. The platform is ready for internal testing by the A5 Rail team.
+
+### Module Completion Summary
+
+| Module | Status | Completion | Notes |
+|--------|--------|:----------:|-------|
+| **Dashboard** | Complete | 100% | All KPI cards, activity feed, quick actions, milestones widget |
+| **Submittals** | Complete | 90% | Full workflow operational; file attachment storage pending |
+| **RFIs** | Complete | 90% | Full lifecycle with response threads; file attachment storage pending |
+| **Daily Logs** | Complete | 100% | Calendar view, structured data entry, geo-tagging, photos |
+| **Punch List** | Complete | 100% | 4-stage resolution workflow with separation of duties |
+| **Schedule & Milestones** | Complete | 100% | Timeline view, budget tracking, linked submittals/RFIs |
+| **Team Management** | Complete | 100% | Full invite/add/remove workflow with role assignment |
+| **Settings & Profile** | Complete | 100% | Profile editing, dark mode, notification preferences, security |
+
+### Platform Feature Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| **Authentication (Email + Google OAuth)** | Complete | Supabase Auth with password reset, remember me, session management |
+| **Role-Based Access Control (RBAC)** | Complete | 14 actions mapped to 7 project roles, enforced on every page |
+| **Dark Mode (Light / Dark / Auto)** | Complete | Auto mode switches at 7 PM / 6 AM; every screen supported |
+| **Responsive Design** | Complete | Mobile-first with bottom nav, collapsible sidebar, 44px touch targets |
+| **Skeleton Loading & Error Handling** | Complete | Loading states, empty states, error boundaries throughout |
+| **Page Transitions** | Complete | Smooth micro-animations between views |
+| **In-App Notification Panel** | Complete | Activity feed in topbar; per-module toggle preferences |
+| **Breadcrumb Navigation** | Complete | On every page with responsive truncation |
+| **Demo Mode** | Complete | "Explore Demo Project" with fully populated seed data |
+| **Tier-Based Limits** | Complete | Free (5 members), Pro (25 members), Enterprise (unlimited) |
+
+### What's Coming Next
+
+The following features are actively planned for upcoming releases, ordered by priority:
+
+| # | Feature | Description | Target |
+|---|---------|-------------|--------|
+| 1 | **File & Document Storage** | Connect Supabase Storage buckets for file uploads on submittals, RFIs, daily logs, and punch list items. Upload UI is already built -- backend storage integration is the remaining work. | Next Release |
+| 2 | **PWA Manifest & App Icons** | Add web app manifest, service worker, and branded icons so RailCommand can be installed to any device's home screen with full native-like behavior. Installation guide UI is already in place. | Next Release |
+| 3 | **Cross-Module Search** | Upgrade global search to query across all modules -- find submittals, RFIs, punch list items, and daily logs by number, title, assignee, or content. | Next Release |
+| 4 | **Email Notifications** | Automated email alerts when users are assigned items, when statuses change, and when items become overdue. Notification preference toggles are already built in Settings. | Next Release |
+| 5 | **AI Assistant (RailBot)** | Natural language queries, guided data entry (create RFIs and punch items via conversation), project summarization, and daily log summaries -- powered by AI and accessible from any page via a slide-over chat panel. | Beta |
+| 6 | **Custom Reporting & Export** | Generate custom reports across modules with PDF and CSV export. Filterable by date range, status, role, and more. | Beta |
+| 7 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Post-Beta |
+| 8 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Post-Beta |
+| 9 | **Email Digests** | Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones. | Post-Beta |
+
+### Testing Milestones
+
+| Milestone | Status | What It Means |
+|-----------|--------|---------------|
+| **Alpha Testing** | **Ready Now** | All core modules functional. Internal team can test full workflows end-to-end. Bugs are expected and will be tracked. File uploads not yet connected to storage. |
+| **Beta Testing** | Target: After items 1-4 above | Feature-complete for core workflows. File uploads working, PWA installable, search functional, email notifications active. Ready for client/field testers. |
+| **Production Release** | Target: After Beta feedback cycle | All Beta feedback addressed, AI Assistant integrated, demo artifacts removed, custom domain deployed. |
 
 ### Pre-Production Cleanup
 
@@ -521,9 +569,8 @@ The following items will be removed or replaced before the production release:
 |------|--------------|-----------------|
 | **Demo User Switcher** | Dropdown in top-right menu allows switching between 10 demo users to test RBAC | Removed -- user identity determined by Supabase authentication |
 | **Seed Data** | In-memory store with pre-populated demo data (projects, submittals, RFIs, etc.) | Replaced with live Supabase database |
-| **Simulated Auth** | Form submission redirects to dashboard without real authentication | Full Supabase Auth with email/password and Google OAuth |
-| **Simulated Save Actions** | Profile updates and settings changes use setTimeout to mimic API calls | Wired to Supabase server actions with real persistence |
 
 ---
 
-*Product: RailCommand -- by A5 Rail | Developer: Creative Currents LLC*
+*Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
+*Last updated: March 4, 2026*
