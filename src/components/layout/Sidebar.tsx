@@ -302,8 +302,30 @@ export default function Sidebar() {
         <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = ICON_MAP[item.icon];
+            const disabled = item.requiresProject && !currentProjectId;
             const isActive =
-              pathname === item.href || pathname.startsWith(item.href + '/');
+              !disabled && (pathname === item.href || pathname.startsWith(item.href + '/'));
+
+            if (disabled) {
+              const disabledEl = (
+                <span
+                  key={item.label}
+                  className="flex items-center gap-3 px-3 h-11 rounded-lg text-sm font-medium text-white/30 cursor-not-allowed"
+                >
+                  {Icon && <Icon className="size-5 shrink-0" />}
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </span>
+              );
+
+              return (
+                <Tooltip key={item.label} delayDuration={0}>
+                  <TooltipTrigger asChild>{disabledEl}</TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8}>
+                    Select a project first
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
 
             const link = (
               <Link

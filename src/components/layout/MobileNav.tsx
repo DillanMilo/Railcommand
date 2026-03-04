@@ -28,18 +28,20 @@ export default function MobileNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const { currentProjectId } = useProject();
 
+  const hasProject = Boolean(currentProjectId);
+
   const mobileTabs = [
-    { label: 'Dashboard', href: '/dashboard', Icon: LayoutDashboard },
-    { label: 'Submittals', href: `/projects/${currentProjectId}/submittals`, Icon: FileCheck },
-    { label: 'RFIs', href: `/projects/${currentProjectId}/rfis`, Icon: MessageSquareMore },
-    { label: 'Logs', href: `/projects/${currentProjectId}/daily-logs`, Icon: CalendarDays },
-    { label: 'More', href: '#more', Icon: MoreHorizontal },
+    { label: 'Dashboard', href: '/dashboard', Icon: LayoutDashboard, requiresProject: false },
+    { label: 'Submittals', href: hasProject ? `/projects/${currentProjectId}/submittals` : '#', Icon: FileCheck, requiresProject: true },
+    { label: 'RFIs', href: hasProject ? `/projects/${currentProjectId}/rfis` : '#', Icon: MessageSquareMore, requiresProject: true },
+    { label: 'Logs', href: hasProject ? `/projects/${currentProjectId}/daily-logs` : '#', Icon: CalendarDays, requiresProject: true },
+    { label: 'More', href: '#more', Icon: MoreHorizontal, requiresProject: false },
   ];
 
   const moreItems = [
-    { label: 'Punch List', href: `/projects/${currentProjectId}/punch-list`, Icon: ClipboardCheck },
-    { label: 'Schedule', href: `/projects/${currentProjectId}/schedule`, Icon: GanttChart },
-    { label: 'Team', href: `/projects/${currentProjectId}/team`, Icon: Users },
+    { label: 'Punch List', href: hasProject ? `/projects/${currentProjectId}/punch-list` : '#', Icon: ClipboardCheck, requiresProject: true },
+    { label: 'Schedule', href: hasProject ? `/projects/${currentProjectId}/schedule` : '#', Icon: GanttChart, requiresProject: true },
+    { label: 'Team', href: hasProject ? `/projects/${currentProjectId}/team` : '#', Icon: Users, requiresProject: true },
   ];
 
   const isMoreActive = moreItems.some(
@@ -49,7 +51,7 @@ export default function MobileNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-rc-card border-t border-rc-border pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around">
-        {mobileTabs.map(({ label, href, Icon }) => {
+        {mobileTabs.map(({ label, href, Icon, requiresProject }) => {
           if (href === '#more') {
             return (
               <Sheet key="more" open={moreOpen} onOpenChange={setMoreOpen}>
@@ -70,7 +72,21 @@ export default function MobileNav() {
                   </SheetHeader>
                   <div className="grid grid-cols-3 gap-4 mt-4 pb-4">
                     {moreItems.map((item) => {
-                      const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                      const itemDisabled = item.requiresProject && !hasProject;
+                      const active = !itemDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'));
+
+                      if (itemDisabled) {
+                        return (
+                          <span
+                            key={item.label}
+                            className="flex flex-col items-center gap-2 rounded-lg p-4 text-muted-foreground/40 cursor-not-allowed"
+                          >
+                            <item.Icon className="size-6" />
+                            <span className="text-xs font-medium">{item.label}</span>
+                          </span>
+                        );
+                      }
+
                       return (
                         <Link
                           key={item.href}
@@ -92,7 +108,20 @@ export default function MobileNav() {
             );
           }
 
-          const isActive = pathname === href || pathname.startsWith(href + '/');
+          const disabled = requiresProject && !hasProject;
+          const isActive = !disabled && (pathname === href || pathname.startsWith(href + '/'));
+
+          if (disabled) {
+            return (
+              <span
+                key={label}
+                className="flex flex-col items-center justify-center gap-0.5 min-h-[56px] min-w-[44px] flex-1 pt-2 pb-1 text-rc-steel/40 cursor-not-allowed"
+              >
+                <Icon className="size-6 shrink-0" />
+                <span className="text-[10px] font-medium leading-tight">{label}</span>
+              </span>
+            );
+          }
 
           return (
             <Link

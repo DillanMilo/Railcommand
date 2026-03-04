@@ -90,16 +90,22 @@ export default function Topbar({ children }: TopbarProps) {
     : authProfile;
   const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
+  const allSearchPages = [
+    { label: 'Dashboard', href: '/dashboard', requiresProject: false },
+    ...(currentProjectId
+      ? [
+          { label: 'Submittals', href: `/projects/${currentProjectId}/submittals`, requiresProject: true },
+          { label: 'RFIs', href: `/projects/${currentProjectId}/rfis`, requiresProject: true },
+          { label: 'Daily Logs', href: `/projects/${currentProjectId}/daily-logs`, requiresProject: true },
+          { label: 'Punch List', href: `/projects/${currentProjectId}/punch-list`, requiresProject: true },
+          { label: 'Schedule', href: `/projects/${currentProjectId}/schedule`, requiresProject: true },
+          { label: 'Team', href: `/projects/${currentProjectId}/team`, requiresProject: true },
+        ]
+      : []),
+  ];
+
   const searchResults = searchQuery.trim()
-    ? [
-        { label: 'Submittals', href: `/projects/${currentProjectId}/submittals` },
-        { label: 'RFIs', href: `/projects/${currentProjectId}/rfis` },
-        { label: 'Daily Logs', href: `/projects/${currentProjectId}/daily-logs` },
-        { label: 'Punch List', href: `/projects/${currentProjectId}/punch-list` },
-        { label: 'Schedule', href: `/projects/${currentProjectId}/schedule` },
-        { label: 'Team', href: `/projects/${currentProjectId}/team` },
-        { label: 'Dashboard', href: '/dashboard' },
-      ].filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? allSearchPages.filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
   async function handleSignOut() {

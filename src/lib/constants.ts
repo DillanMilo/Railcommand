@@ -92,18 +92,17 @@ export interface NavItem {
   label: string;
   href: string;
   icon: string;
+  requiresProject?: boolean;
 }
 
 export function getNavItems(projectId: string): NavItem[] {
   return [
     { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
-    { label: "Submittals", href: `/projects/${projectId}/submittals`, icon: "FileCheck" },
-    { label: "RFIs", href: `/projects/${projectId}/rfis`, icon: "MessageSquareMore" },
-    { label: "Daily Logs", href: `/projects/${projectId}/daily-logs`, icon: "ClipboardList" },
-    { label: "Punch List", href: `/projects/${projectId}/punch-list`, icon: "ListChecks" },
-    { label: "Schedule", href: `/projects/${projectId}/schedule`, icon: "CalendarRange" },
-    { label: "Team", href: `/projects/${projectId}/team`, icon: "Users" },
+    { label: "Submittals", href: projectId ? `/projects/${projectId}/submittals` : "#", icon: "FileCheck", requiresProject: true },
+    { label: "RFIs", href: projectId ? `/projects/${projectId}/rfis` : "#", icon: "MessageSquareMore", requiresProject: true },
+    { label: "Daily Logs", href: projectId ? `/projects/${projectId}/daily-logs` : "#", icon: "ClipboardList", requiresProject: true },
+    { label: "Punch List", href: projectId ? `/projects/${projectId}/punch-list` : "#", icon: "ListChecks", requiresProject: true },
+    { label: "Schedule", href: projectId ? `/projects/${projectId}/schedule` : "#", icon: "CalendarRange", requiresProject: true },
+    { label: "Team", href: projectId ? `/projects/${projectId}/team` : "#", icon: "Users", requiresProject: true },
   ];
 }
-
-export const NAV_ITEMS = getNavItems("proj-001");
