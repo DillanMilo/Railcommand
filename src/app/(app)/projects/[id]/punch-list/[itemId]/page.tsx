@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, MapPin } from 'lucide-react';
@@ -31,20 +31,24 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
   const { can } = usePermissions(projectId);
   const { isDemo } = useProject();
   const { data: item, loading, refetch } = usePunchListDetail(projectId, itemId);
-  const [status, setStatus] = useState<PunchListStatus>(item?.status ?? 'open');
-  const [notes, setNotes] = useState(item?.resolution_notes ?? '');
+  const [status, setStatus] = useState<PunchListStatus>('open');
+  const [notes, setNotes] = useState('');
   const [resolutionInput, setResolutionInput] = useState('');
   const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
 
-  // Reset state when navigating to a different punch list item
-  const [prevItemId, setPrevItemId] = useState(itemId);
-  if (itemId !== prevItemId) {
-    setPrevItemId(itemId);
-    setStatus(item?.status ?? 'open');
-    setNotes(item?.resolution_notes ?? '');
+  // Sync state when item loads
+  useEffect(() => {
+    if (item) {
+      setStatus(item.status);
+      setNotes(item.resolution_notes ?? '');
+    }
+  }, [item]);
+
+  // Reset transient state when navigating to a different item
+  useEffect(() => {
     setResolutionInput('');
     setNewPhotos([]);
-  }
+  }, [itemId]);
   const existingAttachments = item?.attachments ?? (item ? getAttachments('punch_list', item.id) : []);
 
   if (loading) {
