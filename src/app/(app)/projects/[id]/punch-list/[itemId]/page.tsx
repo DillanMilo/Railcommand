@@ -12,7 +12,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import PhotoGallery from '@/components/shared/PhotoGallery';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
-import { getProfiles, updatePunchListStatus as storeUpdatePunchListStatus, getAttachments, addAttachment, removeAttachment } from '@/lib/store';
+import { getProfiles, updatePunchListStatus as storeUpdatePunchListStatus, getAttachments } from '@/lib/store';
 import { usePunchListDetail } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { updatePunchListStatus as serverUpdatePunchListStatus } from '@/lib/actions/punch-list';
@@ -206,31 +206,11 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
       {(can(ACTIONS.PUNCH_LIST_RESOLVE) || can(ACTIONS.PUNCH_LIST_CREATE)) && (
         <PhotoUpload
           photos={newPhotos}
-          onPhotosChange={(updated) => {
-            // Auto-save new photos as attachments
-            const added = updated.filter((p) => !newPhotos.some((np) => np.id === p.id));
-            for (const photo of added) {
-              addAttachment({
-                entity_type: 'punch_list',
-                entity_id: itemId,
-                file_name: photo.file.name,
-                file_url: photo.preview,
-                file_type: photo.file.type,
-                file_size: photo.file.size,
-                photo_category: photo.category,
-                geo_lat: photo.geo_lat,
-                geo_lng: photo.geo_lng,
-              });
-            }
-            setNewPhotos(updated);
-          }}
-          onPhotoRemove={(photo) => {
-            // Remove the matching attachment from the store
-            const att = getAttachments('punch_list', itemId).find(
-              (a) => a.file_name === photo.file.name && a.file_url === photo.preview
-            );
-            if (att) removeAttachment(att.id);
-          }}
+          entityType="punch_list"
+          entityId={itemId}
+          projectId={projectId}
+          onUploadComplete={() => refetch()}
+          onPhotosChange={setNewPhotos}
         />
       )}
     </div>

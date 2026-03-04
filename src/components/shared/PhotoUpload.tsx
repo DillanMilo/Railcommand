@@ -5,7 +5,9 @@ import { Camera, Thermometer, X, MapPin, Loader2, Upload, Image as ImageIcon } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { PhotoCategory } from '@/lib/types';
+import { compressImage } from '@/lib/compressImage';
+import { uploadAttachment } from '@/lib/actions/attachments';
+import type { PhotoCategory, Attachment } from '@/lib/types';
 
 export interface PhotoFile {
   id: string;
@@ -14,6 +16,9 @@ export interface PhotoFile {
   category: PhotoCategory;
   geo_lat: number | null;
   geo_lng: number | null;
+  uploading?: boolean;
+  uploadError?: string;
+  originalSize?: number;
 }
 
 interface PhotoUploadProps {
@@ -22,6 +27,10 @@ interface PhotoUploadProps {
   onPhotoRemove?: (photo: PhotoFile) => void;
   maxFiles?: number;
   showGeoCapture?: boolean;
+  entityType?: string;
+  entityId?: string;
+  projectId?: string;
+  onUploadComplete?: (attachment: Attachment) => void;
 }
 
 const ACCEPTED_IMAGE_TYPES = '.jpg,.jpeg,.png,.webp,.heic,.heif';
@@ -34,6 +43,10 @@ export default function PhotoUpload({
   onPhotoRemove,
   maxFiles = 20,
   showGeoCapture = true,
+  entityType,
+  entityId,
+  projectId,
+  onUploadComplete,
 }: PhotoUploadProps) {
   const [category, setCategory] = useState<PhotoCategory>('standard');
   const [geoLoading, setGeoLoading] = useState(false);
@@ -74,10 +87,56 @@ export default function PhotoUpload({
         category,
         geo_lat: geo?.lat ?? null,
         geo_lng: geo?.lng ?? null,
+        uploading: !!(entityType && entityId && projectId),
+        originalSize: file.size,
       }));
 
-    onPhotosChange([...photos, ...newPhotos]);
-  }, [photos, onPhotosChange, maxFiles, category, captureGeoForPhoto]);
+    // Show previews immediately
+    const allPhotos = [...photos, ...newPhotos];
+    onPhotosChange(allPhotos);
+
+    // Only do server upload if entity context is provided
+    if (!entityType || !entityId || !projectId) return;
+
+    // Upload each photo
+    for (const photo of newPhotos) {
+      try {
+        const compressed = await compressImage(photo.file, photo.category);
+
+        const formData = new FormData();
+        formData.append('file', compressed);
+        formData.append('entity_type', entityType);
+        formData.append('entity_id', entityId);
+        formData.append('project_id', projectId);
+        formData.append('photo_category', photo.category);
+        if (photo.geo_lat !== null) formData.append('geo_lat', String(photo.geo_lat));
+        if (photo.geo_lng !== null) formData.append('geo_lng', String(photo.geo_lng));
+
+        const result = await uploadAttachment(formData);
+
+        if (result.error) {
+          onPhotosChange((prev: PhotoFile[]) =>
+            prev.filter((p) => p.id !== photo.id)
+          );
+          alert(`Upload failed: ${result.error}`);
+        } else {
+          onPhotosChange((prev: PhotoFile[]) =>
+            prev.map((p) =>
+              p.id === photo.id
+                ? { ...p, uploading: false, file: compressed }
+                : p
+            )
+          );
+          if (result.data) onUploadComplete?.(result.data);
+        }
+      } catch {
+        onPhotosChange((prev: PhotoFile[]) =>
+          prev.filter((p) => p.id !== photo.id)
+        );
+        alert(`Upload failed for ${photo.file.name}`);
+      }
+    }
+  }, [photos, onPhotosChange, maxFiles, category, captureGeoForPhoto, entityType, entityId, projectId, onUploadComplete]);
 
   const removePhoto = useCallback((id: string) => {
     const photo = photos.find((p) => p.id === id);
@@ -185,6 +244,12 @@ export default function PhotoUpload({
                     <ImageIcon className="size-8 text-muted-foreground" />
                   </div>
                 )}
+                {/* Upload spinner overlay */}
+                {photo.uploading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Loader2 className="size-8 animate-spin text-white" />
+                  </div>
+                )}
                 {/* Overlay badges */}
                 <div className="absolute bottom-1 left-1 flex flex-wrap gap-1">
                   <Badge
@@ -200,6 +265,11 @@ export default function PhotoUpload({
                   {photo.geo_lat !== null && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-rc-emerald/90 text-white">
                       <MapPin className="mr-0.5 size-2.5" />GPS
+                    </Badge>
+                  )}
+                  {photo.originalSize && photo.file.size < photo.originalSize * 0.8 && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-600 text-white">
+                      Optimised
                     </Badge>
                   )}
                 </div>
