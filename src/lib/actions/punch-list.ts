@@ -60,13 +60,13 @@ export async function getPunchListItemById(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
+    // Fetch the punch list item (without attachments join)
     const { data, error } = await supabase
       .from('punch_list_items')
       .select(`
         *,
         assigned_to_profile:profiles!punch_list_items_assigned_to_fkey(id, full_name, email, avatar_url),
-        created_by_profile:profiles!punch_list_items_created_by_fkey(id, full_name, email, avatar_url),
-        attachments(*)
+        created_by_profile:profiles!punch_list_items_created_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('id', itemId)
       .eq('project_id', projectId)
@@ -75,7 +75,18 @@ export async function getPunchListItemById(
     if (error) return { error: error.message };
     if (!data) return { error: 'Punch list item not found' };
 
-    return { success: true, data: data as PunchListItem };
+    // Fetch attachments separately using entity_id
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('entity_type', 'punch_list')
+      .eq('entity_id', itemId)
+      .order('created_at', { ascending: true });
+
+    return {
+      success: true,
+      data: { ...data, attachments: attachments ?? [] } as PunchListItem
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch punch list item' };
   }
