@@ -40,7 +40,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
     return rawLogs.find((l) => isSameDay(new Date(l.log_date), day));
   }
 
-  const totalHeadcount = (p: { headcount: number }[]) => p.reduce((s, r) => s + r.headcount, 0);
+  const totalHeadcount = (p: { headcount: number }[] | undefined) => (p ?? []).reduce((s, r) => s + r.headcount, 0);
 
   if (loading) {
     return (
@@ -165,7 +165,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm">{format(new Date(log.log_date), 'EEEE, MMM d, yyyy')}</span>
                       <Badge variant="outline" className="gap-1">
-                        <ClipboardList className="size-3" />{log.work_items.length} items
+                        <ClipboardList className="size-3" />{(log.work_items ?? []).length} items
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{log.work_summary}</p>

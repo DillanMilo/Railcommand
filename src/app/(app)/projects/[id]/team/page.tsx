@@ -154,10 +154,9 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
 
   const members = useMemo(() => {
     return projectMembers.map((pm, idx) => {
-      const profile = getProfiles().find((p) => p.id === pm.profile_id);
-      const org = profile
-        ? getOrganizations().find((o) => o.id === profile.organization_id)
-        : undefined;
+      const profile = pm.profile ?? getProfiles().find((p) => p.id === pm.profile_id);
+      const org = profile?.organization
+        ?? (profile ? getOrganizations().find((o) => o.id === profile.organization_id) : undefined);
       return { member: pm, profile, org, colorIdx: idx };
     });
   }, [projectMembers]);

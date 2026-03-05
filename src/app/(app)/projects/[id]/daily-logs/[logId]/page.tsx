@@ -48,7 +48,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const dateFull = format(dateObj, 'EEEE, MMMM d, yyyy');
   const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
     ?? (isDemo ? getProfiles().find((p) => p.id === log.created_by)?.full_name : undefined);
-  const totalHeadcount = log.personnel.reduce((s, r) => s + r.headcount, 0);
+  const totalHeadcount = (log.personnel ?? []).reduce((s, r) => s + r.headcount, 0);
   const attachments = (log as DailyLog & { attachments?: unknown[] }).attachments?.length
     ? (log as DailyLog & { attachments?: unknown[] }).attachments!
     : isDemo ? getAttachments('daily_log', logId) : [];
@@ -90,7 +90,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
             <Table>
               <TableHeader><TableRow className="bg-rc-card"><TableHead>Role</TableHead><TableHead className="text-right">Headcount</TableHead><TableHead>Company</TableHead></TableRow></TableHeader>
               <TableBody>
-                {log.personnel.map((p) => (
+                {(log.personnel ?? []).map((p) => (
                   <TableRow key={p.id}><TableCell>{p.role}</TableCell><TableCell className="text-right">{p.headcount}</TableCell><TableCell>{p.company}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -108,7 +108,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
             <Table>
               <TableHeader><TableRow className="bg-rc-card"><TableHead>Equipment Type</TableHead><TableHead className="text-right">Count</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
               <TableBody>
-                {log.equipment.map((e) => (
+                {(log.equipment ?? []).map((e) => (
                   <TableRow key={e.id}><TableCell>{e.equipment_type}</TableCell><TableCell className="text-right">{e.count}</TableCell><TableCell className="text-muted-foreground">{e.notes || '—'}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -125,7 +125,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
             <Table>
               <TableHeader><TableRow className="bg-rc-card"><TableHead>Description</TableHead><TableHead className="text-right">Qty</TableHead><TableHead>Unit</TableHead><TableHead>Location</TableHead></TableRow></TableHeader>
               <TableBody>
-                {log.work_items.map((w) => (
+                {(log.work_items ?? []).map((w) => (
                   <TableRow key={w.id}><TableCell>{w.description}</TableCell><TableCell className="text-right">{w.quantity}</TableCell><TableCell>{w.unit}</TableCell><TableCell className="text-muted-foreground">{w.location}</TableCell></TableRow>
                 ))}
               </TableBody>
