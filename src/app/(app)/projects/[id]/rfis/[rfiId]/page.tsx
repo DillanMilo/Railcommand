@@ -97,7 +97,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
 
   const submitter = (rfi as any).submitted_by_profile ?? getProfile(rfi.submitted_by);
   const assignee = (rfi as any).assigned_to_profile ?? getProfile(rfi.assigned_to);
-  const milestone = getMilestoneById(rfi.milestone_id, projectId);
+  const milestone = (rfi as any).milestone ?? getMilestoneById(rfi.milestone_id, projectId);
   const isOverdue = status === 'overdue';
   const canRespond = status === 'open' || status === 'overdue';
   const overdueDays = isOverdue ? differenceInCalendarDays(new Date(), new Date(rfi.due_date)) : 0;

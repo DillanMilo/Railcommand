@@ -85,7 +85,18 @@ export async function getRFIById(
       .eq('entity_id', rfiId)
       .order('created_at', { ascending: true });
 
-    return { success: true, data: { ...data, attachments: attachments ?? [] } as RFI };
+    // Fetch linked milestone name if present
+    let milestone: { id: string; name: string } | null = null;
+    if (data.milestone_id) {
+      const { data: ms } = await supabase
+        .from('milestones')
+        .select('id, name')
+        .eq('id', data.milestone_id)
+        .single();
+      milestone = ms ?? null;
+    }
+
+    return { success: true, data: { ...data, attachments: attachments ?? [], milestone } as RFI };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch RFI' };
   }
