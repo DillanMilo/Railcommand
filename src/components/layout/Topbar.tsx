@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, Settings, LogOut, User, X, Check, ChevronDown, Plus, Train } from 'lucide-react';
+import Image from 'next/image';
+import { Bell, Search, Settings, LogOut, User, X, Check, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -132,7 +133,7 @@ export default function Topbar({ children }: TopbarProps) {
           <div className="md:hidden shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-rc-navy text-white text-sm font-medium hover:bg-rc-navy/90 transition-colors">
-                <Train className="size-4 shrink-0" />
+                <Image src="/IMG_0936.jpg" alt="RailCommand" width={20} height={20} className="rounded-sm shrink-0" />
                 <span className="max-w-[120px] truncate">
                   {currentProject?.name ?? 'Select'}
                 </span>

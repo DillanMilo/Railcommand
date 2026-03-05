@@ -2,7 +2,8 @@
 
 import { useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Train, Building2, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -91,18 +92,24 @@ function OnboardingForm() {
   return (
     <div className="w-full max-w-[420px]">
       {/* Branding */}
-      <div className="flex items-center justify-center gap-3 mb-8">
-        <div className="flex items-center justify-center size-10 rounded-xl bg-rc-orange shadow-lg shadow-rc-orange/20">
-          <Train className="size-5 text-white" />
-        </div>
-        <div>
-          <h1 className="font-heading text-xl font-bold text-foreground tracking-tight">
-            RailCommand
-          </h1>
-          <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase">
-            by A5 Rail
-          </p>
-        </div>
+      <div className="flex flex-col items-center mb-8">
+        <Image
+          src="/IMG_0938.jpg"
+          alt="RailCommand"
+          width={200}
+          height={48}
+          className="object-contain hidden sm:block"
+        />
+        <Image
+          src="/IMG_0936.jpg"
+          alt="RailCommand"
+          width={48}
+          height={48}
+          className="rounded-xl sm:hidden"
+        />
+        <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase mt-1">
+          by A5 Rail
+        </p>
       </div>
 
       {/* Heading */}

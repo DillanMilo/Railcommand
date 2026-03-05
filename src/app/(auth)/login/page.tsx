@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Image from 'next/image';
 import {
-  Train,
   Eye,
   EyeOff,
   Mail,
@@ -504,18 +504,17 @@ function LoginPageInner() {
 
         <div className="relative z-10 flex flex-col justify-between w-full p-12 xl:p-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-11 rounded-xl bg-rc-orange shadow-lg shadow-rc-orange/20">
-              <Train className="size-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-heading text-xl font-bold text-white tracking-tight">
-                RailCommand
-              </h1>
-              <p className="text-[11px] text-white/40 tracking-wide uppercase">
-                by A5 Rail
-              </p>
-            </div>
+          <div className="flex flex-col">
+            <Image
+              src="/IMG_0938.jpg"
+              alt="RailCommand"
+              width={200}
+              height={48}
+              className="object-contain"
+            />
+            <p className="text-[11px] text-white/40 tracking-wide uppercase mt-1">
+              by A5 Rail
+            </p>
           </div>
 
           {/* Hero content */}
@@ -568,18 +567,24 @@ function LoginPageInner() {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
-          <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
-            <div className="flex items-center justify-center size-10 rounded-xl bg-rc-orange">
-              <Train className="size-5 text-white" />
-            </div>
-            <div>
-              <h1 className="font-heading text-xl font-bold text-foreground tracking-tight">
-                RailCommand
-              </h1>
-              <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase">
-                by A5 Rail
-              </p>
-            </div>
+          <div className="flex flex-col items-center mb-8 lg:hidden">
+            <Image
+              src="/IMG_0938.jpg"
+              alt="RailCommand"
+              width={200}
+              height={48}
+              className="object-contain hidden sm:block"
+            />
+            <Image
+              src="/IMG_0936.jpg"
+              alt="RailCommand"
+              width={48}
+              height={48}
+              className="rounded-xl sm:hidden"
+            />
+            <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase mt-1">
+              by A5 Rail
+            </p>
           </div>
 
           {showEmailConfirmation ? (

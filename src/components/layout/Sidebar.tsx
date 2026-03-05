@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { getNavItems } from '@/lib/constants';
@@ -21,7 +22,6 @@ import {
   ClipboardCheck,
   GanttChart,
   Users,
-  Train,
   PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
@@ -221,15 +221,24 @@ export default function Sidebar() {
       >
         {/* Brand */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10 shrink-0">
-          <div className="flex items-center justify-center size-9 rounded-lg bg-rc-orange shrink-0">
-            <Train className="size-5 text-white" />
-          </div>
-          {!collapsed && (
-            <div className="whitespace-nowrap">
-              <span className="font-heading font-bold text-lg tracking-tight block leading-tight">
-                RailCommand
-              </span>
-              <span className="text-[10px] text-white/40 tracking-wide uppercase">
+          {collapsed ? (
+            <Image
+              src="/IMG_0936.jpg"
+              alt="RailCommand"
+              width={36}
+              height={36}
+              className="rounded-lg shrink-0"
+            />
+          ) : (
+            <div className="flex flex-col">
+              <Image
+                src="/IMG_0938.jpg"
+                alt="RailCommand"
+                width={170}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-[10px] text-white/40 tracking-wide uppercase ml-0.5">
                 by A5
               </span>
             </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Train, Users, Check, X, Clock, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
+import { Users, Check, X, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -125,18 +126,24 @@ export default function InvitePage({
 
   /* ---- Branding header ---- */
   const branding = (
-    <div className="flex items-center justify-center gap-3 mb-8">
-      <div className="flex items-center justify-center size-10 rounded-xl bg-rc-orange shadow-lg shadow-rc-orange/20">
-        <Train className="size-5 text-white" />
-      </div>
-      <div>
-        <h1 className="font-heading text-xl font-bold text-foreground tracking-tight">
-          RailCommand
-        </h1>
-        <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase">
-          by A5 Rail
-        </p>
-      </div>
+    <div className="flex flex-col items-center mb-8">
+      <Image
+        src="/IMG_0938.jpg"
+        alt="RailCommand"
+        width={200}
+        height={48}
+        className="object-contain hidden sm:block"
+      />
+      <Image
+        src="/IMG_0936.jpg"
+        alt="RailCommand"
+        width={48}
+        height={48}
+        className="rounded-xl sm:hidden"
+      />
+      <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase mt-1">
+        by A5 Rail
+      </p>
     </div>
   );
 
