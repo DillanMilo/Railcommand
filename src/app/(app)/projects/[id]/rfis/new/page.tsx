@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -40,10 +40,16 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const [subject, setSubject] = useState('');
   const [question, setQuestion] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
-  const [assignTo, setAssignTo] = useState<string | undefined>(undefined);
+  const [assignTo, setAssignTo] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [milestoneId, setMilestoneId] = useState('');
   const [success, setSuccess] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch — only render dynamic selects after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (membersLoading || milestonesLoading) {
     return (
@@ -76,7 +82,7 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
       subject,
       question,
       priority,
-      assigned_to: assignTo ?? '',
+      assigned_to: assignTo,
       due_date: dueDate,
       milestone_id: milestoneId || null,
     };
@@ -148,14 +154,20 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Assign To</label>
-                <Select value={assignTo} onValueChange={setAssignTo}>
-                  <SelectTrigger><SelectValue placeholder="Select team member" /></SelectTrigger>
-                  <SelectContent>
+                {mounted ? (
+                  <select
+                    value={assignTo}
+                    onChange={(e) => setAssignTo(e.target.value)}
+                    className="border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] md:text-sm"
+                  >
+                    <option value="">Select team member</option>
                     {assignableProfiles.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                      <option key={p.id} value={p.id}>{p.full_name}</option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                ) : (
+                  <div className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1" />
+                )}
               </div>
             </div>
 
@@ -167,14 +179,20 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Linked Milestone</label>
-                <Select value={milestoneId} onValueChange={setMilestoneId}>
-                  <SelectTrigger><SelectValue placeholder="Select milestone" /></SelectTrigger>
-                  <SelectContent>
+                {mounted ? (
+                  <select
+                    value={milestoneId}
+                    onChange={(e) => setMilestoneId(e.target.value)}
+                    className="border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] md:text-sm"
+                  >
+                    <option value="">Select milestone</option>
                     {milestones.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                ) : (
+                  <div className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1" />
+                )}
               </div>
             </div>
 
