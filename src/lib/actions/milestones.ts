@@ -182,3 +182,45 @@ export async function updateMilestone(
     return { error: err instanceof Error ? err.message : 'Failed to update milestone' };
   }
 }
+
+// ---------------------------------------------------------------------------
+// deleteMilestone -- requires schedule:edit
+// ---------------------------------------------------------------------------
+export async function deleteMilestone(
+  projectId: string,
+  milestoneId: string
+): Promise<ActionResult<null>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.SCHEDULE_EDIT);
+    if (!perm.allowed) return { error: perm.error };
+
+    const { error } = await supabase
+      .from('milestones')
+      .delete()
+      .eq('id', milestoneId)
+      .eq('project_id', projectId);
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'milestone',
+      milestoneId,
+      'deleted',
+      `deleted milestone`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/schedule`);
+    revalidatePath(`/projects/${projectId}`);
+
+    return { success: true, data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to delete milestone' };
+  }
+}

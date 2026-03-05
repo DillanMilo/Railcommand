@@ -236,3 +236,114 @@ export async function updatePunchListStatus(
     return { error: err instanceof Error ? err.message : 'Failed to update punch list status' };
   }
 }
+
+// ---------------------------------------------------------------------------
+// updatePunchListItem -- edit item fields, requires punch_list:create
+// ---------------------------------------------------------------------------
+export async function updatePunchListItem(
+  projectId: string,
+  itemId: string,
+  data: {
+    title?: string;
+    description?: string;
+    location?: string;
+    priority?: Priority;
+    assigned_to?: string;
+    due_date?: string;
+  }
+): Promise<ActionResult<PunchListItem>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.PUNCH_LIST_CREATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    const { data: item, error } = await supabase
+      .from('punch_list_items')
+      .update(data)
+      .eq('id', itemId)
+      .eq('project_id', projectId)
+      .select()
+      .single();
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'punch_list',
+      itemId,
+      'updated',
+      `updated ${item.number}: ${item.title}`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/punch-list`);
+    revalidatePath(`/projects/${projectId}/punch-list/${itemId}`);
+
+    return { success: true, data: item as PunchListItem };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to update punch list item' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// deletePunchListItem -- deletes item + storage attachments, requires punch_list:create
+// ---------------------------------------------------------------------------
+export async function deletePunchListItem(
+  projectId: string,
+  itemId: string
+): Promise<ActionResult<null>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.PUNCH_LIST_CREATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    // Delete associated attachments from storage
+    const { data: files } = await supabase.storage
+      .from('project-photos')
+      .list(`${projectId}/punch_list/${itemId}`);
+
+    if (files && files.length > 0) {
+      const paths = files.map((f) => `${projectId}/punch_list/${itemId}/${f.name}`);
+      await supabase.storage.from('project-photos').remove(paths);
+    }
+
+    // Delete attachment records
+    await supabase
+      .from('attachments')
+      .delete()
+      .eq('entity_type', 'punch_list')
+      .eq('entity_id', itemId);
+
+    // Delete the item
+    const { error } = await supabase
+      .from('punch_list_items')
+      .delete()
+      .eq('id', itemId)
+      .eq('project_id', projectId);
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'punch_list',
+      itemId,
+      'deleted',
+      `deleted punch list item`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/punch-list`);
+
+    return { success: true, data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to delete punch list item' };
+  }
+}

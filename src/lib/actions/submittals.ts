@@ -58,13 +58,13 @@ export async function getSubmittalById(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
+    // Fetch the submittal (without attachments join — no FK exists)
     const { data, error } = await supabase
       .from('submittals')
       .select(`
         *,
         submitted_by_profile:profiles!submittals_submitted_by_fkey(id, full_name, email, avatar_url),
-        reviewed_by_profile:profiles!submittals_reviewed_by_fkey(id, full_name, email, avatar_url),
-        attachments(*)
+        reviewed_by_profile:profiles!submittals_reviewed_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('id', submittalId)
       .eq('project_id', projectId)
@@ -73,7 +73,15 @@ export async function getSubmittalById(
     if (error) return { error: error.message };
     if (!data) return { error: 'Submittal not found' };
 
-    return { success: true, data: data as Submittal };
+    // Fetch attachments separately using entity_id
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('entity_type', 'submittal')
+      .eq('entity_id', submittalId)
+      .order('created_at', { ascending: true });
+
+    return { success: true, data: { ...data, attachments: attachments ?? [] } as Submittal };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch submittal' };
   }
@@ -215,5 +223,114 @@ export async function updateSubmittalStatus(
     return { success: true, data: submittal as Submittal };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to update submittal status' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// updateSubmittal -- edit submittal fields, requires submittal:create
+// ---------------------------------------------------------------------------
+export async function updateSubmittal(
+  projectId: string,
+  submittalId: string,
+  data: {
+    title?: string;
+    description?: string;
+    spec_section?: string;
+    due_date?: string;
+  }
+): Promise<ActionResult<Submittal>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.SUBMITTAL_CREATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    const { data: submittal, error } = await supabase
+      .from('submittals')
+      .update(data)
+      .eq('id', submittalId)
+      .eq('project_id', projectId)
+      .select()
+      .single();
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'submittal',
+      submittalId,
+      'updated',
+      `updated ${submittal.number}: ${submittal.title}`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/submittals`);
+    revalidatePath(`/projects/${projectId}/submittals/${submittalId}`);
+
+    return { success: true, data: submittal as Submittal };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to update submittal' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// deleteSubmittal -- deletes submittal + storage attachments, requires submittal:create
+// ---------------------------------------------------------------------------
+export async function deleteSubmittal(
+  projectId: string,
+  submittalId: string
+): Promise<ActionResult<null>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.SUBMITTAL_CREATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    // Delete associated attachments from storage
+    const { data: files } = await supabase.storage
+      .from('project-photos')
+      .list(`${projectId}/submittal/${submittalId}`);
+
+    if (files && files.length > 0) {
+      const paths = files.map((f) => `${projectId}/submittal/${submittalId}/${f.name}`);
+      await supabase.storage.from('project-photos').remove(paths);
+    }
+
+    // Delete attachment records
+    await supabase
+      .from('attachments')
+      .delete()
+      .eq('entity_type', 'submittal')
+      .eq('entity_id', submittalId);
+
+    // Delete the submittal
+    const { error } = await supabase
+      .from('submittals')
+      .delete()
+      .eq('id', submittalId)
+      .eq('project_id', projectId);
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'submittal',
+      submittalId,
+      'deleted',
+      `deleted submittal`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/submittals`);
+
+    return { success: true, data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to delete submittal' };
   }
 }

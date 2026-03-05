@@ -1,21 +1,33 @@
 'use client';
 
 import { useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { format, differenceInCalendarDays } from 'date-fns';
-import { AlertTriangle, CheckCircle2, Lock, MessageSquare } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Lock, MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getProfiles, getOrganizations, getMilestones, updateRFIStatus as storeUpdateRFIStatus, addRFIResponse as storeAddRFIResponse } from '@/lib/store';
-import { useRFIDetail } from '@/hooks/useData';
+import { getProfiles, getOrganizations, getMilestones, updateRFIStatus as storeUpdateRFIStatus, addRFIResponse as storeAddRFIResponse, updateRFI as storeUpdateRFI, deleteRFI as storeDeleteRFI } from '@/lib/store';
+import { useRFIDetail, useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { updateRFIStatus as serverUpdateRFIStatus, addRFIResponse as serverAddRFIResponse } from '@/lib/actions/rfis';
+import { updateRFIStatus as serverUpdateRFIStatus, addRFIResponse as serverAddRFIResponse, updateRFI as serverUpdateRFI, deleteRFI as serverDeleteRFI } from '@/lib/actions/rfis';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
+import type { Priority } from '@/lib/types';
+
+const PRIORITIES: { label: string; value: Priority }[] = [
+  { label: 'Critical', value: 'critical' },
+  { label: 'High', value: 'high' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Low', value: 'low' },
+];
 
 function getProfile(id: string) {
   return getProfiles().find((p) => p.id === id);
@@ -30,13 +42,32 @@ function getMilestoneById(id: string | null, projectId: string) {
 export default function RFIDetailPage({ params, searchParams }: { params: Promise<{ id: string; rfiId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId, rfiId } = use(params);
   use(searchParams);
+  const router = useRouter();
   const { can } = usePermissions(projectId);
   const { isDemo } = useProject();
+  const { data: members } = useProjectMembers(projectId);
   const [newResponse, setNewResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const { data: rfi, loading, refetch } = useRFIDetail(projectId, rfiId);
   const [status, setStatus] = useState(rfi?.status ?? 'open');
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSubject, setEditSubject] = useState('');
+  const [editQuestion, setEditQuestion] = useState('');
+  const [editPriority, setEditPriority] = useState<Priority>('medium');
+  const [editAssignedTo, setEditAssignedTo] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Delete dialog state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
+    ? members.map((m) => m.profile!).filter(Boolean)
+    : getProfiles();
 
   // Reset state when navigating to a different RFI
   const [prevRfiId, setPrevRfiId] = useState(rfiId);
@@ -98,6 +129,48 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
     setStatus(newStatus);
   };
 
+  function openEditDialog() {
+    if (!rfi) return;
+    setEditSubject(rfi.subject);
+    setEditQuestion(rfi.question);
+    setEditPriority(rfi.priority);
+    setEditAssignedTo(rfi.assigned_to);
+    setEditDueDate(rfi.due_date ? rfi.due_date.split('T')[0] : '');
+    setEditOpen(true);
+  }
+
+  async function handleEditSave() {
+    setSaving(true);
+    const data = {
+      subject: editSubject,
+      question: editQuestion,
+      priority: editPriority,
+      assigned_to: editAssignedTo,
+      due_date: editDueDate,
+    };
+    if (isDemo) {
+      storeUpdateRFI(rfiId, data);
+      refetch();
+    } else {
+      const result = await serverUpdateRFI(projectId, rfiId, data);
+      if (result.error) { setSaving(false); return; }
+      refetch();
+    }
+    setSaving(false);
+    setEditOpen(false);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    if (isDemo) {
+      storeDeleteRFI(rfiId);
+    } else {
+      const result = await serverDeleteRFI(projectId, rfiId);
+      if (result.error) { setDeleting(false); return; }
+    }
+    router.push(`/projects/${projectId}/rfis`);
+  }
+
   return (
     <div className="space-y-6">
       <Breadcrumbs items={[
@@ -124,16 +197,28 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
           </div>
           <p className="text-muted-foreground text-sm sm:text-base">{rfi.subject}</p>
         </div>
-        {canRespond && can(ACTIONS.RFI_CLOSE) && (
-          <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => handleStatusChange('answered')}>
-              <CheckCircle2 className="mr-1.5 size-4" />Answered
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleStatusChange('closed')}>
-              <Lock className="mr-1.5 size-4" />Close
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2 shrink-0 flex-wrap">
+          {can(ACTIONS.RFI_CREATE) && (
+            <>
+              <Button variant="outline" size="sm" onClick={openEditDialog}>
+                <Pencil className="size-4 mr-1" />Edit
+              </Button>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="size-4 mr-1" />Delete
+              </Button>
+            </>
+          )}
+          {canRespond && can(ACTIONS.RFI_CLOSE) && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => handleStatusChange('answered')}>
+                <CheckCircle2 className="mr-1.5 size-4" />Answered
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleStatusChange('closed')}>
+                <Lock className="mr-1.5 size-4" />Close
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Info grid */}
@@ -220,6 +305,74 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit RFI</DialogTitle>
+            <DialogDescription>Update the details for {rfi.number}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium">Subject</label>
+              <Input value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Question</label>
+              <Textarea value={editQuestion} onChange={(e) => setEditQuestion(e.target.value)} rows={3} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Priority</label>
+                <Select value={editPriority} onValueChange={(v) => setEditPriority(v as Priority)}>
+                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Assigned To</label>
+                <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
+                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {assignableProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium">Due Date</label>
+                <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSave} disabled={saving} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete RFI</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {rfi.number}? This will also delete all responses. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

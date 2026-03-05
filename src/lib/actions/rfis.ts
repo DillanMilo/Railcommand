@@ -58,6 +58,7 @@ export async function getRFIById(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
+    // Fetch the RFI (without attachments join — no FK exists)
     const { data, error } = await supabase
       .from('rfis')
       .select(`
@@ -67,8 +68,7 @@ export async function getRFIById(
         responses:rfi_responses(
           *,
           author:profiles!rfi_responses_author_id_fkey(id, full_name, email, avatar_url)
-        ),
-        attachments(*)
+        )
       `)
       .eq('id', rfiId)
       .eq('project_id', projectId)
@@ -77,7 +77,15 @@ export async function getRFIById(
     if (error) return { error: error.message };
     if (!data) return { error: 'RFI not found' };
 
-    return { success: true, data: data as RFI };
+    // Fetch attachments separately using entity_id
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('entity_type', 'rfi')
+      .eq('entity_id', rfiId)
+      .order('created_at', { ascending: true });
+
+    return { success: true, data: { ...data, attachments: attachments ?? [] } as RFI };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch RFI' };
   }
@@ -287,5 +295,121 @@ export async function addRFIResponse(
     return { success: true, data: response as RFIResponse };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to add RFI response' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// updateRFI -- edit RFI fields, requires rfi:create
+// ---------------------------------------------------------------------------
+export async function updateRFI(
+  projectId: string,
+  rfiId: string,
+  data: {
+    subject?: string;
+    question?: string;
+    priority?: Priority;
+    assigned_to?: string;
+    due_date?: string;
+  }
+): Promise<ActionResult<RFI>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.RFI_CREATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    const { data: rfi, error } = await supabase
+      .from('rfis')
+      .update(data)
+      .eq('id', rfiId)
+      .eq('project_id', projectId)
+      .select()
+      .single();
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'rfi',
+      rfiId,
+      'updated',
+      `updated ${rfi.number}: ${rfi.subject}`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/rfis`);
+    revalidatePath(`/projects/${projectId}/rfis/${rfiId}`);
+
+    return { success: true, data: rfi as RFI };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to update RFI' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// deleteRFI -- deletes RFI + responses + storage attachments, requires rfi:create
+// ---------------------------------------------------------------------------
+export async function deleteRFI(
+  projectId: string,
+  rfiId: string
+): Promise<ActionResult<null>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.RFI_CREATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    // Delete associated attachments from storage
+    const { data: files } = await supabase.storage
+      .from('project-photos')
+      .list(`${projectId}/rfi/${rfiId}`);
+
+    if (files && files.length > 0) {
+      const paths = files.map((f) => `${projectId}/rfi/${rfiId}/${f.name}`);
+      await supabase.storage.from('project-photos').remove(paths);
+    }
+
+    // Delete attachment records
+    await supabase
+      .from('attachments')
+      .delete()
+      .eq('entity_type', 'rfi')
+      .eq('entity_id', rfiId);
+
+    // Delete RFI responses
+    await supabase
+      .from('rfi_responses')
+      .delete()
+      .eq('rfi_id', rfiId);
+
+    // Delete the RFI
+    const { error } = await supabase
+      .from('rfis')
+      .delete()
+      .eq('id', rfiId)
+      .eq('project_id', projectId);
+
+    if (error) return { error: error.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'rfi',
+      rfiId,
+      'deleted',
+      `deleted RFI`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/rfis`);
+
+    return { success: true, data: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to delete RFI' };
   }
 }

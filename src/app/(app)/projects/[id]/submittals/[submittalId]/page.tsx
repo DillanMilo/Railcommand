@@ -2,18 +2,22 @@
 
 import { useState, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, Paperclip, Calendar, User, Flag } from 'lucide-react';
+import { ArrowLeft, Paperclip, Calendar, User, Flag, Pencil, Trash2 } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import SubmittalTimeline from '@/components/submittals/SubmittalTimeline';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { getProfiles, getMilestones, getProfileWithOrg, updateSubmittalStatus as storeUpdateSubmittalStatus } from '@/lib/store';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { getProfiles, getMilestones, getProfileWithOrg, updateSubmittalStatus as storeUpdateSubmittalStatus, updateSubmittal as storeUpdateSubmittal, deleteSubmittal as storeDeleteSubmittal } from '@/lib/store';
 import { useSubmittalDetail } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { updateSubmittalStatus as serverUpdateSubmittalStatus } from '@/lib/actions/submittals';
+import { updateSubmittalStatus as serverUpdateSubmittalStatus, updateSubmittal as serverUpdateSubmittal, deleteSubmittal as serverDeleteSubmittal } from '@/lib/actions/submittals';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { SubmittalStatus } from '@/lib/types';
@@ -21,10 +25,23 @@ import type { SubmittalStatus } from '@/lib/types';
 export default function SubmittalDetailPage({ params, searchParams }: { params: Promise<{ id: string; submittalId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId, submittalId } = use(params);
   use(searchParams);
+  const router = useRouter();
   const { can } = usePermissions(projectId);
   const { isDemo } = useProject();
   const { data: original, loading, refetch } = useSubmittalDetail(projectId, submittalId);
   const [status, setStatus] = useState<SubmittalStatus | null>(null);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSpecSection, setEditSpecSection] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Delete dialog state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Sync local status when data loads or changes
   const effectiveStatus: SubmittalStatus = status ?? original?.status ?? 'draft';
@@ -69,6 +86,45 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
     }
   }
 
+  function openEditDialog() {
+    setEditTitle(submittal.title);
+    setEditDescription(submittal.description ?? '');
+    setEditSpecSection(submittal.spec_section ?? '');
+    setEditDueDate(submittal.due_date ? submittal.due_date.split('T')[0] : '');
+    setEditOpen(true);
+  }
+
+  async function handleEditSave() {
+    setSaving(true);
+    const data = {
+      title: editTitle,
+      description: editDescription,
+      spec_section: editSpecSection,
+      due_date: editDueDate,
+    };
+    if (isDemo) {
+      storeUpdateSubmittal(submittalId, data);
+      refetch();
+    } else {
+      const result = await serverUpdateSubmittal(projectId, submittalId, data);
+      if (result.error) { setSaving(false); return; }
+      refetch();
+    }
+    setSaving(false);
+    setEditOpen(false);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    if (isDemo) {
+      storeDeleteSubmittal(submittalId);
+    } else {
+      const result = await serverDeleteSubmittal(projectId, submittalId);
+      if (result.error) { setDeleting(false); return; }
+    }
+    router.push(`/projects/${projectId}/submittals`);
+  }
+
   const infoItems = [
     { label: 'Submitted By', value: submitter?.full_name ?? '—', sub: submitter?.organization?.name, icon: <User className="size-4" /> },
     { label: 'Submit Date', value: format(new Date(submittal.submit_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
@@ -96,6 +152,16 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-1">
           <h1 className="font-heading text-xl sm:text-2xl font-bold">{submittal.number}: {submittal.title}</h1>
           <StatusBadge status={effectiveStatus} type="submittal" />
+          {can(ACTIONS.SUBMITTAL_CREATE) && (
+            <div className="flex gap-2 shrink-0 sm:ml-auto">
+              <Button variant="outline" size="sm" onClick={openEditDialog}>
+                <Pencil className="size-4 mr-1" />Edit
+              </Button>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="size-4 mr-1" />Delete
+              </Button>
+            </div>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">{submittal.spec_section}</p>
       </div>
@@ -188,6 +254,60 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
           </div>
         </>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Submittal</DialogTitle>
+            <DialogDescription>Update the details for {submittal.number}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Spec Section</label>
+                <Input value={editSpecSection} onChange={(e) => setEditSpecSection(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Due Date</label>
+                <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSave} disabled={saving} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Submittal</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {submittal.number}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

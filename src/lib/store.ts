@@ -37,6 +37,7 @@ import type {
   SubmittalStatus,
   RFIStatus,
   PunchListStatus,
+  MilestoneStatus,
 } from './types';
 
 // Mutable copies of seed data
@@ -453,6 +454,78 @@ export function updatePunchListStatus(id: string, status: PunchListStatus, resol
   });
   const pl = punchListItems.find((i) => i.id === id);
   if (pl) addActivity(pl.project_id, 'punch_list', id, 'status_changed', `changed ${pl.number} status to ${status}`);
+}
+
+export function updatePunchListItem(id: string, data: Partial<PunchListItem>): void {
+  punchListItems = punchListItems.map((item) =>
+    item.id === id ? { ...item, ...data } : item
+  );
+}
+
+export function deletePunchListItem(id: string): void {
+  punchListItems = punchListItems.filter((item) => item.id !== id);
+  attachments = attachments.filter((a) => !(a.entity_type === 'punch_list' && a.entity_id === id));
+}
+
+export function updateSubmittal(id: string, data: Partial<Submittal>): void {
+  submittals = submittals.map((s) =>
+    s.id === id ? { ...s, ...data } : s
+  );
+}
+
+export function deleteSubmittal(id: string): void {
+  submittals = submittals.filter((s) => s.id !== id);
+  attachments = attachments.filter((a) => !(a.entity_type === 'submittal' && a.entity_id === id));
+}
+
+export function updateRFI(id: string, data: Partial<RFI>): void {
+  rfis = rfis.map((r) =>
+    r.id === id ? { ...r, ...data } : r
+  );
+}
+
+export function deleteRFI(id: string): void {
+  rfis = rfis.filter((r) => r.id !== id);
+  attachments = attachments.filter((a) => !(a.entity_type === 'rfi' && a.entity_id === id));
+}
+
+export function updateMilestone(id: string, data: Partial<Milestone>): void {
+  milestones = milestones.map((m) =>
+    m.id === id ? { ...m, ...data } : m
+  );
+}
+
+export function addMilestone(projectId: string, data: {
+  name: string;
+  description: string;
+  target_date: string;
+  status?: MilestoneStatus;
+  percent_complete?: number;
+  budget_planned?: number;
+  budget_actual?: number;
+}): Milestone {
+  const sortOrder = milestones.filter((m) => m.project_id === projectId).length + 1;
+  const newMs: Milestone = {
+    id: `ms-${Date.now()}`,
+    project_id: projectId,
+    name: data.name,
+    description: data.description,
+    target_date: data.target_date,
+    actual_date: null,
+    status: data.status ?? 'not_started',
+    percent_complete: data.percent_complete ?? 0,
+    budget_planned: data.budget_planned ?? 0,
+    budget_actual: data.budget_actual ?? 0,
+    sort_order: sortOrder,
+    created_at: new Date().toISOString(),
+  };
+  milestones = [...milestones, newMs];
+  addActivity(projectId, 'milestone', newMs.id, 'created', `created milestone: ${data.name}`);
+  return newMs;
+}
+
+export function deleteMilestone(id: string): void {
+  milestones = milestones.filter((m) => m.id !== id);
 }
 
 // --- Team operations ---

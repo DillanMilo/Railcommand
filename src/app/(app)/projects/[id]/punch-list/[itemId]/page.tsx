@@ -2,23 +2,34 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, MapPin } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, MapPin, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import PhotoGallery from '@/components/shared/PhotoGallery';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
-import { getProfiles, updatePunchListStatus as storeUpdatePunchListStatus, getAttachments } from '@/lib/store';
-import { usePunchListDetail } from '@/hooks/useData';
+import { getProfiles, updatePunchListStatus as storeUpdatePunchListStatus, updatePunchListItem as storeUpdatePunchListItem, deletePunchListItem as storeDeletePunchListItem, getAttachments } from '@/lib/store';
+import { usePunchListDetail, useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { updatePunchListStatus as serverUpdatePunchListStatus } from '@/lib/actions/punch-list';
+import { updatePunchListStatus as serverUpdatePunchListStatus, updatePunchListItem as serverUpdatePunchListItem, deletePunchListItem as serverDeletePunchListItem } from '@/lib/actions/punch-list';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { PunchListStatus } from '@/lib/types';
+import type { PunchListStatus, Priority } from '@/lib/types';
+
+const PRIORITIES: { label: string; value: Priority }[] = [
+  { label: 'Critical', value: 'critical' },
+  { label: 'High', value: 'high' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Low', value: 'low' },
+];
 
 function getName(id: string, profileName?: string) {
   if (profileName) return profileName;
@@ -28,13 +39,33 @@ function getName(id: string, profileName?: string) {
 export default function PunchListDetailPage({ params, searchParams }: { params: Promise<{ id: string; itemId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId, itemId } = use(params);
   use(searchParams);
+  const router = useRouter();
   const { can } = usePermissions(projectId);
   const { isDemo } = useProject();
   const { data: item, loading, refetch } = usePunchListDetail(projectId, itemId);
+  const { data: members } = useProjectMembers(projectId);
   const [status, setStatus] = useState<PunchListStatus>('open');
   const [notes, setNotes] = useState('');
   const [resolutionInput, setResolutionInput] = useState('');
   const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editPriority, setEditPriority] = useState<Priority>('medium');
+  const [editAssignedTo, setEditAssignedTo] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Delete dialog state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
+    ? members.map((m) => m.profile!).filter(Boolean)
+    : getProfiles();
 
   // Sync state when item loads
   useEffect(() => {
@@ -50,6 +81,50 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
     setNewPhotos([]);
   }, [itemId]);
   const existingAttachments = item?.attachments ?? (item ? getAttachments('punch_list', item.id) : []);
+
+  function openEditDialog() {
+    if (!item) return;
+    setEditTitle(item.title);
+    setEditDescription(item.description ?? '');
+    setEditLocation(item.location ?? '');
+    setEditPriority(item.priority);
+    setEditAssignedTo(item.assigned_to);
+    setEditDueDate(item.due_date ? item.due_date.split('T')[0] : '');
+    setEditOpen(true);
+  }
+
+  async function handleEditSave() {
+    setSaving(true);
+    const data = {
+      title: editTitle,
+      description: editDescription,
+      location: editLocation,
+      priority: editPriority,
+      assigned_to: editAssignedTo,
+      due_date: editDueDate,
+    };
+    if (isDemo) {
+      storeUpdatePunchListItem(itemId, data);
+      refetch();
+    } else {
+      const result = await serverUpdatePunchListItem(projectId, itemId, data);
+      if (result.error) { setSaving(false); return; }
+      refetch();
+    }
+    setSaving(false);
+    setEditOpen(false);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    if (isDemo) {
+      storeDeletePunchListItem(itemId);
+    } else {
+      const result = await serverDeletePunchListItem(projectId, itemId);
+      if (result.error) { setDeleting(false); return; }
+    }
+    router.push(`/projects/${projectId}/punch-list`);
+  }
 
   if (loading) {
     return (
@@ -118,6 +193,16 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
         <div className="flex gap-2 shrink-0">
           <StatusBadge status={status} type="punch_list" />
           <PriorityBadge priority={item.priority} />
+          {can(ACTIONS.PUNCH_LIST_CREATE) && (
+            <>
+              <Button variant="outline" size="sm" onClick={openEditDialog}>
+                <Pencil className="size-4 mr-1" />Edit
+              </Button>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="size-4 mr-1" />Delete
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -217,6 +302,78 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
           onPhotosChange={setNewPhotos}
         />
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Punch List Item</DialogTitle>
+            <DialogDescription>Update the details for {item.number}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Location</label>
+                <Input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Priority</label>
+                <Select value={editPriority} onValueChange={(v) => setEditPriority(v as Priority)}>
+                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Assigned To</label>
+                <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
+                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {assignableProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Due Date</label>
+                <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSave} disabled={saving} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Punch List Item</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {item.number}? This action cannot be undone. All associated photos and attachments will also be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

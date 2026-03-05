@@ -124,7 +124,7 @@ export async function logActivity(
   projectId: string,
   entityType: 'submittal' | 'rfi' | 'daily_log' | 'punch_list' | 'milestone' | 'project',
   entityId: string,
-  action: 'created' | 'updated' | 'status_changed' | 'commented' | 'approved' | 'rejected' | 'submitted' | 'assigned',
+  action: 'created' | 'updated' | 'status_changed' | 'commented' | 'approved' | 'rejected' | 'submitted' | 'assigned' | 'deleted',
   description: string,
   performedBy: string
 ) {
