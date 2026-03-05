@@ -74,23 +74,29 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
   const router = useRouter();
   const urlProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1];
 
-  // Rehydrate store from localStorage mode on first mount (only for demo/fresh)
-  if (!modeRehydrated && typeof window !== 'undefined') {
-    const mode = localStorage.getItem(MODE_KEY);
-    if (mode === 'demo' || mode === 'fresh') {
-      rehydrateMode();
-    }
-    modeRehydrated = true;
-  }
+  // Always start with safe SSR defaults; rehydrate in useEffect
+  const [isDemo, setIsDemo] = useState<boolean>(true);
+  const [storedProjectId, setStoredProjectId] = useState<string>('');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentUserId, setCurrentUserIdState] = useState<string>('');
 
-  const [isDemo, setIsDemo] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
+  // Rehydrate from localStorage on mount (client-only)
+  useEffect(() => {
+    if (!modeRehydrated) {
+      const mode = localStorage.getItem(MODE_KEY);
+      if (mode === 'demo' || mode === 'fresh') {
+        rehydrateMode();
+      }
+      modeRehydrated = true;
+    }
+
     const mode = localStorage.getItem(MODE_KEY);
-    return mode === 'demo' || mode === 'fresh';
-  });
-  const [storedProjectId, setStoredProjectId] = useState<string>(() => getStoredProjectId(isDemo));
-  const [projects, setProjects] = useState<Project[]>(() => (isDemo ? getStoreProjects() : []));
-  const [currentUserId, setCurrentUserIdState] = useState<string>(() => (isDemo ? getCurrentUserId() : ''));
+    const demo = mode === 'demo' || mode === 'fresh';
+    setIsDemo(demo);
+    setStoredProjectId(getStoredProjectId(demo));
+    setProjects(demo ? getStoreProjects() : []);
+    setCurrentUserIdState(demo ? getCurrentUserId() : '');
+  }, []);
 
   // URL takes priority over stored project ID
   const validUrlProject = urlProjectId && projects.find((p) => p.id === urlProjectId) ? urlProjectId : null;

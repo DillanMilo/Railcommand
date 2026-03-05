@@ -241,7 +241,7 @@ export default function Topbar({ children }: TopbarProps) {
                       <span className="font-medium">{getProfileName(activity.performed_by, activity.performed_by_profile, isDemo)}</span>{' '}
                       <span className="text-muted-foreground">{activity.description}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                       {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                     </p>
                   </div>

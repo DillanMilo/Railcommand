@@ -60,13 +60,18 @@ export default function ThemeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => resolveTheme(getInitialMode()));
+  // Always start with 'light' on server; rehydrate from localStorage in useEffect
+  const [mode, setModeState] = useState<ThemeMode>('light');
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
-  // Apply theme to DOM on mount
+  // Rehydrate mode from localStorage on mount (client-only)
   useEffect(() => {
-    applyTheme(resolveTheme(mode));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const stored = getInitialMode();
+    setModeState(stored);
+    const resolved = resolveTheme(stored);
+    setResolvedTheme(resolved);
+    applyTheme(resolved);
+  }, []);
 
   // Re-check auto mode every minute
   useEffect(() => {
