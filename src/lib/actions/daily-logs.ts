@@ -57,6 +57,7 @@ export async function getDailyLogById(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
+    // Fetch the daily log (without attachments join — no FK exists)
     const { data, error } = await supabase
       .from('daily_logs')
       .select(`
@@ -64,8 +65,7 @@ export async function getDailyLogById(
         created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url),
         personnel:daily_log_personnel(*),
         equipment:daily_log_equipment(*),
-        work_items:daily_log_work_items(*),
-        attachments(*)
+        work_items:daily_log_work_items(*)
       `)
       .eq('id', logId)
       .eq('project_id', projectId)
@@ -74,7 +74,15 @@ export async function getDailyLogById(
     if (error) return { error: error.message };
     if (!data) return { error: 'Daily log not found' };
 
-    return { success: true, data: data as DailyLog };
+    // Fetch attachments separately using entity_id
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('entity_type', 'daily_log')
+      .eq('entity_id', logId)
+      .order('created_at', { ascending: true });
+
+    return { success: true, data: { ...data, attachments: attachments ?? [] } as DailyLog };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch daily log' };
   }

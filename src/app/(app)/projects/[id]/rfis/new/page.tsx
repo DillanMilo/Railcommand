@@ -31,14 +31,16 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const { data: members, loading: membersLoading } = useProjectMembers(projectId);
   const { data: milestones, loading: milestonesLoading } = useMilestones(projectId);
 
-  const profiles = members.map((m) => (m as any).profile).filter(Boolean);
-  // In demo mode member.profile may not be populated, fall back to store
-  const assignableProfiles = profiles.length > 0 ? profiles : getProfiles();
+  // Build assignable profiles: prefer members with embedded profile, fall back to store
+  const assignableProfiles = (() => {
+    const fromMembers = members.map((m) => (m as any).profile).filter(Boolean);
+    return fromMembers.length > 0 ? fromMembers : getProfiles();
+  })();
 
   const [subject, setSubject] = useState('');
   const [question, setQuestion] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
-  const [assignTo, setAssignTo] = useState('');
+  const [assignTo, setAssignTo] = useState<string | undefined>(undefined);
   const [dueDate, setDueDate] = useState('');
   const [milestoneId, setMilestoneId] = useState('');
   const [success, setSuccess] = useState(false);
@@ -74,7 +76,7 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
       subject,
       question,
       priority,
-      assigned_to: assignTo,
+      assigned_to: assignTo ?? '',
       due_date: dueDate,
       milestone_id: milestoneId || null,
     };
