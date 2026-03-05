@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, differenceInCalendarDays } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Lock, MessageSquare, Pencil, Trash2 } from 'lucide-react';
@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
@@ -22,12 +21,17 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { Priority } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 const PRIORITIES: { label: string; value: Priority }[] = [
   { label: 'Critical', value: 'critical' },
   { label: 'High', value: 'high' },
   { label: 'Medium', value: 'medium' },
   { label: 'Low', value: 'low' },
 ];
+
+const nativeSelectClasses =
+  'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] md:text-sm';
 
 function getProfile(id: string) {
   return getProfiles().find((p) => p.id === id);
@@ -65,6 +69,14 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Compute overdue days client-side only to avoid server/client Date mismatch
+  const [overdueDays, setOverdueDays] = useState(0);
+  useEffect(() => {
+    if (rfi && (rfi.status === 'overdue' || status === 'overdue')) {
+      setOverdueDays(differenceInCalendarDays(new Date(), new Date(rfi.due_date)));
+    }
+  }, [rfi, status]);
+
   const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
     ? members.map((m) => m.profile!).filter(Boolean)
     : getProfiles();
@@ -100,7 +112,6 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   const milestone = (rfi as any).milestone ?? getMilestoneById(rfi.milestone_id, projectId);
   const isOverdue = status === 'overdue';
   const canRespond = status === 'open' || status === 'overdue';
-  const overdueDays = isOverdue ? differenceInCalendarDays(new Date(), new Date(rfi.due_date)) : 0;
   const basePath = `/projects/${projectId}/rfis`;
 
   const handleSubmitResponse = async () => {
@@ -183,7 +194,9 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
       {isOverdue && (
         <div className="flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-300">
           <AlertTriangle className="size-5 shrink-0" />
-          <p className="text-sm font-medium">This RFI is {overdueDays} days overdue. Response was due {format(new Date(rfi.due_date), 'MMM d, yyyy')}.</p>
+          <p className="text-sm font-medium" suppressHydrationWarning>
+            This RFI is {overdueDays} days overdue. Response was due {format(new Date(rfi.due_date), 'MMM d, yyyy')}.
+          </p>
         </div>
       )}
 
@@ -325,21 +338,28 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Priority</label>
-                <Select value={editPriority} onValueChange={(v) => setEditPriority(v as Priority)}>
-                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value as Priority)}
+                  className={nativeSelectClasses + ' mt-1'}
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-sm font-medium">Assigned To</label>
-                <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
-                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {assignableProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={editAssignedTo}
+                  onChange={(e) => setEditAssignedTo(e.target.value)}
+                  className={nativeSelectClasses + ' mt-1'}
+                >
+                  <option value="">Select team member</option>
+                  {assignableProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>{p.full_name}</option>
+                  ))}
+                </select>
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium">Due Date</label>
