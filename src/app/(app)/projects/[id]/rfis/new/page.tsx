@@ -10,10 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { getProfiles, addRFI as storeAddRFI } from '@/lib/store';
+import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
+import { getProfiles, addRFI as storeAddRFI, addAttachment } from '@/lib/store';
 import { useProjectMembers, useMilestones } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { createRFI as serverCreateRFI } from '@/lib/actions/rfis';
+import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { Priority } from '@/lib/types';
@@ -48,6 +50,7 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const [assignTo, setAssignTo] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [milestoneId, setMilestoneId] = useState('');
+  const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
 
   if (membersLoading || milestonesLoading) {
@@ -86,10 +89,29 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
       milestone_id: milestoneId || null,
     };
     if (isDemo) {
-      storeAddRFI(projectId, data);
+      const rfi = storeAddRFI(projectId, data);
+      // Save photo attachments (demo)
+      for (const photo of photos) {
+        addAttachment({
+          entity_type: 'rfi',
+          entity_id: rfi.id,
+          file_name: photo.file.name,
+          file_url: photo.preview,
+          file_type: photo.file.type,
+          file_size: photo.file.size,
+          photo_category: photo.category,
+          geo_lat: photo.geo_lat,
+          geo_lng: photo.geo_lng,
+        });
+      }
     } else {
       const result = await serverCreateRFI(projectId, data);
       if (result.error) return;
+
+      // Upload photos to Supabase storage
+      if (photos.length > 0 && result.data) {
+        await uploadPhotosAfterCreate(photos, 'rfi', result.data.id, projectId);
+      }
     }
     setSuccess(true);
     setTimeout(() => router.push(basePath), 1500);
@@ -188,6 +210,9 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
                 </select>
               </div>
             </div>
+
+            {/* Photos */}
+            <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">

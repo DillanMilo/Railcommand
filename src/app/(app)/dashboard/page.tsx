@@ -12,6 +12,7 @@ import QuickActions from '@/components/dashboard/QuickActions';
 import MilestoneWidget from '@/components/dashboard/MilestoneWidget';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
+import EditProjectDialog from '@/components/projects/EditProjectDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import {
@@ -27,6 +28,7 @@ import {
   MessageSquareMore,
   ClipboardCheck,
   CalendarDays,
+  Pencil,
   Plus,
   Rocket,
 } from 'lucide-react';
@@ -35,6 +37,7 @@ export default function DashboardPage() {
   const { currentProject, currentProjectId, projects, isDemo } = useProject();
   const { can } = usePermissions(currentProjectId);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
 
   const [now, setNow] = useState<number>(0);
   useEffect(() => { setNow(Date.now()); }, []);
@@ -149,6 +152,15 @@ export default function DashboardPage() {
           <h1 className="font-heading text-2xl font-bold text-foreground">
             {project.name}
           </h1>
+          {can(ACTIONS.PROJECT_EDIT) && (
+            <button
+              onClick={() => setEditProjectOpen(true)}
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md text-rc-steel hover:text-rc-orange hover:bg-rc-orange/10 transition-colors"
+              aria-label="Edit Project"
+            >
+              <Pencil className="size-4" />
+            </button>
+          )}
           <Badge
             className={cn(
               'border-0 font-medium',
@@ -163,6 +175,13 @@ export default function DashboardPage() {
         </div>
         <p className="mt-1 text-sm text-rc-steel">{project.client}</p>
       </div>
+      {can(ACTIONS.PROJECT_EDIT) && (
+        <EditProjectDialog
+          open={editProjectOpen}
+          onOpenChange={setEditProjectOpen}
+          project={project}
+        />
+      )}
 
       {/* KPI cards grid */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">

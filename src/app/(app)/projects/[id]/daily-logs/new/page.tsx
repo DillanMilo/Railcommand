@@ -14,6 +14,7 @@ import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { addDailyLog, addAttachment } from '@/lib/store';
 import { createDailyLog as serverCreateDailyLog } from '@/lib/actions/daily-logs';
+import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -304,6 +305,11 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                 setErrorMsg(result.error);
                 setSubmitting(false);
                 return;
+              }
+
+              // Upload photos to Supabase storage
+              if (photos.length > 0 && result.data) {
+                await uploadPhotosAfterCreate(photos, 'daily_log', result.data.id, projectId);
               }
 
               setSuccess(true);

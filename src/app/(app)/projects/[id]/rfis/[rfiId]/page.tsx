@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, differenceInCalendarDays } from 'date-fns';
-import { AlertTriangle, CheckCircle2, Lock, MessageSquare, Pencil, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Lock, MessageSquare, Paperclip, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import PhotoGallery from '@/components/shared/PhotoGallery';
+import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
 import { getProfiles, getOrganizations, getMilestones, updateRFIStatus as storeUpdateRFIStatus, addRFIResponse as storeAddRFIResponse, updateRFI as storeUpdateRFI, deleteRFI as storeDeleteRFI } from '@/lib/store';
@@ -52,6 +54,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   const { data: members } = useProjectMembers(projectId);
   const [newResponse, setNewResponse] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
 
   const { data: rfi, loading, refetch } = useRFIDetail(projectId, rfiId);
   const [status, setStatus] = useState(rfi?.status ?? 'open');
@@ -261,6 +264,34 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
         </CardContent>
       </Card>
 
+      {/* Attachments & Photos */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Paperclip className="size-4" /> Attachments ({rfi.attachments?.length ?? 0})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {rfi.attachments && rfi.attachments.length > 0 ? (
+            <PhotoGallery attachments={rfi.attachments} />
+          ) : (
+            <p className="text-sm text-muted-foreground">No attachments yet.</p>
+          )}
+          {can(ACTIONS.RFI_CREATE) && (
+            <div className="pt-2">
+              <PhotoUpload
+                photos={newPhotos}
+                onPhotosChange={setNewPhotos}
+                entityType="rfi"
+                entityId={rfiId}
+                projectId={projectId}
+                onUploadComplete={() => refetch()}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Responses */}
       <Card>
         <CardHeader className="pb-3">
@@ -335,7 +366,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
               <label className="text-sm font-medium">Question</label>
               <Textarea value={editQuestion} onChange={(e) => setEditQuestion(e.target.value)} rows={3} className="mt-1" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Priority</label>
                 <select
@@ -361,7 +392,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
                   ))}
                 </select>
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className="text-sm font-medium">Due Date</label>
                 <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="mt-1" />
               </div>
