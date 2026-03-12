@@ -548,6 +548,25 @@ export function removeProjectMember(id: string): void {
   projectMembers = projectMembers.filter((m) => m.id !== id);
 }
 
+// --- Project editing ---
+export function updateProject(
+  id: string,
+  data: Partial<Pick<Project, 'name' | 'description' | 'location' | 'client' | 'start_date' | 'target_end_date' | 'budget_total'>>
+): Project | null {
+  let updated: Project | null = null;
+  projects = projects.map((p) => {
+    if (p.id === id) {
+      updated = { ...p, ...data };
+      return updated;
+    }
+    return p;
+  });
+  if (updated) {
+    addActivity(id, 'project', id, 'updated', 'updated project details');
+  }
+  return updated;
+}
+
 // --- Project lifecycle ---
 export function updateProjectStatus(id: string, status: Project['status']): void {
   projects = projects.map((p) =>

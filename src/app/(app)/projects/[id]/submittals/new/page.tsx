@@ -15,6 +15,7 @@ import { addSubmittal, addAttachment } from '@/lib/store';
 import { useMilestones } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { createSubmittal as serverCreateSubmittal } from '@/lib/actions/submittals';
+import { uploadFilesAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
@@ -112,6 +113,12 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
         setSubmitError(result.error);
         return;
       }
+
+      // Upload file attachments to Supabase storage
+      if (files.length > 0 && result.data) {
+        await uploadFilesAfterCreate(files, 'submittal', result.data.id, projectId);
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push(`/projects/${projectId}/submittals`);

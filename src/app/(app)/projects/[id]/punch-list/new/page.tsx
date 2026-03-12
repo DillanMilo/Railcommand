@@ -16,6 +16,7 @@ import { getProfiles, addPunchListItem, addAttachment } from '@/lib/store';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { createPunchListItem as serverCreatePunchListItem } from '@/lib/actions/punch-list';
+import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { Priority, GeoTag } from '@/lib/types';
@@ -106,6 +107,11 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
         geo_tag: geoTag,
       });
       if (result.error) { return; }
+
+      // Upload photos to Supabase storage
+      if (photos.length > 0 && result.data) {
+        await uploadPhotosAfterCreate(photos, 'punch_list', result.data.id, projectId);
+      }
     }
 
     setSuccess(true);

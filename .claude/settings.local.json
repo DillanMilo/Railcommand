@@ -24,7 +24,30 @@
       "Bash(sips:*)",
       "Bash(which vercel:*)",
       "Bash(vercel env:*)",
-      "Bash(vercel link:*)"
+      "Bash(vercel link:*)",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand -type f \\\\\\( -name \"*project*\" -o -name \"*Project*\" \\\\\\) ! -path '*/node_modules/*' ! -path '*/.next/*' ! -path '*/\\\\.*' 2>/dev/null | head -100)",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand -type f \\\\\\( -name \"*.sql\" -o -name \"*.json\" \\\\\\) -path \"*migration*\" -o -path \"*supabase*\" 2>/dev/null | head -20)",
+      "Bash(ls -la /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/ 2>/dev/null)",
+      "Bash(ls -la /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\\\)/ 2>/dev/null)",
+      "Bash(find '/Users/dillanmilosevich/Desktop/Railcommand/src/app/\\(app\\)/projects/[id]' -maxdepth 1 -type f)",
+      "Bash(grep -n \"attachment\\\\|PhotoGallery\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/rfis/\\\\[rfiId\\\\]/page.tsx 2>/dev/null)",
+      "Bash(grep -r \"file.*input\\\\|FileList\\\\|files.push\\\\|files.map\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/submittals/new --include=\"*.tsx\")",
+      "Bash(grep -n \"attachment\\\\|PhotoGallery\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/punch-list/\\\\[itemId\\\\]/page.tsx 2>/dev/null)",
+      "Bash(grep -n \"Paperclip\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/submittals/\\\\[submittalId\\\\]/page.tsx)",
+      "Bash(grep -A 5 -B 5 \"createDailyLog\\\\|serverCreateDailyLog\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/daily-logs/new/page.tsx | head -40)",
+      "Bash(grep -n \"PhotoUpload\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/daily-logs/new/page.tsx)",
+      "Bash(grep -A 2 \"PhotoUpload photos={photos}\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/submittals/new/page.tsx)",
+      "Bash(grep -A20 \"PhotoGallery\\\\|attachments\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/punch-list/\\\\[itemId\\\\]/page.tsx | head -30)",
+      "Bash(grep -n \"PhotoGallery\\\\|Attachment\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/rfis/\\\\[rfiId\\\\]/page.tsx)",
+      "Bash(grep -n \"PhotoUpload\\\\|PhotoGallery\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/submittals/new/page.tsx)",
+      "Bash(grep -rn \"upload\\\\|file\\\\|attachment\\\\|photo\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/rfis --include=\"*.tsx\" | head -30)",
+      "Bash(grep -n \"PhotoGallery\\\\|attachments\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/daily-logs/\\\\[logId\\\\]/page.tsx | head -20)",
+      "Bash(grep -n \"PhotoGallery\\\\|attachments\\\\|uploadAttachment\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/punch-list/\\\\[itemId\\\\]/page.tsx | head -25)",
+      "Bash(grep -rn \"FileUpload\\\\|file.*upload\\\\|uploadAttachment\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/daily-logs/\\\\[logId\\\\]/page.tsx | head -15)",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/daily-logs -name \"*.tsx\" | head -10)",
+      "Bash(grep -rn \"uploadAttachment\\\\|FormData\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\] --include=\"*.tsx\" | grep -i \"upload\\\\|form\" | head -20)",
+      "Bash(grep -n \"PhotoUpload\\\\|PhotoGallery\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/rfis/\\\\[rfiId\\\\]/page.tsx)",
+      "Bash(git add:*)"
     ]
   }
 }
