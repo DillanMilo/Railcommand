@@ -21,7 +21,10 @@
       "Bash(wc:*)",
       "Bash(head:*)",
       "Bash(done)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Bash(which vercel:*)",
+      "Bash(vercel env:*)",
+      "Bash(vercel link:*)"
     ]
   }
 }
