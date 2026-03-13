@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { getProfiles, addPunchListItem, addAttachment } from '@/lib/store';

@@ -39,7 +39,8 @@ export function getLocalDateStringOffset(days: number): string {
  *
  * Use instead of `format(new Date(dateStr), pattern)`.
  */
-export function formatDateSafe(dateStr: string, pattern: string): string {
+export function formatDateSafe(dateStr: string | null | undefined, pattern: string): string {
+  if (!dateStr) return '—';
   return format(parseISO(dateStr), pattern);
 }
 
@@ -49,6 +50,7 @@ export function formatDateSafe(dateStr: string, pattern: string): string {
  *
  * Use instead of `new Date(dateStr)` for date-only fields.
  */
-export function parseDateSafe(dateStr: string): Date {
+export function parseDateSafe(dateStr: string | null | undefined): Date {
+  if (!dateStr) return new Date();
   return parseISO(dateStr);
 }

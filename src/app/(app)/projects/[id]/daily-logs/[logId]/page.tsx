@@ -1,7 +1,7 @@
 'use client';
 
 import { use } from 'react';
-import { format } from 'date-fns';
+import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
 import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
@@ -43,9 +43,8 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
     );
   }
 
-  const dateObj = new Date(log.log_date);
-  const dateLabel = format(dateObj, 'MMM d, yyyy');
-  const dateFull = format(dateObj, 'EEEE, MMMM d, yyyy');
+  const dateLabel = formatDateSafe(log.log_date, 'MMM d, yyyy');
+  const dateFull = formatDateSafe(log.log_date, 'EEEE, MMMM d, yyyy');
   const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
     ?? (isDemo ? getProfiles().find((p) => p.id === log.created_by)?.full_name : undefined);
   const totalHeadcount = (log.personnel ?? []).reduce((s, r) => s + r.headcount, 0);

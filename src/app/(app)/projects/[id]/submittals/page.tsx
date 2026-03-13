@@ -2,7 +2,8 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
+import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
 import { Plus, Search } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
@@ -29,11 +30,11 @@ const STATUS_TABS: { label: string; value: string }[] = [
 ];
 
 function getAgingDays(submitDate: string): number {
-  return differenceInDays(new Date(), new Date(submitDate));
+  return differenceInDays(new Date(), parseDateSafe(submitDate));
 }
 
 function isOverdue(dueDate: string): boolean {
-  return new Date(dueDate) < new Date();
+  return parseDateSafe(dueDate) < new Date();
 }
 
 export default function SubmittalsListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -47,7 +48,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
 
   const filtered = useMemo(() => {
     let items = [...submittals].sort(
-      (a, b) => new Date(b.submit_date).getTime() - new Date(a.submit_date).getTime()
+      (a, b) => parseDateSafe(b.submit_date).getTime() - parseDateSafe(a.submit_date).getTime()
     );
     if (statusFilter !== 'all') {
       items = items.filter((s) => s.status === statusFilter);
@@ -144,7 +145,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
                   <TableCell className="text-muted-foreground text-xs">{sub.spec_section}</TableCell>
                   <TableCell><StatusBadge status={sub.status} type="submittal" /></TableCell>
                   <TableCell className="text-sm">{profileName}</TableCell>
-                  <TableCell className="text-sm">{format(new Date(sub.due_date), 'MMM d, yyyy')}</TableCell>
+                  <TableCell className="text-sm">{formatDateSafe(sub.due_date, 'MMM d, yyyy')}</TableCell>
                   <TableCell className={`text-right text-sm font-medium ${overdue && !['approved', 'rejected'].includes(sub.status) ? 'text-red-600' : 'text-muted-foreground'}`}>
                     {days}d
                   </TableCell>
@@ -179,7 +180,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                     <span>{profileName}</span>
                     <span className={overdue && !['approved', 'rejected'].includes(sub.status) ? 'text-red-600 font-medium' : ''}>
-                      Due {format(new Date(sub.due_date), 'MMM d')} ({days}d)
+                      Due {formatDateSafe(sub.due_date, 'MMM d')} ({days}d)
                     </span>
                   </div>
                 </CardContent>
