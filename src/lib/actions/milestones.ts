@@ -12,6 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
+import { getLocalDateString } from '@/lib/date-utils';
 
 // ---------------------------------------------------------------------------
 // getMilestones -- all milestones for a project
@@ -143,7 +144,7 @@ export async function updateMilestone(
     // If status is being set to 'complete', auto-fill actual_date
     const updateData = { ...data };
     if (updateData.status === 'complete' && updateData.actual_date === undefined) {
-      updateData.actual_date = new Date().toISOString().split('T')[0];
+      updateData.actual_date = getLocalDateString();
     }
     if (updateData.status === 'complete' && updateData.percent_complete === undefined) {
       updateData.percent_complete = 100;

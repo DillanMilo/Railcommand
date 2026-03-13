@@ -3,7 +3,7 @@
 import { useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ArrowLeft, Paperclip, Calendar, User, Flag, Pencil, Trash2 } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
@@ -127,10 +127,10 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
 
   const infoItems = [
     { label: 'Submitted By', value: submitter?.full_name ?? '—', sub: submitter?.organization?.name, icon: <User className="size-4" /> },
-    { label: 'Submit Date', value: format(new Date(submittal.submit_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
-    { label: 'Due Date', value: format(new Date(submittal.due_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
+    { label: 'Submit Date', value: format(parseISO(submittal.submit_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
+    { label: 'Due Date', value: format(parseISO(submittal.due_date), 'MMM d, yyyy'), icon: <Calendar className="size-4" /> },
     { label: 'Reviewed By', value: reviewer?.full_name ?? '—', sub: reviewer?.organization?.name, icon: <User className="size-4" /> },
-    { label: 'Review Date', value: submittal.review_date ? format(new Date(submittal.review_date), 'MMM d, yyyy') : '—', icon: <Calendar className="size-4" /> },
+    { label: 'Review Date', value: submittal.review_date ? format(parseISO(submittal.review_date), 'MMM d, yyyy') : '—', icon: <Calendar className="size-4" /> },
     { label: 'Linked Milestone', value: milestone?.name ?? '—', icon: <Flag className="size-4" /> },
   ];
 
@@ -214,7 +214,7 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
               <p className="text-sm text-muted-foreground leading-relaxed">{submittal.review_notes}</p>
               {reviewer && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  — {reviewer.full_name}, {submittal.review_date ? format(new Date(submittal.review_date), 'MMM d, yyyy') : ''}
+                  — {reviewer.full_name}, {submittal.review_date ? format(parseISO(submittal.review_date), 'MMM d, yyyy') : ''}
                 </p>
               )}
             </CardContent>

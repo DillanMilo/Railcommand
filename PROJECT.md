@@ -91,8 +91,12 @@
 - [ ] Guard rails — read-heavy by default, confirm before any create/update actions
 - [ ] Rate limiting and error handling for API calls
 
+### Alpha Bug Fixes (March 2026)
+- [x] **BUG FIX: Calendar dates one day behind** — All date-only fields (due dates, log dates, target dates, etc.) were displaying one day behind what the user selected. Root cause: `new Date("YYYY-MM-DD")` interprets as UTC midnight, which shifts back one day in US timezones. Fix: Created `src/lib/date-utils.ts` with timezone-safe helpers (`getLocalDateString`, `getLocalDateStringOffset`, `formatDateSafe`, `parseDateSafe`). Replaced all `new Date(dateStr)` calls with `parseISO(dateStr)` from date-fns for display, and all `.toISOString().split('T')[0]` patterns with local timezone date string helpers. Fixed across all modules: dashboard, submittals, RFIs, daily logs, punch lists, schedule/milestones, and profile page.
+- [x] **BUG FIX: Multiple photo uploads — only some photos persist** — When uploading 6+ photos, only 3-4 would actually appear after submission. Root cause: Photos were uploaded sequentially and failures were silently swallowed (only logged to console). Fix: Refactored `uploadPhotosAfterCreate` and `uploadFilesAfterCreate` to use `Promise.allSettled` for concurrent uploads, return structured results (success/fail counts), and report failures to the user. Updated all creation forms (daily logs, punch lists, RFIs, submittals) to show upload progress ("Uploading N photos…"), disable submit buttons during upload, and display error messages when uploads partially fail.
+
 ---
 
-*Last updated: February 27, 2026*
+*Last updated: March 13, 2026*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

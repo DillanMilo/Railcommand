@@ -1,6 +1,6 @@
 'use client';
 
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { CheckCircle2, Clock, XCircle, AlertTriangle, Send, FileEdit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Submittal, Profile } from '@/lib/types';
@@ -83,7 +83,7 @@ export default function SubmittalTimeline({ submittal, profiles }: SubmittalTime
               {step.label}
             </p>
             {step.date && (
-              <p className="text-xs text-muted-foreground">{format(new Date(step.date), 'MMM d, yyyy')}</p>
+              <p className="text-xs text-muted-foreground">{format(parseISO(step.date), 'MMM d, yyyy')}</p>
             )}
             {step.person && step.status !== 'upcoming' && (
               <p className="text-xs text-muted-foreground">by {step.person}</p>

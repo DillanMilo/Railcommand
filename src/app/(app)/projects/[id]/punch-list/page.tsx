@@ -2,7 +2,7 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -158,7 +158,7 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
                 <TableCell><StatusBadge status={item.status} type="punch_list" /></TableCell>
                 <TableCell><PriorityBadge priority={item.priority} /></TableCell>
                 <TableCell>{getName(item.assigned_to, item.assigned_to_profile?.full_name, isDemo)}</TableCell>
-                <TableCell>{format(new Date(item.due_date), 'MMM d, yyyy')}</TableCell>
+                <TableCell>{format(parseISO(item.due_date), 'MMM d, yyyy')}</TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
@@ -182,7 +182,7 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
                 <p className="text-xs text-muted-foreground truncate">{item.location}</p>
                 <div className="flex items-center justify-between">
                   <PriorityBadge priority={item.priority} />
-                  <span className="text-xs text-muted-foreground">Due {format(new Date(item.due_date), 'MMM d')}</span>
+                  <span className="text-xs text-muted-foreground">Due {format(parseISO(item.due_date), 'MMM d')}</span>
                 </div>
               </CardContent>
             </Card>

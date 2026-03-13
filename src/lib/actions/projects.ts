@@ -12,6 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
+import { getLocalDateString } from '@/lib/date-utils';
 
 // ---------------------------------------------------------------------------
 // getProjects -- all projects the current user is a member of
@@ -196,7 +197,7 @@ export async function updateProjectStatus(
 
     const updateData: Record<string, unknown> = { status };
     if (status === 'completed') {
-      updateData.actual_end_date = new Date().toISOString().split('T')[0];
+      updateData.actual_end_date = getLocalDateString();
     }
 
     const { data: project, error } = await supabase

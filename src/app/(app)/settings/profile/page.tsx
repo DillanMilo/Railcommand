@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import {
   Camera,
   CheckCircle2,
@@ -383,7 +383,7 @@ export default function ProfilePage() {
                 Member Since
               </p>
               <p className="text-sm font-semibold">
-                {format(new Date(profile.created_at), 'MMMM d, yyyy')}
+                {format(parseISO(profile.created_at), 'MMMM d, yyyy')}
               </p>
             </div>
           </div>

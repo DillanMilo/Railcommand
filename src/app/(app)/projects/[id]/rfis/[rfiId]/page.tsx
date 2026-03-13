@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Lock, MessageSquare, Paperclip, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,7 +76,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   const [overdueDays, setOverdueDays] = useState(0);
   useEffect(() => {
     if (rfi && (rfi.status === 'overdue' || status === 'overdue')) {
-      setOverdueDays(differenceInCalendarDays(new Date(), new Date(rfi.due_date)));
+      setOverdueDays(differenceInCalendarDays(new Date(), parseISO(rfi.due_date)));
     }
   }, [rfi, status]);
 
@@ -198,7 +198,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
         <div className="flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-300">
           <AlertTriangle className="size-5 shrink-0" />
           <p className="text-sm font-medium" suppressHydrationWarning>
-            This RFI is {overdueDays} days overdue. Response was due {format(new Date(rfi.due_date), 'MMM d, yyyy')}.
+            This RFI is {overdueDays} days overdue. Response was due {format(parseISO(rfi.due_date), 'MMM d, yyyy')}.
           </p>
         </div>
       )}
@@ -242,8 +242,8 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
         {[
           { label: 'Submitted By', value: submitter?.full_name ?? '—' },
           { label: 'Assigned To', value: assignee?.full_name ?? '—' },
-          { label: 'Submit Date', value: format(new Date(rfi.submit_date), 'MMM d, yyyy') },
-          { label: 'Due Date', value: format(new Date(rfi.due_date), 'MMM d, yyyy') },
+          { label: 'Submit Date', value: format(parseISO(rfi.submit_date), 'MMM d, yyyy') },
+          { label: 'Due Date', value: format(parseISO(rfi.due_date), 'MMM d, yyyy') },
           { label: 'Priority', value: rfi.priority },
           { label: 'Milestone', value: milestone?.name ?? 'None' },
         ].map((item) => (
@@ -318,7 +318,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{author?.full_name ?? 'Unknown'}</span>
                   {org && <span className="text-xs text-muted-foreground">{org.name}</span>}
-                  <span className="text-xs text-muted-foreground">{format(new Date(resp.created_at), 'MMM d, yyyy')}</span>
+                  <span className="text-xs text-muted-foreground">{format(parseISO(resp.created_at), 'MMM d, yyyy')}</span>
                   {resp.is_official_response && (
                     <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs">Official Response</Badge>
                   )}

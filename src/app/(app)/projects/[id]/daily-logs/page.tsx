@@ -2,7 +2,7 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO } from 'date-fns';
 import { Plus, Calendar, List, Cloud, Users, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,7 +37,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const calDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
   function logForDay(day: Date) {
-    return rawLogs.find((l) => isSameDay(new Date(l.log_date), day));
+    return rawLogs.find((l) => isSameDay(parseISO(l.log_date), day));
   }
 
   const totalHeadcount = (p: { headcount: number }[] | undefined) => (p ?? []).reduce((s, r) => s + r.headcount, 0);
@@ -163,7 +163,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
                 <Card className="transition-shadow hover:shadow-md">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{format(new Date(log.log_date), 'EEEE, MMM d, yyyy')}</span>
+                      <span className="font-semibold text-sm">{format(parseISO(log.log_date), 'EEEE, MMM d, yyyy')}</span>
                       <Badge variant="outline" className="gap-1">
                         <ClipboardList className="size-3" />{(log.work_items ?? []).length} items
                       </Badge>

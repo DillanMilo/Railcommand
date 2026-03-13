@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ArrowLeft, CheckCircle2, Play, RotateCcw, ShieldCheck, MapPin, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -167,8 +167,8 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
     { label: 'Location', value: item.location },
     { label: 'Assigned To', value: getName(item.assigned_to, item.assigned_to_profile?.full_name) },
     { label: 'Created By', value: getName(item.created_by, item.created_by_profile?.full_name) },
-    { label: 'Due Date', value: format(new Date(item.due_date), 'MMM d, yyyy') },
-    { label: 'Created', value: format(new Date(item.created_at), 'MMM d, yyyy') },
+    { label: 'Due Date', value: format(parseISO(item.due_date), 'MMM d, yyyy') },
+    { label: 'Created', value: format(parseISO(item.created_at), 'MMM d, yyyy') },
   ];
 
   return (
