@@ -21,6 +21,7 @@ import {
   usePunchListItems,
   useDailyLogs,
 } from '@/hooks/useData';
+import { format, parseISO } from 'date-fns';
 import {
   DollarSign,
   Calendar,
@@ -104,8 +105,8 @@ export default function DashboardPage() {
     : 0;
 
   const totalDays =
-    new Date(project.target_end_date).getTime() - new Date(project.start_date).getTime();
-  const elapsed = now - new Date(project.start_date).getTime();
+    parseISO(project.target_end_date).getTime() - parseISO(project.start_date).getTime();
+  const elapsed = now - parseISO(project.start_date).getTime();
   const schedulePercent = totalDays > 0
     ? Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)))
     : 100;
@@ -130,13 +131,10 @@ export default function DashboardPage() {
 
   const totalLogs = allLogs.length;
   const lastLog = [...allLogs].sort(
-    (a, b) => new Date(b.log_date).getTime() - new Date(a.log_date).getTime()
+    (a, b) => parseISO(b.log_date).getTime() - parseISO(a.log_date).getTime()
   )[0];
   const lastLogDate = lastLog
-    ? new Date(lastLog.log_date).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })
+    ? format(parseISO(lastLog.log_date), 'MMM d')
     : 'N/A';
 
   return (

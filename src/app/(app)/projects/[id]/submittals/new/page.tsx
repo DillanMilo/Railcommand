@@ -18,6 +18,7 @@ import { createSubmittal as serverCreateSubmittal } from '@/lib/actions/submitta
 import { uploadFilesAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
+import { getLocalDateStringOffset } from '@/lib/date-utils';
 
 const SPEC_SECTIONS = [
   '34 11 13 - Track Construction',
@@ -45,6 +46,8 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
   const [files, setFiles] = useState<File[]>([]);
   const [success, setSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   const canSubmit = title.trim() && specSection;
 
@@ -78,6 +81,7 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitError(null);
+    setSubmitting(true);
 
     if (isDemo) {
       const submittal = addSubmittal(projectId, {
@@ -106,17 +110,25 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
         title,
         description,
         spec_section: specSection,
-        due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: getLocalDateStringOffset(14),
         milestone_id: milestoneId || null,
       });
       if (result.error) {
         setSubmitError(result.error);
+        setSubmitting(false);
         return;
       }
 
       // Upload file attachments to Supabase storage
       if (files.length > 0 && result.data) {
-        await uploadFilesAfterCreate(files, 'submittal', result.data.id, projectId);
+        setUploadProgress(`Uploading ${files.length} file${files.length !== 1 ? 's' : ''}…`);
+        const uploadResult = await uploadFilesAfterCreate(files, 'submittal', result.data.id, projectId);
+        setUploadProgress(null);
+        if (uploadResult.failed > 0) {
+          setSubmitError(`${uploadResult.succeeded} of ${uploadResult.total} files uploaded. ${uploadResult.failed} failed.`);
+          setSubmitting(false);
+          return;
+        }
       }
 
       setSuccess(true);
@@ -245,8 +257,8 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-              <Button type="submit" disabled={!canSubmit || success} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-                Create Submittal
+              <Button type="submit" disabled={!canSubmit || success || submitting} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+                {uploadProgress ?? (submitting ? 'Creating…' : 'Create Submittal')}
               </Button>
               <Link href={`/projects/${projectId}/submittals`}>
                 <Button type="button" variant="outline" className="w-full sm:w-auto">Cancel</Button>

@@ -18,6 +18,7 @@ import {
   seedMilestones,
   seedProject,
 } from './seed-data';
+import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
 import type {
   Organization,
   Profile,
@@ -264,7 +265,7 @@ export function addSubmittal(projectId: string, data: {
     submitted_by: getCurrentUserId(),
     reviewed_by: null,
     submit_date: new Date().toISOString(),
-    due_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+    due_date: getLocalDateStringOffset(14),
     review_date: null,
     review_notes: null,
     milestone_id: data.milestone_id,
@@ -313,7 +314,7 @@ export function addRFI(projectId: string, data: {
     submitted_by: getCurrentUserId(),
     assigned_to: data.assigned_to || 'prof-002',
     submit_date: new Date().toISOString(),
-    due_date: data.due_date || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+    due_date: data.due_date || getLocalDateStringOffset(14),
     response_date: null,
     milestone_id: data.milestone_id,
     responses: [],
@@ -430,7 +431,7 @@ export function addPunchListItem(projectId: string, data: {
     priority: data.priority,
     assigned_to: data.assigned_to || getCurrentUserId(),
     created_by: getCurrentUserId(),
-    due_date: data.due_date || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+    due_date: data.due_date || getLocalDateStringOffset(14),
     resolved_date: null,
     verified_date: null,
     resolution_notes: null,
@@ -574,7 +575,7 @@ export function updateProjectStatus(id: string, status: Project['status']): void
       ? {
           ...p,
           status,
-          actual_end_date: status === 'completed' ? new Date().toISOString().split('T')[0] : p.actual_end_date,
+          actual_end_date: status === 'completed' ? getLocalDateString() : p.actual_end_date,
         }
       : p
   );

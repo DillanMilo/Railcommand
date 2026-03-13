@@ -46,6 +46,9 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   // Build assignable profiles: prefer members with embedded profile, fall back to store
   const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
@@ -70,6 +73,8 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setErrorMsg(null);
+    setSubmitting(true);
 
     if (isDemo) {
       const item = addPunchListItem(projectId, {
@@ -106,11 +111,18 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
         due_date: dueDate,
         geo_tag: geoTag,
       });
-      if (result.error) { return; }
+      if (result.error) { setErrorMsg(result.error); setSubmitting(false); return; }
 
       // Upload photos to Supabase storage
       if (photos.length > 0 && result.data) {
-        await uploadPhotosAfterCreate(photos, 'punch_list', result.data.id, projectId);
+        setUploadProgress(`Uploading ${photos.length} photo${photos.length !== 1 ? 's' : ''}…`);
+        const uploadResult = await uploadPhotosAfterCreate(photos, 'punch_list', result.data.id, projectId);
+        setUploadProgress(null);
+        if (uploadResult.failed > 0) {
+          setErrorMsg(`${uploadResult.succeeded} of ${uploadResult.total} photos uploaded. ${uploadResult.failed} failed.`);
+          setSubmitting(false);
+          return;
+        }
       }
     }
 
@@ -141,6 +153,12 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
       </Link>
 
       <h1 className="font-heading text-2xl font-bold">New Punch List Item</h1>
+
+      {errorMsg && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 text-sm">
+          {errorMsg}
+        </div>
+      )}
 
       <Card className="max-w-3xl">
         <CardHeader><CardTitle className="text-base">Item Details</CardTitle></CardHeader>
@@ -186,7 +204,9 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
             <GeoTagInput value={geoTag} onChange={setGeoTag} />
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">Create Item</Button>
+              <Button type="submit" disabled={submitting || success} className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">
+                {uploadProgress ?? (submitting ? 'Creating…' : 'Create Item')}
+              </Button>
               <Button type="button" variant="outline" className="w-full sm:w-auto" asChild><Link href={basePath}>Cancel</Link></Button>
             </div>
           </form>

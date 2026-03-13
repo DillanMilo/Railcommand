@@ -18,6 +18,7 @@ import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
+import { getLocalDateString } from '@/lib/date-utils';
 import type { GeoTag } from '@/lib/types';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
@@ -35,7 +36,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
 
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateString);
   const [temp, setTemp] = useState<number | ''>('');
   const [conditions, setConditions] = useState('');
   const [wind, setWind] = useState('');
@@ -48,6 +49,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!can(ACTIONS.DAILY_LOG_CREATE)) {
@@ -309,7 +311,14 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
               // Upload photos to Supabase storage
               if (photos.length > 0 && result.data) {
-                await uploadPhotosAfterCreate(photos, 'daily_log', result.data.id, projectId);
+                setUploadProgress(`Uploading ${photos.length} photo${photos.length !== 1 ? 's' : ''}…`);
+                const uploadResult = await uploadPhotosAfterCreate(photos, 'daily_log', result.data.id, projectId);
+                setUploadProgress(null);
+                if (uploadResult.failed > 0) {
+                  setErrorMsg(`${uploadResult.succeeded} of ${uploadResult.total} photos uploaded. ${uploadResult.failed} failed.`);
+                  setSubmitting(false);
+                  return;
+                }
               }
 
               setSuccess(true);
@@ -317,7 +326,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
             }
           }}
         >
-          {submitting && !success ? 'Submitting…' : 'Submit Log'}
+          {uploadProgress ?? (submitting && !success ? 'Submitting…' : 'Submit Log')}
         </Button>
       </div>
     </div>

@@ -2,7 +2,8 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
+import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,8 +33,8 @@ function getProfile(id: string, demo?: boolean) {
 }
 
 function daysOpen(rfi: RFI): number {
-  const end = rfi.response_date ? new Date(rfi.response_date) : new Date();
-  return differenceInCalendarDays(end, new Date(rfi.submit_date));
+  const end = rfi.response_date ? parseDateSafe(rfi.response_date) : new Date();
+  return differenceInCalendarDays(end, parseDateSafe(rfi.submit_date));
 }
 
 export default function RFIsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -143,7 +144,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   <TableCell><PriorityBadge priority={rfi.priority} /></TableCell>
                   <TableCell>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by, isDemo)?.full_name ?? '—'}</TableCell>
                   <TableCell>{(rfi as any).assigned_to_profile?.full_name ?? getProfile(rfi.assigned_to, isDemo)?.full_name ?? '—'}</TableCell>
-                  <TableCell>{format(new Date(rfi.due_date), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>{formatDateSafe(rfi.due_date, 'MMM d, yyyy')}</TableCell>
                   <TableCell className={`text-right font-medium ${isOverdue ? 'text-red-600' : ''}`}>{days}</TableCell>
                 </TableRow>
               );
@@ -175,7 +176,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </div>
                   <div className="flex items-center gap-2">
                     <PriorityBadge priority={rfi.priority} />
-                    <span className="text-xs text-muted-foreground">Due {format(new Date(rfi.due_date), 'MMM d')}</span>
+                    <span className="text-xs text-muted-foreground">Due {formatDateSafe(rfi.due_date, 'MMM d')}</span>
                   </div>
                 </CardContent>
               </Card>

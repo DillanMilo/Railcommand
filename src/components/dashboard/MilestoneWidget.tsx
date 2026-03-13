@@ -31,7 +31,7 @@ export default function MilestoneWidget({ projectId }: MilestoneWidgetProps) {
   }
 
   const sortedMilestones = [...milestones].sort(
-    (a, b) => new Date(a.target_date).getTime() - new Date(b.target_date).getTime()
+    (a, b) => parseISO(a.target_date).getTime() - parseISO(b.target_date).getTime()
   );
 
   return (

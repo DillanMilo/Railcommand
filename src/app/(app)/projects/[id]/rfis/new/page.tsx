@@ -52,6 +52,9 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const [milestoneId, setMilestoneId] = useState('');
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   if (membersLoading || milestonesLoading) {
     return (
@@ -80,6 +83,8 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !question.trim()) return;
+    setErrorMsg(null);
+    setSubmitting(true);
     const data = {
       subject,
       question,
@@ -106,11 +111,18 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
       }
     } else {
       const result = await serverCreateRFI(projectId, data);
-      if (result.error) return;
+      if (result.error) { setErrorMsg(result.error); setSubmitting(false); return; }
 
       // Upload photos to Supabase storage
       if (photos.length > 0 && result.data) {
-        await uploadPhotosAfterCreate(photos, 'rfi', result.data.id, projectId);
+        setUploadProgress(`Uploading ${photos.length} photo${photos.length !== 1 ? 's' : ''}…`);
+        const uploadResult = await uploadPhotosAfterCreate(photos, 'rfi', result.data.id, projectId);
+        setUploadProgress(null);
+        if (uploadResult.failed > 0) {
+          setErrorMsg(`${uploadResult.succeeded} of ${uploadResult.total} photos uploaded. ${uploadResult.failed} failed.`);
+          setSubmitting(false);
+          return;
+        }
       }
     }
     setSuccess(true);
@@ -147,6 +159,11 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
       <Card className="max-w-2xl">
         <CardHeader><CardTitle>RFI Details</CardTitle></CardHeader>
         <CardContent>
+          {errorMsg && (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 text-sm mb-4">
+              {errorMsg}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Subject */}
             <div className="space-y-1.5">
@@ -216,7 +233,9 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button type="submit" className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">Create RFI</Button>
+              <Button type="submit" disabled={submitting || success} className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">
+                {uploadProgress ?? (submitting ? 'Creating…' : 'Create RFI')}
+              </Button>
               <Button type="button" variant="outline" className="w-full sm:w-auto" asChild>
                 <Link href={basePath}>Cancel</Link>
               </Button>
