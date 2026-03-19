@@ -10,8 +10,10 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getProfiles } from '@/lib/store';
+import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
+import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import PunchListPDF from '@/lib/pdf/PunchListPDF';
 import { usePunchListItems } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -49,8 +51,9 @@ function getName(id: string, profileName?: string, demo?: boolean) {
 export default function PunchListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const { isDemo } = useProject();
+  const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
+  const currentProfile = getProfileWithOrg(getCurrentUserId());
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
 
@@ -92,11 +95,17 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
             {items.length} items &mdash; {counts.open} open, {counts.in_progress} in progress, {counts.resolved} resolved, {counts.verified} verified
           </p>
         </div>
-        {can(ACTIONS.PUNCH_LIST_CREATE) && (
-          <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New Item</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ExportPDFButton
+            document={<PunchListPDF items={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />}
+            fileName={`punch-list-report-${projectId}`}
+          />
+          {can(ACTIONS.PUNCH_LIST_CREATE) && (
+            <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New Item</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Status tabs */}

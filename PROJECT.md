@@ -79,6 +79,17 @@
 - [x] Favicon and meta tags
 - [ ] Deploy to Vercel
 
+### Phase 10.5: PDF Report Export
+- [x] Install @react-pdf/renderer for client-side PDF generation
+- [x] Create shared PDF styles and branding (RailCommand / A5 Rail)
+- [x] Build Submittals PDF report template
+- [x] Build RFIs PDF report template
+- [x] Build Daily Log PDF report template
+- [x] Build Punch List PDF report template
+- [x] Build Schedule & Milestones PDF report template
+- [x] Create reusable ExportPDFButton component
+- [x] Wire up Export PDF buttons on Submittals, RFIs, Punch List, and Schedule pages
+
 ### Phase 11: AI Assistant (RailBot)
 - [ ] Set up Claude API integration (Anthropic SDK + API route)
 - [ ] Build chat UI component (slide-over panel, accessible from any page)
@@ -97,6 +108,6 @@
 
 ---
 
-*Last updated: March 13, 2026*
+*Last updated: March 19, 2026*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

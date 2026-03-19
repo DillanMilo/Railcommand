@@ -12,8 +12,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import PriorityBadge from '@/components/shared/PriorityBadge';
-import { getProfiles } from '@/lib/store';
+import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
+import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import RFIsPDF from '@/lib/pdf/RFIsPDF';
 import { useRFIs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -40,8 +42,9 @@ function daysOpen(rfi: RFI): number {
 export default function RFIsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const { isDemo } = useProject();
+  const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
+  const currentProfile = getProfileWithOrg(getCurrentUserId());
   const [tab, setTab] = useState<RFIStatus | 'all'>('all');
   const [search, setSearch] = useState('');
 
@@ -83,11 +86,17 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
           <h1 className="font-heading text-2xl font-bold">RFIs</h1>
           <p className="text-sm text-muted-foreground">{filtered.length} items</p>
         </div>
-        {can(ACTIONS.RFI_CREATE) && (
-          <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New RFI</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ExportPDFButton
+            document={<RFIsPDF rfis={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />}
+            fileName={`rfis-report-${projectId}`}
+          />
+          {can(ACTIONS.RFI_CREATE) && (
+            <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New RFI</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

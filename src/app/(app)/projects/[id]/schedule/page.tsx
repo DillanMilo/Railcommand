@@ -18,6 +18,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useMilestones } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
+import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import SchedulePDF from '@/lib/pdf/SchedulePDF';
+import { getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import { createMilestone as serverCreateMilestone, updateMilestone as serverUpdateMilestone, deleteMilestone as serverDeleteMilestone } from '@/lib/actions/milestones';
@@ -71,6 +74,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
   use(searchParams);
   const { currentProject, isDemo } = useProject();
   const { can } = usePermissions(projectId);
+  const currentProfile = getProfileWithOrg(getCurrentUserId());
   const { data: rawMilestones, refetch } = useMilestones(projectId);
   const milestones = [...rawMilestones].sort((a, b) => a.sort_order - b.sort_order);
   const kpis = useKPIs(milestones);
@@ -132,11 +136,17 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
 
       <div className="flex items-center justify-between mt-4">
         <h1 className="font-heading text-2xl font-bold">Schedule &amp; Milestones</h1>
-        {can(ACTIONS.SCHEDULE_EDIT) && (
-          <Button onClick={() => setAddOpen(true)} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-            <Plus className="size-4 mr-1" />Add Milestone
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ExportPDFButton
+            document={<SchedulePDF milestones={milestones} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} budgetPlanned={kpis.budgetPlanned} budgetActual={kpis.budgetActual} />}
+            fileName={`schedule-report-${projectId}`}
+          />
+          {can(ACTIONS.SCHEDULE_EDIT) && (
+            <Button onClick={() => setAddOpen(true)} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Plus className="size-4 mr-1" />Add Milestone
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* KPI row */}

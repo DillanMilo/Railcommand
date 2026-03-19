@@ -505,7 +505,7 @@ The following table provides a comprehensive reference of every action in RailCo
 
 ## 6. Current Development Status
 
-### Overall Progress: ~85% Complete -- Alpha Ready
+### Overall Progress: ~90% Complete -- Alpha Ready, PDF Export Complete
 
 RailCommand has reached **Alpha readiness** as of March 2026. All eight core modules are fully functional with complete role-based access control, responsive design, and Supabase backend integration. The platform is ready for internal testing by the A5 Rail team.
 
@@ -514,11 +514,11 @@ RailCommand has reached **Alpha readiness** as of March 2026. All eight core mod
 | Module | Status | Completion | Notes |
 |--------|--------|:----------:|-------|
 | **Dashboard** | Complete | 100% | All KPI cards, activity feed, quick actions, milestones widget |
-| **Submittals** | Complete | 90% | Full workflow operational; file attachment storage pending |
-| **RFIs** | Complete | 90% | Full lifecycle with response threads; file attachment storage pending |
-| **Daily Logs** | Complete | 100% | Calendar view, structured data entry, geo-tagging, photos |
-| **Punch List** | Complete | 100% | 4-stage resolution workflow with separation of duties |
-| **Schedule & Milestones** | Complete | 100% | Timeline view, budget tracking, linked submittals/RFIs |
+| **Submittals** | Complete | 90% | Full workflow operational; PDF export ready; file attachment storage pending |
+| **RFIs** | Complete | 90% | Full lifecycle with response threads; PDF export ready; file attachment storage pending |
+| **Daily Logs** | Complete | 100% | Calendar view, structured data entry, geo-tagging, photos, PDF export |
+| **Punch List** | Complete | 100% | 4-stage resolution workflow with separation of duties, PDF export |
+| **Schedule & Milestones** | Complete | 100% | Timeline view, budget tracking, linked submittals/RFIs, PDF export |
 | **Team Management** | Complete | 100% | Full invite/add/remove workflow with role assignment |
 | **Settings & Profile** | Complete | 100% | Profile editing, dark mode, notification preferences, security |
 
@@ -536,6 +536,7 @@ RailCommand has reached **Alpha readiness** as of March 2026. All eight core mod
 | **Breadcrumb Navigation** | Complete | On every page with responsive truncation |
 | **Demo Mode** | Complete | "Explore Demo Project" with fully populated seed data |
 | **Tier-Based Limits** | Complete | Free (5 members), Pro (25 members), Enterprise (unlimited) |
+| **PDF Report Export** | Complete | Export PDF reports for Submittals, RFIs, Daily Logs, Punch List, Schedule |
 
 ### What's Coming Next
 
@@ -548,7 +549,7 @@ The following features are actively planned for upcoming releases, ordered by pr
 | 3 | **Cross-Module Search** | Upgrade global search to query across all modules -- find submittals, RFIs, punch list items, and daily logs by number, title, assignee, or content. | Next Release |
 | 4 | **Email Notifications** | Automated email alerts when users are assigned items, when statuses change, and when items become overdue. Notification preference toggles are already built in Settings. | Next Release |
 | 5 | **AI Assistant (RailBot)** | Natural language queries, guided data entry (create RFIs and punch items via conversation), project summarization, and daily log summaries -- powered by AI and accessible from any page via a slide-over chat panel. | Beta |
-| 6 | **Custom Reporting & Export** | Generate custom reports across modules with PDF and CSV export. Filterable by date range, status, role, and more. | Beta |
+| 6 | **Custom Reporting & Export** | PDF export is now available for all modules (Submittals, RFIs, Daily Logs, Punch List, Schedule). CSV export and custom date range/status/role filtering coming next. | Phase 1 Complete |
 | 7 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Post-Beta |
 | 8 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Post-Beta |
 | 9 | **Email Digests** | Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones. | Post-Beta |
@@ -573,4 +574,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: March 4, 2026*
+*Last updated: March 19, 2026*
