@@ -238,9 +238,14 @@ export default function Sidebar() {
                 height={40}
                 className="object-contain"
               />
-              <span className="text-[10px] text-white/40 tracking-wide uppercase ml-0.5">
-                by A5
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-white/40 tracking-wide uppercase ml-0.5">
+                  by A5
+                </span>
+                <span className="text-[9px] font-semibold text-rc-orange/80 tracking-wider uppercase px-1.5 py-0.5 rounded border border-rc-orange/30 leading-none">
+                  Beta
+                </span>
+              </div>
             </div>
           )}
         </div>

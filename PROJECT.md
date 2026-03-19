@@ -90,6 +90,12 @@
 - [x] Create reusable ExportPDFButton component
 - [x] Wire up Export PDF buttons on Submittals, RFIs, Punch List, Schedule, and Daily Log detail pages
 
+### Phase 10.6: Beta-Blocking Features
+- [x] PWA Manifest & App Icons (manifest.json, service worker, installable app)
+- [x] Cross-Module Global Search (Cmd+K command palette, searches all modules)
+- [x] File & Document Storage (Supabase Storage integration, drag & drop FileUpload component)
+- [x] Email Notifications (Resend integration, 5 notification types, preferences UI wired to backend)
+
 ### Phase 11: AI Assistant (RailBot)
 - [ ] Set up Claude API integration (Anthropic SDK + API route)
 - [ ] Build chat UI component (slide-over panel, accessible from any page)

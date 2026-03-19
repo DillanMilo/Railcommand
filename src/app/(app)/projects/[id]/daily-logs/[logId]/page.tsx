@@ -11,12 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoGallery from '@/components/shared/PhotoGallery';
+import FileUpload from '@/components/shared/FileUpload';
 import { getProfiles, getAttachments } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDailyLogDetail } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
-import type { DailyLog } from '@/lib/types';
+import type { DailyLog, Attachment } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
   const c = conditions.toLowerCase();
@@ -186,6 +187,19 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
 
       {/* Photos */}
       <PhotoGallery attachments={attachments} />
+
+      {/* Document attachments */}
+      {!isDemo && (
+        <FileUpload
+          existingAttachments={(attachments as Attachment[]).filter(
+            (a) => !a.file_type?.startsWith('image/') && a.photo_category !== 'thermal'
+          )}
+          entityType="daily_log"
+          entityId={logId}
+          projectId={projectId}
+          title="Documents"
+        />
+      )}
     </div>
   );
 }

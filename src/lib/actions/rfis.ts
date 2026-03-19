@@ -12,6 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
+import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getRFIs -- all RFIs for a project
@@ -167,6 +168,35 @@ export async function createRFI(
       user.id
     );
 
+    // Notify the assignee about the new RFI (fire-and-forget)
+    try {
+      if (data.assigned_to && data.assigned_to !== user.id) {
+        const projectName = await getProjectName(projectId);
+        const { data: submitterProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        sendNotificationToUser(data.assigned_to, (recipient) => ({
+          type: 'rfi_assigned',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          rfiNumber: number,
+          rfiSubject: data.subject,
+          rfiQuestion: data.question,
+          priority: data.priority,
+          dueDate: data.due_date,
+          submitterName: submitterProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+          rfiId: rfi.id,
+        }));
+      }
+    } catch (notifErr) {
+      console.error('[rfis] Notification error (non-blocking):', notifErr);
+    }
+
     revalidatePath(`/projects/${projectId}/rfis`);
 
     return { success: true, data: rfi as RFI };
@@ -299,6 +329,41 @@ export async function addRFIResponse(
       `${isOfficial ? 'officially ' : ''}responded to ${rfi?.number ?? rfiId}`,
       user.id
     );
+
+    // Notify the RFI submitter about the response (fire-and-forget)
+    try {
+      // Get full RFI details for the notification
+      const { data: fullRfi } = await supabase
+        .from('rfis')
+        .select('submitted_by, number, subject')
+        .eq('id', rfiId)
+        .single();
+
+      if (fullRfi?.submitted_by && fullRfi.submitted_by !== user.id) {
+        const projectName = await getProjectName(projectId);
+        const { data: responderProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        sendNotificationToUser(fullRfi.submitted_by, (recipient) => ({
+          type: 'rfi_response_received',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          rfiNumber: fullRfi.number,
+          rfiSubject: fullRfi.subject,
+          responseContent: content,
+          isOfficial,
+          responderName: responderProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+          rfiId,
+        }));
+      }
+    } catch (notifErr) {
+      console.error('[rfis] Notification error (non-blocking):', notifErr);
+    }
 
     revalidatePath(`/projects/${projectId}/rfis`);
     revalidatePath(`/projects/${projectId}/rfis/${rfiId}`);

@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { useProject } from '@/components/providers/ProjectProvider';
+import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notification-preferences';
+import type { NotificationPreferences } from '@/lib/notifications';
 import {
   Card,
   CardContent,
@@ -76,7 +79,7 @@ const themeOptions: {
 /*  Notification config                                               */
 /* ------------------------------------------------------------------ */
 interface NotificationSetting {
-  key: string;
+  key: keyof NotificationPreferences;
   label: string;
   description: string;
   defaultOn: boolean;
@@ -84,33 +87,33 @@ interface NotificationSetting {
 
 const notificationSettings: NotificationSetting[] = [
   {
-    key: 'email',
-    label: 'Email notifications',
-    description: 'Receive email updates for project activity',
-    defaultOn: true,
-  },
-  {
-    key: 'submittal',
+    key: 'submittal_status_changed',
     label: 'Submittal updates',
-    description: 'When submittals change status',
+    description: 'When submittals change status (approved, rejected, etc.)',
     defaultOn: true,
   },
   {
-    key: 'rfi',
+    key: 'rfi_assigned',
     label: 'RFI assignments',
     description: "When you're assigned to an RFI",
     defaultOn: true,
   },
   {
-    key: 'dailyLog',
-    label: 'Daily log reminders',
-    description: 'Reminder to submit daily logs',
-    defaultOn: false,
+    key: 'rfi_response_received',
+    label: 'RFI responses',
+    description: 'When someone responds to your RFI',
+    defaultOn: true,
   },
   {
-    key: 'punchList',
-    label: 'Punch list updates',
-    description: 'When punch list items are assigned or resolved',
+    key: 'punch_list_assigned',
+    label: 'Punch list assignments',
+    description: 'When a punch list item is assigned to you',
+    defaultOn: true,
+  },
+  {
+    key: 'punch_list_status_changed',
+    label: 'Punch list status changes',
+    description: 'When punch list items are resolved or verified',
     defaultOn: true,
   },
 ];
@@ -120,27 +123,38 @@ const notificationSettings: NotificationSetting[] = [
 /* ------------------------------------------------------------------ */
 export default function SettingsPage() {
   const { mode, setMode } = useTheme();
+  const { isDemo } = useProject();
 
-  // Notification toggles -- persisted to localStorage
+  // Notification toggles -- persisted to Supabase (or localStorage for demo)
   const [notifications, setNotifications] = useState<Record<string, boolean>>(
-    () => {
+    () => Object.fromEntries(notificationSettings.map((n) => [n.key, n.defaultOn]))
+  );
+
+  // Load preferences from backend on mount (non-demo only)
+  useEffect(() => {
+    if (isDemo) {
       try {
         const stored = localStorage.getItem('rc-notification-prefs');
-        if (stored) return JSON.parse(stored);
+        if (stored) setNotifications(JSON.parse(stored));
       } catch { /* noop */ }
-      return Object.fromEntries(
-        notificationSettings.map((n) => [n.key, n.defaultOn])
-      );
+      return;
     }
-  );
+    getNotificationPreferences().then((result) => {
+      if (result.data) setNotifications({ ...result.data });
+    });
+  }, [isDemo]);
 
   const toggleNotification = useCallback((key: string) => {
     setNotifications((prev) => {
       const next = { ...prev, [key]: !prev[key] };
-      try { localStorage.setItem('rc-notification-prefs', JSON.stringify(next)); } catch { /* noop */ }
+      if (isDemo) {
+        try { localStorage.setItem('rc-notification-prefs', JSON.stringify(next)); } catch { /* noop */ }
+      } else {
+        updateNotificationPreferences({ [key]: next[key] }).catch(() => { /* noop */ });
+      }
       return next;
     });
-  }, []);
+  }, [isDemo]);
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState('');

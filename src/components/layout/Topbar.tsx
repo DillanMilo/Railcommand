@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Bell, Search, Settings, LogOut, User, X, Check, ChevronDown, Plus } from 'lucide-react';
+import { Bell, Search, Settings, LogOut, User, Check, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -22,14 +22,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import ThemeToggle from './ThemeToggle';
+import GlobalSearch from '@/components/shared/GlobalSearch';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
@@ -69,7 +63,6 @@ export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
   const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId, isDemo } = useProject();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
 
@@ -91,23 +84,17 @@ export default function Topbar({ children }: TopbarProps) {
     : authProfile;
   const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
-  const allSearchPages = [
-    { label: 'Dashboard', href: '/dashboard', requiresProject: false },
-    ...(currentProjectId
-      ? [
-          { label: 'Submittals', href: `/projects/${currentProjectId}/submittals`, requiresProject: true },
-          { label: 'RFIs', href: `/projects/${currentProjectId}/rfis`, requiresProject: true },
-          { label: 'Daily Logs', href: `/projects/${currentProjectId}/daily-logs`, requiresProject: true },
-          { label: 'Punch List', href: `/projects/${currentProjectId}/punch-list`, requiresProject: true },
-          { label: 'Schedule', href: `/projects/${currentProjectId}/schedule`, requiresProject: true },
-          { label: 'Team', href: `/projects/${currentProjectId}/team`, requiresProject: true },
-        ]
-      : []),
-  ];
-
-  const searchResults = searchQuery.trim()
-    ? allSearchPages.filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
+  // Cmd+K / Ctrl+K keyboard shortcut to open global search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -208,8 +195,20 @@ export default function Topbar({ children }: TopbarProps) {
           {/* Search */}
           <Button
             variant="ghost"
+            className="text-rc-steel gap-2 hidden md:inline-flex"
+            aria-label="Search"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="size-4" />
+            <span className="text-sm text-muted-foreground">Search...</span>
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-xs">&#8984;</span>K
+            </kbd>
+          </Button>
+          <Button
+            variant="ghost"
             size="icon"
-            className="text-rc-steel"
+            className="text-rc-steel md:hidden"
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
           >
@@ -302,56 +301,8 @@ export default function Topbar({ children }: TopbarProps) {
         </div>
       </header>
 
-      {/* Search Dialog */}
-      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Search</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Search pages..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-                autoFocus
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 size-9"
-                  onClick={() => setSearchQuery('')}
-                >
-                  <X className="size-3" />
-                </Button>
-              )}
-            </div>
-            {searchResults.length > 0 && (
-              <div className="space-y-1">
-                {searchResults.map((result) => (
-                  <button
-                    key={result.href}
-                    className="w-full text-left px-3 py-2 rounded-md hover:bg-accent text-sm transition-colors"
-                    onClick={() => {
-                      router.push(result.href);
-                      setSearchOpen(false);
-                      setSearchQuery('');
-                    }}
-                  >
-                    {result.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            {searchQuery && searchResults.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No results found</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Global Search Command Palette */}
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
       <NewProjectDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} />
     </>

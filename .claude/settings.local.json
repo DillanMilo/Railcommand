@@ -53,7 +53,8 @@
       "Bash(ls -la /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id]/)",
       "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id] -type f -name \"page.tsx\")",
       "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id] -type f \\\\\\( -name \"page.tsx\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\))",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(cat \"/Users/dillanmilosevich/Desktop/Railcommand/src/app/\\(app\\)/settings/page.tsx\")"
     ]
   }
 }

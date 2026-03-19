@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/providers/ThemeProvider";
+import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -29,12 +30,18 @@ export const metadata: Metadata = {
   },
   description:
     "Construction & Rail Project Management -- track submittals, RFIs, daily logs, punch lists, and schedules in one place.",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "RailCommand",
   },
   openGraph: {
     title: "RailCommand",
@@ -44,7 +51,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   other: {
-    "theme-color": "#0F172A",
+    "mobile-web-app-capable": "yes",
   },
 };
 
@@ -52,6 +59,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#0F172A",
 };
 
 export default function RootLayout({
@@ -72,7 +80,9 @@ export default function RootLayout({
         className={`${plusJakartaSans.variable} ${dmSans.variable} ${jetBrainsMono.variable} ${dmSans.className} antialiased`}
       >
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <ServiceWorkerProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ServiceWorkerProvider>
         </ThemeProvider>
       </body>
     </html>
