@@ -2,14 +2,18 @@
 
 import { use } from 'react';
 import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
-import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoGallery from '@/components/shared/PhotoGallery';
 import { getProfiles, getAttachments } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useDailyLogDetail } from '@/hooks/useData';
+import { ACTIONS } from '@/lib/permissions';
 import type { DailyLog } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
@@ -23,6 +27,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const { id: projectId, logId } = use(params);
   use(searchParams);
   const { isDemo } = useProject();
+  const { can } = usePermissions(projectId);
   const { data: log, loading } = useDailyLogDetail(projectId, logId);
 
   if (loading) {
@@ -61,9 +66,18 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       ]} />
 
       {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl font-bold">{dateFull}</h1>
-        {authorName && <p className="text-sm text-muted-foreground mt-1">Created by {authorName}</p>}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl font-bold">{dateFull}</h1>
+          {authorName && <p className="text-sm text-muted-foreground mt-1">Created by {authorName}</p>}
+        </div>
+        {can(ACTIONS.DAILY_LOG_UPDATE) && (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/projects/${projectId}/daily-logs/${logId}/edit`}>
+              <Pencil className="mr-1.5 size-3.5" />Edit
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Weather */}

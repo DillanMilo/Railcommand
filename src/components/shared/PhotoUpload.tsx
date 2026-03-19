@@ -221,7 +221,11 @@ export default function PhotoUpload({
             accept={acceptTypes}
             multiple
             className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              // Reset input so the same files or new files can be selected again on mobile
+              e.target.value = '';
+            }}
           />
         </div>
 
@@ -274,7 +278,7 @@ export default function PhotoUpload({
                 {/* Remove button */}
                 <button
                   type="button"
-                  className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-100 sm:opacity-0 transition-opacity sm:group-hover:opacity-100"
                   onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}
                 >
                   <X className="size-3.5" />

@@ -7,6 +7,7 @@ export const ACTIONS = {
   RFI_RESPOND: 'rfi:respond',
   RFI_CLOSE: 'rfi:close',
   DAILY_LOG_CREATE: 'daily_log:create',
+  DAILY_LOG_UPDATE: 'daily_log:update',
   PUNCH_LIST_CREATE: 'punch_list:create',
   PUNCH_LIST_RESOLVE: 'punch_list:resolve',
   PUNCH_LIST_VERIFY: 'punch_list:verify',
@@ -32,6 +33,7 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.RFI_RESPOND,
     ACTIONS.RFI_CLOSE,
     ACTIONS.DAILY_LOG_CREATE,
+    ACTIONS.DAILY_LOG_UPDATE,
     ACTIONS.PUNCH_LIST_CREATE,
     ACTIONS.PUNCH_LIST_RESOLVE,
     ACTIONS.PUNCH_LIST_VERIFY,
@@ -41,6 +43,7 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
   ],
   foreman: [
     ACTIONS.DAILY_LOG_CREATE,
+    ACTIONS.DAILY_LOG_UPDATE,
     ACTIONS.PUNCH_LIST_CREATE,
     ACTIONS.PUNCH_LIST_RESOLVE,
     ACTIONS.RFI_CREATE,
@@ -59,6 +62,7 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.SUBMITTAL_CREATE,
     ACTIONS.RFI_CREATE,
     ACTIONS.DAILY_LOG_CREATE,
+    ACTIONS.DAILY_LOG_UPDATE,
     ACTIONS.PUNCH_LIST_CREATE,
   ],
   inspector: [

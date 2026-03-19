@@ -407,6 +407,58 @@ export function addDailyLog(projectId: string, data: {
   return newLog;
 }
 
+export function updateDailyLog(logId: string, data: {
+  log_date: string;
+  weather_temp: number;
+  weather_conditions: string;
+  weather_wind: string;
+  work_summary: string;
+  safety_notes: string;
+  geo_tag?: GeoTag | null;
+  personnel: { role: string; headcount: number; company: string }[];
+  equipment: { type: string; count: number; notes: string }[];
+  work_items: { description: string; quantity: number; unit: string; location: string }[];
+}): DailyLog | null {
+  const idx = dailyLogs.findIndex((l) => l.id === logId);
+  if (idx === -1) return null;
+  const existing = dailyLogs[idx];
+  const updated: DailyLog = {
+    ...existing,
+    log_date: data.log_date,
+    weather_temp: data.weather_temp,
+    weather_conditions: data.weather_conditions,
+    weather_wind: data.weather_wind,
+    work_summary: data.work_summary,
+    safety_notes: data.safety_notes,
+    geo_tag: data.geo_tag ?? null,
+    personnel: data.personnel.filter(p => p.role).map((p, i) => ({
+      id: `${existing.id}-p-${i}`,
+      daily_log_id: existing.id,
+      role: p.role,
+      headcount: p.headcount,
+      company: p.company,
+    })),
+    equipment: data.equipment.filter(e => e.type).map((e, i) => ({
+      id: `${existing.id}-e-${i}`,
+      daily_log_id: existing.id,
+      equipment_type: e.type,
+      count: e.count,
+      notes: e.notes,
+    })),
+    work_items: data.work_items.filter(w => w.description).map((w, i) => ({
+      id: `${existing.id}-w-${i}`,
+      daily_log_id: existing.id,
+      description: w.description,
+      quantity: w.quantity,
+      unit: w.unit,
+      location: w.location,
+    })),
+  };
+  dailyLogs[idx] = updated;
+  addActivity(existing.project_id, 'daily_log', existing.id, 'updated', `updated daily log for ${data.log_date}`);
+  return updated;
+}
+
 // --- Punch List operations ---
 export function addPunchListItem(projectId: string, data: {
   title: string;

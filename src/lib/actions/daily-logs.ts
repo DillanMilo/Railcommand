@@ -227,3 +227,134 @@ export async function createDailyLog(
     return { error: err instanceof Error ? err.message : 'Failed to create daily log' };
   }
 }
+
+// ---------------------------------------------------------------------------
+// updateDailyLog -- requires daily_log:update (creator only)
+// ---------------------------------------------------------------------------
+export async function updateDailyLog(
+  projectId: string,
+  logId: string,
+  data: {
+    log_date: string;
+    weather_temp: number;
+    weather_conditions: string;
+    weather_wind: string;
+    work_summary: string;
+    safety_notes: string;
+    geo_tag?: GeoTag | null;
+    personnel: { role: string; headcount: number; company: string }[];
+    equipment: { equipment_type: string; count: number; notes: string }[];
+    work_items: { description: string; quantity: number; unit: string; location: string }[];
+  }
+): Promise<ActionResult<DailyLog>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.DAILY_LOG_UPDATE);
+    if (!perm.allowed) return { error: perm.error };
+
+    // Verify the log exists and belongs to this user
+    const { data: existing, error: fetchErr } = await supabase
+      .from('daily_logs')
+      .select('id, created_by')
+      .eq('id', logId)
+      .eq('project_id', projectId)
+      .single();
+
+    if (fetchErr || !existing) return { error: 'Daily log not found' };
+    if (existing.created_by !== user.id) return { error: 'You can only edit your own daily logs' };
+
+    // Update the daily log
+    const { error: updateError } = await supabase
+      .from('daily_logs')
+      .update({
+        log_date: data.log_date,
+        weather_temp: data.weather_temp,
+        weather_conditions: data.weather_conditions,
+        weather_wind: data.weather_wind,
+        work_summary: data.work_summary,
+        safety_notes: data.safety_notes,
+        geo_tag: data.geo_tag ?? null,
+      })
+      .eq('id', logId);
+
+    if (updateError) return { error: updateError.message };
+
+    // Delete existing nested records and re-insert
+    await supabase.from('daily_log_personnel').delete().eq('daily_log_id', logId);
+    await supabase.from('daily_log_equipment').delete().eq('daily_log_id', logId);
+    await supabase.from('daily_log_work_items').delete().eq('daily_log_id', logId);
+
+    // Re-insert personnel
+    const validPersonnel = data.personnel.filter((p) => p.role.trim() !== '');
+    if (validPersonnel.length > 0) {
+      await supabase.from('daily_log_personnel').insert(
+        validPersonnel.map((p) => ({
+          daily_log_id: logId,
+          role: p.role,
+          headcount: p.headcount,
+          company: p.company,
+        }))
+      );
+    }
+
+    // Re-insert equipment
+    const validEquipment = data.equipment.filter((e) => e.equipment_type.trim() !== '');
+    if (validEquipment.length > 0) {
+      await supabase.from('daily_log_equipment').insert(
+        validEquipment.map((e) => ({
+          daily_log_id: logId,
+          equipment_type: e.equipment_type,
+          count: e.count,
+          notes: e.notes,
+        }))
+      );
+    }
+
+    // Re-insert work items
+    const validWorkItems = data.work_items.filter((w) => w.description.trim() !== '');
+    if (validWorkItems.length > 0) {
+      await supabase.from('daily_log_work_items').insert(
+        validWorkItems.map((w) => ({
+          daily_log_id: logId,
+          description: w.description,
+          quantity: w.quantity,
+          unit: w.unit,
+          location: w.location,
+        }))
+      );
+    }
+
+    await logActivity(
+      supabase,
+      projectId,
+      'daily_log',
+      logId,
+      'updated',
+      `updated daily log for ${data.log_date}`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/daily-logs`);
+
+    // Re-fetch the complete log
+    const { data: fullLog, error: refetchError } = await supabase
+      .from('daily_logs')
+      .select(`
+        *,
+        created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url),
+        personnel:daily_log_personnel(*),
+        equipment:daily_log_equipment(*),
+        work_items:daily_log_work_items(*)
+      `)
+      .eq('id', logId)
+      .single();
+
+    if (refetchError) return { success: true, data: existing as unknown as DailyLog };
+    return { success: true, data: fullLog as DailyLog };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to update daily log' };
+  }
+}
