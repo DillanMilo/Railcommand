@@ -192,7 +192,7 @@ The Daily Logs module provides a structured, digital replacement for paper-based
   - **Work Items** -- Description, quantity, unit of measure, and location
   - **Safety Notes** -- Free-text safety observations and incidents
   - **Work Summary** -- Overall summary of the day's activities
-- **Daily Log Detail View** -- Read-only presentation of a completed log with all structured data sections
+- **Daily Log Detail View** -- Read-only presentation of a completed log with all structured data sections, with PDF export button for downloading individual log reports
 - **Photo Attachment Support** -- Upload site photos associated with the day's work
 - **Searchable History** -- Find past logs by date, content, or personnel
 

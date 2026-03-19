@@ -88,7 +88,7 @@
 - [x] Build Punch List PDF report template
 - [x] Build Schedule & Milestones PDF report template
 - [x] Create reusable ExportPDFButton component
-- [x] Wire up Export PDF buttons on Submittals, RFIs, Punch List, and Schedule pages
+- [x] Wire up Export PDF buttons on Submittals, RFIs, Punch List, Schedule, and Daily Log detail pages
 
 ### Phase 11: AI Assistant (RailBot)
 - [ ] Set up Claude API integration (Anthropic SDK + API route)

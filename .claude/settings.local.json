@@ -49,7 +49,11 @@
       "Bash(grep -n \"PhotoUpload\\\\|PhotoGallery\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/rfis/\\\\[rfiId\\\\]/page.tsx)",
       "Bash(git add:*)",
       "Bash(cat /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id]/submittals/page.tsx)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(ls -la /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id]/)",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id] -type f -name \"page.tsx\")",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id] -type f \\\\\\( -name \"page.tsx\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\))",
+      "Bash(npm list:*)"
     ]
   }
 }
