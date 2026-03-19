@@ -47,7 +47,14 @@
       "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/daily-logs -name \"*.tsx\" | head -10)",
       "Bash(grep -rn \"uploadAttachment\\\\|FormData\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\] --include=\"*.tsx\" | grep -i \"upload\\\\|form\" | head -20)",
       "Bash(grep -n \"PhotoUpload\\\\|PhotoGallery\" /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/\\\\[id\\\\]/rfis/\\\\[rfiId\\\\]/page.tsx)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(cat /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id]/submittals/page.tsx)",
+      "Bash(sed:*)",
+      "Bash(ls -la /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id]/)",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id] -type f -name \"page.tsx\")",
+      "Bash(find /Users/dillanmilosevich/Desktop/Railcommand/src/app/\\\\\\(app\\\\\\)/projects/[id] -type f \\\\\\( -name \"page.tsx\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\))",
+      "Bash(npm list:*)",
+      "Bash(cat \"/Users/dillanmilosevich/Desktop/Railcommand/src/app/\\(app\\)/settings/page.tsx\")"
     ]
   }
 }

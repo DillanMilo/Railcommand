@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { getProfiles } from '@/lib/store';
+import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
+import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import SubmittalsPDF from '@/lib/pdf/SubmittalsPDF';
 import { useSubmittals } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -40,8 +42,9 @@ function isOverdue(dueDate: string): boolean {
 export default function SubmittalsListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const { isDemo } = useProject();
+  const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
+  const currentProfile = getProfileWithOrg(getCurrentUserId());
   const { data: submittals, loading } = useSubmittals(projectId);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -80,13 +83,19 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
           <h1 className="font-heading text-2xl font-bold">Submittals</h1>
           <Badge variant="secondary" className="text-xs">{submittals.length}</Badge>
         </div>
-        {can(ACTIONS.SUBMITTAL_CREATE) && (
-          <Link href={`/projects/${projectId}/submittals/new`}>
-            <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-              <Plus className="size-4" /> New Submittal
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <ExportPDFButton
+            document={<SubmittalsPDF submittals={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />}
+            fileName={`submittals-report-${projectId}`}
+          />
+          {can(ACTIONS.SUBMITTAL_CREATE) && (
+            <Link href={`/projects/${projectId}/submittals/new`}>
+              <Button className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+                <Plus className="size-4" /> New Submittal
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

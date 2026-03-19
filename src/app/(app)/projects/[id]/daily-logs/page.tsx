@@ -56,6 +56,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
       <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs' }]} />
 
       {/* Header */}
+      {/* NOTE: PDF export for individual daily logs is available on each log's detail page using DailyLogPDF */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold">Daily Logs</h1>
         {can(ACTIONS.DAILY_LOG_CREATE) && (

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Upload, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import FileUpload from '@/components/shared/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -219,41 +220,12 @@ export default function NewSubmittalPage({ params, searchParams }: { params: Pro
             </div>
 
             {/* Attachments */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Attachments</label>
-              <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 sm:p-8 text-center cursor-pointer hover:border-rc-orange/50 transition-colors">
-                <Upload className="size-8 text-muted-foreground/40 mb-2" />
-                <p className="text-sm text-muted-foreground">Drag and drop files here, or click to browse</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">PDF, DWG, images up to 50 MB</p>
-                <input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  accept=".pdf,.dwg,.png,.jpg,.jpeg"
-                  onChange={(e) => {
-                    if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
-                  }}
-                />
-              </label>
-              {files.length > 0 && (
-                <div className="space-y-1 mt-2">
-                  {files.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                      <span className="truncate">{file.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0"
-                        onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                      >
-                        <span className="text-xs text-muted-foreground">&times;</span>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <FileUpload
+              pendingFiles={files}
+              onPendingFilesChange={setFiles}
+              accept=".pdf,.dwg,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+              title="Attachments"
+            />
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">

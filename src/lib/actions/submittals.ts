@@ -12,6 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
+import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getSubmittals -- all submittals for a project
@@ -216,6 +217,34 @@ export async function updateSubmittalStatus(
       `changed ${submittal.number} status to ${status}`,
       user.id
     );
+
+    // Notify the submitter about the status change (fire-and-forget)
+    try {
+      if (submittal.submitted_by && submittal.submitted_by !== user.id) {
+        const projectName = await getProjectName(projectId);
+        const { data: reviewerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        sendNotificationToUser(submittal.submitted_by, (recipient) => ({
+          type: 'submittal_status_changed',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          submittalNumber: submittal.number,
+          submittalTitle: submittal.title,
+          newStatus: status,
+          reviewNotes: reviewNotes,
+          reviewerName: reviewerProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+          submittalId,
+        }));
+      }
+    } catch (notifErr) {
+      console.error('[submittals] Notification error (non-blocking):', notifErr);
+    }
 
     revalidatePath(`/projects/${projectId}/submittals`);
     revalidatePath(`/projects/${projectId}/submittals/${submittalId}`);

@@ -8,6 +8,7 @@ import { ArrowLeft, Paperclip, Calendar, User, Flag, Pencil, Trash2 } from 'luci
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
 import SubmittalTimeline from '@/components/submittals/SubmittalTimeline';
+import FileUpload from '@/components/shared/FileUpload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -223,38 +224,17 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
       </div>
 
       {/* Attachments */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Paperclip className="size-4" /> Attachments ({submittal.attachments?.length ?? 0})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {submittal.attachments && submittal.attachments.length > 0 ? (
-            <div className="space-y-2">
-              {submittal.attachments.map((att) => (
-                <a
-                  key={att.id}
-                  href={att.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                >
-                  <Paperclip className="size-4 text-muted-foreground shrink-0" />
-                  <span className="truncate font-medium">{att.file_name}</span>
-                  <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                    {att.file_size < 1024 * 1024
-                      ? `${Math.round(att.file_size / 1024)} KB`
-                      : `${(att.file_size / (1024 * 1024)).toFixed(1)} MB`}
-                  </span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No attachments uploaded yet.</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mt-6">
+        <FileUpload
+          existingAttachments={submittal.attachments ?? []}
+          entityType="submittal"
+          entityId={submittalId}
+          projectId={projectId}
+          onUploadComplete={() => refetch()}
+          onDeleteComplete={() => refetch()}
+          title={`Attachments (${submittal.attachments?.length ?? 0})`}
+        />
+      </div>
 
       {/* Action buttons */}
       {can(ACTIONS.SUBMITTAL_REVIEW) && (

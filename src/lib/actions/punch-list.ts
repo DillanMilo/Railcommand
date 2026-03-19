@@ -12,6 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
+import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getPunchListItems -- all punch list items for a project
@@ -157,6 +158,37 @@ export async function createPunchListItem(
       user.id
     );
 
+    // Notify the assignee about the new punch list item (fire-and-forget)
+    try {
+      const assigneeId = data.assigned_to || user.id;
+      if (assigneeId !== user.id) {
+        const projectName = await getProjectName(projectId);
+        const { data: creatorProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        sendNotificationToUser(assigneeId, (recipient) => ({
+          type: 'punch_list_assigned',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          itemNumber: number,
+          itemTitle: data.title,
+          itemDescription: data.description,
+          location: data.location,
+          priority: data.priority,
+          dueDate: data.due_date,
+          creatorName: creatorProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+          itemId: item.id,
+        }));
+      }
+    } catch (notifErr) {
+      console.error('[punch-list] Notification error (non-blocking):', notifErr);
+    }
+
     revalidatePath(`/projects/${projectId}/punch-list`);
 
     return { success: true, data: item as PunchListItem };
@@ -227,6 +259,34 @@ export async function updatePunchListStatus(
       `changed ${item.number} status to ${status}`,
       user.id
     );
+
+    // Notify the assignee about the status change (fire-and-forget)
+    try {
+      if (item.assigned_to && item.assigned_to !== user.id) {
+        const projectName = await getProjectName(projectId);
+        const { data: changerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        sendNotificationToUser(item.assigned_to, (recipient) => ({
+          type: 'punch_list_status_changed',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          itemNumber: item.number,
+          itemTitle: item.title,
+          newStatus: status,
+          resolutionNotes: resolutionNotes,
+          changedByName: changerProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+          itemId,
+        }));
+      }
+    } catch (notifErr) {
+      console.error('[punch-list] Notification error (non-blocking):', notifErr);
+    }
 
     revalidatePath(`/projects/${projectId}/punch-list`);
     revalidatePath(`/projects/${projectId}/punch-list/${itemId}`);
