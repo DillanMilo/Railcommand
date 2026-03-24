@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notification-preferences';
 import type { NotificationPreferences } from '@/lib/notifications';
 import {
@@ -28,6 +29,10 @@ import {
   Monitor,
   CheckCircle,
   AlertTriangle,
+  Download,
+  Smartphone,
+  Chrome,
+  RefreshCw,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -117,6 +122,171 @@ const notificationSettings: NotificationSetting[] = [
     defaultOn: true,
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Install App card                                                  */
+/* ------------------------------------------------------------------ */
+function InstallAppCard() {
+  const pwa = usePWA();
+  const isInstalled = pwa?.isInstalled ?? false;
+  const isInstallable = pwa?.isInstallable ?? false;
+  const isUpdateAvailable = pwa?.isUpdateAvailable ?? false;
+  const triggerInstall = pwa?.triggerInstall;
+  const triggerUpdate = pwa?.triggerUpdate;
+
+  const platformInstructions: {
+    title: string;
+    icon: typeof Smartphone;
+    steps: string[];
+  }[] = [
+    {
+      title: 'iOS (Safari)',
+      icon: Smartphone,
+      steps: [
+        'Open RailCommand in Safari',
+        'Tap the Share button (box with arrow)',
+        'Scroll down and tap "Add to Home Screen"',
+        'Tap "Add" to confirm',
+      ],
+    },
+    {
+      title: 'Android (Chrome)',
+      icon: Chrome,
+      steps: [
+        'Open RailCommand in Chrome',
+        'Tap the three-dot menu (top right)',
+        'Tap "Install app" or "Add to Home Screen"',
+        'Tap "Install" to confirm',
+      ],
+    },
+    {
+      title: 'Desktop (Chrome/Edge)',
+      icon: Monitor,
+      steps: [
+        'Open RailCommand in Chrome or Edge',
+        'Click the install icon in the address bar',
+        'Click "Install" to confirm',
+        'Or use the "Install Now" button above',
+      ],
+    },
+  ];
+
+  return (
+    <Card className="bg-rc-card border-rc-border">
+      <CardHeader>
+        <CardTitle className="font-heading">Install App</CardTitle>
+        <CardDescription>
+          Get the full native app experience on any device
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Update available banner */}
+        {isUpdateAvailable && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-rc-orange/30 bg-rc-orange/5 p-4">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="size-5 text-rc-orange shrink-0" />
+              <div>
+                <div className="text-sm font-medium text-foreground">
+                  A new version of RailCommand is available
+                </div>
+                <div className="text-xs text-rc-steel">
+                  Update now to get the latest features and fixes.
+                </div>
+              </div>
+            </div>
+            <Button
+              className="bg-rc-orange hover:bg-rc-orange-dark text-white shrink-0"
+              size="sm"
+              onClick={() => triggerUpdate?.()}
+            >
+              Update Now
+            </Button>
+          </div>
+        )}
+
+        {/* Installed state */}
+        {isInstalled ? (
+          <div className="flex items-center gap-3 rounded-lg border border-rc-emerald/30 bg-rc-emerald/5 p-4">
+            <CheckCircle className="size-5 text-rc-emerald shrink-0" />
+            <div>
+              <div className="text-sm font-medium text-foreground">
+                RailCommand is installed
+              </div>
+              <div className="text-xs text-rc-steel">
+                You&apos;re running the app in standalone mode for the best
+                experience.
+              </div>
+            </div>
+          </div>
+        ) : isInstallable ? (
+          /* Installable state — browser supports prompt */
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-rc-border p-4">
+            <div className="flex items-center gap-3">
+              <Download className="size-5 text-rc-orange shrink-0" />
+              <div>
+                <div className="text-sm font-medium text-foreground">
+                  Install RailCommand
+                </div>
+                <div className="text-xs text-rc-steel">
+                  Install for a native app experience with offline access and
+                  quick launch.
+                </div>
+              </div>
+            </div>
+            <Button
+              className="bg-rc-orange hover:bg-rc-orange-dark text-white shrink-0"
+              size="sm"
+              onClick={() => triggerInstall?.()}
+            >
+              <Download className="size-4 mr-1.5" />
+              Install Now
+            </Button>
+          </div>
+        ) : null}
+
+        {/* Platform-specific instructions */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-3">
+            Installation Instructions
+          </h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {platformInstructions.map((platform) => {
+              const Icon = platform.icon;
+              return (
+                <div
+                  key={platform.title}
+                  className="rounded-lg border border-rc-border p-4 space-y-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rc-orange/10">
+                      <Icon className="size-4 text-rc-orange" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">
+                      {platform.title}
+                    </span>
+                  </div>
+                  <ol className="space-y-1.5 pl-1">
+                    {platform.steps.map((step, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-xs text-rc-steel"
+                      >
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-rc-orange/10 text-[10px] font-semibold text-rc-orange mt-0.5">
+                          {i + 1}
+                        </span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Settings Page                                                     */
@@ -257,6 +427,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ---- Install App ---- */}
+      <InstallAppCard />
 
       {/* ---- Notifications ---- */}
       <Card className="bg-rc-card border-rc-border">
