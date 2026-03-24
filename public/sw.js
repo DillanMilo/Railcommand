@@ -1,7 +1,8 @@
-const CACHE_NAME = "railcommand-v1";
+const CACHE_NAME = "railcommand-v2";
 
 const APP_SHELL = [
   "/dashboard",
+  "/offline.html",
   "/favicon-16x16.png",
   "/favicon-32x32.png",
   "/icon-192.png",
@@ -36,6 +37,13 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Listen for skip-waiting messages from the app
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 // Fetch: network-first, skip caching for API / Supabase requests
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -68,7 +76,14 @@ self.addEventListener("fetch", (event) => {
       })
       .catch(() => {
         // Fallback to cache when offline
-        return caches.match(request);
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // For navigation requests, serve the offline fallback page
+          if (request.mode === "navigate") {
+            return caches.match("/offline.html");
+          }
+          return undefined;
+        });
       })
   );
 });

@@ -376,12 +376,14 @@ These capabilities span the entire application and are available across all modu
 - **Demo Mode** -- "Explore Demo Project" button on the login page loads a fully populated railroad project with seed data so testers can explore all features without signing up
 - **Fresh Account** -- New sign-ups get a clean canvas with zero pre-populated data, ready to create their own projects from scratch
 
-### Progressive Web App (PWA) -- *In Progress*
+### Progressive Web App (PWA) -- *Complete*
 
-- **Add to Home Screen** -- Install RailCommand on any device directly from the browser, no app store required *(coming soon -- manifest and service worker pending)*
-- **Device-Specific Instructions** -- Guided installation steps for iOS (Safari), Android (Chrome), and Desktop (Chrome/Edge) *(complete)*
-- **Native-Like Experience** -- Runs in its own window without browser chrome once installed *(coming soon)*
-- **Instant Access** -- Launch from your home screen or app drawer like any other app *(coming soon)*
+- **Add to Home Screen** -- Install RailCommand on any device directly from the browser, no app store required. Enhanced web app manifest with branded icons, maskable icons, shortcuts, and screenshots *(complete)*
+- **Device-Specific Instructions** -- Guided Installation Guide UI in Settings with platform-specific instructions for iOS (Safari), Android (Chrome), and Desktop (Chrome/Edge) *(complete)*
+- **Native-Like Experience** -- Runs in its own window without browser chrome once installed, with standalone mode detection *(complete)*
+- **Instant Access** -- Launch from your home screen or app drawer like any other app *(complete)*
+- **Smart Install Prompt** -- Custom PWA install prompt hook with beforeinstallprompt capture, install triggers, and update notifications *(complete)*
+- **Offline Support** -- Service worker with offline fallback page, improved caching strategies, and offline status detection *(complete)*
 
 ### Dark Mode -- *Complete*
 
@@ -578,4 +580,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: March 19, 2026*
+*Last updated: March 23, 2026*
