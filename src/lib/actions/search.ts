@@ -16,6 +16,8 @@ export interface SearchResultItem {
   projectId: string;
   projectName: string;
   href: string;
+  assignee?: string;
+  matchField?: string;
 }
 
 export interface GlobalSearchResult {
@@ -28,7 +30,8 @@ export interface GlobalSearchResult {
 
 /**
  * Global search across all modules the user has access to (Supabase mode).
- * Searches submittals, RFIs, punch list items, daily logs, and milestones.
+ * Searches submittals, RFIs, punch list items, daily logs, and milestones
+ * by number, title, assignee name, and content fields.
  */
 export async function globalSearch(
   query: string,
@@ -59,7 +62,6 @@ export async function globalSearch(
     let accessibleProjectIds: string[] = [];
 
     if (profile?.role === 'admin') {
-      // Admins can see everything
       if (projectId) {
         accessibleProjectIds = [projectId];
       } else {
@@ -95,51 +97,158 @@ export async function globalSearch(
       (projectsData ?? []).map((p) => [p.id, p.name])
     );
 
-    // Run all searches in parallel
-    const [submittalRes, rfiRes, punchRes, dailyRes, milestoneRes] = await Promise.all([
-      // Submittals: search by title, spec_section, number
+    // Phase 1: Find profiles matching the search query (for assignee search)
+    const { data: matchingProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .ilike('full_name', pattern)
+      .limit(20);
+
+    const matchingProfileIds = (matchingProfiles ?? []).map((p) => p.id);
+    const profileNameMap = new Map<string, string>(
+      (matchingProfiles ?? []).map((p) => [p.id, p.full_name])
+    );
+
+    // Phase 2: Run all text + assignee searches in parallel
+    const [
+      submittalRes,
+      rfiRes,
+      punchRes,
+      dailyRes,
+      milestoneRes,
+      submittalAssigneeRes,
+      rfiAssigneeRes,
+      punchAssigneeRes,
+      dailyAssigneeRes,
+    ] = await Promise.all([
+      // Submittals: search by title, spec_section, number, description
       supabase
         .from('submittals')
-        .select('id, project_id, number, title, spec_section, status')
+        .select('id, project_id, number, title, spec_section, status, submitted_by')
         .in('project_id', accessibleProjectIds)
-        .or(`title.ilike.${pattern},spec_section.ilike.${pattern},number.ilike.${pattern}`)
+        .or(`title.ilike.${pattern},spec_section.ilike.${pattern},number.ilike.${pattern},description.ilike.${pattern}`)
         .limit(10),
 
-      // RFIs: search by subject, number
+      // RFIs: search by subject, number, question, answer
       supabase
         .from('rfis')
-        .select('id, project_id, number, subject, status')
+        .select('id, project_id, number, subject, status, assigned_to')
         .in('project_id', accessibleProjectIds)
-        .or(`subject.ilike.${pattern},number.ilike.${pattern}`)
+        .or(`subject.ilike.${pattern},number.ilike.${pattern},question.ilike.${pattern},answer.ilike.${pattern}`)
         .limit(10),
 
-      // Punch list: search by title, location, description
+      // Punch list: search by title, location, description, number, resolution_notes
       supabase
         .from('punch_list_items')
-        .select('id, project_id, number, title, location, description, status')
+        .select('id, project_id, number, title, location, description, status, assigned_to')
         .in('project_id', accessibleProjectIds)
-        .or(`title.ilike.${pattern},location.ilike.${pattern},description.ilike.${pattern},number.ilike.${pattern}`)
+        .or(`title.ilike.${pattern},location.ilike.${pattern},description.ilike.${pattern},number.ilike.${pattern},resolution_notes.ilike.${pattern}`)
         .limit(10),
 
-      // Daily logs: search by work_summary, log_date
+      // Daily logs: search by work_summary, log_date, safety_notes
       supabase
         .from('daily_logs')
-        .select('id, project_id, log_date, work_summary')
+        .select('id, project_id, log_date, work_summary, created_by')
         .in('project_id', accessibleProjectIds)
-        .or(`work_summary.ilike.${pattern},log_date.ilike.${pattern}`)
+        .or(`work_summary.ilike.${pattern},log_date.ilike.${pattern},safety_notes.ilike.${pattern}`)
         .limit(10),
 
-      // Milestones: search by name
+      // Milestones: search by name, description
       supabase
         .from('milestones')
         .select('id, project_id, name, status')
         .in('project_id', accessibleProjectIds)
-        .or(`name.ilike.${pattern}`)
+        .or(`name.ilike.${pattern},description.ilike.${pattern}`)
         .limit(10),
+
+      // Assignee searches (only if matching profiles found)
+      ...(matchingProfileIds.length > 0
+        ? [
+            supabase
+              .from('submittals')
+              .select('id, project_id, number, title, spec_section, status, submitted_by')
+              .in('project_id', accessibleProjectIds)
+              .in('submitted_by', matchingProfileIds)
+              .limit(10),
+            supabase
+              .from('rfis')
+              .select('id, project_id, number, subject, status, assigned_to')
+              .in('project_id', accessibleProjectIds)
+              .in('assigned_to', matchingProfileIds)
+              .limit(10),
+            supabase
+              .from('punch_list_items')
+              .select('id, project_id, number, title, location, description, status, assigned_to')
+              .in('project_id', accessibleProjectIds)
+              .in('assigned_to', matchingProfileIds)
+              .limit(10),
+            supabase
+              .from('daily_logs')
+              .select('id, project_id, log_date, work_summary, created_by')
+              .in('project_id', accessibleProjectIds)
+              .in('created_by', matchingProfileIds)
+              .limit(10),
+          ]
+        : [
+            Promise.resolve({ data: [] }),
+            Promise.resolve({ data: [] }),
+            Promise.resolve({ data: [] }),
+            Promise.resolve({ data: [] }),
+          ]),
     ]);
 
+    // Helper: deduplicate by id and merge assignee info
+    function dedup<T extends { id: string }>(
+      textResults: T[],
+      assigneeResults: T[],
+      getAssigneeId: (item: T) => string | null
+    ): Array<T & { _assignee?: string; _matchField?: string }> {
+      const seen = new Map<string, T & { _assignee?: string; _matchField?: string }>();
+
+      for (const item of textResults) {
+        const assigneeId = getAssigneeId(item);
+        const assigneeName = assigneeId ? profileNameMap.get(assigneeId) : undefined;
+        seen.set(item.id, { ...item, _assignee: assigneeName });
+      }
+
+      for (const item of assigneeResults) {
+        if (!seen.has(item.id)) {
+          const assigneeId = getAssigneeId(item);
+          const assigneeName = assigneeId ? profileNameMap.get(assigneeId) : undefined;
+          seen.set(item.id, { ...item, _assignee: assigneeName, _matchField: 'assignee' });
+        }
+      }
+
+      return Array.from(seen.values()).slice(0, 10);
+    }
+
+    // Build results with deduplication
+    const submittalsCombined = dedup(
+      submittalRes.data ?? [],
+      (submittalAssigneeRes as { data: typeof submittalRes.data }).data ?? [],
+      (s) => s.submitted_by
+    );
+
+    const rfisCombined = dedup(
+      rfiRes.data ?? [],
+      (rfiAssigneeRes as { data: typeof rfiRes.data }).data ?? [],
+      (r) => r.assigned_to
+    );
+
+    const punchCombined = dedup(
+      punchRes.data ?? [],
+      (punchAssigneeRes as { data: typeof punchRes.data }).data ?? [],
+      (p) => p.assigned_to
+    );
+
+    const dailyCombined = dedup(
+      dailyRes.data ?? [],
+      (dailyAssigneeRes as { data: typeof dailyRes.data }).data ?? [],
+      (d) => d.created_by
+    );
+
     const result: GlobalSearchResult = {
-      submittals: (submittalRes.data ?? []).map((s) => ({
+      submittals: submittalsCombined.map((s) => ({
         id: s.id,
         module: 'submittal' as const,
         title: `${s.number}: ${s.title}`,
@@ -148,8 +257,10 @@ export async function globalSearch(
         projectId: s.project_id,
         projectName: projectMap.get(s.project_id) ?? '',
         href: `/projects/${s.project_id}/submittals/${s.id}`,
+        assignee: s._assignee,
+        matchField: s._matchField,
       })),
-      rfis: (rfiRes.data ?? []).map((r) => ({
+      rfis: rfisCombined.map((r) => ({
         id: r.id,
         module: 'rfi' as const,
         title: `${r.number}: ${r.subject}`,
@@ -158,8 +269,10 @@ export async function globalSearch(
         projectId: r.project_id,
         projectName: projectMap.get(r.project_id) ?? '',
         href: `/projects/${r.project_id}/rfis/${r.id}`,
+        assignee: r._assignee,
+        matchField: r._matchField,
       })),
-      punchList: (punchRes.data ?? []).map((p) => ({
+      punchList: punchCombined.map((p) => ({
         id: p.id,
         module: 'punch_list' as const,
         title: `${p.number}: ${p.title}`,
@@ -168,8 +281,10 @@ export async function globalSearch(
         projectId: p.project_id,
         projectName: projectMap.get(p.project_id) ?? '',
         href: `/projects/${p.project_id}/punch-list/${p.id}`,
+        assignee: p._assignee,
+        matchField: p._matchField,
       })),
-      dailyLogs: (dailyRes.data ?? []).map((d) => ({
+      dailyLogs: dailyCombined.map((d) => ({
         id: d.id,
         module: 'daily_log' as const,
         title: `Log: ${d.log_date}`,
@@ -178,6 +293,8 @@ export async function globalSearch(
         projectId: d.project_id,
         projectName: projectMap.get(d.project_id) ?? '',
         href: `/projects/${d.project_id}/daily-logs/${d.id}`,
+        assignee: d._assignee,
+        matchField: d._matchField,
       })),
       milestones: (milestoneRes.data ?? []).map((m) => ({
         id: m.id,
