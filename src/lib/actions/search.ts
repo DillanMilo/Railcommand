@@ -103,7 +103,7 @@ export async function globalSearch(
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
 
-    const trimmed = query.trim();
+    const trimmed = query.trim().slice(0, 200);
     if (!trimmed) {
       return { success: true, data: EMPTY_RESULT };
     }
