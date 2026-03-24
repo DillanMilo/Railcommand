@@ -10,6 +10,9 @@ import {
   Milestone as MilestoneIcon,
   Loader2,
   Search,
+  Clock,
+  X,
+  Trash2,
 } from 'lucide-react';
 import {
   CommandDialog,
@@ -22,6 +25,7 @@ import {
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { useRecentSearches } from '@/hooks/useRecentSearches';
 import * as store from '@/lib/store';
 import { globalSearch } from '@/lib/actions/search';
 import type { SearchResultItem, GlobalSearchResult } from '@/lib/actions/search';
@@ -231,10 +235,12 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
   const [results, setResults] = useState<GlobalSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchCounterRef = useRef(0);
+  const { recentSearches, addSearch, removeSearch, clearAll } = useRecentSearches();
 
   const doSearch = useCallback(
     async (q: string) => {
-      const trimmed = q.trim();
+      const trimmed = q.trim().slice(0, 200);
       if (!trimmed) {
         setResults(null);
         setLoading(false);
@@ -248,7 +254,10 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
       }
 
       setLoading(true);
+      const requestId = ++searchCounterRef.current;
       const res = await globalSearch(trimmed);
+      // Discard stale results if a newer search was initiated
+      if (requestId !== searchCounterRef.current) return;
       if (res.data) {
         setResults(res.data);
       }
@@ -274,23 +283,56 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
     };
   }, [query, doSearch]);
 
-  // Reset on close
+  // Reset on close — also bump counter to discard any in-flight requests
   useEffect(() => {
     if (!open) {
       setQuery('');
       setResults(null);
       setLoading(false);
+      searchCounterRef.current++;
     }
   }, [open]);
 
+  // Keyboard shortcuts: Cmd+Backspace to clear input, Cmd+Enter to view all results
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Backspace') {
+        e.preventDefault();
+        setQuery('');
+        setResults(null);
+        setLoading(false);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const trimmed = query.trim();
+        if (trimmed) {
+          addSearch(trimmed);
+          router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+          onOpenChange(false);
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, query, router, onOpenChange, addSearch]);
+
   function handleSelect(href: string) {
+    if (query.trim()) addSearch(query.trim());
     router.push(href);
     onOpenChange(false);
   }
 
   function handleViewAllResults() {
+    if (query.trim()) addSearch(query.trim());
     router.push(`/search?q=${encodeURIComponent(query.trim())}`);
     onOpenChange(false);
+  }
+
+  function handleRecentSelect(recentQuery: string) {
+    setQuery(recentQuery);
+    addSearch(recentQuery);
+    doSearch(recentQuery);
   }
 
   const totalResults =
@@ -312,7 +354,8 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
       <CommandInput
         placeholder="Search submittals, RFIs, punch list, daily logs, milestones..."
         value={query}
-        onValueChange={setQuery}
+        onValueChange={(v) => setQuery(v.slice(0, 200))}
+        maxLength={200}
       />
       <CommandList className="max-h-[400px]">
         {loading && (
@@ -326,8 +369,42 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
           <CommandEmpty>No results found for &quot;{query}&quot;</CommandEmpty>
         )}
 
-        {!loading && !hasQuery && (
+        {!loading && !hasQuery && recentSearches.length === 0 && (
           <CommandEmpty>Type to search across all modules...</CommandEmpty>
+        )}
+
+        {!loading && !hasQuery && recentSearches.length > 0 && (
+          <CommandGroup heading="Recent Searches">
+            {recentSearches.map((recent) => (
+              <CommandItem
+                key={recent}
+                value={`recent:${recent}`}
+                onSelect={() => handleRecentSelect(recent)}
+                className="flex items-center gap-3 cursor-pointer group/recent"
+              >
+                <Clock className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate text-sm">{recent}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removeSearch(recent);
+                  }}
+                  className="shrink-0 opacity-0 group-hover/recent:opacity-100 p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-opacity"
+                  aria-label={`Remove "${recent}" from recent searches`}
+                >
+                  <X className="size-3" />
+                </button>
+              </CommandItem>
+            ))}
+            <CommandItem
+              onSelect={clearAll}
+              className="flex items-center justify-center gap-2 cursor-pointer text-muted-foreground mt-1"
+            >
+              <Trash2 className="size-3.5" />
+              <span className="text-xs">Clear recent searches</span>
+            </CommandItem>
+          </CommandGroup>
         )}
 
         {!loading && results && (
@@ -433,6 +510,18 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
               &#8629;
             </kbd>
             <span>select</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-[10px]">&#8984;</span>&#8629;
+            </kbd>
+            <span>all results</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-[10px]">&#8984;</span>&#9003;
+            </kbd>
+            <span>clear</span>
           </span>
           <span className="flex items-center gap-1">
             <kbd className="pointer-events-none inline-flex h-5 select-none items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">

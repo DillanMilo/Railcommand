@@ -14,12 +14,16 @@ import {
   ChevronRight,
   ArrowLeft,
   SearchX,
+  Clock,
+  X,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { globalSearch } from '@/lib/actions/search';
 import type { SearchResultItem, GlobalSearchResult } from '@/lib/actions/search';
 import * as store from '@/lib/store';
@@ -285,11 +289,13 @@ export default function SearchPage() {
   );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchCounterRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { recentSearches, addSearch, removeSearch, clearAll } = useRecentSearches();
 
   const doSearch = useCallback(
     async (q: string) => {
-      const trimmed = q.trim();
+      const trimmed = q.trim().slice(0, 200);
       if (!trimmed) {
         setResults(null);
         setLoading(false);
@@ -303,13 +309,18 @@ export default function SearchPage() {
       }
 
       setLoading(true);
+      const requestId = ++searchCounterRef.current;
       try {
         const res = await globalSearch(trimmed);
+        // Discard stale results if a newer search was initiated
+        if (requestId !== searchCounterRef.current) return;
         if (res.data) {
           setResults(res.data);
         }
       } finally {
-        setLoading(false);
+        if (requestId === searchCounterRef.current) {
+          setLoading(false);
+        }
       }
     },
     [isDemo]
@@ -341,6 +352,7 @@ export default function SearchPage() {
     setLoading(true);
     debounceRef.current = setTimeout(() => {
       setActiveQuery(trimmed);
+      addSearch(trimmed);
       const url = new URL(window.location.href);
       url.searchParams.set('q', trimmed);
       router.replace(url.pathname + url.search, { scroll: false });
@@ -355,14 +367,47 @@ export default function SearchPage() {
   // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === '/' && document.activeElement !== inputRef.current) {
+      const isInputFocused = document.activeElement === inputRef.current;
+
+      // "/" — focus search input (when not already focused)
+      if (e.key === '/' && !isInputFocused) {
         e.preventDefault();
         inputRef.current?.focus();
+      }
+
+      // Escape — clear search input and blur it
+      if (e.key === 'Escape' && isInputFocused) {
+        e.preventDefault();
+        setInputValue('');
+        inputRef.current?.blur();
+      }
+
+      // Cmd+K / Ctrl+K — navigate back (on full search page, go back to previous page)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        router.back();
+      }
+
+      // Number keys 1-6 — quick-switch module filter tabs (only when input is NOT focused)
+      if (!isInputFocused && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const filterMap: Record<string, typeof activeFilter> = {
+          '1': 'all',
+          '2': 'submittal',
+          '3': 'rfi',
+          '4': 'punch_list',
+          '5': 'daily_log',
+          '6': 'milestone',
+        };
+        const filterKey = filterMap[e.key];
+        if (filterKey) {
+          e.preventDefault();
+          setActiveFilter(filterKey);
+        }
       }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [router, setActiveFilter]);
 
   const allItems = useMemo(
     () => (results ? flattenResults(results) : []),
@@ -430,7 +475,8 @@ export default function SearchPage() {
           placeholder="Search all modules..."
           className="h-12 pl-10 pr-16 text-base sm:text-sm"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => setInputValue(e.target.value.slice(0, 200))}
+          maxLength={200}
           autoFocus
         />
         {inputValue && (
@@ -517,6 +563,55 @@ export default function SearchPage() {
             </kbd>
             <span>to focus search</span>
           </div>
+
+          {/* Recent searches */}
+          {recentSearches.length > 0 && (
+            <div className="mt-8 w-full max-w-md text-left">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Recent Searches
+                </h3>
+                <button
+                  onClick={clearAll}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Trash2 className="size-3" />
+                  Clear all
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((recent) => (
+                  <button
+                    key={recent}
+                    onClick={() => setInputValue(recent)}
+                    className="group/chip inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:bg-accent hover:text-foreground"
+                  >
+                    <Clock className="size-3 shrink-0" />
+                    <span className="truncate max-w-[200px]">{recent}</span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeSearch(recent);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          removeSearch(recent);
+                        }
+                      }}
+                      className="shrink-0 ml-0.5 p-0.5 rounded-full opacity-0 group-hover/chip:opacity-100 hover:bg-muted-foreground/20 transition-opacity"
+                      aria-label={`Remove "${recent}"`}
+                    >
+                      <X className="size-3" />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -583,18 +678,30 @@ export default function SearchPage() {
       )}
 
       {/* Footer hint — hidden on mobile (keyboard shortcuts irrelevant on touch) */}
-      <div className="mt-8 hidden items-center justify-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground sm:flex">
-        <span className="flex items-center gap-1.5">
-          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-            <span className="text-[10px]">&#8984;</span>K
-          </kbd>
-          Quick search
-        </span>
+      <div className="mt-8 hidden items-center justify-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground sm:flex flex-wrap">
         <span className="flex items-center gap-1.5">
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
             /
           </kbd>
           Focus
+        </span>
+        <span className="flex items-center gap-1.5">
+          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+            ESC
+          </kbd>
+          Clear &amp; blur
+        </span>
+        <span className="flex items-center gap-1.5">
+          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+            1-6
+          </kbd>
+          Switch filter
+        </span>
+        <span className="flex items-center gap-1.5">
+          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+            <span className="text-[10px]">&#8984;</span>K
+          </kbd>
+          Back
         </span>
       </div>
     </div>

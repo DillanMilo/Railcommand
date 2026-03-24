@@ -85,16 +85,21 @@ export default function Topbar({ children }: TopbarProps) {
   const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
   // Cmd+K / Ctrl+K keyboard shortcut to open global search
+  // Cmd+Shift+F / Ctrl+Shift+F to navigate to full search page
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
       }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+        e.preventDefault();
+        router.push('/search');
+      }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [router]);
 
   async function handleSignOut() {
     const supabase = createClient();

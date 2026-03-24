@@ -56,7 +56,8 @@
       "Bash(npm list:*)",
       "Bash(cat \"/Users/dillanmilosevich/Desktop/Railcommand/src/app/\\(app\\)/settings/page.tsx\")",
       "Bash(file:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(gh pr:*)"
     ]
   }
 }
