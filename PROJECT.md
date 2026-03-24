@@ -77,7 +77,7 @@
 - [x] Color contrast accessibility check
 - [x] Page transitions / micro-animations
 - [x] Favicon and meta tags
-- [ ] Deploy to Vercel
+- [x] Deploy to Vercel
 
 ### Phase 10.5: PDF Report Export
 - [x] Install @react-pdf/renderer for client-side PDF generation
@@ -120,9 +120,9 @@
 - [x] Build PWA install prompt hook (beforeinstallprompt capture, install/update triggers)
 - [x] Wire up Installation Guide UI in Settings with platform-specific instructions (iOS Safari, Android Chrome, Desktop)
 - [x] Add offline status detection and standalone mode detection
-- [ ] Test Add to Home Screen on iOS (Safari), Android (Chrome), Desktop
-- [ ] Verify native-like behavior when launched from home screen
-- [ ] Deploy to Vercel for install testing
+- [x] Test Add to Home Screen on iOS (Safari), Desktop (Chrome) — PASS. Android pending device access.
+- [x] Verify native-like behavior when launched from home screen — standalone mode confirmed on iOS + Desktop
+- [x] Deploy to Vercel for install testing — live at railcommand.vercel.app
 
 #### Week 2: TBD
 - [ ] (upcoming)
@@ -135,6 +135,6 @@
 
 ---
 
-*Last updated: March 23, 2026*
+*Last updated: March 24, 2026*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
