@@ -124,21 +124,28 @@
 - [x] Verify native-like behavior when launched from home screen — standalone mode confirmed on iOS + Desktop
 - [x] Deploy to Vercel for install testing — live at railcommand.vercel.app
 
-#### Week 2: Global Search Upgrade
-- [ ] Upgrade search backend to query across all modules (submittals, RFIs, punch items, daily logs, milestones)
-- [ ] Expand searchable fields: number, title, assignee, content (description, question/answer, work summary, safety notes, resolution notes)
-- [ ] Add assignee name search via profile join (two-phase: text fields + profile name lookup)
-- [ ] Add `matchField` and `assignee` metadata to search results for UI context
-- [ ] Upgrade GlobalSearch command palette UI with assignee display, match indicators, and per-module result counts
-- [ ] Build dedicated search results page (`/search?q=`) with module filter tabs, result cards, and responsive layout
-- [ ] Upgrade demo mode search to include assignee name matching
-- [ ] **Supabase backend:** Create PostgreSQL full-text search (GIN) indexes on all module tables
-- [ ] **Supabase backend:** Create `global_search` RPC function for single-call search with `ts_rank` relevance scoring
-- [ ] **Supabase backend:** Add B-tree indexes on `project_id` columns and `project_members.profile_id`
-- [ ] **Supabase backend:** Seed 100+ records per module for performance testing
-- [ ] **Supabase backend:** Run `EXPLAIN ANALYZE` to verify index usage and query performance
-- [ ] Test search performance with seed data across all modules
-- [ ] Deploy and verify on Vercel
+#### Week 2: Global Search Upgrade ✅
+- [x] Upgrade search backend to query across all modules (submittals, RFIs, punch items, daily logs, milestones)
+- [x] Expand searchable fields: number, title, assignee, content (description, question/answer, work summary, safety notes, resolution notes)
+- [x] Add assignee name search via profile join (two-phase: text fields + profile name lookup)
+- [x] Add `matchField` and `assignee` metadata to search results for UI context
+- [x] Upgrade GlobalSearch command palette UI with assignee display, match indicators, and per-module result counts
+- [x] Build dedicated search results page (`/search?q=`) with module filter tabs, result cards, and responsive layout
+- [x] Upgrade demo mode search to include assignee name matching
+- [x] Refactor frontend to use single `global_search` RPC call (~2.6ms) instead of 9+ parallel queries
+- [x] Add recent search history (localStorage, `useRecentSearches` hook) — shown in command palette and search page
+- [x] Add keyboard shortcuts: `Cmd+Shift+F` (full search), `Cmd+Backspace` (clear), `Cmd+Enter` (all results), `Escape` (clear & blur), `1-6` (filter tabs), `/` (focus)
+- [x] Edge case hardening: race condition fix (stale result discard via counter ref), 200-char query limit (server + client), rapid open/close safety
+- [x] Mobile responsive: 44px touch targets, horizontal-scroll filter pills, bottom padding for mobile nav, touch press feedback, hidden keyboard hints on touch
+- [x] **Supabase backend:** Created 7 GIN full-text search indexes on all module tables + profiles
+- [x] **Supabase backend:** Created `global_search` RPC function for single-call search with `ts_rank` relevance scoring + ILIKE fallback
+- [x] **Supabase backend:** Added RLS validation inside RPC (auth.uid() + project_members check)
+- [x] **Supabase backend:** Added 6 B-tree indexes on `project_id` columns and `project_members.profile_id`
+- [x] **Supabase backend:** Seeded 600+ records (120 per table) with realistic railroad construction data
+- [x] **Supabase backend:** Created materialized `search_index` view (628 rows) with GIN + B-tree indexes for optional unified search
+- [x] **Supabase backend:** Verified performance via `EXPLAIN ANALYZE` — materialized search executes in ~2.6ms using GIN Bitmap Index Scan
+- [x] Test search performance with seed data across all modules
+- [x] PR #8 created: `beta_1` → `main` — pending deploy and verify on Vercel
 
 #### Week 3: TBD
 - [ ] (upcoming)
@@ -148,6 +155,6 @@
 
 ---
 
-*Last updated: March 24, 2026 — Week 2 Global Search Upgrade started*
+*Last updated: March 24, 2026 — Week 2 Global Search Upgrade complete (PR #8)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
