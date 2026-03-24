@@ -77,7 +77,7 @@
 - [x] Color contrast accessibility check
 - [x] Page transitions / micro-animations
 - [x] Favicon and meta tags
-- [ ] Deploy to Vercel
+- [x] Deploy to Vercel
 
 ### Phase 10.5: PDF Report Export
 - [x] Install @react-pdf/renderer for client-side PDF generation
@@ -120,12 +120,25 @@
 - [x] Build PWA install prompt hook (beforeinstallprompt capture, install/update triggers)
 - [x] Wire up Installation Guide UI in Settings with platform-specific instructions (iOS Safari, Android Chrome, Desktop)
 - [x] Add offline status detection and standalone mode detection
-- [ ] Test Add to Home Screen on iOS (Safari), Android (Chrome), Desktop
-- [ ] Verify native-like behavior when launched from home screen
-- [ ] Deploy to Vercel for install testing
+- [x] Test Add to Home Screen on iOS (Safari), Desktop (Chrome) — PASS. Android pending device access.
+- [x] Verify native-like behavior when launched from home screen — standalone mode confirmed on iOS + Desktop
+- [x] Deploy to Vercel for install testing — live at railcommand.vercel.app
 
-#### Week 2: TBD
-- [ ] (upcoming)
+#### Week 2: Global Search Upgrade
+- [ ] Upgrade search backend to query across all modules (submittals, RFIs, punch items, daily logs, milestones)
+- [ ] Expand searchable fields: number, title, assignee, content (description, question/answer, work summary, safety notes, resolution notes)
+- [ ] Add assignee name search via profile join (two-phase: text fields + profile name lookup)
+- [ ] Add `matchField` and `assignee` metadata to search results for UI context
+- [ ] Upgrade GlobalSearch command palette UI with assignee display, match indicators, and per-module result counts
+- [ ] Build dedicated search results page (`/search?q=`) with module filter tabs, result cards, and responsive layout
+- [ ] Upgrade demo mode search to include assignee name matching
+- [ ] **Supabase backend:** Create PostgreSQL full-text search (GIN) indexes on all module tables
+- [ ] **Supabase backend:** Create `global_search` RPC function for single-call search with `ts_rank` relevance scoring
+- [ ] **Supabase backend:** Add B-tree indexes on `project_id` columns and `project_members.profile_id`
+- [ ] **Supabase backend:** Seed 100+ records per module for performance testing
+- [ ] **Supabase backend:** Run `EXPLAIN ANALYZE` to verify index usage and query performance
+- [ ] Test search performance with seed data across all modules
+- [ ] Deploy and verify on Vercel
 
 #### Week 3: TBD
 - [ ] (upcoming)
@@ -135,6 +148,6 @@
 
 ---
 
-*Last updated: March 23, 2026*
+*Last updated: March 24, 2026 — Week 2 Global Search Upgrade started*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

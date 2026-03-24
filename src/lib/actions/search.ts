@@ -16,6 +16,8 @@ export interface SearchResultItem {
   projectId: string;
   projectName: string;
   href: string;
+  assignee?: string;
+  matchField?: string;
 }
 
 export interface GlobalSearchResult {
@@ -26,9 +28,71 @@ export interface GlobalSearchResult {
   milestones: SearchResultItem[];
 }
 
+// Shape returned by the global_search RPC function
+interface RpcSearchResult {
+  submittals: Array<{
+    id: string;
+    project_id: string;
+    number: string;
+    title: string;
+    spec_section: string;
+    status: string;
+    submitted_by: string;
+    rank: number;
+  }>;
+  rfis: Array<{
+    id: string;
+    project_id: string;
+    number: string;
+    subject: string;
+    status: string;
+    assigned_to: string;
+    rank: number;
+  }>;
+  punch_list: Array<{
+    id: string;
+    project_id: string;
+    number: string;
+    title: string;
+    location: string;
+    description: string;
+    status: string;
+    assigned_to: string;
+    rank: number;
+  }>;
+  daily_logs: Array<{
+    id: string;
+    project_id: string;
+    log_date: string;
+    work_summary: string;
+    created_by: string;
+    rank: number;
+  }>;
+  milestones: Array<{
+    id: string;
+    project_id: string;
+    name: string;
+    status: string;
+    rank: number;
+  }>;
+  matched_profiles: Array<{
+    id: string;
+    full_name: string;
+  }>;
+}
+
+const EMPTY_RESULT: GlobalSearchResult = {
+  submittals: [],
+  rfis: [],
+  punchList: [],
+  dailyLogs: [],
+  milestones: [],
+};
+
 /**
- * Global search across all modules the user has access to (Supabase mode).
- * Searches submittals, RFIs, punch list items, daily logs, and milestones.
+ * Global search across all modules the user has access to.
+ * Uses the Supabase `global_search` RPC function for a single optimized
+ * database call with FTS ranking + ILIKE fallback.
  */
 export async function globalSearch(
   query: string,
@@ -41,13 +105,8 @@ export async function globalSearch(
 
     const trimmed = query.trim();
     if (!trimmed) {
-      return {
-        success: true,
-        data: { submittals: [], rfis: [], punchList: [], dailyLogs: [], milestones: [] },
-      };
+      return { success: true, data: EMPTY_RESULT };
     }
-
-    const pattern = `%${trimmed}%`;
 
     // Get projects the user has access to
     const { data: profile } = await supabase
@@ -59,7 +118,6 @@ export async function globalSearch(
     let accessibleProjectIds: string[] = [];
 
     if (profile?.role === 'admin') {
-      // Admins can see everything
       if (projectId) {
         accessibleProjectIds = [projectId];
       } else {
@@ -79,67 +137,54 @@ export async function globalSearch(
     }
 
     if (accessibleProjectIds.length === 0) {
+      return { success: true, data: EMPTY_RESULT };
+    }
+
+    // Single RPC call for all search results + project names in parallel
+    const [rpcResult, projectsResult] = await Promise.all([
+      supabase.rpc('global_search', {
+        search_query: trimmed,
+        project_ids: accessibleProjectIds,
+        result_limit: 10,
+      }),
+      supabase
+        .from('projects')
+        .select('id, name')
+        .in('id', accessibleProjectIds),
+    ]);
+
+    if (rpcResult.error) {
+      return { error: rpcResult.error.message };
+    }
+
+    const rpc = rpcResult.data as RpcSearchResult;
+    const projectMap = new Map<string, string>(
+      (projectsResult.data ?? []).map((p) => [p.id, p.name])
+    );
+
+    // Build profile name lookup from matched_profiles
+    const profileNameMap = new Map<string, string>(
+      (rpc.matched_profiles ?? []).map((p) => [p.id, p.full_name])
+    );
+
+    // Helper to check if an assignee was the reason for the match
+    function getAssigneeInfo(assigneeId: string | null): {
+      assignee?: string;
+      matchField?: string;
+    } {
+      if (!assigneeId) return {};
+      const name = profileNameMap.get(assigneeId);
+      if (!name) return {};
       return {
-        success: true,
-        data: { submittals: [], rfis: [], punchList: [], dailyLogs: [], milestones: [] },
+        assignee: name,
+        matchField: name.toLowerCase().includes(trimmed.toLowerCase())
+          ? 'assignee'
+          : undefined,
       };
     }
 
-    // Fetch project names for display
-    const { data: projectsData } = await supabase
-      .from('projects')
-      .select('id, name')
-      .in('id', accessibleProjectIds);
-
-    const projectMap = new Map<string, string>(
-      (projectsData ?? []).map((p) => [p.id, p.name])
-    );
-
-    // Run all searches in parallel
-    const [submittalRes, rfiRes, punchRes, dailyRes, milestoneRes] = await Promise.all([
-      // Submittals: search by title, spec_section, number
-      supabase
-        .from('submittals')
-        .select('id, project_id, number, title, spec_section, status')
-        .in('project_id', accessibleProjectIds)
-        .or(`title.ilike.${pattern},spec_section.ilike.${pattern},number.ilike.${pattern}`)
-        .limit(10),
-
-      // RFIs: search by subject, number
-      supabase
-        .from('rfis')
-        .select('id, project_id, number, subject, status')
-        .in('project_id', accessibleProjectIds)
-        .or(`subject.ilike.${pattern},number.ilike.${pattern}`)
-        .limit(10),
-
-      // Punch list: search by title, location, description
-      supabase
-        .from('punch_list_items')
-        .select('id, project_id, number, title, location, description, status')
-        .in('project_id', accessibleProjectIds)
-        .or(`title.ilike.${pattern},location.ilike.${pattern},description.ilike.${pattern},number.ilike.${pattern}`)
-        .limit(10),
-
-      // Daily logs: search by work_summary, log_date
-      supabase
-        .from('daily_logs')
-        .select('id, project_id, log_date, work_summary')
-        .in('project_id', accessibleProjectIds)
-        .or(`work_summary.ilike.${pattern},log_date.ilike.${pattern}`)
-        .limit(10),
-
-      // Milestones: search by name
-      supabase
-        .from('milestones')
-        .select('id, project_id, name, status')
-        .in('project_id', accessibleProjectIds)
-        .or(`name.ilike.${pattern}`)
-        .limit(10),
-    ]);
-
     const result: GlobalSearchResult = {
-      submittals: (submittalRes.data ?? []).map((s) => ({
+      submittals: (rpc.submittals ?? []).map((s) => ({
         id: s.id,
         module: 'submittal' as const,
         title: `${s.number}: ${s.title}`,
@@ -148,8 +193,9 @@ export async function globalSearch(
         projectId: s.project_id,
         projectName: projectMap.get(s.project_id) ?? '',
         href: `/projects/${s.project_id}/submittals/${s.id}`,
+        ...getAssigneeInfo(s.submitted_by),
       })),
-      rfis: (rfiRes.data ?? []).map((r) => ({
+      rfis: (rpc.rfis ?? []).map((r) => ({
         id: r.id,
         module: 'rfi' as const,
         title: `${r.number}: ${r.subject}`,
@@ -158,8 +204,9 @@ export async function globalSearch(
         projectId: r.project_id,
         projectName: projectMap.get(r.project_id) ?? '',
         href: `/projects/${r.project_id}/rfis/${r.id}`,
+        ...getAssigneeInfo(r.assigned_to),
       })),
-      punchList: (punchRes.data ?? []).map((p) => ({
+      punchList: (rpc.punch_list ?? []).map((p) => ({
         id: p.id,
         module: 'punch_list' as const,
         title: `${p.number}: ${p.title}`,
@@ -168,8 +215,9 @@ export async function globalSearch(
         projectId: p.project_id,
         projectName: projectMap.get(p.project_id) ?? '',
         href: `/projects/${p.project_id}/punch-list/${p.id}`,
+        ...getAssigneeInfo(p.assigned_to),
       })),
-      dailyLogs: (dailyRes.data ?? []).map((d) => ({
+      dailyLogs: (rpc.daily_logs ?? []).map((d) => ({
         id: d.id,
         module: 'daily_log' as const,
         title: `Log: ${d.log_date}`,
@@ -178,8 +226,9 @@ export async function globalSearch(
         projectId: d.project_id,
         projectName: projectMap.get(d.project_id) ?? '',
         href: `/projects/${d.project_id}/daily-logs/${d.id}`,
+        ...getAssigneeInfo(d.created_by),
       })),
-      milestones: (milestoneRes.data ?? []).map((m) => ({
+      milestones: (rpc.milestones ?? []).map((m) => ({
         id: m.id,
         module: 'milestone' as const,
         title: m.name,
