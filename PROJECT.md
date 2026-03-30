@@ -96,17 +96,38 @@
 - [x] File & Document Storage (Supabase Storage integration, drag & drop FileUpload component)
 - [x] Email Notifications (Resend integration, 5 notification types, preferences UI wired to backend)
 
-### Phase 11: AI Assistant (RailBot)
-- [ ] Set up Claude API integration (Anthropic SDK + API route)
-- [ ] Build chat UI component (slide-over panel, accessible from any page)
-- [ ] Implement project data context layer (feed seed/Supabase data to the agent)
-- [ ] Natural language queries — pull up submittals, RFIs, punch lists, logs by status/date/assignee
-- [ ] Project summarization — daily log summaries, overdue item reports, budget snapshots
-- [ ] Guided data entry — create RFIs, punch list items, and daily log entries via conversation
-- [ ] Conversation history (per-user, per-project)
-- [ ] Mobile-optimized chat experience
-- [ ] Guard rails — read-heavy by default, confirm before any create/update actions
+### Phase 11: AI Assistant (RailBot) 🤖
+**Architecture & Design** *(Week 3)*
+- [x] Design RailBot architecture (OpenAI API + Supabase data layer)
+- [x] Define system prompt with RBAC-scoped context injection
+- [x] Define OpenAI function calling schemas (mapped to existing server actions)
+- [x] Design conversation state management (Supabase tables + React state)
+- [x] Create railbot.md architecture document
+
+**Backend** *(Week 3–4)*
+- [ ] Set up OpenAI API integration (openai SDK + `/api/chat` route)
+- [ ] Implement streaming responses (Server-Sent Events)
+- [ ] Build RBAC-scoped context builder (dynamic system prompt per user role)
+- [ ] Implement function calling handlers (search submittals, RFIs, punch list, daily logs)
+- [ ] Add read-only query functions (project summary, overdue items, budget summary)
+- [ ] Add write operation functions with confirmation flow (create RFI, punch item, daily log)
+- [ ] Create conversation & message Supabase tables with RLS policies
+- [ ] Build conversation persistence (save/load/list conversations)
 - [ ] Rate limiting and error handling for API calls
+
+**Frontend** *(Week 4)*
+- [ ] Build slide-over chat panel component (slides from right, any page)
+- [ ] Build message bubbles (user/assistant), typing indicator, streaming text display
+- [ ] Build message input with send button + Cmd+Enter shortcut
+- [ ] Build conversation history sidebar (past conversations list)
+- [ ] Mobile-optimized chat experience (full-screen on mobile)
+- [ ] Add RailBot trigger button (floating action button or sidebar icon)
+
+**Polish & Guardrails** *(Week 4)*
+- [ ] Guard rails — read-heavy by default, confirm before any create/update actions
+- [ ] Context window management (summarize large datasets)
+- [ ] Auto-title conversations from first message
+- [ ] Input sanitization and security hardening
 
 ### Alpha Bug Fixes (March 2026)
 - [x] **BUG FIX: Calendar dates one day behind** — All date-only fields (due dates, log dates, target dates, etc.) were displaying one day behind what the user selected. Root cause: `new Date("YYYY-MM-DD")` interprets as UTC midnight, which shifts back one day in US timezones. Fix: Created `src/lib/date-utils.ts` with timezone-safe helpers (`getLocalDateString`, `getLocalDateStringOffset`, `formatDateSafe`, `parseDateSafe`). Replaced all `new Date(dateStr)` calls with `parseISO(dateStr)` from date-fns for display, and all `.toISOString().split('T')[0]` patterns with local timezone date string helpers. Fixed across all modules: dashboard, submittals, RFIs, daily logs, punch lists, schedule/milestones, and profile page.
@@ -147,14 +168,28 @@
 - [x] Test search performance with seed data across all modules
 - [x] PR #8 created: `beta_1` → `main` — pending deploy and verify on Vercel
 
-#### Week 3: TBD
-- [ ] (upcoming)
+#### Week 3: RailBot Architecture & Backend (In Progress)
+- [x] Design RailBot architecture (OpenAI API + Supabase data layer)
+- [x] Build railbot.md architecture document
+- [x] Define system prompt with RBAC-scoped context
+- [x] Define function calling schemas mapped to server actions
+- [x] Design conversation state management
+- [ ] Set up OpenAI API integration (SDK + API route)
+- [ ] Implement streaming responses
+- [ ] Build RBAC-scoped context builder
+- [ ] Implement function calling handlers
+- [ ] Create conversation Supabase tables with RLS
 
-#### Week 4: TBD
-- [ ] (upcoming)
+#### Week 4: RailBot Frontend & Polish
+- [ ] Build slide-over chat panel component
+- [ ] Message UI (bubbles, typing indicator, streaming)
+- [ ] Conversation history persistence
+- [ ] Mobile-optimized chat experience
+- [ ] Write operation confirmation flows
+- [ ] Guard rails and security hardening
 
 ---
 
-*Last updated: March 24, 2026 — Week 2 Global Search Upgrade complete (PR #8)*
+*Last updated: March 30, 2026 — Week 3 RailBot Architecture & Design complete*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
