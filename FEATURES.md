@@ -19,6 +19,7 @@
    - [3.6 Schedule & Milestones](#36-schedule--milestones)
    - [3.7 Team Management](#37-team-management)
    - [3.8 Settings & Profile](#38-settings--profile)
+   - [3.9 AI Assistant (RailBot)](#39-ai-assistant-railbot)
 4. [Cross-Cutting Features](#4-cross-cutting-features)
 5. [Permission Matrix (Complete Reference)](#5-permission-matrix-complete-reference)
 6. [Current Development Status](#6-current-development-status)
@@ -358,6 +359,53 @@ Settings and Profile pages allow every user to manage their personal information
 
 ---
 
+### 3.9 AI Assistant (RailBot) -- *In Progress (Frontend & Voice Complete)*
+
+**Overview**
+
+RailBot is an AI-powered assistant that gives every team member a conversational interface to query project data, create records, and get actionable summaries -- all without navigating through menus. Accessible from any page via a floating action button, RailBot understands natural language and enforces the same role-based permissions as the rest of the platform.
+
+**Key Features**
+
+- **Chat Interface** -- Slide-over panel accessible from any page via floating action button
+- **OpenAI Integration** -- GPT-4.1-mini for fast, cost-effective responses with streaming (SSE)
+- **Natural Language Queries** -- Ask questions like "What submittals are overdue?", "Show me the project summary", "Who is on the team?"
+- **13 Function Tools** -- 10 read tools (search submittals/RFIs/punch list/daily logs, project summary, overdue items, budget summary, team members, milestones, recent activity) + 3 write tools (create RFI, punch list item, daily log)
+- **RBAC-Aware** -- Triple-layer permission enforcement:
+  - System prompt scoped to user's role and allowed actions
+  - Tool visibility filtered per role (e.g., foreman never sees budget tools)
+  - Tool executor permission checks before data access
+  - Budget data stripped from responses for unauthorized roles
+- **Voice Dictation** -- Microphone input with real-time soundwave animation, auto-transcription via OpenAI Whisper API
+- **Conversation Persistence** -- Chat history saved to Supabase, browse and resume past conversations, auto-titled from first message
+- **Write Confirmation** -- AI confirms all create operations with the user before executing, showing full details of what will be created via a 6-step confirmation protocol
+- **Conversational Data Entry** -- Field crew can create RFIs, punch list items, and daily logs using natural language (e.g., "log an RFI about the broken signal box at MP 42, high priority, assign to Bobby"). RailBot parses intent, fills fields, resolves assignees by name, and confirms before creating.
+- **Context Management** -- 20-message sliding window for optimal token usage and cost efficiency
+- **Demo Mode Support** -- Full functionality in demo mode using seed data
+- **Suggested Prompts** -- Quick-start actions for common queries
+- **Mobile Responsive** -- Full-screen chat on mobile, slide-over on desktop, iOS safe area padding, responsive bubble widths, keyboard scroll handling, compact header on small screens
+- **Daily Log Rollups** -- Summarize daily log activity over a date range (weekly/monthly) via get_daily_log_rollup tool
+- **Summarization** -- Project summary with KPIs and overdue counts, daily log rollups, "Summarize this week's work" quick action
+- **Error Handling** -- Status-specific error messages (401, 403, 429, 502), retry button on failed messages, "Thinking..." indicator during tool calls
+- **Input Sanitization** -- HTML stripping, 2000-char message limit (server + client enforced), projectId validation, write tool argument validation, character counter near limit
+
+**Permissions by Role**
+
+| Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Access RailBot chat | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Query submittals / RFIs / punch list / daily logs | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Query budget data | Yes | - | - | - | - | - | Yes |
+| Query team members | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Query milestones / schedule | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Create RFI via chat | Yes | Yes | Yes | Yes | Yes | - | - |
+| Create punch list item via chat | Yes | Yes | Yes | Yes | Yes | - | - |
+| Create daily log via chat | Yes | Yes | Yes | - | - | - | - |
+
+> **Note:** RailBot enforces the same RBAC rules as the standard UI. Tools and data that a role cannot access in the app are also hidden from the AI assistant. Budget figures are stripped from AI responses for unauthorized roles.
+
+---
+
 ## 4. Cross-Cutting Features
 
 These capabilities span the entire application and are available across all modules.
@@ -543,6 +591,7 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **Cross-Module Global Search** | Complete | Cmd+K command palette searches across all modules |
 | **File & Document Storage** | Complete | Supabase Storage integration with drag & drop FileUpload component |
 | **Email Notifications** | Complete | Resend integration with 5 notification types, user preferences wired to Supabase |
+| **AI Assistant (RailBot)** | In Progress | GPT-4.1-mini with SSE streaming, 13 function tools, triple-layer RBAC, demo mode support; frontend, voice dictation & persistence complete |
 
 ### What's Coming Next
 
@@ -554,7 +603,7 @@ The following features are actively planned for upcoming releases, ordered by pr
 | 2 | ~~**PWA Manifest & App Icons**~~ | ~~Add web app manifest, service worker, and branded icons.~~ | **Complete** |
 | 3 | ~~**Cross-Module Search**~~ | ~~Upgrade global search to query across all modules.~~ | **Complete** |
 | 4 | ~~**Email Notifications**~~ | ~~Automated email alerts when users are assigned items or statuses change.~~ | **Complete** |
-| 5 | **AI Assistant (RailBot)** | Natural language queries, guided data entry (create RFIs and punch items via conversation), project summarization, and daily log summaries -- powered by AI and accessible from any page via a slide-over chat panel. | Beta |
+| 5 | **AI Assistant (RailBot)** | Natural language queries, guided data entry (create RFIs and punch items via conversation), project summarization, and daily log summaries -- powered by AI and accessible from any page via a slide-over chat panel. 13 function tools with triple-layer RBAC enforcement. Voice dictation, conversation persistence, write confirmation flows. | **In Progress** (Frontend & Voice Complete) |
 | 6 | **Custom Reporting & Export** | PDF export is now available for all modules (Submittals, RFIs, Daily Logs, Punch List, Schedule). CSV export and custom date range/status/role filtering coming next. | Phase 1 Complete |
 | 7 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Post-Beta |
 | 8 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Post-Beta |
@@ -566,7 +615,7 @@ The following features are actively planned for upcoming releases, ordered by pr
 |-----------|--------|---------------|
 | **Alpha Testing** | **Complete** | All core modules functional. Internal team tested full workflows end-to-end. Major bugs (date off-by-one, photo persistence) fixed. |
 | **Beta Testing** | **Ready Now** | Feature-complete for core workflows. File uploads working, PWA installable, search functional, email notifications active. Ready for client/field testers. |
-| **Production Release** | Target: After Beta feedback cycle | All Beta feedback addressed, AI Assistant integrated, demo artifacts removed, custom domain deployed. |
+| **Production Release** | Target: After Beta feedback cycle | All Beta feedback addressed, AI Assistant (RailBot) fully integrated, demo artifacts removed, custom domain deployed. |
 
 ### Pre-Production Cleanup
 
@@ -580,4 +629,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: March 23, 2026*
+*Last updated: March 31, 2026*

@@ -105,29 +105,51 @@
 - [x] Create railbot.md architecture document
 
 **Backend** *(Week 3–4)*
-- [ ] Set up OpenAI API integration (openai SDK + `/api/chat` route)
-- [ ] Implement streaming responses (Server-Sent Events)
-- [ ] Build RBAC-scoped context builder (dynamic system prompt per user role)
-- [ ] Implement function calling handlers (search submittals, RFIs, punch list, daily logs)
-- [ ] Add read-only query functions (project summary, overdue items, budget summary)
-- [ ] Add write operation functions with confirmation flow (create RFI, punch item, daily log)
-- [ ] Create conversation & message Supabase tables with RLS policies
-- [ ] Build conversation persistence (save/load/list conversations)
-- [ ] Rate limiting and error handling for API calls
+- [x] Set up OpenAI API integration (openai SDK + `/api/chat` route)
+- [x] Implement streaming responses (Server-Sent Events)
+- [x] Build RBAC-scoped context builder (dynamic system prompt per user role)
+- [x] Implement function calling handlers (search submittals, RFIs, punch list, daily logs)
+- [x] Add read-only query functions (project summary, overdue items, budget summary)
+- [x] Add write operation functions with confirmation flow (create RFI, punch item, daily log)
+- [x] Create conversation & message Supabase tables with RLS policies
+- [x] Build conversation persistence (save/load/list conversations)
+- [x] Error handling for API calls (status-specific errors, input validation, HTML stripping)
 
 **Frontend** *(Week 4)*
-- [ ] Build slide-over chat panel component (slides from right, any page)
-- [ ] Build message bubbles (user/assistant), typing indicator, streaming text display
-- [ ] Build message input with send button + Cmd+Enter shortcut
-- [ ] Build conversation history sidebar (past conversations list)
-- [ ] Mobile-optimized chat experience (full-screen on mobile)
-- [ ] Add RailBot trigger button (floating action button or sidebar icon)
+- [x] Build slide-over chat panel component (slides from right, any page)
+- [x] Build message bubbles (user/assistant), typing indicator, streaming text display
+- [x] Build message input with send button + Enter shortcut
+- [x] Build conversation history sidebar (past conversations list)
+- [x] Mobile-optimized chat experience (safe area padding, responsive bubbles, keyboard scroll, compact header)
+- [x] Add RailBot trigger button (floating action button or sidebar icon)
+
+**Voice & Audio** *(Week 4)*
+- [x] Voice dictation via OpenAI Whisper API (`/api/chat/transcribe` route)
+- [x] Microphone recording with soundwave animation
+- [x] Auto-transcription to chat input
+
+**Conversational Data Entry** *(Week 4)*
+- [x] Conversational RFI creation flow (parse crew language into structured fields)
+- [x] Conversational punch list creation flow (informal input → structured data)
+- [x] Conversational daily log creation flow
+- [x] Confirmation step before all write operations (6-step protocol in system prompt)
+- [x] Assignee resolution via team member name lookup
+- [x] Crew language test suite (17 tests passing)
+
+**Summarization** *(Week 4)*
+- [x] Project summarization feature (get_project_summary tool with KPIs, overdue counts, budget)
+- [x] Daily log auto-summaries — weekly/monthly rollups (get_daily_log_rollup tool)
+- [x] "Summarize this week's work" suggested prompt
 
 **Polish & Guardrails** *(Week 4)*
-- [ ] Guard rails — read-heavy by default, confirm before any create/update actions
-- [ ] Context window management (summarize large datasets)
-- [ ] Auto-title conversations from first message
-- [ ] Input sanitization and security hardening
+- [x] Guard rails — read-heavy by default, confirm before any create/update actions
+- [x] Context window management (20-message sliding window)
+- [x] Auto-title conversations from first message
+- [x] Message timestamps on chat bubbles
+- [x] "Thinking..." indicator during tool calls (bouncing dots animation)
+- [x] Retry button on failed messages
+- [x] Status-specific error messages (401, 403, 429, 502)
+- [x] Input sanitization and security hardening (HTML stripping, message length limits, projectId validation, write tool argument validation)
 
 ### Alpha Bug Fixes (March 2026)
 - [x] **BUG FIX: Calendar dates one day behind** — All date-only fields (due dates, log dates, target dates, etc.) were displaying one day behind what the user selected. Root cause: `new Date("YYYY-MM-DD")` interprets as UTC midnight, which shifts back one day in US timezones. Fix: Created `src/lib/date-utils.ts` with timezone-safe helpers (`getLocalDateString`, `getLocalDateStringOffset`, `formatDateSafe`, `parseDateSafe`). Replaced all `new Date(dateStr)` calls with `parseISO(dateStr)` from date-fns for display, and all `.toISOString().split('T')[0]` patterns with local timezone date string helpers. Fixed across all modules: dashboard, submittals, RFIs, daily logs, punch lists, schedule/milestones, and profile page.
@@ -174,22 +196,27 @@
 - [x] Define system prompt with RBAC-scoped context
 - [x] Define function calling schemas mapped to server actions
 - [x] Design conversation state management
-- [ ] Set up OpenAI API integration (SDK + API route)
-- [ ] Implement streaming responses
-- [ ] Build RBAC-scoped context builder
-- [ ] Implement function calling handlers
-- [ ] Create conversation Supabase tables with RLS
+- [x] Set up OpenAI API integration (SDK + API route)
+- [x] Implement streaming responses
+- [x] Build RBAC-scoped context builder
+- [x] Implement function calling handlers
+- [x] Create conversation Supabase tables with RLS
 
 #### Week 4: RailBot Frontend & Polish
-- [ ] Build slide-over chat panel component
-- [ ] Message UI (bubbles, typing indicator, streaming)
-- [ ] Conversation history persistence
-- [ ] Mobile-optimized chat experience
-- [ ] Write operation confirmation flows
-- [ ] Guard rails and security hardening
+- [x] Build slide-over chat panel component
+- [x] Message UI (bubbles, typing indicator, streaming)
+- [x] Conversation history persistence
+- [x] Mobile-optimized chat experience (safe area padding, responsive bubbles, keyboard scroll, compact header)
+- [x] Write operation confirmation flows
+- [x] Conversational RFI/punch list/daily log creation (crew language parsing)
+- [x] Assignee resolution via team member lookup
+- [x] Project summarization + daily log rollups
+- [x] Chat panel polish (timestamps, thinking indicator, retry button, error messages)
+- [x] Guard rails and security hardening (input validation, HTML stripping, argument validation)
+- [x] Voice dictation (Whisper API + mic UI)
 
 ---
 
-*Last updated: March 30, 2026 — Week 3 RailBot Architecture & Design complete*
+*Last updated: March 31, 2026 — Phase 11 RailBot COMPLETE*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
