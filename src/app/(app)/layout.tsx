@@ -3,6 +3,7 @@ import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
 import PageTransition from '@/components/shared/PageTransition';
 import ProjectProvider from '@/components/providers/ProjectProvider';
+import RailBotTrigger from '@/components/railbot/RailBotTrigger';
 
 export default function AppLayout({
   children,
@@ -28,6 +29,9 @@ export default function AppLayout({
 
         {/* Mobile bottom nav */}
         <MobileNav />
+
+        {/* RailBot AI chat */}
+        <RailBotTrigger />
       </div>
     </ProjectProvider>
   );

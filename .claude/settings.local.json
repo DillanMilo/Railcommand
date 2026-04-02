@@ -57,7 +57,12 @@
       "Bash(cat \"/Users/dillanmilosevich/Desktop/Railcommand/src/app/\\(app\\)/settings/page.tsx\")",
       "Bash(file:*)",
       "Bash(node:*)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "Bash(vercel --version)",
+      "Bash(find /Users/dillanmilosevich/Desktop/IDE/Railcommand-1 -type f \\\\\\(-name *claude* -o -name *ai* -o -name *chat* -o -name *bot* \\\\\\))",
+      "Bash(curl:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }
