@@ -15,12 +15,7 @@ import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import EditProjectDialog from '@/components/projects/EditProjectDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import {
-  useSubmittals,
-  useRFIs,
-  usePunchListItems,
-  useDailyLogs,
-} from '@/hooks/useData';
+import { useDashboardData } from '@/hooks/useData';
 import { format, parseISO } from 'date-fns';
 import {
   DollarSign,
@@ -43,11 +38,12 @@ export default function DashboardPage() {
   const [now, setNow] = useState<number>(0);
   useEffect(() => { setNow(Date.now()); }, []);
 
-  // Always call hooks unconditionally (React rules of hooks)
-  const { data: allSubmittals, loading: submittalsLoading } = useSubmittals(currentProjectId);
-  const { data: allRFIs, loading: rfisLoading } = useRFIs(currentProjectId);
-  const { data: allPunch, loading: punchLoading } = usePunchListItems(currentProjectId);
-  const { data: allLogs, loading: logsLoading } = useDailyLogs(currentProjectId);
+  // Single batched fetch — 1 auth check + 4 parallel queries instead of 4 × (auth + membership + query)
+  const { data: dashboardData, loading: dashboardLoading } = useDashboardData(currentProjectId);
+  const allSubmittals = dashboardData.submittals;
+  const allRFIs = dashboardData.rfis;
+  const allPunch = dashboardData.punchListItems;
+  const allLogs = dashboardData.dailyLogs;
 
   if (!currentProject) {
     // Real auth user with no projects — show welcome state
@@ -90,7 +86,7 @@ export default function DashboardPage() {
 
   const project = currentProject;
 
-  if (submittalsLoading || rfisLoading || punchLoading || logsLoading) {
+  if (dashboardLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />

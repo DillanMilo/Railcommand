@@ -19,6 +19,7 @@ import type {
 import * as store from '@/lib/store';
 
 // Server actions (real auth mode)
+import { getDashboardData as fetchDashboardData, type DashboardData } from '@/lib/actions/dashboard';
 import { getProjects as fetchProjects } from '@/lib/actions/projects';
 import {
   getSubmittals as fetchSubmittals,
@@ -96,6 +97,25 @@ function useQuery<T>(
 /* ------------------------------------------------------------------ */
 /*  Domain hooks                                                       */
 /* ------------------------------------------------------------------ */
+
+export function useDashboardData(projectId: string | null) {
+  return useQuery<DashboardData>(
+    () => ({
+      submittals: projectId ? store.getSubmittals(projectId) : [],
+      rfis: projectId ? store.getRFIs(projectId) : [],
+      punchListItems: projectId ? store.getPunchListItems(projectId) : [],
+      dailyLogs: projectId ? store.getDailyLogs(projectId) : [],
+    }),
+    () =>
+      projectId
+        ? fetchDashboardData(projectId)
+        : Promise.resolve({
+            data: { submittals: [], rfis: [], punchListItems: [], dailyLogs: [] },
+          }),
+    [projectId],
+    { submittals: [], rfis: [], punchListItems: [], dailyLogs: [] },
+  );
+}
 
 export function useProjects() {
   return useQuery<Project[]>(
