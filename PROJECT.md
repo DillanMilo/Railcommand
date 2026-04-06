@@ -94,7 +94,7 @@
 - [x] PWA Manifest & App Icons (manifest.json, service worker, installable app)
 - [x] Cross-Module Global Search (Cmd+K command palette, searches all modules)
 - [x] File & Document Storage (Supabase Storage integration, drag & drop FileUpload component)
-- [x] Email Notifications (Resend integration, 5 notification types, preferences UI wired to backend)
+- [x] Email Notifications (Resend integration, 8 notification types, Vercel Cron for overdue digests + daily log reminders, team update triggers, custom SMTP for Supabase Auth, preferences UI with 8 toggles)
 
 ### Phase 11: AI Assistant (RailBot) 🤖
 **Architecture & Design** *(Week 3)*
@@ -217,6 +217,6 @@
 
 ---
 
-*Last updated: March 31, 2026 — Phase 11 RailBot COMPLETE*
+*Last updated: April 6, 2026 — Email system expanded to 8 notification types with Resend SMTP + Vercel Cron*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

@@ -5,7 +5,10 @@ export type NotificationType =
   | 'rfi_assigned'
   | 'rfi_response_received'
   | 'punch_list_assigned'
-  | 'punch_list_status_changed';
+  | 'punch_list_status_changed'
+  | 'overdue_reminder'
+  | 'daily_log_reminder'
+  | 'team_update';
 
 export interface NotificationPreferences {
   submittal_status_changed: boolean;
@@ -13,6 +16,9 @@ export interface NotificationPreferences {
   rfi_response_received: boolean;
   punch_list_assigned: boolean;
   punch_list_status_changed: boolean;
+  overdue_reminder: boolean;
+  daily_log_reminder: boolean;
+  team_update: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -21,6 +27,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   rfi_response_received: true,
   punch_list_assigned: true,
   punch_list_status_changed: true,
+  overdue_reminder: true,
+  daily_log_reminder: true,
+  team_update: true,
 };
 
 // Payload types for each notification
@@ -97,9 +106,49 @@ export interface PunchListStatusChangedPayload {
   itemId: string;
 }
 
+export interface OverdueReminderPayload {
+  type: 'overdue_reminder';
+  recipientEmail: string;
+  recipientName: string;
+  items: {
+    kind: 'rfi' | 'submittal';
+    number: string;
+    title: string;
+    dueDate: string;
+    daysOverdue: number;
+    id: string;
+  }[];
+  projectName: string;
+  projectId: string;
+}
+
+export interface DailyLogReminderPayload {
+  type: 'daily_log_reminder';
+  recipientEmail: string;
+  recipientName: string;
+  date: string;
+  projectName: string;
+  projectId: string;
+}
+
+export interface TeamUpdatePayload {
+  type: 'team_update';
+  recipientEmail: string;
+  recipientName: string;
+  action: 'added' | 'removed';
+  memberName: string;
+  memberRole: string;
+  changedByName: string;
+  projectName: string;
+  projectId: string;
+}
+
 export type NotificationPayload =
   | SubmittalStatusChangedPayload
   | RFIAssignedPayload
   | RFIResponseReceivedPayload
   | PunchListAssignedPayload
-  | PunchListStatusChangedPayload;
+  | PunchListStatusChangedPayload
+  | OverdueReminderPayload
+  | DailyLogReminderPayload
+  | TeamUpdatePayload;

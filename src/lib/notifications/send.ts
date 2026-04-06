@@ -23,7 +23,7 @@ function getResendClient(): Resend | null {
   return _resend;
 }
 
-const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <notifications@railcommand.com>';
+const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.a5rail.com>';
 
 // ---------------------------------------------------------------------------
 // Preference check

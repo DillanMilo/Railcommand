@@ -12,6 +12,8 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
+import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
+import type { TeamUpdatePayload } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getProjectMembers -- all members of a project, with profiles and orgs
@@ -114,6 +116,38 @@ export async function addProjectMember(
       user.id
     );
 
+    // Notify all existing project members about the new addition
+    try {
+      const projectName = await getProjectName(projectId);
+      const { data: actorProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      const { data: allMembers } = await supabase
+        .from('project_members')
+        .select('profile_id')
+        .eq('project_id', projectId)
+        .neq('profile_id', user.id); // don't notify the person who made the change
+
+      for (const m of allMembers ?? []) {
+        sendNotificationToUser(m.profile_id, (recipient) => ({
+          type: 'team_update',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          action: 'added',
+          memberName: targetProfile.full_name,
+          memberRole: role,
+          changedByName: actorProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+        } satisfies TeamUpdatePayload));
+      }
+    } catch {
+      // Never let notification failures break the main flow
+    }
+
     revalidatePath(`/projects/${projectId}/team`);
 
     return { success: true, data: member as ProjectMember };
@@ -176,6 +210,38 @@ export async function removeProjectMember(
       `removed ${profileData?.full_name ?? 'member'} from the project`,
       user.id
     );
+
+    // Notify remaining project members about the removal
+    try {
+      const projectName = await getProjectName(projectId);
+      const { data: actorProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      const { data: remainingMembers } = await supabase
+        .from('project_members')
+        .select('profile_id')
+        .eq('project_id', projectId)
+        .neq('profile_id', user.id);
+
+      for (const m of remainingMembers ?? []) {
+        sendNotificationToUser(m.profile_id, (recipient) => ({
+          type: 'team_update',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          action: 'removed',
+          memberName: profileData?.full_name ?? 'A team member',
+          memberRole: memberInfo.project_role,
+          changedByName: actorProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+        } satisfies TeamUpdatePayload));
+      }
+    } catch {
+      // Never let notification failures break the main flow
+    }
 
     revalidatePath(`/projects/${projectId}/team`);
 

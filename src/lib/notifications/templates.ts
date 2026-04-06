@@ -7,12 +7,18 @@ import type {
   RFIResponseReceivedPayload,
   PunchListAssignedPayload,
   PunchListStatusChangedPayload,
+  OverdueReminderPayload,
+  DailyLogReminderPayload,
+  TeamUpdatePayload,
 } from './types';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://railcommand.vercel.app';
 
 // ---------------------------------------------------------------------------
 // Shared layout wrapper
 // ---------------------------------------------------------------------------
-function emailLayout(content: string): string {
+function emailLayout(content: string, preferencesLink?: string): string {
+  const manageLink = preferencesLink ?? `${APP_URL}/settings`;
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -44,7 +50,8 @@ function emailLayout(content: string): string {
           <tr>
             <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
-                This is an automated notification from RailCommand. You can manage your notification preferences in your account settings.
+                This is an automated notification from RailCommand.
+                <a href="${manageLink}" style="color:#64748b;text-decoration:underline;">Manage notification preferences</a>
               </p>
             </td>
           </tr>
@@ -54,6 +61,16 @@ function emailLayout(content: string): string {
   </table>
 </body>
 </html>`.trim();
+}
+
+// ---------------------------------------------------------------------------
+// CTA button helper
+// ---------------------------------------------------------------------------
+function ctaButton(href: string, label: string): string {
+  return `<a href="${href}"
+     style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
+    ${label}
+  </a>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +89,7 @@ function statusBadge(status: string): string {
     high: { bg: '#ffedd5', text: '#9a3412' },
     medium: { bg: '#fef9c3', text: '#854d0e' },
     low: { bg: '#f0fdf4', text: '#166534' },
+    overdue: { bg: '#fee2e2', text: '#991b1b' },
   };
   const c = colors[status] ?? { bg: '#f1f5f9', text: '#475569' };
   const label = status.replace(/_/g, ' ').toUpperCase();
@@ -111,10 +129,7 @@ function submittalStatusChanged(payload: SubmittalStatusChangedPayload): { subje
       </tr>` : ''}
     </table>
 
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.railcommand.com'}/projects/${payload.projectId}/submittals/${payload.submittalId}"
-       style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
-      View Submittal
-    </a>
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/submittals/${payload.submittalId}`, 'View Submittal')}
   `);
   return { subject, html };
 }
@@ -157,10 +172,7 @@ function rfiAssigned(payload: RFIAssignedPayload): { subject: string; html: stri
       </tr>
     </table>
 
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.railcommand.com'}/projects/${payload.projectId}/rfis/${payload.rfiId}"
-       style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
-      View RFI
-    </a>
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/rfis/${payload.rfiId}`, 'View RFI')}
   `);
   return { subject, html };
 }
@@ -199,10 +211,7 @@ function rfiResponseReceived(payload: RFIResponseReceivedPayload): { subject: st
       </tr>` : ''}
     </table>
 
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.railcommand.com'}/projects/${payload.projectId}/rfis/${payload.rfiId}"
-       style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
-      View RFI
-    </a>
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/rfis/${payload.rfiId}`, 'View RFI')}
   `);
   return { subject, html };
 }
@@ -251,10 +260,7 @@ function punchListAssigned(payload: PunchListAssignedPayload): { subject: string
       </tr>
     </table>
 
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.railcommand.com'}/projects/${payload.projectId}/punch-list/${payload.itemId}"
-       style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
-      View Item
-    </a>
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/punch-list/${payload.itemId}`, 'View Item')}
   `);
   return { subject, html };
 }
@@ -292,10 +298,105 @@ function punchListStatusChanged(payload: PunchListStatusChangedPayload): { subje
       </tr>` : ''}
     </table>
 
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.railcommand.com'}/projects/${payload.projectId}/punch-list/${payload.itemId}"
-       style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
-      View Item
-    </a>
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/punch-list/${payload.itemId}`, 'View Item')}
+  `);
+  return { subject, html };
+}
+
+// ---------------------------------------------------------------------------
+// Template: Overdue Reminder
+// ---------------------------------------------------------------------------
+function overdueReminder(payload: OverdueReminderPayload): { subject: string; html: string } {
+  const count = payload.items.length;
+  const subject = `${count} overdue item${count > 1 ? 's' : ''} need attention - ${payload.projectName}`;
+
+  const rows = payload.items.map((item) => {
+    const kindLabel = item.kind === 'rfi' ? 'RFI' : 'Submittal';
+    const href = item.kind === 'rfi'
+      ? `${APP_URL}/projects/${payload.projectId}/rfis/${item.id}`
+      : `${APP_URL}/projects/${payload.projectId}/submittals/${item.id}`;
+    return `
+      <tr>
+        <td style="padding:8px 16px;border-bottom:1px solid #e2e8f0;">
+          <p style="margin:0;color:#1e293b;font-size:14px;font-weight:600;">
+            <a href="${href}" style="color:#1e293b;text-decoration:none;">${item.number}: ${item.title}</a>
+          </p>
+          <p style="margin:4px 0 0;color:#94a3b8;font-size:12px;">
+            ${kindLabel} &middot; Due ${item.dueDate} &middot; ${statusBadge('overdue')} ${item.daysOverdue} day${item.daysOverdue > 1 ? 's' : ''} overdue
+          </p>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const html = emailLayout(`
+    <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Overdue Items</h2>
+    <p style="margin:0 0 24px;color:#64748b;font-size:14px;">
+      You have <strong>${count}</strong> overdue item${count > 1 ? 's' : ''} in <strong>${payload.projectName}</strong> that need${count === 1 ? 's' : ''} attention.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:6px;overflow:hidden;margin-bottom:24px;">
+      ${rows}
+    </table>
+
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}`, 'View Project')}
+  `);
+  return { subject, html };
+}
+
+// ---------------------------------------------------------------------------
+// Template: Daily Log Reminder
+// ---------------------------------------------------------------------------
+function dailyLogReminder(payload: DailyLogReminderPayload): { subject: string; html: string } {
+  const subject = `Daily log reminder - ${payload.projectName}`;
+  const html = emailLayout(`
+    <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Daily Log Reminder</h2>
+    <p style="margin:0 0 24px;color:#64748b;font-size:14px;">
+      Don't forget to file your daily log for <strong>${payload.projectName}</strong> today (${payload.date}).
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fef9c3;border-radius:6px;padding:16px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:8px 16px;">
+          <p style="margin:0;color:#854d0e;font-size:14px;">
+            Keeping daily logs up to date helps your team stay aligned and creates an audit trail for the project.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/daily-logs`, 'File Daily Log')}
+  `);
+  return { subject, html };
+}
+
+// ---------------------------------------------------------------------------
+// Template: Team Update
+// ---------------------------------------------------------------------------
+function teamUpdate(payload: TeamUpdatePayload): { subject: string; html: string } {
+  const action = payload.action === 'added' ? 'added to' : 'removed from';
+  const subject = `${payload.memberName} ${action} ${payload.projectName}`;
+  const html = emailLayout(`
+    <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Team Update</h2>
+    <p style="margin:0 0 24px;color:#64748b;font-size:14px;">
+      ${payload.changedByName} has made a change to the team in <strong>${payload.projectName}</strong>.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:6px;padding:16px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:8px 16px;">
+          <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Member</p>
+          <p style="margin:0;color:#1e293b;font-size:14px;font-weight:600;">${payload.memberName}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 16px;">
+          <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Action</p>
+          <p style="margin:0;color:#1e293b;font-size:14px;">${payload.action === 'added' ? 'Added as' : 'Removed from'} <strong>${payload.memberRole}</strong></p>
+        </td>
+      </tr>
+    </table>
+
+    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/team`, 'View Team')}
   `);
   return { subject, html };
 }
@@ -315,6 +416,12 @@ export function renderNotificationEmail(payload: NotificationPayload): { subject
       return punchListAssigned(payload);
     case 'punch_list_status_changed':
       return punchListStatusChanged(payload);
+    case 'overdue_reminder':
+      return overdueReminder(payload);
+    case 'daily_log_reminder':
+      return dailyLogReminder(payload);
+    case 'team_update':
+      return teamUpdate(payload);
     default:
       throw new Error(`Unknown notification type: ${(payload as NotificationPayload).type}`);
   }
