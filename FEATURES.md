@@ -20,6 +20,10 @@
    - [3.7 Team Management](#37-team-management)
    - [3.8 Settings & Profile](#38-settings--profile)
    - [3.9 AI Assistant (RailBot)](#39-ai-assistant-railbot)
+   - [3.10 Project Documents](#310-project-documents-module)
+   - [3.11 QC/QA Module](#311-qcqa-module)
+   - [3.12 Photos & Media](#312-photos--media)
+   - [3.13 Safety Module](#313-safety-module)
 4. [Cross-Cutting Features](#4-cross-cutting-features)
 5. [Permission Matrix (Complete Reference)](#5-permission-matrix-complete-reference)
 6. [Current Development Status](#6-current-development-status)
@@ -102,6 +106,11 @@ The Dashboard is the command center for every project. It provides a real-time, 
 - **Upcoming Milestones Widget** -- Displays the next milestones with status indicators (On Track, At Risk, Behind, Complete) and target dates
 - **Budget Health Summary** -- Visual representation of budget utilization with trend indicators
 - **Project Status Header** -- Project name, active status badge, and client name prominently displayed
+- **Clickable KPI Boxes** -- All 6 dashboard boxes become tappable, navigating to their respective detail/module pages *(Planned)*
+- **Recent Activity Drilldown** -- Activity feed entries are tappable, linking to individual item detail views *(Planned)*
+- **CPI (Cost Performance Index)** -- Earned Value / Actual Cost with color-coded indicators: >1.0 Under budget (green), =1.0 On budget (yellow), <1.0 Over budget (red) *(Planned)*
+- **SPI (Schedule Performance Index)** -- Earned Value / Planned Value with same color coding *(Planned)*
+- **Schedule Benchmark Dates** -- Display Turnover Date, Substantial Completion Date, and Project Completion Date in the Schedule box *(Planned)*
 
 **Permissions by Role**
 
@@ -196,6 +205,8 @@ The Daily Logs module provides a structured, digital replacement for paper-based
 - **Daily Log Detail View** -- Read-only presentation of a completed log with all structured data sections, with PDF export button for downloading individual log reports
 - **Photo Attachment Support** -- Upload site photos associated with the day's work
 - **Searchable History** -- Find past logs by date, content, or personnel
+- **7-Day Calendar View** -- Calendar displays full 7-day week instead of current view *(Planned)*
+- **Weekly Reports Section** -- Fields for Construction Manager and Contractor weekly reports *(Planned)*
 
 **Permissions by Role**
 
@@ -267,6 +278,8 @@ The Schedule & Milestones module provides a high-level view of project timelines
 - **Linked Submittals & RFIs** -- Each milestone shows associated submittals and RFIs, providing context on blocking items
 - **Overall Schedule Health KPIs** -- Summary metrics for schedule performance across all milestones
 - **Target vs. Actual Dates** -- Clear comparison of planned and actual completion dates
+- **Change Orders** -- Track change orders within the Budget box *(Planned)*
+- **Modifications & Amendments** -- Accessible through Plans section *(Planned)*
 
 **Permissions by Role**
 
@@ -298,6 +311,8 @@ The Team Management module provides a directory of all project team members, the
 - **Assign Project Roles** -- Choose from Manager, Engineer, Contractor, Inspector, Foreman, or Superintendent
 - **Remove Team Members** -- Hover-to-reveal remove button on each team member card
 - **Contact Integration** -- Direct email and phone links for each team member
+- **Team Listing Prominence** -- Team directory surfaced directly on dashboard or sidebar instead of behind "More" button *(Planned)*
+- **RBAC Management UI** -- Interface for managing Read/Write/Create privileges per team member with role-based defaults and override capability *(Planned)*
 
 **Permissions by Role**
 
@@ -403,6 +418,119 @@ RailBot is an AI-powered assistant that gives every team member a conversational
 | Create daily log via chat | Yes | Yes | Yes | - | - | - | - |
 
 > **Note:** RailBot enforces the same RBAC rules as the standard UI. Tools and data that a role cannot access in the app are also hidden from the AI assistant. Budget figures are stripped from AI responses for unauthorized roles.
+
+---
+
+### 3.10 Project Documents Module -- *Planned*
+
+**Overview**
+
+The Project Documents module gives every team member front-and-center visibility into the current project drawings, with revision tracking, version history, and a clear separation between distributable PDFs and native CAD files. This addresses one of Caleb Douglas's top priorities: it should always be obvious which drawing revision is current.
+
+**Key Features**
+
+- **Project Documents Dashboard Box** -- A new KPI box on the main dashboard showing the current drawing set at a glance
+- **Revision Tracking Header** -- Prominent banner displaying "Current Project Documents Rev. #, dated month-date-year" so the latest revision is never in doubt
+- **PDF Format Requirement** -- All distributable project drawings must be uploaded as PDFs to ensure universal viewability
+- **Native CAD Folder** -- Separate folder structure for AutoCAD (`.dwg`) and MicroStation (`.dgn`) native files, kept alongside the PDFs but distinct from the distributable set
+- **Document Versioning** -- Each upload creates a new revision; full revision history retained with uploader, date, and notes
+- **Version Comparison** -- View previous revisions side-by-side with the current set
+- **Search & Filter** -- Find documents by revision number, discipline, sheet number, or upload date
+
+**Permissions by Role**
+
+| Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| View documents | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Upload new revision | Yes | Yes | - | Yes | Yes | - | - |
+| Manage revision history | Yes | - | - | Yes | - | - | - |
+| Delete document | Yes | - | - | Yes | - | - | - |
+| Download CAD originals | Yes | Yes | - | Yes | Yes | - | - |
+
+---
+
+### 3.11 QC/QA Module -- *Planned*
+
+**Overview**
+
+The QC/QA module brings Quality Control and Quality Assurance reporting into RailCommand with structured nonconformance tracking, a formal close-out workflow, and bidirectional links into the Punch List. A routable QC/QA Plan per project mirrors the submittal review workflow, giving inspectors and engineers a clear path from submission to disposition.
+
+**Key Features**
+
+- **QC/QA Reports** -- Structured reports capturing inspection results, observed conditions, and nonconformance items
+- **Nonconformance Item Tracking** -- Each nonconforming item is logged with description, location, severity, and assigned responsible party
+- **Close-Out Workflow** -- Formal lifecycle for nonconformance items: Open → In Progress → Corrected → Verified → Closed
+- **Punch List Linking** -- Bidirectional link from QC/QA nonconforming items to Punch List items, so corrective actions tracked in either module stay in sync
+- **QC/QA Plan per Project** -- Project-level QC/QA plan stored as a routable document, similar to a submittal: submit → review → approve/reject with full audit trail
+- **Routing Workflow** -- Same routing capability as submittals, including reviewer assignment, due dates, and status filters
+- **Easy Locatability** -- Dedicated QC/QA section accessible from every project's sidebar so inspectors and engineers can find it without hunting
+
+**Permissions by Role**
+
+| Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| View QC/QA reports | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Create QC/QA report | Yes | Yes | Yes | Yes | - | Yes | - |
+| Edit QC/QA report | Yes | Yes | Yes | Yes | - | - | - |
+| Log nonconformance item | Yes | Yes | Yes | Yes | - | Yes | - |
+| Verify / close nonconformance | Yes | - | - | Yes | - | Yes | - |
+| Submit / route QC/QA plan | Yes | - | - | Yes | - | - | - |
+| Approve / reject QC/QA plan | Yes | - | - | Yes | - | - | - |
+
+---
+
+### 3.12 Photos & Media -- *Planned*
+
+**Overview**
+
+The Photos & Media module is a mobile-first photo management workflow built around the way crews actually work in the field: take a picture, have it auto-saved to the right project folder, and never think about file organization again. Geo-tags, timestamps, and camera metadata are captured automatically for downstream sorting and reporting.
+
+**Key Features**
+
+- **Photos Bin** -- Take a photo from the mobile camera and auto-save it directly to the project folder with one tap
+- **Auto-Organization by Date** -- Photos automatically grouped into folders by capture date
+- **Geo-Tag Capture** -- Latitude/longitude metadata captured from the device camera and stored with each photo
+- **Timestamp Capture** -- Original capture timestamp preserved alongside the upload time
+- **Camera Metadata** -- EXIF data (camera model, orientation, resolution) preserved for sorting and provenance
+- **Project Folder Structure** -- Each project gets a top-level photos folder with date subfolders, browsable from web and mobile
+- **Future (V2.5):** Live camera integration with Z-P-T (zoom/pan/tilt) controls, photo logs, and time-lapse video generation
+
+**Permissions by Role**
+
+| Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| View photos | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Upload photos | Yes | Yes | Yes | - | - | - | - |
+| Delete own photos | Yes | Yes | Yes | - | - | - | - |
+| Delete any photo | Yes | - | - | - | - | - | - |
+| Download photos | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+
+---
+
+### 3.13 Safety Module -- *Planned*
+
+**Overview**
+
+The Safety module provides dedicated tracking for safety incidents, observations, and reporting -- elevating safety from a free-text field on the daily log into a first-class part of the platform. The exact placement (its own dashboard box vs. integrated within Daily Logs) is TBD based on field feedback.
+
+**Key Features**
+
+- **Safety Tracking** -- Dedicated tracking view for all safety entries across a project (placement TBD: own dashboard box or integrated within Daily Logs)
+- **Incident Reporting** -- Structured fields for incident type, severity, personnel involved, location, root cause, and corrective action
+- **Safety Notes per Daily Log** -- The existing free-text safety field in daily logs is preserved and rolled up into a dedicated safety tracking view
+- **Severity & Type Filters** -- Filter incidents by severity (near-miss, first-aid, recordable, lost-time) and type
+- **Photo Attachments** -- Attach photos to incidents and observations
+- **Trend Reporting** -- Aggregate view of safety metrics over time (incident rate, types, locations)
+
+**Permissions by Role**
+
+| Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| View safety entries | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Create safety entry | Yes | Yes | Yes | Yes | Yes | Yes | - |
+| Edit own entry | Yes | Yes | Yes | Yes | Yes | Yes | - |
+| Edit any entry | Yes | - | - | - | - | - | - |
+| View trend reports | Yes | Yes | Yes | Yes | - | Yes | Yes |
 
 ---
 
@@ -551,6 +679,32 @@ The following table provides a comprehensive reference of every action in RailCo
 | 50 | View own active sessions | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | 51 | Sign out all devices | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | 52 | Manage other users' accounts | Admin Only | - | - | - | - | - | - |
+| | **Project Documents** *(Planned)* | | | | | | | |
+| 53 | View project documents | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| 54 | Upload new revision | Yes | Yes | - | Yes | Yes | - | - |
+| 55 | Manage revision history | Yes | - | - | Yes | - | - | - |
+| 56 | Delete document | Yes | - | - | Yes | - | - | - |
+| 57 | Download CAD originals | Yes | Yes | - | Yes | Yes | - | - |
+| | **QC/QA** *(Planned)* | | | | | | | |
+| 58 | View QC/QA reports | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| 59 | Create QC/QA report | Yes | Yes | Yes | Yes | - | Yes | - |
+| 60 | Edit QC/QA report | Yes | Yes | Yes | Yes | - | - | - |
+| 61 | Log nonconformance item | Yes | Yes | Yes | Yes | - | Yes | - |
+| 62 | Verify / close nonconformance | Yes | - | - | Yes | - | Yes | - |
+| 63 | Submit / route QC/QA plan | Yes | - | - | Yes | - | - | - |
+| 64 | Approve / reject QC/QA plan | Yes | - | - | Yes | - | - | - |
+| | **Photos & Media** *(Planned)* | | | | | | | |
+| 65 | View photos | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| 66 | Upload photos | Yes | Yes | Yes | - | - | - | - |
+| 67 | Delete own photos | Yes | Yes | Yes | - | - | - | - |
+| 68 | Delete any photo | Yes | - | - | - | - | - | - |
+| 69 | Download photos | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| | **Safety** *(Planned)* | | | | | | | |
+| 70 | View safety entries | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| 71 | Create safety entry | Yes | Yes | Yes | Yes | Yes | Yes | - |
+| 72 | Edit own safety entry | Yes | Yes | Yes | Yes | Yes | Yes | - |
+| 73 | Edit any safety entry | Yes | - | - | - | - | - | - |
+| 74 | View safety trend reports | Yes | Yes | Yes | Yes | - | Yes | Yes |
 
 > **Legend:** "Yes" = Permitted | "-" = Not Permitted | "Admin Only" = Requires organization-level Admin role
 
@@ -574,6 +728,10 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **Schedule & Milestones** | Complete | 100% | Timeline view, budget tracking, linked submittals/RFIs, PDF export |
 | **Team Management** | Complete | 100% | Full invite/add/remove workflow with role assignment |
 | **Settings & Profile** | Complete | 100% | Profile editing, dark mode, notification preferences, security |
+| **Project Documents** | Planned | 0% | New module — revision tracking, PDF requirement, CAD folder structure (V2 sprint Week 1) |
+| **QC/QA** | Planned | 0% | New module — nonconformance tracking, Punch List linking, routable QC/QA plans (V2 sprint Week 3) |
+| **Photos & Media** | Planned | 0% | New module — mobile photo capture, auto-organization, geo-tags, metadata (V2 sprint Week 3) |
+| **Safety** | Planned | 0% | New module — dedicated safety tracking and incident reporting (V2 sprint Week 2) |
 
 ### Platform Feature Status
 
@@ -611,6 +769,12 @@ The following features are actively planned for upcoming releases, ordered by pr
 | 7 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Post-Beta |
 | 8 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Post-Beta |
 | 9 | ~~**Email Digests**~~ | ~~Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones.~~ Overdue digest and daily log reminders now live via Vercel Cron. Weekly project summary digest remaining. | **Partially Complete** |
+| 10 | **Dashboard Interactivity** | Clickable KPI boxes, drillable activity feed, CPI/SPI metrics | Sprint Week 1 (Apr 13-17) |
+| 11 | **Project Documents Module** | New module with revision tracking, PDF requirements, CAD folder structure | Sprint Week 1 (Apr 13-17) |
+| 12 | **Safety Module** | Dedicated safety tracking with incident reporting | Sprint Week 2 (Apr 20-24) |
+| 13 | **QC/QA Module** | Nonconformance tracking, Punch List linking, routable QC/QA plans | Sprint Week 3 (Apr 27-May 1) |
+| 14 | **Photos & Media** | Mobile photo capture with auto-organization, geo-tags, metadata | Sprint Week 3 (Apr 27-May 1) |
+| 15 | **RBAC Management UI** | Team Access permissions interface with R/W/C controls | Sprint Week 4 (May 4-8) |
 
 ### Testing Milestones
 
@@ -632,4 +796,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: March 31, 2026*
+*Last updated: April 7, 2026 — V2 Sprint roadmap added (Project Documents, QC/QA, Photos & Media, Safety modules + dashboard interactivity)*

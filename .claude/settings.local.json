@@ -62,7 +62,9 @@
       "Bash(find /Users/dillanmilosevich/Desktop/IDE/Railcommand-1 -type f \\\\\\(-name *claude* -o -name *ai* -o -name *chat* -o -name *bot* \\\\\\))",
       "Bash(curl:*)",
       "Bash(npx tsx:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(dig:*)",
+      "Bash(openssl rand:*)"
     ]
   }
 }
