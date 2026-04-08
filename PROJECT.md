@@ -165,6 +165,7 @@
 - [x] Clickable dashboard KPI boxes → navigate to detail pages with pre-filtering (?status= URL params)
 - [x] Sidebar navigation: tightened spacing and contrast (Caleb feedback — "felt cramped")
 - [x] Notification bell wired to clickable activity feed (Caleb feedback — "bell did nothing")
+- [x] First-run onboarding wizard: Welcome → Profile → Business Setup (Caleb feedback — "login felt abrupt, no onboarding context")
 - [ ] Recent activity entries tappable → item detail views
 - [ ] Team listing moved to prominent position (not behind "More")
 - [ ] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
@@ -268,6 +269,6 @@
 
 ---
 
-*Last updated: April 8, 2026 — Sidebar nav + notification bell (Phase 12 Week 1)*
+*Last updated: April 8, 2026 — Onboarding wizard rebuilt (Phase 12 Week 1)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

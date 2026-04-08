@@ -543,6 +543,7 @@ These capabilities span the entire application and are available across all modu
 - **Email/Password Sign-In** -- Standard email and password authentication with form validation
 - **Google OAuth** -- One-click sign-in with Google for faster access
 - **Account Registration** -- Sign-up flow with password strength meter (Weak / Fair / Good / Strong)
+- **First-Run Onboarding Wizard** -- New users land in a 3-step wizard after sign-up: Welcome (product overview), Profile (name, phone, job title), and Business Setup (organization name, type, role). Stepper shows progress, back/forward navigation preserves input. Replaces the previous abrupt one-step "Set up your business" form. Beta feedback drove this on April 8, 2026.
 - **Password Reset** -- Self-service forgot-password flow via email reset link
 - **Row-Level Security** -- Database-level access control ensures users can only access data they are authorized to see
 - **256-Bit Encryption** -- All data encrypted in transit and at rest
@@ -797,4 +798,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 8, 2026 — Sidebar nav tightened + notification bell wired to clickable activity (Caleb feedback)*
+*Last updated: April 8, 2026 — First-run onboarding wizard rebuilt (Welcome → Profile → Business)*
