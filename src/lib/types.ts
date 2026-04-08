@@ -25,6 +25,7 @@ export interface Profile {
   organization_id: string;
   organization?: Organization;
   avatar_url: string;
+  time_zone?: string;
   created_at: string;
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -18,8 +18,10 @@ import {
   ExternalLink,
   Loader2,
   AlertTriangle,
+  KeyRound,
+  AlertCircle,
 } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,8 +39,13 @@ import {
 import type { Profile, Organization } from '@/lib/types';
 import { getProfileWithOrg, updateProfile } from '@/lib/store';
 import { getMyProfile, updateMyProfile } from '@/lib/actions/profiles';
+import { uploadMyAvatar } from '@/lib/actions/avatar';
+import { createClient } from '@/lib/supabase/client';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectMembers } from '@/hooks/useData';
+
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const AVATAR_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -128,6 +135,18 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  // Avatar upload state
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+
+  // Password reset state
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState('');
+
   const {
     register,
     handleSubmit,
@@ -145,8 +164,16 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       reset({ fullName: profile.full_name ?? '', phone: profile.phone ?? '' });
+      setAvatarUrl(profile.avatar_url ?? '');
     }
   }, [profile, reset]);
+
+  // Revoke any object URL when preview changes/unmounts
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
 
   // Auto-dismiss success message
   useEffect(() => {
@@ -187,6 +214,92 @@ export default function ProfilePage() {
     router.refresh();
   }
 
+  async function handleAvatarSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Clear input value so selecting the same file twice still fires change
+    if (e.target) e.target.value = '';
+    if (!file) return;
+
+    setAvatarError('');
+
+    if (!AVATAR_ACCEPTED_TYPES.includes(file.type)) {
+      setAvatarError('Please choose a PNG, JPEG, WebP, or GIF image.');
+      return;
+    }
+    if (file.size > AVATAR_MAX_SIZE) {
+      setAvatarError('Image is too large. Maximum size is 5MB.');
+      return;
+    }
+
+    // Local preview
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    if (isDemo) {
+      // Demo mode: just show the preview locally, persist to local store
+      setAvatarUrl(previewUrl);
+      updateProfile(currentUserId, { avatar_url: previewUrl });
+      setSuccessMessage('Avatar updated');
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const result = await uploadMyAvatar(formData);
+      if (result.error || !result.data) {
+        setAvatarError(result.error ?? 'Upload failed');
+        setAvatarPreview('');
+        URL.revokeObjectURL(previewUrl);
+      } else {
+        setAvatarUrl(result.data.url);
+        setAvatarPreview('');
+        URL.revokeObjectURL(previewUrl);
+        setAuthProfile((prev) => (prev ? { ...prev, avatar_url: result.data!.url } : prev));
+        setSuccessMessage('Avatar updated');
+        router.refresh();
+      }
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : 'Upload failed');
+      setAvatarPreview('');
+      URL.revokeObjectURL(previewUrl);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
+  async function handlePasswordReset() {
+    if (!profile?.email) return;
+    setResetError('');
+    setIsSendingReset(true);
+
+    if (isDemo) {
+      await new Promise((r) => setTimeout(r, 400));
+      setIsSendingReset(false);
+      setResetSent(true);
+      setSuccessMessage('Password reset email sent (demo)');
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
+      });
+      if (error) {
+        setResetError(error.message);
+      } else {
+        setResetSent(true);
+        setSuccessMessage('Password reset email sent');
+      }
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : 'Failed to send reset email');
+    } finally {
+      setIsSendingReset(false);
+    }
+  }
+
   function handleSignOut() {
     try {
       document.cookie = 'rc-remember=; path=/; max-age=0';
@@ -212,19 +325,46 @@ export default function ProfilePage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
         {/* Avatar */}
         <div className="relative group">
-          <Avatar className="size-20 bg-rc-navy text-white font-heading text-2xl font-bold">
-            <AvatarFallback className="bg-rc-navy text-white font-heading text-2xl font-bold">
-              {getInitials(profile.full_name)}
-            </AvatarFallback>
-          </Avatar>
           <button
             type="button"
-            disabled
-            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-not-allowed"
-            aria-label="Change avatar (coming soon)"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            aria-label="Change avatar"
+            className="relative block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-rc-orange focus-visible:ring-offset-2 disabled:cursor-wait"
           >
-            <Camera className="size-5 text-white" />
+            <Avatar className="size-20 bg-rc-navy text-white font-heading text-2xl font-bold">
+              {(avatarPreview || avatarUrl) && (
+                <AvatarImage
+                  src={avatarPreview || avatarUrl}
+                  alt={`${profile.full_name} avatar`}
+                  className="object-cover"
+                />
+              )}
+              <AvatarFallback className="bg-rc-navy text-white font-heading text-2xl font-bold">
+                {getInitials(profile.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <span
+              className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/45 transition-opacity ${
+                avatarUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+              }`}
+              aria-hidden="true"
+            >
+              {avatarUploading ? (
+                <Loader2 className="size-5 text-white animate-spin" />
+              ) : (
+                <Camera className="size-5 text-white" />
+              )}
+            </span>
           </button>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={handleAvatarSelected}
+            aria-label="Upload new avatar image"
+          />
         </div>
 
         {/* Name + meta */}
@@ -248,16 +388,32 @@ export default function ProfilePage() {
 
         {/* Change Avatar button (mobile-friendly alternate) */}
         <Button
+          type="button"
           variant="outline"
           size="sm"
-          disabled
-          className="shrink-0 gap-1.5 text-xs"
-          aria-label="Change avatar (coming soon)"
+          onClick={() => avatarInputRef.current?.click()}
+          disabled={avatarUploading}
+          className="shrink-0 gap-1.5 text-xs min-h-[44px] sm:min-h-0"
+          aria-label="Change avatar"
         >
-          <Camera className="size-3.5" />
-          Change Avatar
+          {avatarUploading ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Camera className="size-3.5" />
+          )}
+          {avatarUploading ? 'Uploading...' : 'Change Avatar'}
         </Button>
       </div>
+
+      {avatarError && (
+        <div
+          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{avatarError}</span>
+        </div>
+      )}
 
       <Separator />
 
@@ -306,7 +462,26 @@ export default function ProfilePage() {
                 aria-label="Email address (read-only)"
               />
               <p className="text-xs text-muted-foreground">
-                Contact admin to change email
+                Email is managed by your sign-in provider. Contact support@railcommand.com to change it.
+              </p>
+            </div>
+
+            {/* Role (read-only) */}
+            <div className="space-y-2">
+              <label htmlFor="profile-role" className="text-sm font-medium">
+                Organization Role
+              </label>
+              <Input
+                id="profile-role"
+                type="text"
+                value={ROLE_LABELS[profile.role] ?? profile.role}
+                readOnly
+                disabled
+                className="opacity-60 cursor-not-allowed"
+                aria-label="Organization role (read-only)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your role is managed at the organization level. Contact an admin to change it.
               </p>
             </div>
 
@@ -457,6 +632,62 @@ export default function ProfilePage() {
       </Card>
 
       {/* ============================================================ */}
+      {/*  Security                                                     */}
+      {/* ============================================================ */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <KeyRound className="size-5 text-muted-foreground" />
+            <CardTitle className="font-heading text-lg">Security</CardTitle>
+          </div>
+          <CardDescription>
+            Reset your password. We&apos;ll email a secure link to {profile.email}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePasswordReset}
+                disabled={isSendingReset || resetSent}
+                className="gap-2 min-h-[44px] sm:min-h-0"
+                aria-label="Send password reset email"
+              >
+                {isSendingReset ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : resetSent ? (
+                  <>
+                    <CheckCircle2 className="size-4 text-rc-emerald" />
+                    Email sent
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="size-4" />
+                    Send Password Reset Email
+                  </>
+                )}
+              </Button>
+              {resetSent && (
+                <p className="text-xs text-muted-foreground">
+                  Check your inbox for the reset link. It expires in 1 hour.
+                </p>
+              )}
+            </div>
+            {resetError && (
+              <p className="text-xs text-destructive" role="alert">
+                {resetError}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ============================================================ */}
       {/*  Account Actions                                              */}
       {/* ============================================================ */}
       <Card>
@@ -469,7 +700,7 @@ export default function ProfilePage() {
             <Button
               variant="destructive"
               onClick={handleSignOut}
-              className="gap-2"
+              className="gap-2 min-h-[44px] sm:min-h-0"
             >
               <LogOut className="size-4" />
               Sign Out
@@ -477,7 +708,7 @@ export default function ProfilePage() {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(true)}
-              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive dark:border-destructive/40"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive dark:border-destructive/40 min-h-[44px] sm:min-h-0"
             >
               <Trash2 className="size-4" />
               Delete Account

@@ -5,6 +5,7 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notification-preferences';
+import { getMyProfile, updateMyProfile } from '@/lib/actions/profiles';
 import type { NotificationPreferences } from '@/lib/notifications';
 import {
   Card,
@@ -16,6 +17,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   useTheme,
   type ThemeMode,
@@ -140,6 +150,84 @@ const notificationSettings: NotificationSetting[] = [
     defaultOn: true,
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Timezone options                                                  */
+/* ------------------------------------------------------------------ */
+const AUTO_TZ_VALUE = '__auto__';
+
+interface TimeZoneOption {
+  value: string; // IANA identifier
+  label: string;
+}
+
+interface TimeZoneGroup {
+  region: string;
+  zones: TimeZoneOption[];
+}
+
+const timeZoneGroups: TimeZoneGroup[] = [
+  {
+    region: 'Americas',
+    zones: [
+      { value: 'Pacific/Honolulu', label: 'Hawaii' },
+      { value: 'America/Anchorage', label: 'Alaska' },
+      { value: 'America/Los_Angeles', label: 'Pacific' },
+      { value: 'America/Denver', label: 'Mountain' },
+      { value: 'America/Phoenix', label: 'Arizona (no DST)' },
+      { value: 'America/Chicago', label: 'Central' },
+      { value: 'America/New_York', label: 'Eastern' },
+      { value: 'America/Halifax', label: 'Atlantic' },
+      { value: 'America/Mexico_City', label: 'Mexico City' },
+      { value: 'America/Sao_Paulo', label: 'Sao Paulo' },
+    ],
+  },
+  {
+    region: 'Europe & Africa',
+    zones: [
+      { value: 'Europe/London', label: 'London' },
+      { value: 'Europe/Paris', label: 'Paris' },
+      { value: 'Europe/Berlin', label: 'Berlin' },
+      { value: 'Europe/Athens', label: 'Athens' },
+      { value: 'Africa/Johannesburg', label: 'Johannesburg' },
+    ],
+  },
+  {
+    region: 'Asia & Pacific',
+    zones: [
+      { value: 'Asia/Dubai', label: 'Dubai' },
+      { value: 'Asia/Kolkata', label: 'India' },
+      { value: 'Asia/Singapore', label: 'Singapore' },
+      { value: 'Asia/Hong_Kong', label: 'Hong Kong' },
+      { value: 'Asia/Tokyo', label: 'Tokyo' },
+      { value: 'Australia/Sydney', label: 'Sydney' },
+      { value: 'Pacific/Auckland', label: 'Auckland' },
+    ],
+  },
+];
+
+/** Compute current UTC offset for an IANA zone as `UTC±H[:MM]`. */
+function formatUtcOffset(timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(new Date());
+    const tzName = parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+    // tzName is like "GMT-7" or "GMT+5:30" or "GMT"
+    const match = tzName.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/);
+    if (!match) return 'UTC';
+    const hours = parseInt(match[1], 10);
+    const mins = match[2] ? parseInt(match[2], 10) : 0;
+    const sign = hours >= 0 ? '+' : '-';
+    const absH = Math.abs(hours);
+    return mins
+      ? `UTC${sign}${absH}:${mins.toString().padStart(2, '0')}`
+      : `UTC${sign}${absH}`;
+  } catch {
+    return 'UTC';
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Install App card                                                  */
@@ -332,6 +420,66 @@ export default function SettingsPage() {
     });
   }, [isDemo]);
 
+  // ---- Time zone -------------------------------------------------
+  const [browserTz, setBrowserTz] = useState<string>('UTC');
+  // Stored selection: either AUTO_TZ_VALUE or an IANA identifier
+  const [timeZoneSelection, setTimeZoneSelection] =
+    useState<string>(AUTO_TZ_VALUE);
+  const [tzStatus, setTzStatus] = useState<
+    { kind: 'idle' } | { kind: 'saving' } | { kind: 'saved' } | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
+
+  useEffect(() => {
+    try {
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detected) setBrowserTz(detected);
+    } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    if (isDemo) return; // Demo mode: no real profile to load
+    let cancelled = false;
+    getMyProfile().then((result) => {
+      if (cancelled) return;
+      const tz = result.data?.time_zone;
+      if (tz && tz.length > 0) setTimeZoneSelection(tz);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemo]);
+
+  const handleTimeZoneChange = useCallback(
+    (next: string) => {
+      const previous = timeZoneSelection;
+      setTimeZoneSelection(next);
+      setTzStatus({ kind: 'saving' });
+      const valueToPersist = next === AUTO_TZ_VALUE ? '' : next;
+      updateMyProfile({ time_zone: valueToPersist })
+        .then((result) => {
+          if (result.error) {
+            setTimeZoneSelection(previous);
+            setTzStatus({ kind: 'error', message: result.error });
+            return;
+          }
+          setTzStatus({ kind: 'saved' });
+          setTimeout(
+            () =>
+              setTzStatus((s) => (s.kind === 'saved' ? { kind: 'idle' } : s)),
+            2500
+          );
+        })
+        .catch((err: unknown) => {
+          setTimeZoneSelection(previous);
+          setTzStatus({
+            kind: 'error',
+            message: err instanceof Error ? err.message : 'Failed to save time zone',
+          });
+        });
+    },
+    [timeZoneSelection]
+  );
+
   const toggleNotification = useCallback((key: string) => {
     setNotifications((prev) => {
       const next = { ...prev, [key]: !prev[key] };
@@ -445,6 +593,70 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ---- Time Zone ---- */}
+      {!isDemo && (
+        <Card className="bg-rc-card border-rc-border">
+          <CardHeader>
+            <CardTitle className="font-heading">Time Zone</CardTitle>
+            <CardDescription>
+              Used to display dates and times in your local time across the app.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-md space-y-3">
+              <label
+                htmlFor="timezone-select"
+                className="text-sm font-medium text-foreground"
+              >
+                Your time zone
+              </label>
+              <Select
+                value={timeZoneSelection}
+                onValueChange={handleTimeZoneChange}
+              >
+                <SelectTrigger id="timezone-select" className="w-full">
+                  <SelectValue placeholder="Select a time zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Automatic</SelectLabel>
+                    <SelectItem value={AUTO_TZ_VALUE}>
+                      Auto (browser) — {browserTz} ({formatUtcOffset(browserTz)})
+                    </SelectItem>
+                  </SelectGroup>
+                  {timeZoneGroups.map((group) => (
+                    <SelectGroup key={group.region}>
+                      <SelectLabel>{group.region}</SelectLabel>
+                      {group.zones.map((zone) => (
+                        <SelectItem key={zone.value} value={zone.value}>
+                          {zone.label} ({formatUtcOffset(zone.value)})
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {tzStatus.kind === 'saving' && (
+                <div className="text-xs text-rc-steel">Saving…</div>
+              )}
+              {tzStatus.kind === 'saved' && (
+                <div className="flex items-center gap-2 text-xs text-rc-emerald">
+                  <CheckCircle className="size-3.5 shrink-0" />
+                  Time zone updated.
+                </div>
+              )}
+              {tzStatus.kind === 'error' && (
+                <div className="flex items-center gap-2 text-xs text-rc-red">
+                  <AlertTriangle className="size-3.5 shrink-0" />
+                  {tzStatus.message}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ---- Install App ---- */}
       <InstallAppCard />

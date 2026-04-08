@@ -340,13 +340,18 @@ Settings and Profile pages allow every user to manage their personal information
 - **Profile Management:**
   - Edit full name and phone number
   - View email address (read-only; admin change required)
-  - Avatar display with initials (photo upload coming soon)
+  - Avatar upload with image preview and Supabase Storage backing (PNG, JPEG, WebP, GIF up to 5MB); falls back to initials when no avatar set
   - View organization name, type, and membership date
   - View current project assignment and access level
+  - Self-service password reset — sends a reset email via the Resend SMTP integration
 - **Appearance Settings:**
   - **Light Mode** -- Clean, bright interface
   - **Dark Mode** -- Reduced-glare dark theme for low-light environments
   - **Auto Mode** -- Automatically switches to dark mode from 7 PM to 6 AM
+- **Time Zone Settings:**
+  - Curated list of common IANA timezones (Americas, Europe, Asia/Pacific) with live UTC offsets
+  - "Auto (browser)" option to use the browser-detected timezone
+  - Persisted to user profile so all dates and times across the app render in the user's local zone
 - **Notification Preferences** (toggle on/off per category):
   - Email notifications for project activity
   - Submittal status change alerts
@@ -798,4 +803,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 8, 2026 — First-run onboarding wizard rebuilt (Welcome → Profile → Business)*
+*Last updated: April 8, 2026 — Profile avatar upload + password reset; Settings timezone selector*
