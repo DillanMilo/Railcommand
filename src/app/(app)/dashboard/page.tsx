@@ -211,8 +211,8 @@ export default function DashboardPage() {
           subtitle={`${pendingSubmittals} pending review`}
           icon={FileCheck}
           color="blue"
-          href={`/projects/${currentProjectId}/submittals`}
-          ariaLabel="View submittals"
+          href={`/projects/${currentProjectId}/submittals?status=under_review`}
+          ariaLabel="View submittals pending review"
         />
         <KPICard
           title="Open RFIs"
@@ -220,8 +220,8 @@ export default function DashboardPage() {
           subtitle={`${overdueRFIs} overdue`}
           icon={MessageSquareMore}
           color={overdueRFIs > 0 ? 'orange' : 'blue'}
-          href={`/projects/${currentProjectId}/rfis`}
-          ariaLabel="View RFIs"
+          href={`/projects/${currentProjectId}/rfis?status=open`}
+          ariaLabel="View open RFIs"
         />
         <KPICard
           title="Punch List"
@@ -229,8 +229,8 @@ export default function DashboardPage() {
           subtitle={`${criticalPunch} critical`}
           icon={ClipboardCheck}
           color={criticalPunch > 0 ? 'red' : 'amber'}
-          href={`/projects/${currentProjectId}/punch-list`}
-          ariaLabel="View punch list"
+          href={`/projects/${currentProjectId}/punch-list?status=open`}
+          ariaLabel="View open punch list items"
         />
         <KPICard
           title="Daily Logs"

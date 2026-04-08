@@ -2,6 +2,7 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { differenceInDays } from 'date-fns';
 import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
 import { Plus, Search } from 'lucide-react';
@@ -46,7 +47,11 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
   const { can } = usePermissions(projectId);
   const currentProfile = getProfileWithOrg(getCurrentUserId());
   const { data: submittals, loading } = useSubmittals(projectId);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const urlSearchParams = useSearchParams();
+  const ALLOWED_STATUSES = ['all', 'draft', 'submitted', 'under_review', 'approved', 'conditional', 'rejected'];
+  const rawStatus = urlSearchParams.get('status') ?? 'all';
+  const initialStatus = ALLOWED_STATUSES.includes(rawStatus) ? rawStatus : 'all';
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {

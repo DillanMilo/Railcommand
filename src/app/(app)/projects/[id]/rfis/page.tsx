@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { differenceInCalendarDays } from 'date-fns';
 import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
@@ -45,7 +46,13 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
   const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
   const currentProfile = getProfileWithOrg(getCurrentUserId());
-  const [tab, setTab] = useState<RFIStatus | 'all'>('all');
+  const urlSearchParams = useSearchParams();
+  const initialStatus = urlSearchParams.get('status');
+  const ALLOWED_STATUSES: ReadonlyArray<RFIStatus | 'all'> = ['all', 'open', 'answered', 'closed', 'overdue'];
+  const validatedInitial: RFIStatus | 'all' = ALLOWED_STATUSES.includes(initialStatus as RFIStatus | 'all')
+    ? (initialStatus as RFIStatus | 'all')
+    : 'all';
+  const [tab, setTab] = useState<RFIStatus | 'all'>(validatedInitial);
   const [search, setSearch] = useState('');
 
   const { data: rfis, loading } = useRFIs(projectId);

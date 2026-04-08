@@ -2,6 +2,7 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,8 +55,21 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
   const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
   const currentProfile = getProfileWithOrg(getCurrentUserId());
-  const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
+  const urlSearchParams = useSearchParams();
+  const VALID_STATUSES: ReadonlyArray<PunchListStatus> = ['open', 'in_progress', 'resolved', 'verified'];
+  const VALID_PRIORITIES: ReadonlyArray<Priority> = ['critical', 'high', 'medium', 'low'];
+  const statusParam = urlSearchParams?.get('status');
+  const priorityParam = urlSearchParams?.get('priority');
+  const initialStatus: PunchListStatus | 'all' =
+    statusParam && (VALID_STATUSES as readonly string[]).includes(statusParam)
+      ? (statusParam as PunchListStatus)
+      : 'all';
+  const initialPriority: Priority | 'all' =
+    priorityParam && (VALID_PRIORITIES as readonly string[]).includes(priorityParam)
+      ? (priorityParam as Priority)
+      : 'all';
+  const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>(initialStatus);
+  const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>(initialPriority);
 
   const { data: items, loading } = usePunchListItems(projectId);
   const counts = useMemo(() => ({
