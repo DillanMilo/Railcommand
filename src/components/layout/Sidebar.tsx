@@ -252,8 +252,8 @@ export default function Sidebar() {
 
         {/* Project Switcher */}
         {!collapsed && (
-          <div className="px-4 py-3 border-b border-white/10 shrink-0">
-            <p className="text-[11px] uppercase tracking-wider text-white/60 font-medium">
+          <div className="px-4 py-4 border-b border-white/10 shrink-0">
+            <p className="text-[11px] uppercase tracking-wider text-white/70 font-medium">
               Project
             </p>
             <DropdownMenu>
@@ -266,10 +266,10 @@ export default function Sidebar() {
                     )}
                   />
                 )}
-                <span className="text-sm text-white/80 truncate flex-1">
+                <span className="text-sm text-white/95 truncate flex-1 font-medium">
                   {currentProject?.name ?? 'Select project'}
                 </span>
-                <ChevronDown className="size-3.5 text-white/60 shrink-0 group-hover:text-white transition-colors" />
+                <ChevronDown className="size-3.5 text-white/70 shrink-0 group-hover:text-white transition-colors" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
                 {/* Active / On Hold projects */}
@@ -313,7 +313,7 @@ export default function Sidebar() {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = ICON_MAP[item.icon];
             const disabled = item.requiresProject && !currentProjectId;
@@ -324,7 +324,7 @@ export default function Sidebar() {
               const disabledEl = (
                 <span
                   key={item.label}
-                  className="flex items-center gap-3 px-3 h-11 rounded-lg text-sm font-medium text-white/30 cursor-not-allowed"
+                  className="flex items-center gap-3.5 px-3 h-11 rounded-lg text-sm font-medium text-white/30 cursor-not-allowed"
                 >
                   {Icon && <Icon className="size-5 shrink-0" />}
                   {!collapsed && <span className="truncate">{item.label}</span>}
@@ -346,10 +346,10 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 h-11 rounded-lg text-sm font-medium transition-colors',
+                  'flex items-center gap-3.5 px-3 h-11 rounded-lg text-sm transition-colors',
                   isActive
-                    ? 'bg-rc-orange text-white'
-                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                    ? 'bg-rc-orange text-white font-semibold shadow-sm shadow-rc-orange/40 ring-1 ring-inset ring-white/15'
+                    : 'font-medium text-white/85 hover:text-white hover:bg-white/10'
                 )}
               >
                 {Icon && (
@@ -390,7 +390,7 @@ export default function Sidebar() {
         <div className="px-2 py-3 border-t border-white/10 shrink-0">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-full h-11 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+            className="flex items-center justify-center w-full h-11 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (

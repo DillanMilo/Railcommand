@@ -579,7 +579,7 @@ These capabilities span the entire application and are available across all modu
 
 ### In-App Notifications -- *Complete*
 
-- **In-App Notification Panel** -- Bell icon in the top bar with recent activity stream *(complete)*
+- **In-App Notification Panel** -- Bell icon in the top bar opens a slide-over panel showing recent project activity. Each notification is clickable and navigates directly to the source record (submittal, RFI, daily log, punch item, milestone). Includes entity-type icons, relative timestamps, count badge with overflow indicator (9+), and friendly empty state. *(complete)*
 - **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments *(complete)*
 - **Per-Module Toggles** -- Users can enable or disable notifications for each module independently (8 categories) *(complete)*
 - **Email Notifications** -- Automated email alerts via Resend for 8 notification types: submittal status changes, RFI assignments, RFI responses, punch list assignments, punch list status changes, overdue reminders (daily digest), daily log filing reminders, and team updates (member added/removed). Sent from `noreply@railcommand.a5rail.com` *(complete)*
@@ -605,6 +605,7 @@ RailCommand enforces role-based permissions across every module in the applicati
 ### Navigation & Usability -- *Complete*
 
 - **Global Search** -- Search across all modules from the top bar *(page-level navigation complete; full-text cross-module search coming soon)*
+- **Sidebar Navigation** -- Collapsible navy sidebar with project switcher, role-aware nav items, tightened spacing and high-contrast labels, and active-state highlight. Beta feedback drove the spacing/contrast pass on April 8, 2026.
 - **Breadcrumb Navigation** -- Persistent breadcrumbs on every page showing the user's location in the app
 - **Skeleton Loading Screens** -- Polished placeholder content displayed while data loads
 - **Empty States** -- Helpful messaging when no data exists, with guidance on next steps
@@ -796,4 +797,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 8, 2026 — Dashboard KPI cards clickable + pre-filter destination pages (Caleb feedback complete)*
+*Last updated: April 8, 2026 — Sidebar nav tightened + notification bell wired to clickable activity (Caleb feedback)*

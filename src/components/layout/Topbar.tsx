@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Bell, Search, Settings, LogOut, User, Check, ChevronDown, Plus } from 'lucide-react';
+import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -32,7 +32,27 @@ import { getProfiles } from '@/lib/store';
 import { getMyProfile } from '@/lib/actions/profiles';
 import { useActivityLog, useProjectMembers } from '@/hooks/useData';
 import { formatDistanceToNow } from 'date-fns';
-import type { Project, Profile } from '@/lib/types';
+import type { Project, Profile, ActivityLogEntry } from '@/lib/types';
+
+type EntityType = ActivityLogEntry['entity_type'];
+
+const ENTITY_ICONS: Record<EntityType, typeof FileCheck> = {
+  submittal: FileCheck,
+  rfi: MessageSquareMore,
+  punch_list: ClipboardCheck,
+  daily_log: CalendarDays,
+  milestone: GanttChart,
+  project: FolderKanban,
+};
+
+const ENTITY_LABELS: Record<EntityType, string> = {
+  submittal: 'Submittal',
+  rfi: 'RFI',
+  punch_list: 'Punch',
+  daily_log: 'Daily Log',
+  milestone: 'Milestone',
+  project: 'Project',
+};
 
 const STATUS_DOT_COLORS: Record<Project['status'], string> = {
   active: 'bg-rc-emerald',
@@ -65,6 +85,31 @@ export default function Topbar({ children }: TopbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  function getActivityHref(
+    entity_type: EntityType,
+    entity_id: string,
+    project_id: string | null | undefined
+  ): string | null {
+    if (!project_id) return null;
+    switch (entity_type) {
+      case 'submittal':
+        return `/projects/${project_id}/submittals/${entity_id}`;
+      case 'rfi':
+        return `/projects/${project_id}/rfis/${entity_id}`;
+      case 'daily_log':
+        return `/projects/${project_id}/daily-logs/${entity_id}`;
+      case 'punch_list':
+        return `/projects/${project_id}/punch-list/${entity_id}`;
+      case 'milestone':
+        return `/projects/${project_id}/schedule`;
+      case 'project':
+        return `/projects/${project_id}/dashboard`;
+      default:
+        return null;
+    }
+  }
 
   const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'on_hold');
   const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
@@ -224,37 +269,106 @@ export default function Topbar({ children }: TopbarProps) {
           <ThemeToggle />
 
           {/* Notifications */}
-          <Sheet>
+          <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative text-rc-steel" aria-label="Notifications">
                 <Bell className="size-5" />
                 {recentActivity.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex items-center justify-center size-4 rounded-full bg-rc-red text-white text-[10px] font-bold leading-none">
-                    {Math.min(recentActivity.length, 9)}
+                  <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rc-red text-white text-[10px] font-bold leading-none ring-2 ring-rc-card">
+                    {recentActivity.length > 9 ? '9+' : recentActivity.length}
                   </span>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-full max-w-[360px] sm:max-w-[400px]">
+            <SheetContent className="w-full max-w-[360px] sm:max-w-[400px] flex flex-col">
               <SheetHeader>
                 <SheetTitle>Notifications</SheetTitle>
               </SheetHeader>
-              <div className="mt-4 space-y-3">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="rounded-lg border p-3 space-y-1">
-                    <p className="text-sm">
-                      <span className="font-medium">{getProfileName(activity.performed_by, activity.performed_by_profile, isDemo)}</span>{' '}
-                      <span className="text-muted-foreground">{activity.description}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                      {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                    </p>
+              <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
+                {!currentProjectId && (
+                  <div className="flex flex-col items-center justify-center text-center py-12 gap-2">
+                    <BellOff className="size-8 text-muted-foreground/60" />
+                    <p className="text-sm text-muted-foreground">Select a project to see notifications</p>
                   </div>
-                ))}
-                {recentActivity.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">No recent notifications</p>
                 )}
+                {currentProjectId && recentActivity.length === 0 && (
+                  <div className="flex flex-col items-center justify-center text-center py-12 gap-2">
+                    <BellOff className="size-8 text-muted-foreground/60" />
+                    <p className="text-sm font-medium">You&apos;re all caught up</p>
+                    <p className="text-xs text-muted-foreground">New activity will show up here.</p>
+                  </div>
+                )}
+                {currentProjectId && recentActivity.map((activity) => {
+                  const href = getActivityHref(
+                    activity.entity_type,
+                    activity.entity_id,
+                    activity.project_id ?? currentProjectId
+                  );
+                  const Icon = ENTITY_ICONS[activity.entity_type] ?? Bell;
+                  const label = ENTITY_LABELS[activity.entity_type] ?? 'Activity';
+                  const actorName = getProfileName(activity.performed_by, activity.performed_by_profile, isDemo);
+
+                  const content = (
+                    <div className="flex gap-3">
+                      <div className="shrink-0 mt-0.5">
+                        <div className="flex items-center justify-center size-8 rounded-md bg-rc-navy/10 text-rc-navy dark:bg-rc-navy/30 dark:text-white">
+                          <Icon className="size-4" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            {label}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-snug">
+                          <span className="font-medium">{actorName}</span>{' '}
+                          <span className="text-muted-foreground">{activity.description}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                          {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+
+                  if (href) {
+                    return (
+                      <button
+                        key={activity.id}
+                        type="button"
+                        onClick={() => {
+                          setNotificationsOpen(false);
+                          router.push(href);
+                        }}
+                        className="w-full text-left rounded-lg border p-3 cursor-pointer hover:bg-accent hover:border-rc-navy/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rc-navy"
+                      >
+                        {content}
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <div key={activity.id} className="rounded-lg border p-3">
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
+              {currentProjectId && recentActivity.length > 0 && (
+                <div className="pt-3 mt-2 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      router.push(`/projects/${currentProjectId}/dashboard`);
+                    }}
+                    className="w-full text-center text-xs font-medium text-rc-navy dark:text-rc-orange hover:underline py-1"
+                  >
+                    View all activity
+                  </button>
+                </div>
+              )}
             </SheetContent>
           </Sheet>
 
