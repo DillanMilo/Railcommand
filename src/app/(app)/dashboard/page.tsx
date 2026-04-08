@@ -188,6 +188,8 @@ export default function DashboardPage() {
             color="navy"
             trend="flat"
             trendValue={`${budgetPercent}%`}
+            href={`/projects/${currentProjectId}/schedule`}
+            ariaLabel="View budget and milestones"
           />
         ) : (
           <KPICard title="Budget" value="--" subtitle="Restricted" icon={DollarSign} color="navy" />
@@ -200,6 +202,8 @@ export default function DashboardPage() {
           color="emerald"
           trend="up"
           trendValue="On track"
+          href={`/projects/${currentProjectId}/schedule`}
+          ariaLabel="View schedule and milestones"
         />
         <KPICard
           title="Submittals"
@@ -207,6 +211,8 @@ export default function DashboardPage() {
           subtitle={`${pendingSubmittals} pending review`}
           icon={FileCheck}
           color="blue"
+          href={`/projects/${currentProjectId}/submittals`}
+          ariaLabel="View submittals"
         />
         <KPICard
           title="Open RFIs"
@@ -214,6 +220,8 @@ export default function DashboardPage() {
           subtitle={`${overdueRFIs} overdue`}
           icon={MessageSquareMore}
           color={overdueRFIs > 0 ? 'orange' : 'blue'}
+          href={`/projects/${currentProjectId}/rfis`}
+          ariaLabel="View RFIs"
         />
         <KPICard
           title="Punch List"
@@ -221,6 +229,8 @@ export default function DashboardPage() {
           subtitle={`${criticalPunch} critical`}
           icon={ClipboardCheck}
           color={criticalPunch > 0 ? 'red' : 'amber'}
+          href={`/projects/${currentProjectId}/punch-list`}
+          ariaLabel="View punch list"
         />
         <KPICard
           title="Daily Logs"
@@ -228,6 +238,8 @@ export default function DashboardPage() {
           subtitle={`Last: ${lastLogDate}`}
           icon={CalendarDays}
           color="emerald"
+          href={`/projects/${currentProjectId}/daily-logs`}
+          ariaLabel="View daily logs"
         />
       </div>
 

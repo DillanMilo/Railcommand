@@ -162,7 +162,7 @@
 **Launch Target:** May 11, 2026
 
 #### Week 1: Dashboard & Core UX (April 13–17)
-- [ ] Clickable dashboard KPI boxes → navigate to detail pages
+- [x] Clickable dashboard KPI boxes → navigate to detail pages
 - [ ] Recent activity entries tappable → item detail views
 - [ ] Team listing moved to prominent position (not behind "More")
 - [ ] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
@@ -266,6 +266,6 @@
 
 ---
 
-*Last updated: April 7, 2026 — Phase 12 V2 Sprint Roadmap added*
+*Last updated: April 8, 2026 — Dashboard KPI cards now clickable (Phase 12 Week 1)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

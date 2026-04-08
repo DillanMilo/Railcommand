@@ -106,7 +106,7 @@ The Dashboard is the command center for every project. It provides a real-time, 
 - **Upcoming Milestones Widget** -- Displays the next milestones with status indicators (On Track, At Risk, Behind, Complete) and target dates
 - **Budget Health Summary** -- Visual representation of budget utilization with trend indicators
 - **Project Status Header** -- Project name, active status badge, and client name prominently displayed
-- **Clickable KPI Boxes** -- All 6 dashboard boxes become tappable, navigating to their respective detail/module pages *(Planned)*
+- **Clickable KPI Boxes** -- All 6 dashboard boxes become tappable, navigating to their respective detail/module pages *(In Progress)*
 - **Recent Activity Drilldown** -- Activity feed entries are tappable, linking to individual item detail views *(Planned)*
 - **CPI (Cost Performance Index)** -- Earned Value / Actual Cost with color-coded indicators: >1.0 Under budget (green), =1.0 On budget (yellow), <1.0 Over budget (red) *(Planned)*
 - **SPI (Schedule Performance Index)** -- Earned Value / Planned Value with same color coding *(Planned)*
@@ -769,7 +769,7 @@ The following features are actively planned for upcoming releases, ordered by pr
 | 7 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Post-Beta |
 | 8 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Post-Beta |
 | 9 | ~~**Email Digests**~~ | ~~Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones.~~ Overdue digest and daily log reminders now live via Vercel Cron. Weekly project summary digest remaining. | **Partially Complete** |
-| 10 | **Dashboard Interactivity** | Clickable KPI boxes, drillable activity feed, CPI/SPI metrics | Sprint Week 1 (Apr 13-17) |
+| 10 | **Dashboard Interactivity** | Clickable KPI boxes, drillable activity feed, CPI/SPI metrics | **In Progress** (Apr 8) |
 | 11 | **Project Documents Module** | New module with revision tracking, PDF requirements, CAD folder structure | Sprint Week 1 (Apr 13-17) |
 | 12 | **Safety Module** | Dedicated safety tracking with incident reporting | Sprint Week 2 (Apr 20-24) |
 | 13 | **QC/QA Module** | Nonconformance tracking, Punch List linking, routable QC/QA plans | Sprint Week 3 (Apr 27-May 1) |
@@ -796,4 +796,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 7, 2026 — V2 Sprint roadmap added (Project Documents, QC/QA, Photos & Media, Safety modules + dashboard interactivity)*
+*Last updated: April 8, 2026 — Dashboard KPI cards now clickable (Caleb feedback)*
