@@ -551,6 +551,7 @@ These capabilities span the entire application and are available across all modu
 - **First-Run Onboarding Wizard** -- New users land in a 3-step wizard after sign-up: Welcome (product overview), Profile (name, phone, job title), and Business Setup (organization name, type, role). Stepper shows progress, back/forward navigation preserves input. Replaces the previous abrupt one-step "Set up your business" form. Beta feedback drove this on April 8, 2026.
 - **Password Reset** -- Self-service forgot-password flow via email reset link
 - **Row-Level Security** -- Database-level access control ensures users can only access data they are authorized to see
+- **Private Photo Storage** -- Project photos and thermal images stored in private Supabase Storage buckets with signed URLs (1-hour expiry). RLS policies scope file access to authenticated project members only. Client bundle verified clean of server secrets.
 - **256-Bit Encryption** -- All data encrypted in transit and at rest
 - **US Data Residency** -- All data stored exclusively within the United States
 - **Session Management** -- View and manage active sessions across devices
@@ -585,7 +586,7 @@ These capabilities span the entire application and are available across all modu
 
 ### In-App Notifications -- *Complete*
 
-- **In-App Notification Panel** -- Bell icon in the top bar opens a slide-over panel showing recent project activity. Each notification is clickable and navigates directly to the source record (submittal, RFI, daily log, punch item, milestone). Includes entity-type icons, relative timestamps, count badge with overflow indicator (9+), and friendly empty state. *(complete)*
+- **In-App Notification Panel** -- Bell icon opens a slide-over panel with two notification streams: project activity (submittals, RFIs, daily logs, punch items, milestones) and product patch notes. Each activity notification is clickable and navigates to the source record; patch notes are informational (non-clickable). Features read/unread state (localStorage-backed), unread count badge, individual mark-as-read, "Mark all as read" bulk action, and visual distinction between unread (blue dot) and read (muted) items. *(complete)*
 - **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments *(complete)*
 - **Per-Module Toggles** -- Users can enable or disable notifications for each module independently (8 categories) *(complete)*
 - **Email Notifications** -- Automated email alerts via Resend for 8 notification types: submittal status changes, RFI assignments, RFI responses, punch list assignments, punch list status changes, overdue reminders (daily digest), daily log filing reminders, and team updates (member added/removed). Sent from `noreply@railcommand.a5rail.com` *(complete)*
@@ -754,7 +755,7 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **Breadcrumb Navigation** | Complete | On every page with responsive truncation |
 | **Demo Mode** | Complete | "Explore Demo Project" with fully populated seed data |
 | **Tier-Based Limits** | Complete | Free (5 members), Pro (25 members), Enterprise (unlimited) |
-| **PDF Report Export** | Complete | Export PDF reports for Submittals, RFIs, Daily Logs, Punch List, Schedule |
+| **PDF Report Export** | Complete | Export PDF reports for Submittals, RFIs, Daily Logs, Punch List, Schedule. Report templates and `@react-pdf/renderer` are lazy-loaded on-click so the PDF stack never ships in the initial page bundle |
 | **PWA Manifest & App Icons** | Complete | Web app manifest, service worker, installable to home screen |
 | **Cross-Module Global Search** | Complete | Cmd+K command palette searches across all modules |
 | **File & Document Storage** | Complete | Supabase Storage integration with drag & drop FileUpload component |
@@ -803,4 +804,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 8, 2026 — Profile avatar upload + password reset; Settings timezone selector*
+*Last updated: April 9, 2026 -- Notification bell: patch notes, read/unread state, mark all as read*

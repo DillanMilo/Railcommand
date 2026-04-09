@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban } from 'lucide-react';
+import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban, Sparkles, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -32,6 +32,7 @@ import { getProfiles } from '@/lib/store';
 import { getMyProfile } from '@/lib/actions/profiles';
 import { useActivityLog, useProjectMembers } from '@/hooks/useData';
 import { formatDistanceToNow } from 'date-fns';
+import { PATCH_NOTES } from '@/lib/patch-notes';
 import type { Project, Profile, ActivityLogEntry } from '@/lib/types';
 
 type EntityType = ActivityLogEntry['entity_type'];
@@ -61,6 +62,22 @@ const STATUS_DOT_COLORS: Record<Project['status'], string> = {
   archived: 'bg-slate-500',
 };
 
+const LS_KEY = 'rc-read-notifications';
+
+function loadReadIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch { /* noop */ }
+  return new Set();
+}
+
+function saveReadIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify([...ids]));
+  } catch { /* noop */ }
+}
+
 interface TopbarProps {
   children?: React.ReactNode;
 }
@@ -79,6 +96,10 @@ function formatProjectRole(role: string): string {
   return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+type UnifiedItem =
+  | { type: 'activity'; id: string; date: string; activity: ActivityLogEntry }
+  | { type: 'patch_note'; id: string; date: string; version: string; title: string; description: string };
+
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
   const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId, isDemo } = useProject();
@@ -86,6 +107,30 @@ export default function Topbar({ children }: TopbarProps) {
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  // Load read IDs from localStorage on mount
+  useEffect(() => {
+    setReadIds(loadReadIds());
+  }, []);
+
+  const markAsRead = useCallback((id: string) => {
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      saveReadIds(next);
+      return next;
+    });
+  }, []);
+
+  const markAllAsRead = useCallback((ids: string[]) => {
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      saveReadIds(next);
+      return next;
+    });
+  }, []);
 
   function getActivityHref(
     entity_type: EntityType,
@@ -105,7 +150,7 @@ export default function Topbar({ children }: TopbarProps) {
       case 'milestone':
         return `/projects/${project_id}/schedule`;
       case 'project':
-        return `/projects/${project_id}/dashboard`;
+        return `/dashboard`;
       default:
         return null;
     }
@@ -115,6 +160,43 @@ export default function Topbar({ children }: TopbarProps) {
   const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
   const { data: recentActivity } = useActivityLog(currentProjectId, 5);
   const { data: projectMembersData } = useProjectMembers(currentProjectId);
+
+  // Build unified notification list: activity + patch notes, sorted by date desc
+  const unifiedItems = useMemo<UnifiedItem[]>(() => {
+    const items: UnifiedItem[] = [];
+
+    // Activity items
+    for (const a of recentActivity) {
+      items.push({ type: 'activity', id: a.id, date: a.created_at, activity: a });
+    }
+
+    // Patch notes
+    for (const p of PATCH_NOTES) {
+      items.push({
+        type: 'patch_note',
+        id: p.id,
+        date: p.date,
+        version: p.version,
+        title: p.title,
+        description: p.description,
+      });
+    }
+
+    // Sort most recent first
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return items.slice(0, 15);
+  }, [recentActivity]);
+
+  // Compute unread count
+  const unreadCount = useMemo(() => {
+    return unifiedItems.filter((item) => !readIds.has(item.id)).length;
+  }, [unifiedItems, readIds]);
+
+  // Split items for group headers
+  const patchNoteItems = useMemo(() => unifiedItems.filter((i) => i.type === 'patch_note'), [unifiedItems]);
+  const activityItems = useMemo(() => unifiedItems.filter((i) => i.type === 'activity'), [unifiedItems]);
+  const hasBothGroups = patchNoteItems.length > 0 && activityItems.length > 0;
 
   // For real auth users, fetch profile from Supabase
   useEffect(() => {
@@ -160,6 +242,12 @@ export default function Topbar({ children }: TopbarProps) {
     } catch { /* noop */ }
     router.push('/login');
   }
+
+  // Determine if the notification panel has any content to show
+  const hasNotifications = unifiedItems.length > 0;
+  // If no project is selected, we still show patch notes
+  const showEmptyProjectState = !currentProjectId && patchNoteItems.length === 0;
+  const showAllCaughtUp = currentProjectId && !hasNotifications;
 
   return (
     <>
@@ -273,95 +361,194 @@ export default function Topbar({ children }: TopbarProps) {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative text-rc-steel" aria-label="Notifications">
                 <Bell className="size-5" />
-                {recentActivity.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rc-red text-white text-[10px] font-bold leading-none ring-2 ring-rc-card">
-                    {recentActivity.length > 9 ? '9+' : recentActivity.length}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </Button>
             </SheetTrigger>
             <SheetContent className="w-full max-w-[360px] sm:max-w-[400px] flex flex-col">
               <SheetHeader>
-                <SheetTitle>Notifications</SheetTitle>
+                <div className="flex items-center justify-between">
+                  <SheetTitle>Notifications</SheetTitle>
+                  {hasNotifications && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground h-8 gap-1.5 text-xs"
+                      onClick={() => markAllAsRead(unifiedItems.map((i) => i.id))}
+                    >
+                      <CheckCheck className="size-3.5" />
+                      <span className="hidden sm:inline">Mark all as read</span>
+                    </Button>
+                  )}
+                </div>
               </SheetHeader>
               <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
-                {!currentProjectId && (
+                {showEmptyProjectState && (
                   <div className="flex flex-col items-center justify-center text-center py-12 gap-2">
                     <BellOff className="size-8 text-muted-foreground/60" />
                     <p className="text-sm text-muted-foreground">Select a project to see notifications</p>
                   </div>
                 )}
-                {currentProjectId && recentActivity.length === 0 && (
+                {showAllCaughtUp && (
                   <div className="flex flex-col items-center justify-center text-center py-12 gap-2">
                     <BellOff className="size-8 text-muted-foreground/60" />
                     <p className="text-sm font-medium">You&apos;re all caught up</p>
                     <p className="text-xs text-muted-foreground">New activity will show up here.</p>
                   </div>
                 )}
-                {currentProjectId && recentActivity.map((activity) => {
-                  const href = getActivityHref(
-                    activity.entity_type,
-                    activity.entity_id,
-                    activity.project_id ?? currentProjectId
-                  );
-                  const Icon = ENTITY_ICONS[activity.entity_type] ?? Bell;
-                  const label = ENTITY_LABELS[activity.entity_type] ?? 'Activity';
-                  const actorName = getProfileName(activity.performed_by, activity.performed_by_profile, isDemo);
 
-                  const content = (
-                    <div className="flex gap-3">
-                      <div className="shrink-0 mt-0.5">
-                        <div className="flex items-center justify-center size-8 rounded-md bg-rc-navy/10 text-rc-navy dark:bg-rc-navy/30 dark:text-white">
-                          <Icon className="size-4" />
+                {/* Patch notes group */}
+                {patchNoteItems.length > 0 && (
+                  <>
+                    {hasBothGroups && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-1 pb-0.5">
+                        Updates
+                      </p>
+                    )}
+                    {patchNoteItems.map((item) => {
+                      if (item.type !== 'patch_note') return null;
+                      const isRead = readIds.has(item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            'relative rounded-lg border p-3 border-l-[3px] border-l-rc-orange/60 transition-colors',
+                            isRead ? 'opacity-60' : ''
+                          )}
+                        >
+                          {/* Unread dot */}
+                          {!isRead && (
+                            <span className="absolute left-[-9px] top-3.5 size-2 rounded-full bg-blue-500" />
+                          )}
+                          <div className="flex gap-3">
+                            <div className="shrink-0 mt-0.5">
+                              <div className="flex items-center justify-center size-8 rounded-md bg-rc-orange/10 text-rc-orange">
+                                <Sparkles className="size-4" />
+                              </div>
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center rounded-full bg-rc-orange/15 text-rc-orange px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
+                                  v{item.version}
+                                </span>
+                                {!isRead && (
+                                  <button
+                                    type="button"
+                                    onClick={() => markAsRead(item.id)}
+                                    className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
+                                    aria-label="Mark as read"
+                                    title="Mark as read"
+                                  >
+                                    <Check className="size-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-sm font-medium leading-snug">{item.title}</p>
+                              <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+                              <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                                {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            {label}
-                          </span>
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* Activity group */}
+                {activityItems.length > 0 && (
+                  <>
+                    {hasBothGroups && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-2 pb-0.5">
+                        Activity
+                      </p>
+                    )}
+                    {activityItems.map((item) => {
+                      if (item.type !== 'activity') return null;
+                      const { activity } = item;
+                      const isRead = readIds.has(item.id);
+                      const href = getActivityHref(
+                        activity.entity_type,
+                        activity.entity_id,
+                        activity.project_id ?? currentProjectId
+                      );
+                      const Icon = ENTITY_ICONS[activity.entity_type] ?? Bell;
+                      const label = ENTITY_LABELS[activity.entity_type] ?? 'Activity';
+                      const actorName = getProfileName(activity.performed_by, activity.performed_by_profile, isDemo);
+
+                      const content = (
+                        <div className="flex gap-3">
+                          <div className="shrink-0 mt-0.5">
+                            <div className="flex items-center justify-center size-8 rounded-md bg-rc-navy/10 text-rc-navy dark:bg-rc-navy/30 dark:text-white">
+                              <Icon className="size-4" />
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                {label}
+                              </span>
+                            </div>
+                            <p className="text-sm leading-snug">
+                              <span className="font-medium">{actorName}</span>{' '}
+                              <span className="text-muted-foreground">{activity.description}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                              {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm leading-snug">
-                          <span className="font-medium">{actorName}</span>{' '}
-                          <span className="text-muted-foreground">{activity.description}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                          {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-                  );
+                      );
 
-                  if (href) {
-                    return (
-                      <button
-                        key={activity.id}
-                        type="button"
-                        onClick={() => {
-                          setNotificationsOpen(false);
-                          router.push(href);
-                        }}
-                        className="w-full text-left rounded-lg border p-3 cursor-pointer hover:bg-accent hover:border-rc-navy/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rc-navy"
-                      >
-                        {content}
-                      </button>
-                    );
-                  }
+                      if (href) {
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              markAsRead(item.id);
+                              setNotificationsOpen(false);
+                              router.push(href);
+                            }}
+                            className={cn(
+                              'relative w-full text-left rounded-lg border p-3 cursor-pointer hover:bg-accent hover:border-rc-navy/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rc-navy',
+                              isRead ? 'opacity-60' : ''
+                            )}
+                          >
+                            {!isRead && (
+                              <span className="absolute left-[-1px] top-3.5 size-2 rounded-full bg-blue-500" />
+                            )}
+                            {content}
+                          </button>
+                        );
+                      }
 
-                  return (
-                    <div key={activity.id} className="rounded-lg border p-3">
-                      {content}
-                    </div>
-                  );
-                })}
+                      return (
+                        <div
+                          key={item.id}
+                          className={cn('relative rounded-lg border p-3', isRead ? 'opacity-60' : '')}
+                        >
+                          {!isRead && (
+                            <span className="absolute left-[-1px] top-3.5 size-2 rounded-full bg-blue-500" />
+                          )}
+                          {content}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
-              {currentProjectId && recentActivity.length > 0 && (
+              {currentProjectId && activityItems.length > 0 && (
                 <div className="pt-3 mt-2 border-t">
                   <button
                     type="button"
                     onClick={() => {
                       setNotificationsOpen(false);
-                      router.push(`/projects/${currentProjectId}/dashboard`);
+                      router.push('/dashboard');
                     }}
                     className="w-full text-center text-xs font-medium text-rc-navy dark:text-rc-orange hover:underline py-1"
                   >
