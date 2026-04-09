@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban, Sparkles, CheckCheck } from 'lucide-react';
+import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, ChevronRight, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban, Sparkles, CheckCheck, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -18,7 +18,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
@@ -63,6 +62,7 @@ const STATUS_DOT_COLORS: Record<Project['status'], string> = {
 };
 
 const LS_KEY = 'rc-read-notifications';
+const LS_DISMISSED_KEY = 'rc-dismissed-notifications';
 
 function loadReadIds(): Set<string> {
   try {
@@ -75,6 +75,20 @@ function loadReadIds(): Set<string> {
 function saveReadIds(ids: Set<string>) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify([...ids]));
+  } catch { /* noop */ }
+}
+
+function loadDismissedIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_DISMISSED_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch { /* noop */ }
+  return new Set();
+}
+
+function saveDismissedIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...ids]));
   } catch { /* noop */ }
 }
 
@@ -108,10 +122,14 @@ export default function Topbar({ children }: TopbarProps) {
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [updatesOpen, setUpdatesOpen] = useState(true);
+  const [activityOpen, setActivityOpen] = useState(true);
 
-  // Load read IDs from localStorage on mount
+  // Load read/dismissed IDs from localStorage on mount
   useEffect(() => {
     setReadIds(loadReadIds());
+    setDismissedIds(loadDismissedIds());
   }, []);
 
   const markAsRead = useCallback((id: string) => {
@@ -128,6 +146,15 @@ export default function Topbar({ children }: TopbarProps) {
       const next = new Set(prev);
       ids.forEach((id) => next.add(id));
       saveReadIds(next);
+      return next;
+    });
+  }, []);
+
+  const dismissItem = useCallback((id: string) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      saveDismissedIds(next);
       return next;
     });
   }, []);
@@ -188,15 +215,40 @@ export default function Topbar({ children }: TopbarProps) {
     return items.slice(0, 15);
   }, [recentActivity]);
 
-  // Compute unread count
-  const unreadCount = useMemo(() => {
-    return unifiedItems.filter((item) => !readIds.has(item.id)).length;
-  }, [unifiedItems, readIds]);
+  // Split items for categories, filtering out dismissed
+  const patchNoteItems = useMemo(
+    () => unifiedItems.filter((i) => i.type === 'patch_note' && !dismissedIds.has(i.id)),
+    [unifiedItems, dismissedIds]
+  );
+  const activityItems = useMemo(
+    () => unifiedItems.filter((i) => i.type === 'activity' && !dismissedIds.has(i.id)),
+    [unifiedItems, dismissedIds]
+  );
 
-  // Split items for group headers
-  const patchNoteItems = useMemo(() => unifiedItems.filter((i) => i.type === 'patch_note'), [unifiedItems]);
-  const activityItems = useMemo(() => unifiedItems.filter((i) => i.type === 'activity'), [unifiedItems]);
-  const hasBothGroups = patchNoteItems.length > 0 && activityItems.length > 0;
+  // Unread counts per category and global (non-dismissed only)
+  const updatesUnreadCount = useMemo(
+    () => patchNoteItems.filter((i) => !readIds.has(i.id)).length,
+    [patchNoteItems, readIds]
+  );
+  const activityUnreadCount = useMemo(
+    () => activityItems.filter((i) => !readIds.has(i.id)).length,
+    [activityItems, readIds]
+  );
+  const unreadCount = updatesUnreadCount + activityUnreadCount;
+
+  // All visible (non-dismissed) items for "mark all as read"
+  const allVisibleIds = useMemo(
+    () => [...patchNoteItems, ...activityItems].map((i) => i.id),
+    [patchNoteItems, activityItems]
+  );
+
+  // Auto-open categories when they have unread items, auto-close when all read
+  useEffect(() => {
+    if (updatesUnreadCount > 0) setUpdatesOpen(true);
+  }, [updatesUnreadCount]);
+  useEffect(() => {
+    if (activityUnreadCount > 0) setActivityOpen(true);
+  }, [activityUnreadCount]);
 
   // For real auth users, fetch profile from Supabase
   useEffect(() => {
@@ -243,11 +295,9 @@ export default function Topbar({ children }: TopbarProps) {
     router.push('/login');
   }
 
-  // Determine if the notification panel has any content to show
-  const hasNotifications = unifiedItems.length > 0;
-  // If no project is selected, we still show patch notes
-  const showEmptyProjectState = !currentProjectId && patchNoteItems.length === 0;
-  const showAllCaughtUp = currentProjectId && !hasNotifications;
+  // Both categories empty means full empty state
+  const bothCategoriesEmpty = patchNoteItems.length === 0 && activityItems.length === 0;
+  const hasAnyVisible = !bothCategoriesEmpty;
 
   return (
     <>
@@ -368,182 +418,243 @@ export default function Topbar({ children }: TopbarProps) {
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-full max-w-[360px] sm:max-w-[400px] flex flex-col">
-              <SheetHeader>
-                <div className="flex items-center justify-between">
-                  <SheetTitle>Notifications</SheetTitle>
-                  {hasNotifications && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-foreground h-8 gap-1.5 text-xs"
-                      onClick={() => markAllAsRead(unifiedItems.map((i) => i.id))}
-                    >
-                      <CheckCheck className="size-3.5" />
-                      <span className="hidden sm:inline">Mark all as read</span>
-                    </Button>
-                  )}
-                </div>
-              </SheetHeader>
-              <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
-                {showEmptyProjectState && (
-                  <div className="flex flex-col items-center justify-center text-center py-12 gap-2">
-                    <BellOff className="size-8 text-muted-foreground/60" />
-                    <p className="text-sm text-muted-foreground">Select a project to see notifications</p>
-                  </div>
+            <SheetContent className="w-full sm:max-w-[400px] flex flex-col p-0">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <SheetTitle className="text-base font-semibold">Notifications</SheetTitle>
+                {hasAnyVisible && (
+                  <Button
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-foreground min-h-[44px] gap-1.5 text-xs px-3"
+                    onClick={() => markAllAsRead(allVisibleIds)}
+                  >
+                    <CheckCheck className="size-4" />
+                    <span className="hidden sm:inline">Mark all read</span>
+                  </Button>
                 )}
-                {showAllCaughtUp && (
-                  <div className="flex flex-col items-center justify-center text-center py-12 gap-2">
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {/* Full empty state when both categories have nothing */}
+                {bothCategoriesEmpty && (
+                  <div className="flex flex-col items-center justify-center text-center py-16 gap-2">
                     <BellOff className="size-8 text-muted-foreground/60" />
                     <p className="text-sm font-medium">You&apos;re all caught up</p>
                     <p className="text-xs text-muted-foreground">New activity will show up here.</p>
                   </div>
                 )}
 
-                {/* Patch notes group */}
-                {patchNoteItems.length > 0 && (
+                {!bothCategoriesEmpty && (
                   <>
-                    {hasBothGroups && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-1 pb-0.5">
-                        Updates
-                      </p>
-                    )}
-                    {patchNoteItems.map((item) => {
-                      if (item.type !== 'patch_note') return null;
-                      const isRead = readIds.has(item.id);
-                      return (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            'relative rounded-lg border p-3 border-l-[3px] border-l-rc-orange/60 transition-colors',
-                            isRead ? 'opacity-60' : ''
-                          )}
-                        >
-                          {/* Unread dot */}
-                          {!isRead && (
-                            <span className="absolute left-[-9px] top-3.5 size-2 rounded-full bg-blue-500" />
-                          )}
-                          <div className="flex gap-3">
-                            <div className="shrink-0 mt-0.5">
-                              <div className="flex items-center justify-center size-8 rounded-md bg-rc-orange/10 text-rc-orange">
-                                <Sparkles className="size-4" />
-                              </div>
-                            </div>
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center rounded-full bg-rc-orange/15 text-rc-orange px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
-                                  v{item.version}
-                                </span>
-                                {!isRead && (
-                                  <button
-                                    type="button"
-                                    onClick={() => markAsRead(item.id)}
-                                    className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
-                                    aria-label="Mark as read"
-                                    title="Mark as read"
+                    {/* ── Updates category ── */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setUpdatesOpen((v) => !v)}
+                        className="flex items-center w-full px-4 py-3 min-h-[44px] bg-muted/50 hover:bg-muted/80 transition-colors text-left"
+                      >
+                        <ChevronRight className={cn('size-4 shrink-0 text-muted-foreground transition-transform duration-200', updatesOpen && 'rotate-90')} />
+                        <Sparkles className="size-4 shrink-0 text-rc-orange ml-2" />
+                        <span className="text-sm font-medium ml-2">Updates</span>
+                        {updatesUnreadCount > 0 && (
+                          <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rc-orange text-white text-[10px] font-bold">
+                            {updatesUnreadCount}
+                          </span>
+                        )}
+                        <span className="ml-auto" />
+                      </button>
+
+                      <div className={cn(
+                        'overflow-hidden transition-all duration-200 ease-in-out',
+                        updatesOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                      )}>
+                        {patchNoteItems.length === 0 ? (
+                          <p className="px-4 py-4 text-xs text-muted-foreground text-center">No updates</p>
+                        ) : (
+                          <div className="divide-y">
+                            {patchNoteItems.map((item) => {
+                              if (item.type !== 'patch_note') return null;
+                              const isRead = readIds.has(item.id);
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={cn(
+                                    'relative px-4 py-2.5 transition-colors',
+                                    isRead ? 'opacity-60' : ''
+                                  )}
+                                >
+                                  {/* Unread dot */}
+                                  {!isRead && (
+                                    <span className="absolute left-1 top-4 size-2 rounded-full bg-blue-500" />
+                                  )}
+                                  <div className="flex gap-3">
+                                    <div className="shrink-0 mt-0.5">
+                                      <div className="flex items-center justify-center size-8 rounded-md bg-rc-orange/10 text-rc-orange">
+                                        <Sparkles className="size-4" />
+                                      </div>
+                                    </div>
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center rounded-full bg-rc-orange/15 text-rc-orange px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
+                                          v{item.version}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm font-medium leading-snug">{item.title}</p>
+                                      <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+                                      <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                                        {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
+                                      </p>
+                                    </div>
+                                    {/* Action buttons */}
+                                    <div className="flex flex-col items-center gap-1 shrink-0 ml-1">
+                                      {!isRead && (
+                                        <button
+                                          type="button"
+                                          onClick={() => markAsRead(item.id)}
+                                          className="flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] text-muted-foreground hover:text-foreground transition-colors rounded"
+                                          aria-label="Mark as read"
+                                          title="Mark as read"
+                                        >
+                                          <Check className="size-4" />
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => dismissItem(item.id)}
+                                        className="flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] text-muted-foreground hover:text-foreground transition-colors rounded"
+                                        aria-label="Dismiss"
+                                        title="Dismiss"
+                                      >
+                                        <X className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Activity category ── */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setActivityOpen((v) => !v)}
+                        className="flex items-center w-full px-4 py-3 min-h-[44px] bg-muted/50 hover:bg-muted/80 transition-colors text-left border-t"
+                      >
+                        <ChevronRight className={cn('size-4 shrink-0 text-muted-foreground transition-transform duration-200', activityOpen && 'rotate-90')} />
+                        <Bell className="size-4 shrink-0 text-rc-navy dark:text-white ml-2" />
+                        <span className="text-sm font-medium ml-2">Activity</span>
+                        {activityUnreadCount > 0 && (
+                          <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rc-navy text-white text-[10px] font-bold dark:bg-white dark:text-rc-navy">
+                            {activityUnreadCount}
+                          </span>
+                        )}
+                        <span className="ml-auto" />
+                      </button>
+
+                      <div className={cn(
+                        'overflow-hidden transition-all duration-200 ease-in-out',
+                        activityOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                      )}>
+                        {!currentProjectId ? (
+                          <p className="px-4 py-4 text-xs text-muted-foreground text-center">Select a project to see activity</p>
+                        ) : activityItems.length === 0 ? (
+                          <p className="px-4 py-4 text-xs text-muted-foreground text-center">No recent activity</p>
+                        ) : (
+                          <div className="divide-y">
+                            {activityItems.map((item) => {
+                              if (item.type !== 'activity') return null;
+                              const { activity } = item;
+                              const isRead = readIds.has(item.id);
+                              const href = getActivityHref(
+                                activity.entity_type,
+                                activity.entity_id,
+                                activity.project_id ?? currentProjectId
+                              );
+                              const Icon = ENTITY_ICONS[activity.entity_type] ?? Bell;
+                              const label = ENTITY_LABELS[activity.entity_type] ?? 'Activity';
+                              const actorName = getProfileName(activity.performed_by, activity.performed_by_profile, isDemo);
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={cn(
+                                    'relative flex items-start px-4 py-2.5 transition-colors',
+                                    isRead ? 'opacity-60' : '',
+                                    href ? 'cursor-pointer hover:bg-accent' : ''
+                                  )}
+                                >
+                                  {/* Unread dot */}
+                                  {!isRead && (
+                                    <span className="absolute left-1 top-4 size-2 rounded-full bg-blue-500" />
+                                  )}
+                                  <div
+                                    className="flex gap-3 min-w-0 flex-1"
+                                    role={href ? 'button' : undefined}
+                                    tabIndex={href ? 0 : undefined}
+                                    onClick={href ? () => {
+                                      markAsRead(item.id);
+                                      setNotificationsOpen(false);
+                                      router.push(href);
+                                    } : undefined}
+                                    onKeyDown={href ? (e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        markAsRead(item.id);
+                                        setNotificationsOpen(false);
+                                        router.push(href);
+                                      }
+                                    } : undefined}
                                   >
-                                    <Check className="size-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                              <p className="text-sm font-medium leading-snug">{item.title}</p>
-                              <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
-                              <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                                {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
-                              </p>
-                            </div>
+                                    <div className="shrink-0 mt-0.5">
+                                      <div className="flex items-center justify-center size-8 rounded-md bg-rc-navy/10 text-rc-navy dark:bg-rc-navy/30 dark:text-white">
+                                        <Icon className="size-4" />
+                                      </div>
+                                    </div>
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                          {label}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm leading-snug">
+                                        <span className="font-medium">{actorName}</span>{' '}
+                                        <span className="text-muted-foreground">{activity.description}</span>
+                                      </p>
+                                      <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                                        {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {/* Dismiss button */}
+                                  <div className="flex flex-col items-center gap-1 shrink-0 ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); dismissItem(item.id); }}
+                                      className="flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] text-muted-foreground hover:text-foreground transition-colors rounded"
+                                      aria-label="Dismiss"
+                                      title="Dismiss"
+                                    >
+                                      <X className="size-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-
-                {/* Activity group */}
-                {activityItems.length > 0 && (
-                  <>
-                    {hasBothGroups && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-2 pb-0.5">
-                        Activity
-                      </p>
-                    )}
-                    {activityItems.map((item) => {
-                      if (item.type !== 'activity') return null;
-                      const { activity } = item;
-                      const isRead = readIds.has(item.id);
-                      const href = getActivityHref(
-                        activity.entity_type,
-                        activity.entity_id,
-                        activity.project_id ?? currentProjectId
-                      );
-                      const Icon = ENTITY_ICONS[activity.entity_type] ?? Bell;
-                      const label = ENTITY_LABELS[activity.entity_type] ?? 'Activity';
-                      const actorName = getProfileName(activity.performed_by, activity.performed_by_profile, isDemo);
-
-                      const content = (
-                        <div className="flex gap-3">
-                          <div className="shrink-0 mt-0.5">
-                            <div className="flex items-center justify-center size-8 rounded-md bg-rc-navy/10 text-rc-navy dark:bg-rc-navy/30 dark:text-white">
-                              <Icon className="size-4" />
-                            </div>
-                          </div>
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                {label}
-                              </span>
-                            </div>
-                            <p className="text-sm leading-snug">
-                              <span className="font-medium">{actorName}</span>{' '}
-                              <span className="text-muted-foreground">{activity.description}</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                              {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
-                      );
-
-                      if (href) {
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => {
-                              markAsRead(item.id);
-                              setNotificationsOpen(false);
-                              router.push(href);
-                            }}
-                            className={cn(
-                              'relative w-full text-left rounded-lg border p-3 cursor-pointer hover:bg-accent hover:border-rc-navy/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rc-navy',
-                              isRead ? 'opacity-60' : ''
-                            )}
-                          >
-                            {!isRead && (
-                              <span className="absolute left-[-1px] top-3.5 size-2 rounded-full bg-blue-500" />
-                            )}
-                            {content}
-                          </button>
-                        );
-                      }
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={cn('relative rounded-lg border p-3', isRead ? 'opacity-60' : '')}
-                        >
-                          {!isRead && (
-                            <span className="absolute left-[-1px] top-3.5 size-2 rounded-full bg-blue-500" />
-                          )}
-                          {content}
-                        </div>
-                      );
-                    })}
+                        )}
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
+
+              {/* Footer: view all activity link */}
               {currentProjectId && activityItems.length > 0 && (
-                <div className="pt-3 mt-2 border-t">
+                <div className="pt-3 pb-3 border-t">
                   <button
                     type="button"
                     onClick={() => {

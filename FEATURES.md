@@ -586,7 +586,7 @@ These capabilities span the entire application and are available across all modu
 
 ### In-App Notifications -- *Complete*
 
-- **In-App Notification Panel** -- Bell icon opens a slide-over panel with two notification streams: project activity (submittals, RFIs, daily logs, punch items, milestones) and product patch notes. Each activity notification is clickable and navigates to the source record; patch notes are informational (non-clickable). Features read/unread state (localStorage-backed), unread count badge, individual mark-as-read, "Mark all as read" bulk action, and visual distinction between unread (blue dot) and read (muted) items. *(complete)*
+- **In-App Notification Panel** -- Bell icon opens a slide-over panel organized into two collapsible categories: **Updates** (product patch notes with version badges) and **Activity** (project submittals, RFIs, daily logs, punch items, milestones). Each category has its own unread count badge, collapses/expands on tap, and auto-opens when it has unread items. Individual notifications support mark-as-read and dismiss actions. Global "Mark all as read" in the header. Read and dismiss state persisted via localStorage. Fully responsive on mobile with 44px touch targets. *(complete)*
 - **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments *(complete)*
 - **Per-Module Toggles** -- Users can enable or disable notifications for each module independently (8 categories) *(complete)*
 - **Email Notifications** -- Automated email alerts via Resend for 8 notification types: submittal status changes, RFI assignments, RFI responses, punch list assignments, punch list status changes, overdue reminders (daily digest), daily log filing reminders, and team updates (member added/removed). Sent from `noreply@railcommand.a5rail.com` *(complete)*
@@ -804,4 +804,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 9, 2026 -- Notification bell: patch notes, read/unread state, mark all as read*
+*Last updated: April 9, 2026 -- Notification panel redesigned with collapsible categories*

@@ -169,7 +169,7 @@
 - [x] First-run onboarding wizard: Welcome → Profile → Business Setup (Caleb feedback — "login felt abrupt, no onboarding context")
 - [x] Profile + Settings: avatar upload, password reset, timezone selector (Caleb feedback — full account control)
 - [x] Backend hardening: private photo buckets with signed URLs + security audit (2026-04-09)
-- [x] Notification bell overhaul: patch notes, read/unread state, mark all as read, routing fix (2026-04-09)
+- [x] Notification bell: categorized panel (Updates + Activity), read/unread/dismiss, patch notes, routing fix (2026-04-09)
 - [ ] Recent activity entries tappable → item detail views
 - [ ] Team listing moved to prominent position (not behind "More")
 - [ ] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
@@ -273,6 +273,6 @@
 
 ---
 
-*Last updated: April 9, 2026 — Notification bell overhaul (Phase 12 Week 1)*
+*Last updated: April 9, 2026 — Notification panel categories (Phase 12 Week 1)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
