@@ -1,6 +1,7 @@
 import { canPerform, ACTIONS, type Action } from '@/lib/permissions';
 import type { ProjectMember } from '@/lib/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { PATCH_NOTES } from '@/lib/patch-notes';
 import {
   seedSubmittals,
   seedRFIs,
@@ -26,6 +27,7 @@ const TOOL_PERMISSIONS: Record<string, Action | null> = {
   get_milestones: null,
   get_recent_activity: null,
   get_daily_log_rollup: null,
+  get_notifications_summary: null,
   create_rfi: ACTIONS.RFI_CREATE,
   create_punch_list_item: ACTIONS.PUNCH_LIST_CREATE,
   create_daily_log: ACTIONS.DAILY_LOG_CREATE,
@@ -79,6 +81,8 @@ export async function executeTool(
         return await getRecentActivity(supabase, projectId, args);
       case 'get_daily_log_rollup':
         return await getDailyLogRollup(supabase, projectId, args);
+      case 'get_notifications_summary':
+        return await getNotificationsSummary(supabase, projectId, args);
       case 'create_rfi':
         return await createRFI(supabase, projectId, userId, args);
       case 'create_punch_list_item':
@@ -405,6 +409,36 @@ async function getRecentActivity(
   });
 
   return { success: true, data: entries };
+}
+
+async function getNotificationsSummary(
+  supabase: SupabaseClient,
+  projectId: string,
+  args: Record<string, unknown>,
+) {
+  const includePatchNotes = args.include_patch_notes !== false;
+  const includeActivity = args.include_activity !== false;
+
+  const result: Record<string, unknown> = {};
+
+  if (includePatchNotes) {
+    result.patch_notes = PATCH_NOTES.map((note) => ({
+      version: note.version,
+      title: note.title,
+      description: note.description,
+      date: note.date,
+    }));
+  }
+
+  if (includeActivity) {
+    const activityResult = await getRecentActivity(supabase, projectId, { limit: 10 });
+    result.recent_activity = activityResult.success ? activityResult.data : [];
+  }
+
+  const latest = PATCH_NOTES[0];
+  result.summary = `${PATCH_NOTES.length} product updates available. Latest: v${latest.version} — ${latest.title} (${latest.date}).`;
+
+  return { success: true, data: result };
 }
 
 async function getDailyLogRollup(supabase: SupabaseClient, projectId: string, args: Record<string, unknown>) {

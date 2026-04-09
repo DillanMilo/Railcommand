@@ -390,7 +390,7 @@ RailBot is an AI-powered assistant that gives every team member a conversational
 - **Chat Interface** -- Slide-over panel accessible from any page via floating action button
 - **OpenAI Integration** -- GPT-4.1-mini for fast, cost-effective responses with streaming (SSE)
 - **Natural Language Queries** -- Ask questions like "What submittals are overdue?", "Show me the project summary", "Who is on the team?"
-- **13 Function Tools** -- 10 read tools (search submittals/RFIs/punch list/daily logs, project summary, overdue items, budget summary, team members, milestones, recent activity) + 3 write tools (create RFI, punch list item, daily log)
+- **14 Function Tools** -- 10 read tools (search submittals/RFIs/punch list/daily logs, project summary, overdue items, budget summary, team members, milestones, recent activity) + 3 write tools (create RFI, punch list item, daily log) + notifications summary
 - **RBAC-Aware** -- Triple-layer permission enforcement:
   - System prompt scoped to user's role and allowed actions
   - Tool visibility filtered per role (e.g., foreman never sees budget tools)
@@ -804,4 +804,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 9, 2026 -- Notification panel redesigned with collapsible categories*
+*Last updated: April 9, 2026 -- RailBot notifications summary tool + notification panel polish*

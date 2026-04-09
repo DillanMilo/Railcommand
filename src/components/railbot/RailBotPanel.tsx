@@ -23,6 +23,7 @@ interface Message {
 const MAX_INPUT_LENGTH = 2000;
 
 const SUGGESTED_PROMPTS = [
+  'What\'s new?',
   'Show me the project summary',
   'Show me overdue items',
   'Summarize project status',

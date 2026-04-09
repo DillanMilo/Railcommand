@@ -270,6 +270,30 @@ export const RAILBOT_TOOLS: ChatCompletionTool[] = [
     },
   },
 
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_notifications_summary',
+      description:
+        'Get a summary of recent notifications including product updates (patch notes) and project activity. Use when the user asks "What\'s new?", "Any updates?", "Summarize notifications", or similar.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          include_patch_notes: {
+            type: 'boolean',
+            description: 'Include product update patch notes in the summary. Default true.',
+          },
+          include_activity: {
+            type: 'boolean',
+            description: 'Include recent project activity in the summary. Default true.',
+          },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+
   // ── Write Tools ─────────────────────────────────────────────────────
   {
     type: 'function',

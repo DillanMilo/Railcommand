@@ -420,7 +420,7 @@ export default function Topbar({ children }: TopbarProps) {
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-[400px] flex flex-col p-0">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b">
+              <div className="flex items-center justify-between px-4 pr-12 py-3 border-b gap-3">
                 <SheetTitle className="text-base font-semibold">Notifications</SheetTitle>
                 {hasAnyVisible && (
                   <Button

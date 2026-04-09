@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v1.5.0',
+    version: '1.5.0',
+    title: 'Notification Categories & RailBot Updates',
+    description: 'Notifications organized into collapsible Updates + Activity categories with read/dismiss. Ask RailBot "What\'s new?" for a summary.',
+    date: '2026-04-09',
+  },
+  {
     id: 'v1.4.0',
     version: '1.4.0',
     title: 'Backend Security & Private Photo Storage',
