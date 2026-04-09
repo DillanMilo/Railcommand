@@ -437,6 +437,7 @@ async function getNotificationsSummary(
 
   const latest = PATCH_NOTES[0];
   result.summary = `${PATCH_NOTES.length} product updates available. Latest: v${latest.version} — ${latest.title} (${latest.date}).`;
+  result.instructions = 'IMPORTANT: Do NOT list these items one by one. Instead, write a brief natural-language summary that synthesizes the key themes. For patch notes, highlight the 2-3 most impactful changes in a short paragraph. For activity, summarize patterns (e.g., "Most recent activity has been around submittals and RFIs") rather than repeating each entry. Keep it conversational and under 150 words total.';
 
   return { success: true, data: result };
 }

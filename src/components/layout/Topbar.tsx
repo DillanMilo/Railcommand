@@ -242,13 +242,7 @@ export default function Topbar({ children }: TopbarProps) {
     [patchNoteItems, activityItems]
   );
 
-  // Auto-open categories when they have unread items, auto-close when all read
-  useEffect(() => {
-    if (updatesUnreadCount > 0) setUpdatesOpen(true);
-  }, [updatesUnreadCount]);
-  useEffect(() => {
-    if (activityUnreadCount > 0) setActivityOpen(true);
-  }, [activityUnreadCount]);
+  // Categories stay closed by default — user taps to expand
 
   // For real auth users, fetch profile from Supabase
   useEffect(() => {
