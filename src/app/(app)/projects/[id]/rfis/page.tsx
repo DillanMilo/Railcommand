@@ -16,7 +16,6 @@ import PriorityBadge from '@/components/shared/PriorityBadge';
 import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
-import RFIsPDF from '@/lib/pdf/RFIsPDF';
 import { useRFIs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -95,7 +94,10 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
         </div>
         <div className="flex items-center gap-2">
           <ExportPDFButton
-            document={<RFIsPDF rfis={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />}
+            getDocument={async () => {
+              const { default: RFIsPDF } = await import('@/lib/pdf/RFIsPDF');
+              return <RFIsPDF rfis={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />;
+            }}
             fileName={`rfis-report-${projectId}`}
           />
           {can(ACTIONS.RFI_CREATE) && (

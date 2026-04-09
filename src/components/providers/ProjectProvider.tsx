@@ -117,14 +117,21 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
       return;
     }
 
+    // Guard against setState after unmount: if the provider tears down mid-flight
+    // (e.g. fast navigation on a slow network), skip the writes so we don't leave
+    // stale auth/project state behind for the next mount.
+    let cancelled = false;
+
     // No demo mode flag — check for real Supabase session
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
+      if (cancelled) return;
       if (user) {
         setIsDemo(false);
         setCurrentUserIdState(user.id);
         // Fetch projects from the database
         fetchProjects().then((result) => {
+          if (cancelled) return;
           if (result.data) {
             setProjects(result.data);
             // If no stored project, select the first one
@@ -140,6 +147,8 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
         router.push('/login');
       }
     });
+
+    return () => { cancelled = true; };
   }, [router]);
 
   function setCurrentUser(profileId: string) {
