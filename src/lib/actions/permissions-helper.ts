@@ -117,7 +117,8 @@ export async function checkProjectMembership(
 }
 
 /**
- * Log an activity to the activity_log table.
+ * Log an activity via the log_activity RPC (SECURITY DEFINER).
+ * Direct inserts into activity_log are revoked for client roles.
  */
 export async function logActivity(
   supabase: SupabaseClient,
@@ -128,12 +129,12 @@ export async function logActivity(
   description: string,
   performedBy: string
 ) {
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: entityType,
-    entity_id: entityId,
-    action,
-    description,
-    performed_by: performedBy,
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: entityType,
+    p_entity_id: entityId,
+    p_action: action,
+    p_description: description,
+    p_performed_by: performedBy,
   });
 }

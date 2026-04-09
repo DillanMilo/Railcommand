@@ -495,14 +495,14 @@ async function createRFI(
 
   if (error) return { success: false, error: error.message };
 
-  // Log activity
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: 'rfi',
-    entity_id: data.id,
-    action: 'created',
-    description: `RFI ${data.number} created via RailBot: ${data.subject}`,
-    performed_by: userId,
+  // Log activity via RPC
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: 'rfi',
+    p_entity_id: data.id,
+    p_action: 'created',
+    p_description: `RFI ${data.number} created via RailBot: ${data.subject}`,
+    p_performed_by: userId,
   });
 
   return { success: true, data };
@@ -547,13 +547,13 @@ async function createPunchListItem(
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: 'punch_list',
-    entity_id: data.id,
-    action: 'created',
-    description: `Punch list item ${data.number} created via RailBot: ${data.title}`,
-    performed_by: userId,
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: 'punch_list',
+    p_entity_id: data.id,
+    p_action: 'created',
+    p_description: `Punch list item ${data.number} created via RailBot: ${data.title}`,
+    p_performed_by: userId,
   });
 
   return { success: true, data };
@@ -589,13 +589,13 @@ async function createDailyLog(
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: 'daily_log',
-    entity_id: data.id,
-    action: 'created',
-    description: `Daily log for ${data.log_date} created via RailBot`,
-    performed_by: userId,
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: 'daily_log',
+    p_entity_id: data.id,
+    p_action: 'created',
+    p_description: `Daily log for ${data.log_date} created via RailBot`,
+    p_performed_by: userId,
   });
 
   return { success: true, data };
