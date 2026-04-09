@@ -1,11 +1,10 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect, useCallback } from 'react';
 import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
 import Link from 'next/link';
 import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin, Pencil } from 'lucide-react';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
-import DailyLogPDF from '@/lib/pdf/DailyLogPDF';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
@@ -17,6 +16,7 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDailyLogDetail } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
+import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
 import type { DailyLog, Attachment } from '@/lib/types';
 
 function weatherIcon(conditions: string) {
@@ -56,9 +56,20 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
     ?? (isDemo ? getProfiles().find((p) => p.id === log.created_by)?.full_name : undefined);
   const totalHeadcount = (log.personnel ?? []).reduce((s, r) => s + r.headcount, 0);
-  const attachments = (log as DailyLog & { attachments?: unknown[] }).attachments?.length
+  const rawAttachments = (log as DailyLog & { attachments?: unknown[] }).attachments?.length
     ? (log as DailyLog & { attachments?: unknown[] }).attachments!
     : isDemo ? getAttachments('daily_log', logId) : [];
+  const [signedAttachments, setSignedAttachments] = useState<typeof rawAttachments>(rawAttachments);
+
+  const resolveSignedUrls = useCallback(async () => {
+    if (isDemo || !log) return;
+    const result = await getAttachmentsWithSignedUrls('daily_log', logId);
+    if (result.data) setSignedAttachments(result.data);
+  }, [isDemo, log, logId]);
+
+  useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
+
+  const attachments = isDemo ? rawAttachments : signedAttachments;
 
   return (
     <div className="space-y-6">
@@ -76,7 +87,10 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
         </div>
         <div className="flex items-center gap-2">
           <ExportPDFButton
-            document={<DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} />}
+            getDocument={async () => {
+              const { default: DailyLogPDF } = await import('@/lib/pdf/DailyLogPDF');
+              return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} />;
+            }}
             fileName={`daily-log-${log.log_date}-${projectId}`}
           />
           {can(ACTIONS.DAILY_LOG_UPDATE) && (

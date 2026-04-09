@@ -654,7 +654,7 @@ export function deleteProject(id: string): void {
 }
 
 // --- Profile / Organization creation ---
-export function updateProfile(profileId: string, data: { full_name?: string; phone?: string }): void {
+export function updateProfile(profileId: string, data: { full_name?: string; phone?: string; avatar_url?: string }): void {
   profiles = profiles.map((p) =>
     p.id === profileId ? { ...p, ...data } : p
   );

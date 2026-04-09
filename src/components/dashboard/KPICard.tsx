@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { type LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -10,6 +11,9 @@ interface KPICardProps {
   trend?: 'up' | 'down' | 'flat';
   trendValue?: string;
   color?: string;
+  href?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
 }
 
 const colorMap: Record<string, string> = {
@@ -30,11 +34,21 @@ export default function KPICard({
   trend,
   trendValue,
   color = 'navy',
+  href,
+  onClick,
+  ariaLabel,
 }: KPICardProps) {
   const iconClasses = colorMap[color] ?? colorMap.navy;
+  const isInteractive = Boolean(href || onClick);
 
-  return (
-    <Card className="gap-0 py-3 sm:py-4">
+  const cardElement = (
+    <Card
+      className={cn(
+        'gap-0 py-3 sm:py-4',
+        isInteractive &&
+          'cursor-pointer transition-all duration-150 [@media(hover:hover)]:hover:border-rc-orange/50 [@media(hover:hover)]:hover:shadow-md [@media(hover:hover)]:hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm active:bg-rc-orange/5'
+      )}
+    >
       <CardContent className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4">
         <div className={cn('flex shrink-0 items-center justify-center rounded-lg p-2 sm:p-2.5', iconClasses)}>
           <Icon className="size-4 sm:size-5" />
@@ -68,4 +82,31 @@ export default function KPICard({
       )}
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-label={ariaLabel ?? `View ${title}`}
+        className="block min-h-[44px] rounded-xl [-webkit-tap-highlight-color:transparent] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rc-orange focus-visible:ring-offset-2"
+      >
+        {cardElement}
+      </Link>
+    );
+  }
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={ariaLabel ?? `View ${title}`}
+        className="block w-full min-h-[44px] text-left rounded-xl [-webkit-tap-highlight-color:transparent] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rc-orange focus-visible:ring-offset-2"
+      >
+        {cardElement}
+      </button>
+    );
+  }
+
+  return cardElement;
 }

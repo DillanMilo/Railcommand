@@ -2,6 +2,7 @@
 
 import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { differenceInDays } from 'date-fns';
 import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
 import { Plus, Search } from 'lucide-react';
@@ -16,7 +17,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
-import SubmittalsPDF from '@/lib/pdf/SubmittalsPDF';
 import { useSubmittals } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -46,7 +46,11 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
   const { can } = usePermissions(projectId);
   const currentProfile = getProfileWithOrg(getCurrentUserId());
   const { data: submittals, loading } = useSubmittals(projectId);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const urlSearchParams = useSearchParams();
+  const ALLOWED_STATUSES = ['all', 'draft', 'submitted', 'under_review', 'approved', 'conditional', 'rejected'];
+  const rawStatus = urlSearchParams.get('status') ?? 'all';
+  const initialStatus = ALLOWED_STATUSES.includes(rawStatus) ? rawStatus : 'all';
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -85,7 +89,10 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
         </div>
         <div className="flex items-center gap-2">
           <ExportPDFButton
-            document={<SubmittalsPDF submittals={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />}
+            getDocument={async () => {
+              const { default: SubmittalsPDF } = await import('@/lib/pdf/SubmittalsPDF');
+              return <SubmittalsPDF submittals={filtered} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} />;
+            }}
             fileName={`submittals-report-${projectId}`}
           />
           {can(ACTIONS.SUBMITTAL_CREATE) && (

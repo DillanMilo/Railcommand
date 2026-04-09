@@ -19,7 +19,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useMilestones } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
-import SchedulePDF from '@/lib/pdf/SchedulePDF';
 import { getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -138,7 +137,10 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         <h1 className="font-heading text-2xl font-bold">Schedule &amp; Milestones</h1>
         <div className="flex items-center gap-2">
           <ExportPDFButton
-            document={<SchedulePDF milestones={milestones} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} budgetPlanned={kpis.budgetPlanned} budgetActual={kpis.budgetActual} />}
+            getDocument={async () => {
+              const { default: SchedulePDF } = await import('@/lib/pdf/SchedulePDF');
+              return <SchedulePDF milestones={milestones} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} budgetPlanned={kpis.budgetPlanned} budgetActual={kpis.budgetActual} />;
+            }}
             fileName={`schedule-report-${projectId}`}
           />
           {can(ACTIONS.SCHEDULE_EDIT) && (

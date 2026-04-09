@@ -5,13 +5,14 @@ import { FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ExportPDFButtonProps {
-  document: React.ReactElement;
+  /** Lazy document loader. Called on click so the PDF module isn't in the page bundle. */
+  getDocument: () => Promise<React.ReactElement>;
   fileName: string;
   variant?: 'default' | 'icon';
 }
 
 export default function ExportPDFButton({
-  document: pdfDocument,
+  getDocument,
   fileName,
   variant = 'default',
 }: ExportPDFButtonProps) {
@@ -20,7 +21,10 @@ export default function ExportPDFButton({
   const handleExport = useCallback(async () => {
     setLoading(true);
     try {
-      const { pdf } = await import('@react-pdf/renderer');
+      const [{ pdf }, pdfDocument] = await Promise.all([
+        import('@react-pdf/renderer'),
+        getDocument(),
+      ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const blob = await pdf(pdfDocument as any).toBlob();
       const url = URL.createObjectURL(blob);
@@ -36,7 +40,7 @@ export default function ExportPDFButton({
     } finally {
       setLoading(false);
     }
-  }, [pdfDocument, fileName]);
+  }, [getDocument, fileName]);
 
   if (variant === 'icon') {
     return (

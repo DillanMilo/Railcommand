@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Lock, MessageSquare, Paperclip, Pencil, Trash2 } from 'lucide-react';
@@ -21,7 +21,8 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { updateRFIStatus as serverUpdateRFIStatus, addRFIResponse as serverAddRFIResponse, updateRFI as serverUpdateRFI, deleteRFI as serverDeleteRFI } from '@/lib/actions/rfis';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { Priority } from '@/lib/types';
+import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
+import type { Attachment, Priority } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +72,16 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
   // Delete dialog state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Resolve signed URLs for attachments in private buckets
+  const [signedAttachments, setSignedAttachments] = useState<Attachment[]>([]);
+  const resolveSignedUrls = useCallback(async () => {
+    if (isDemo || !rfi) return;
+    const result = await getAttachmentsWithSignedUrls('rfi', rfi.id);
+    if (result.data) setSignedAttachments(result.data);
+  }, [isDemo, rfi]);
+  useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
+  const rfiAttachments = isDemo ? (rfi?.attachments ?? []) : signedAttachments;
 
   // Compute overdue days client-side only to avoid server/client Date mismatch
   const [overdueDays, setOverdueDays] = useState(0);
@@ -268,12 +279,12 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Paperclip className="size-4" /> Attachments ({rfi.attachments?.length ?? 0})
+            <Paperclip className="size-4" /> Attachments ({rfiAttachments.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {rfi.attachments && rfi.attachments.length > 0 ? (
-            <PhotoGallery attachments={rfi.attachments} />
+          {rfiAttachments.length > 0 ? (
+            <PhotoGallery attachments={rfiAttachments} />
           ) : (
             <p className="text-sm text-muted-foreground">No attachments yet.</p>
           )}

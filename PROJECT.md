@@ -89,12 +89,13 @@
 - [x] Build Schedule & Milestones PDF report template
 - [x] Create reusable ExportPDFButton component
 - [x] Wire up Export PDF buttons on Submittals, RFIs, Punch List, Schedule, and Daily Log detail pages
+- [x] Lazy-load PDF report templates on-click (~300–500KB removed from each report page's initial bundle)
 
 ### Phase 10.6: Beta-Blocking Features
 - [x] PWA Manifest & App Icons (manifest.json, service worker, installable app)
 - [x] Cross-Module Global Search (Cmd+K command palette, searches all modules)
 - [x] File & Document Storage (Supabase Storage integration, drag & drop FileUpload component)
-- [x] Email Notifications (Resend integration, 5 notification types, preferences UI wired to backend)
+- [x] Email Notifications (Resend integration, 8 notification types, Vercel Cron for overdue digests + daily log reminders, team update triggers, custom SMTP for Supabase Auth, preferences UI with 8 toggles)
 
 ### Phase 11: AI Assistant (RailBot) 🤖
 **Architecture & Design** *(Week 3)*
@@ -154,6 +155,62 @@
 ### Alpha Bug Fixes (March 2026)
 - [x] **BUG FIX: Calendar dates one day behind** — All date-only fields (due dates, log dates, target dates, etc.) were displaying one day behind what the user selected. Root cause: `new Date("YYYY-MM-DD")` interprets as UTC midnight, which shifts back one day in US timezones. Fix: Created `src/lib/date-utils.ts` with timezone-safe helpers (`getLocalDateString`, `getLocalDateStringOffset`, `formatDateSafe`, `parseDateSafe`). Replaced all `new Date(dateStr)` calls with `parseISO(dateStr)` from date-fns for display, and all `.toISOString().split('T')[0]` patterns with local timezone date string helpers. Fixed across all modules: dashboard, submittals, RFIs, daily logs, punch lists, schedule/milestones, and profile page.
 - [x] **BUG FIX: Multiple photo uploads — only some photos persist** — When uploading 6+ photos, only 3-4 would actually appear after submission. Root cause: Photos were uploaded sequentially and failures were silently swallowed (only logged to console). Fix: Refactored `uploadPhotosAfterCreate` and `uploadFilesAfterCreate` to use `Promise.allSettled` for concurrent uploads, return structured results (success/fail counts), and report failures to the user. Updated all creation forms (daily logs, punch lists, RFIs, submittals) to show upload progress ("Uploading N photos…"), disable submit buttons during upload, and display error messages when uploads partially fail.
+
+### Phase 12: V2 Sprint — Caleb Douglas Feedback (April–May 2026)
+
+**Source:** Caleb Douglas beta feedback (16 items)
+**Sprint Duration:** 4 weeks (April 13 – May 8, 2026)
+**Launch Target:** May 11, 2026
+
+#### Week 1: Dashboard & Core UX (April 13–17)
+- [x] Clickable dashboard KPI boxes → navigate to detail pages with pre-filtering (?status= URL params)
+- [x] Sidebar navigation: tightened spacing and contrast (Caleb feedback — "felt cramped")
+- [x] Notification bell wired to clickable activity feed (Caleb feedback — "bell did nothing")
+- [x] First-run onboarding wizard: Welcome → Profile → Business Setup (Caleb feedback — "login felt abrupt, no onboarding context")
+- [x] Profile + Settings: avatar upload, password reset, timezone selector (Caleb feedback — full account control)
+- [x] Backend hardening: private photo buckets with signed URLs + security audit (2026-04-09)
+- [x] Notification bell: categorized panel (Updates + Activity), read/unread/dismiss, patch notes, routing fix (2026-04-09)
+- [x] RailBot: notifications summary tool — "What's new?" returns patch notes + activity (2026-04-09)
+- [ ] Recent activity entries tappable → item detail views
+- [ ] Team listing moved to prominent position (not behind "More")
+- [ ] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
+- [ ] CPI calculation (Earned Value / Actual Cost) with color-coded indicators
+- [ ] SPI calculation (Earned Value / Planned Value) with color-coded indicators
+- [ ] Project Documents dashboard box with revision tracking header
+- [ ] PDF format enforcement for drawings + AutoCAD/MicroStation folder
+- [ ] Daily logs calendar: full 7-day week view
+
+#### Week 2: Reports, Change Management (April 20–24)
+- [ ] Weekly Reports section (CM and Contractor)
+- [ ] Safety module (own box or within daily logs, incident reporting)
+- [ ] Change Orders in Budget box
+- [ ] Modifications & Amendments in Plans section
+- [ ] Demo data backfill (February through current date)
+- [ ] Week 1-2 integration testing
+
+#### Week 3: QC/QA & Photos (April 27 – May 1)
+- [ ] QC/QA Reports module with nonconformance tracking
+- [ ] QC/QA close-out workflow
+- [ ] QC/QA → Punch List linking (bidirectional)
+- [ ] QC/QA Plan per project (routable like submittals)
+- [ ] Photos bin: mobile camera → auto-save to project folder
+- [ ] Photo auto-organization by date folders
+- [ ] Geo-tag and timestamp metadata capture
+
+#### Week 4: Permissions, Polish & Launch (May 4–8)
+- [ ] RBAC management UI (Read/Write/Create per team member)
+- [ ] Full integration testing across all new features
+- [ ] Desktop vs mobile UX parity check
+- [ ] Demo data updated for all new features
+- [ ] Pre-launch QA sweep
+- [ ] Staging release candidate tag
+
+#### Deferred to V2.5 (Post-Launch)
+- [ ] Live camera integration (Z-P-T controls, photo logs, time-lapse)
+- [ ] Weather auto-pull from online systems
+- [ ] Contractor pay request documentation storage
+- [ ] Meeting minutes / Project Administration folder
+- [ ] SiteCast/OVRLAI integration (pending Mark's direction)
 
 ### Beta Roadmap
 
@@ -217,6 +274,6 @@
 
 ---
 
-*Last updated: March 31, 2026 — Phase 11 RailBot COMPLETE*
+*Last updated: April 9, 2026 — RailBot notifications tool (Phase 12 Week 1)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

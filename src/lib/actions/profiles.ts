@@ -35,6 +35,8 @@ export async function getMyProfile(): Promise<ActionResult<Profile>> {
 export async function updateMyProfile(updates: {
   full_name?: string;
   phone?: string;
+  avatar_url?: string;
+  time_zone?: string;
 }): Promise<ActionResult<Profile>> {
   try {
     const supabase = await createClient();

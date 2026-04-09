@@ -1,6 +1,7 @@
 import { canPerform, ACTIONS, type Action } from '@/lib/permissions';
 import type { ProjectMember } from '@/lib/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { PATCH_NOTES } from '@/lib/patch-notes';
 import {
   seedSubmittals,
   seedRFIs,
@@ -26,6 +27,7 @@ const TOOL_PERMISSIONS: Record<string, Action | null> = {
   get_milestones: null,
   get_recent_activity: null,
   get_daily_log_rollup: null,
+  get_notifications_summary: null,
   create_rfi: ACTIONS.RFI_CREATE,
   create_punch_list_item: ACTIONS.PUNCH_LIST_CREATE,
   create_daily_log: ACTIONS.DAILY_LOG_CREATE,
@@ -79,6 +81,8 @@ export async function executeTool(
         return await getRecentActivity(supabase, projectId, args);
       case 'get_daily_log_rollup':
         return await getDailyLogRollup(supabase, projectId, args);
+      case 'get_notifications_summary':
+        return await getNotificationsSummary(supabase, projectId, args);
       case 'create_rfi':
         return await createRFI(supabase, projectId, userId, args);
       case 'create_punch_list_item':
@@ -242,6 +246,8 @@ async function getProjectSummary(supabase: SupabaseClient, projectId: string, pr
     }
   }
 
+  summary.instructions = 'Respond in natural language. Give a concise project health overview — call out what\'s on track, what needs attention (overdue items), and budget status if available. Do not just repeat the numbers; interpret them (e.g., "5 overdue items need attention" not "overdueItems: 5"). Keep it under 100 words.';
+
   return { success: true, data: summary };
 }
 
@@ -281,6 +287,7 @@ async function getOverdueItems(supabase: SupabaseClient, projectId: string) {
       overdueSubmittals: submittals.data ?? [],
       overdueRFIs: rfis.data ?? [],
       overduePunchList: punchList.data ?? [],
+      instructions: 'Respond in natural language. Prioritize by urgency — mention the most critical/oldest overdue items first. Group by type (submittals, RFIs, punch list) and state the count per type, then call out the 2-3 most urgent by name. Do not list every item. Suggest next steps (e.g., "You might want to follow up on RFI-003 first since it\'s 12 days overdue"). Keep it under 120 words.',
     },
   };
 }
@@ -310,6 +317,7 @@ async function getBudgetSummary(supabase: SupabaseClient, projectId: string) {
       budgetSpent: projectResult.data.budget_spent,
       budgetRemaining: projectResult.data.budget_total - projectResult.data.budget_spent,
       milestones: milestonesResult.data ?? [],
+      instructions: 'Respond in natural language. Interpret the budget health — state whether the project is under/on/over budget, the burn rate, and which milestones are driving the spend. Highlight any milestones that are over their planned budget. Keep it conversational and under 100 words.',
     },
   };
 }
@@ -404,7 +412,44 @@ async function getRecentActivity(
     };
   });
 
-  return { success: true, data: entries };
+  return {
+    success: true,
+    data: {
+      entries,
+      instructions: 'Respond in natural language. Summarize the recent activity patterns — who has been most active, what types of work are happening (submittals, RFIs, punch items), and any notable actions. Do not list each entry. Keep it conversational and under 100 words.',
+    },
+  };
+}
+
+async function getNotificationsSummary(
+  supabase: SupabaseClient,
+  projectId: string,
+  args: Record<string, unknown>,
+) {
+  const includePatchNotes = args.include_patch_notes !== false;
+  const includeActivity = args.include_activity !== false;
+
+  const result: Record<string, unknown> = {};
+
+  if (includePatchNotes) {
+    result.patch_notes = PATCH_NOTES.map((note) => ({
+      version: note.version,
+      title: note.title,
+      description: note.description,
+      date: note.date,
+    }));
+  }
+
+  if (includeActivity) {
+    const activityResult = await getRecentActivity(supabase, projectId, { limit: 10 });
+    result.recent_activity = activityResult.success ? activityResult.data : [];
+  }
+
+  const latest = PATCH_NOTES[0];
+  result.summary = `${PATCH_NOTES.length} product updates available. Latest: v${latest.version} — ${latest.title} (${latest.date}).`;
+  result.instructions = 'IMPORTANT: Do NOT list these items one by one. Instead, write a brief natural-language summary that synthesizes the key themes. For patch notes, highlight the 2-3 most impactful changes in a short paragraph. For activity, summarize patterns (e.g., "Most recent activity has been around submittals and RFIs") rather than repeating each entry. Keep it conversational and under 150 words total.';
+
+  return { success: true, data: result };
 }
 
 async function getDailyLogRollup(supabase: SupabaseClient, projectId: string, args: Record<string, unknown>) {
@@ -438,6 +483,7 @@ async function getDailyLogRollup(supabase: SupabaseClient, projectId: string, ar
       period: `${dateFrom} to ${dateTo}`,
       totalLogs: logCount,
       logs: summaries,
+      instructions: 'Respond in natural language. Synthesize the work across the period — highlight key accomplishments, recurring work themes, any safety notes worth flagging, and weather patterns that may have impacted productivity. Do not repeat each log verbatim. Keep it conversational and under 150 words.',
     },
   };
 }
@@ -495,14 +541,14 @@ async function createRFI(
 
   if (error) return { success: false, error: error.message };
 
-  // Log activity
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: 'rfi',
-    entity_id: data.id,
-    action: 'created',
-    description: `RFI ${data.number} created via RailBot: ${data.subject}`,
-    performed_by: userId,
+  // Log activity via RPC
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: 'rfi',
+    p_entity_id: data.id,
+    p_action: 'created',
+    p_description: `RFI ${data.number} created via RailBot: ${data.subject}`,
+    p_performed_by: userId,
   });
 
   return { success: true, data };
@@ -547,13 +593,13 @@ async function createPunchListItem(
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: 'punch_list',
-    entity_id: data.id,
-    action: 'created',
-    description: `Punch list item ${data.number} created via RailBot: ${data.title}`,
-    performed_by: userId,
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: 'punch_list',
+    p_entity_id: data.id,
+    p_action: 'created',
+    p_description: `Punch list item ${data.number} created via RailBot: ${data.title}`,
+    p_performed_by: userId,
   });
 
   return { success: true, data };
@@ -589,13 +635,13 @@ async function createDailyLog(
 
   if (error) return { success: false, error: error.message };
 
-  await supabase.from('activity_log').insert({
-    project_id: projectId,
-    entity_type: 'daily_log',
-    entity_id: data.id,
-    action: 'created',
-    description: `Daily log for ${data.log_date} created via RailBot`,
-    performed_by: userId,
+  await supabase.rpc('log_activity', {
+    p_project_id: projectId,
+    p_entity_type: 'daily_log',
+    p_entity_id: data.id,
+    p_action: 'created',
+    p_description: `Daily log for ${data.log_date} created via RailBot`,
+    p_performed_by: userId,
   });
 
   return { success: true, data };

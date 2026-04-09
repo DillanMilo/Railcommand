@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
@@ -20,6 +20,7 @@ import { getProfiles, updatePunchListStatus as storeUpdatePunchListStatus, updat
 import { usePunchListDetail, useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { updatePunchListStatus as serverUpdatePunchListStatus, updatePunchListItem as serverUpdatePunchListItem, deletePunchListItem as serverDeletePunchListItem } from '@/lib/actions/punch-list';
+import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import type { PunchListStatus, Priority } from '@/lib/types';
@@ -80,7 +81,18 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
     setResolutionInput('');
     setNewPhotos([]);
   }, [itemId]);
-  const existingAttachments = item?.attachments ?? (item ? getAttachments('punch_list', item.id) : []);
+  const demoAttachments = item?.attachments ?? (item ? getAttachments('punch_list', item.id) : []);
+  const [signedAttachments, setSignedAttachments] = useState<typeof demoAttachments>(demoAttachments);
+
+  const resolveSignedUrls = useCallback(async () => {
+    if (isDemo || !item) return;
+    const result = await getAttachmentsWithSignedUrls('punch_list', item.id);
+    if (result.data) setSignedAttachments(result.data);
+  }, [isDemo, item]);
+
+  useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
+
+  const existingAttachments = isDemo ? demoAttachments : signedAttachments;
 
   function openEditDialog() {
     if (!item) return;

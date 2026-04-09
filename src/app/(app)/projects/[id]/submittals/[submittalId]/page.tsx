@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
@@ -21,7 +21,8 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { updateSubmittalStatus as serverUpdateSubmittalStatus, updateSubmittal as serverUpdateSubmittal, deleteSubmittal as serverDeleteSubmittal } from '@/lib/actions/submittals';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { SubmittalStatus } from '@/lib/types';
+import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
+import type { Attachment, SubmittalStatus } from '@/lib/types';
 
 export default function SubmittalDetailPage({ params, searchParams }: { params: Promise<{ id: string; submittalId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId, submittalId } = use(params);
@@ -43,6 +44,15 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
   // Delete dialog state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Resolve signed URLs for attachments in private buckets
+  const [signedAttachments, setSignedAttachments] = useState<Attachment[]>([]);
+  const resolveSignedUrls = useCallback(async () => {
+    if (isDemo || !original) return;
+    const result = await getAttachmentsWithSignedUrls('submittal', original.id);
+    if (result.data) setSignedAttachments(result.data);
+  }, [isDemo, original]);
+  useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
 
   // Sync local status when data loads or changes
   const effectiveStatus: SubmittalStatus = status ?? original?.status ?? 'draft';
@@ -226,13 +236,13 @@ export default function SubmittalDetailPage({ params, searchParams }: { params: 
       {/* Attachments */}
       <div className="mt-6">
         <FileUpload
-          existingAttachments={submittal.attachments ?? []}
+          existingAttachments={isDemo ? (submittal.attachments ?? []) : signedAttachments}
           entityType="submittal"
           entityId={submittalId}
           projectId={projectId}
-          onUploadComplete={() => refetch()}
-          onDeleteComplete={() => refetch()}
-          title={`Attachments (${submittal.attachments?.length ?? 0})`}
+          onUploadComplete={() => { refetch(); resolveSignedUrls(); }}
+          onDeleteComplete={() => { refetch(); resolveSignedUrls(); }}
+          title={`Attachments (${(isDemo ? submittal.attachments : signedAttachments)?.length ?? 0})`}
         />
       </div>
 
