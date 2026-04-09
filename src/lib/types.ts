@@ -242,6 +242,8 @@ export interface Attachment {
   geo_lng: number | null;
   captured_at: string | null;
   created_at: string;
+  /** Transient field — populated at fetch time for private buckets, never stored in DB */
+  signed_url?: string;
 }
 
 // Geo-tag for jobs and work items

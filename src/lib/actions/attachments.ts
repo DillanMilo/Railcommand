@@ -203,3 +203,70 @@ export async function getAttachments(
     };
   }
 }
+
+/** Buckets that require signed URLs (private buckets). */
+const PRIVATE_BUCKETS = new Set(['project-photos', 'thermal-photos']);
+
+/**
+ * Fetch all attachments for an entity and batch-resolve signed URLs for
+ * private photo buckets (project-photos, thermal-photos).
+ *
+ * Attachments in public buckets (project-documents, avatars) are returned
+ * with `signed_url` left undefined — callers should fall back to `file_url`.
+ */
+export async function getAttachmentsWithSignedUrls(
+  entityType: string,
+  entityId: string
+): Promise<ActionResult<Attachment[]>> {
+  try {
+    const result = await getAttachments(entityType, entityId);
+    if (result.error || !result.data) return result;
+
+    const attachments = result.data;
+    if (attachments.length === 0) return result;
+
+    // Group attachments by private bucket so we can batch createSignedUrls
+    const grouped: Record<string, { index: number; path: string }[]> = {};
+    for (let i = 0; i < attachments.length; i++) {
+      const att = attachments[i];
+      const bucket = getBucket(att.photo_category);
+      if (!PRIVATE_BUCKETS.has(bucket)) continue;
+
+      const urlParts = att.file_url.split(`/${bucket}/`);
+      if (urlParts.length !== 2) continue;
+
+      if (!grouped[bucket]) grouped[bucket] = [];
+      grouped[bucket].push({ index: i, path: urlParts[1] });
+    }
+
+    // Batch-generate signed URLs per bucket
+    const supabase = await createClient();
+    const bucketEntries = Object.entries(grouped);
+
+    await Promise.all(
+      bucketEntries.map(async ([bucket, items]) => {
+        const paths = items.map((item) => item.path);
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .createSignedUrls(paths, 3600); // 1 hour expiry
+
+        if (error || !data) return;
+
+        for (let j = 0; j < data.length; j++) {
+          if (data[j].signedUrl) {
+            attachments[items[j].index] = {
+              ...attachments[items[j].index],
+              signed_url: data[j].signedUrl,
+            };
+          }
+        }
+      })
+    );
+
+    return { success: true, data: attachments };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to fetch attachments with signed URLs',
+    };
+  }
+}

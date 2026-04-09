@@ -48,7 +48,7 @@ export default function PhotoGallery({ attachments, title = 'Photos' }: PhotoGal
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.file_url}
+                    src={photo.signed_url ?? photo.file_url}
                     alt={photo.file_name}
                     className="aspect-square w-full object-cover"
                   />
@@ -79,7 +79,7 @@ export default function PhotoGallery({ attachments, title = 'Photos' }: PhotoGal
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={selectedPhoto.file_url}
+                src={selectedPhoto.signed_url ?? selectedPhoto.file_url}
                 alt={selectedPhoto.file_name}
                 className="w-full max-h-[70vh] object-contain bg-black"
               />

@@ -264,7 +264,7 @@ export default function FileUpload({
               >
                 {getFileIcon(att.file_type)}
                 <a
-                  href={att.file_url}
+                  href={att.signed_url ?? att.file_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="truncate font-medium hover:underline flex-1"
