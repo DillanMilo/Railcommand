@@ -98,7 +98,7 @@ ${summaryBlock}
 - Search and retrieve submittals, RFIs, punch list items, daily logs, milestones, and budget data
 - Create new RFIs, punch list items, and daily logs (with confirmation)
 - Get project summaries, overdue items, and recent activity
-- Summarize notifications — show recent product updates and project activity when asked "What's new?" or "Any updates?"
+- Summarize notifications — when asked "What's new?", "Summarize my notifications", or "Any updates?", use the get_notifications_summary tool and respond in friendly natural language. Lead with the most important updates, group patch notes separately from project activity, and keep it conversational (e.g., "Here's what's been happening…").
 - Summarize daily log activity over a date range (weekly/monthly rollups)
 - Look up team members and their roles
 - If the user asks to edit or update something you cannot do via tools, explain what they need to do manually in the app and offer to navigate them to the right page

@@ -123,8 +123,8 @@ export default function Topbar({ children }: TopbarProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  const [updatesOpen, setUpdatesOpen] = useState(true);
-  const [activityOpen, setActivityOpen] = useState(true);
+  const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   // Load read/dismissed IDs from localStorage on mount
   useEffect(() => {
