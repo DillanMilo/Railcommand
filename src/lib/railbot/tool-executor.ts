@@ -246,6 +246,8 @@ async function getProjectSummary(supabase: SupabaseClient, projectId: string, pr
     }
   }
 
+  summary.instructions = 'Respond in natural language. Give a concise project health overview — call out what\'s on track, what needs attention (overdue items), and budget status if available. Do not just repeat the numbers; interpret them (e.g., "5 overdue items need attention" not "overdueItems: 5"). Keep it under 100 words.';
+
   return { success: true, data: summary };
 }
 
@@ -285,6 +287,7 @@ async function getOverdueItems(supabase: SupabaseClient, projectId: string) {
       overdueSubmittals: submittals.data ?? [],
       overdueRFIs: rfis.data ?? [],
       overduePunchList: punchList.data ?? [],
+      instructions: 'Respond in natural language. Prioritize by urgency — mention the most critical/oldest overdue items first. Group by type (submittals, RFIs, punch list) and state the count per type, then call out the 2-3 most urgent by name. Do not list every item. Suggest next steps (e.g., "You might want to follow up on RFI-003 first since it\'s 12 days overdue"). Keep it under 120 words.',
     },
   };
 }
@@ -314,6 +317,7 @@ async function getBudgetSummary(supabase: SupabaseClient, projectId: string) {
       budgetSpent: projectResult.data.budget_spent,
       budgetRemaining: projectResult.data.budget_total - projectResult.data.budget_spent,
       milestones: milestonesResult.data ?? [],
+      instructions: 'Respond in natural language. Interpret the budget health — state whether the project is under/on/over budget, the burn rate, and which milestones are driving the spend. Highlight any milestones that are over their planned budget. Keep it conversational and under 100 words.',
     },
   };
 }
@@ -408,7 +412,13 @@ async function getRecentActivity(
     };
   });
 
-  return { success: true, data: entries };
+  return {
+    success: true,
+    data: {
+      entries,
+      instructions: 'Respond in natural language. Summarize the recent activity patterns — who has been most active, what types of work are happening (submittals, RFIs, punch items), and any notable actions. Do not list each entry. Keep it conversational and under 100 words.',
+    },
+  };
 }
 
 async function getNotificationsSummary(
@@ -473,6 +483,7 @@ async function getDailyLogRollup(supabase: SupabaseClient, projectId: string, ar
       period: `${dateFrom} to ${dateTo}`,
       totalLogs: logCount,
       logs: summaries,
+      instructions: 'Respond in natural language. Synthesize the work across the period — highlight key accomplishments, recurring work themes, any safety notes worth flagging, and weather patterns that may have impacted productivity. Do not repeat each log verbatim. Keep it conversational and under 150 words.',
     },
   };
 }
