@@ -31,6 +31,9 @@ export default function EditProjectDialog({ open, onOpenChange, project }: EditP
   const [startDate, setStartDate] = useState(project.start_date);
   const [targetEndDate, setTargetEndDate] = useState(project.target_end_date);
   const [budgetTotal, setBudgetTotal] = useState(String(project.budget_total));
+  const [turnoverDate, setTurnoverDate] = useState(project.turnover_date ?? '');
+  const [substantialCompletionDate, setSubstantialCompletionDate] = useState(project.substantial_completion_date ?? '');
+  const [projectCompletionDate, setProjectCompletionDate] = useState(project.project_completion_date ?? '');
   const [saving, setSaving] = useState(false);
 
   // Sync form when project changes
@@ -42,6 +45,9 @@ export default function EditProjectDialog({ open, onOpenChange, project }: EditP
     setStartDate(project.start_date);
     setTargetEndDate(project.target_end_date);
     setBudgetTotal(String(project.budget_total));
+    setTurnoverDate(project.turnover_date ?? '');
+    setSubstantialCompletionDate(project.substantial_completion_date ?? '');
+    setProjectCompletionDate(project.project_completion_date ?? '');
   }, [project]);
 
   async function handleSave(e: React.FormEvent) {
@@ -58,12 +64,20 @@ export default function EditProjectDialog({ open, onOpenChange, project }: EditP
       start_date: startDate,
       target_end_date: targetEndDate,
       budget_total: budgetTotal ? parseFloat(budgetTotal) : 0,
+      turnover_date: turnoverDate || undefined,
+      substantial_completion_date: substantialCompletionDate || undefined,
+      project_completion_date: projectCompletionDate || undefined,
     };
 
     if (isDemo) {
       storeUpdateProject(project.id, data);
     } else {
-      const result = await serverUpdateProject(project.id, data);
+      const result = await serverUpdateProject(project.id, {
+        ...data,
+        turnover_date: turnoverDate || null,
+        substantial_completion_date: substantialCompletionDate || null,
+        project_completion_date: projectCompletionDate || null,
+      });
       if (result.error) {
         console.error('Failed to update project:', result.error);
         alert(`Failed to update project: ${result.error}`);
@@ -146,6 +160,36 @@ export default function EditProjectDialog({ open, onOpenChange, project }: EditP
                 value={targetEndDate}
                 onChange={(e) => setTargetEndDate(e.target.value)}
                 required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="ep-turnover" className="text-sm font-medium">Turnover Date</label>
+              <Input
+                id="ep-turnover"
+                type="date"
+                value={turnoverDate}
+                onChange={(e) => setTurnoverDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="ep-sc" className="text-sm font-medium">Substantial Completion</label>
+              <Input
+                id="ep-sc"
+                type="date"
+                value={substantialCompletionDate}
+                onChange={(e) => setSubstantialCompletionDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="ep-pc" className="text-sm font-medium">Project Completion</label>
+              <Input
+                id="ep-pc"
+                type="date"
+                value={projectCompletionDate}
+                onChange={(e) => setProjectCompletionDate(e.target.value)}
               />
             </div>
           </div>

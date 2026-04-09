@@ -43,6 +43,9 @@ export interface Project {
   budget_spent: number;
   location: string;
   client: string;
+  turnover_date?: string;
+  substantial_completion_date?: string;
+  project_completion_date?: string;
   created_by: string;
   created_at: string;
 }

@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Submittal, RFI, DailyLog, PunchListItem } from '@/lib/types';
+import type { Submittal, RFI, DailyLog, PunchListItem, Milestone } from '@/lib/types';
 import {
   type ActionResult,
   getAuthenticatedUser,
@@ -14,6 +14,7 @@ export interface DashboardData {
   rfis: RFI[];
   punchListItems: PunchListItem[];
   dailyLogs: DailyLog[];
+  milestones: Milestone[];
 }
 
 /**
@@ -31,8 +32,8 @@ export async function getDashboardData(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
-    // Run all 4 queries in parallel — single auth check above
-    const [submittalsRes, rfisRes, punchRes, logsRes] = await Promise.all([
+    // Run all 5 queries in parallel — single auth check above
+    const [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes] = await Promise.all([
       supabase
         .from('submittals')
         .select(`
@@ -71,10 +72,16 @@ export async function getDashboardData(
         `)
         .eq('project_id', projectId)
         .order('log_date', { ascending: false }),
+
+      supabase
+        .from('milestones')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('sort_order', { ascending: true }),
     ]);
 
     // Return first error if any query failed
-    const firstError = [submittalsRes, rfisRes, punchRes, logsRes].find((r) => r.error);
+    const firstError = [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes].find((r) => r.error);
     if (firstError?.error) return { error: firstError.error.message };
 
     return {
@@ -84,6 +91,7 @@ export async function getDashboardData(
         rfis: (rfisRes.data as RFI[]) ?? [],
         punchListItems: (punchRes.data as PunchListItem[]) ?? [],
         dailyLogs: (logsRes.data as DailyLog[]) ?? [],
+        milestones: (milestonesRes.data as Milestone[]) ?? [],
       },
     };
   } catch (err) {

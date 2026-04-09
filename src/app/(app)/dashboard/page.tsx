@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const allRFIs = dashboardData.rfis;
   const allPunch = dashboardData.punchListItems;
   const allLogs = dashboardData.dailyLogs;
+  const allMilestones = dashboardData.milestones;
 
   if (!currentProject) {
     // Real auth user with no projects — show welcome state
@@ -106,6 +107,40 @@ export default function DashboardPage() {
   const schedulePercent = totalDays > 0
     ? Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)))
     : 100;
+
+  // Compute nearest upcoming benchmark date for Schedule subtitle
+  const benchmarkDates = [
+    { key: 'turnover_date' as const, label: 'TO' },
+    { key: 'substantial_completion_date' as const, label: 'SC' },
+    { key: 'project_completion_date' as const, label: 'PC' },
+  ];
+  let scheduleSubtitle = 'On Schedule';
+  if (now > 0) {
+    const upcoming = benchmarkDates
+      .filter((b) => project[b.key])
+      .map((b) => ({ label: b.label, date: parseISO(project[b.key]!) }))
+      .filter((b) => b.date.getTime() >= now)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    if (upcoming.length > 0) {
+      scheduleSubtitle = `${upcoming[0].label}: ${format(upcoming[0].date, 'MMM d')}`;
+    }
+  }
+
+  // Earned Value metrics (CPI / SPI)
+  const earnedValue = allMilestones.reduce(
+    (sum, m) => sum + (m.budget_planned * m.percent_complete) / 100,
+    0,
+  );
+  const timeRatio = totalDays > 0 ? Math.min(1, Math.max(0, elapsed / totalDays)) : 1;
+  const plannedValue = project.budget_total * timeRatio;
+  const actualCost = project.budget_spent;
+  const cpi = actualCost > 0 ? earnedValue / actualCost : 1.0;
+  const spi = plannedValue > 0 ? earnedValue / plannedValue : 1.0;
+
+  const evTrend = (value: number): 'up' | 'down' | 'flat' =>
+    value >= 1.05 ? 'up' : value <= 0.95 ? 'down' : 'flat';
+  const evColor = (value: number): string =>
+    value >= 1.05 ? 'text-rc-emerald' : value <= 0.95 ? 'text-rc-red' : 'text-rc-amber';
 
   const totalSubmittals = allSubmittals.length;
   const pendingSubmittals = allSubmittals.filter(
@@ -186,8 +221,8 @@ export default function DashboardPage() {
             subtitle={budgetSpent}
             icon={DollarSign}
             color="navy"
-            trend="flat"
-            trendValue={`${budgetPercent}%`}
+            trend={evTrend(cpi)}
+            trendValue={`CPI: ${cpi.toFixed(2)}`}
             href={`/projects/${currentProjectId}/schedule`}
             ariaLabel="View budget and milestones"
           />
@@ -197,11 +232,11 @@ export default function DashboardPage() {
         <KPICard
           title="Schedule"
           value={`${schedulePercent}%`}
-          subtitle="On Schedule"
+          subtitle={scheduleSubtitle}
           icon={Calendar}
           color="emerald"
-          trend="up"
-          trendValue="On track"
+          trend={can(ACTIONS.BUDGET_VIEW) ? evTrend(spi) : 'up'}
+          trendValue={can(ACTIONS.BUDGET_VIEW) ? `SPI: ${spi.toFixed(2)}` : 'On track'}
           href={`/projects/${currentProjectId}/schedule`}
           ariaLabel="View schedule and milestones"
         />

@@ -12,7 +12,7 @@ import { useDailyLogs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function DailyLogsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
@@ -118,22 +118,22 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
             </Button>
           </div>
 
-          <div className="grid grid-cols-5 gap-px bg-rc-border rounded-lg overflow-hidden border border-rc-border max-w-4xl">
+          <div className="grid grid-cols-7 gap-px bg-rc-border rounded-lg overflow-hidden border border-rc-border max-w-4xl">
             {WEEKDAYS.map((d) => (
               <div key={d} className="bg-rc-card px-2 py-2 text-center text-xs font-medium text-muted-foreground">
                 {d}
               </div>
             ))}
             {calDays
-              .filter((d) => d.getDay() !== 0 && d.getDay() !== 6)
               .map((day) => {
                 const log = logForDay(day);
                 const inMonth = isSameMonth(day, monthStart);
                 const today = isToday(day);
+                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`bg-rc-card min-h-[72px] p-2 ${!inMonth ? 'opacity-40' : ''} ${today ? 'ring-2 ring-inset ring-rc-blue' : ''}`}
+                    className={`min-h-[72px] p-2 ${isWeekend ? 'bg-muted/30' : 'bg-rc-card'} ${!inMonth ? 'opacity-40' : ''} ${today ? 'ring-2 ring-inset ring-rc-blue' : ''}`}
                   >
                     {log ? (
                       <Link href={`${basePath}/${log.id}`} className="block h-full group">

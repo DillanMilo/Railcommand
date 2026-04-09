@@ -105,15 +105,16 @@ export function useDashboardData(projectId: string | null) {
       rfis: projectId ? store.getRFIs(projectId) : [],
       punchListItems: projectId ? store.getPunchListItems(projectId) : [],
       dailyLogs: projectId ? store.getDailyLogs(projectId) : [],
+      milestones: projectId ? store.getMilestones(projectId) : [],
     }),
     () =>
       projectId
         ? fetchDashboardData(projectId)
         : Promise.resolve({
-            data: { submittals: [], rfis: [], punchListItems: [], dailyLogs: [] },
+            data: { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [] },
           }),
     [projectId],
-    { submittals: [], rfis: [], punchListItems: [], dailyLogs: [] },
+    { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [] },
   );
 }
 

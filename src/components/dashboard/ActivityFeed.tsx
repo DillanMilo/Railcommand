@@ -16,6 +16,24 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
+const entityRouteMap: Record<string, (projectId: string, entityId: string) => string> = {
+  submittal: (pid, eid) => `/projects/${pid}/submittals/${eid}`,
+  rfi: (pid, eid) => `/projects/${pid}/rfis/${eid}`,
+  daily_log: (pid, eid) => `/projects/${pid}/daily-logs/${eid}`,
+  punch_list: (pid, eid) => `/projects/${pid}/punch-list/${eid}`,
+  milestone: (pid) => `/projects/${pid}/schedule`,
+  project: () => `/dashboard`,
+};
+
+function getActivityHref(
+  entityType: string,
+  entityId: string,
+  projectId: string,
+): string | null {
+  const builder = entityRouteMap[entityType];
+  return builder ? builder(projectId, entityId) : null;
+}
+
 const entityConfig: Record<string, { icon: typeof FileCheck; dotColor: string }> = {
   submittal: { icon: FileCheck, dotColor: 'bg-rc-blue' },
   rfi: { icon: MessageSquareMore, dotColor: 'bg-rc-orange' },
@@ -67,11 +85,10 @@ export default function ActivityFeed({ projectId }: ActivityFeedProps) {
               addSuffix: true,
             });
 
-            return (
-              <div
-                key={activity.id}
-                className="flex items-start gap-3 border-b last:border-b-0 px-3 sm:px-5 py-3"
-              >
+            const href = getActivityHref(activity.entity_type, activity.entity_id, projectId);
+
+            const inner = (
+              <>
                 <div className="mt-1.5 shrink-0">
                   <div className={cn('size-2 rounded-full', config.dotColor)} />
                 </div>
@@ -87,13 +104,30 @@ export default function ActivityFeed({ projectId }: ActivityFeedProps) {
                     <span>{timeAgo}</span>
                   </div>
                 </div>
+              </>
+            );
+
+            return href ? (
+              <Link
+                key={activity.id}
+                href={href}
+                className="flex items-start gap-3 border-b last:border-b-0 px-3 sm:px-5 py-3 cursor-pointer hover:bg-accent transition-colors"
+              >
+                {inner}
+              </Link>
+            ) : (
+              <div
+                key={activity.id}
+                className="flex items-start gap-3 border-b last:border-b-0 px-3 sm:px-5 py-3"
+              >
+                {inner}
               </div>
             );
           })}
         </div>
         <div className="border-t px-3 sm:px-5 py-3">
           <Link
-            href={`/projects/${projectId}/daily-logs`}
+            href="/dashboard"
             className="text-sm font-medium text-rc-orange hover:text-rc-orange-dark transition-colors"
           >
             View all activity
