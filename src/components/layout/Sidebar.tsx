@@ -24,6 +24,7 @@ import {
   Users,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldAlert,
   ShieldCheck,
   ChevronDown,
   Plus,
@@ -58,6 +59,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   ClipboardList: CalendarDays,
   ListChecks: ClipboardCheck,
   CalendarRange: GanttChart,
+  ShieldAlert,
   Users,
 };
 

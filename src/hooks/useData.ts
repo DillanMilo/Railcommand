@@ -13,6 +13,7 @@ import type {
   ProjectMember,
   Milestone,
   ActivityLogEntry,
+  SafetyIncident,
 } from '@/lib/types';
 
 // Store (demo mode)
@@ -39,6 +40,10 @@ import {
 } from '@/lib/actions/punch-list';
 import { getProjectMembers as fetchMembers } from '@/lib/actions/team';
 import { getMilestones as fetchMilestones } from '@/lib/actions/milestones';
+import {
+  getSafetyIncidents as fetchSafetyIncidents,
+  getSafetyIncident as fetchSafetyIncident,
+} from '@/lib/actions/safety';
 import { getActivityLog as fetchActivity } from '@/lib/actions/activity-log';
 import {
   getProjectInvitations as fetchProjectInvitations,
@@ -223,6 +228,24 @@ export function useActivityLog(projectId: string, limit?: number) {
     () => fetchActivity(projectId, limit),
     [projectId, limit],
     [],
+  );
+}
+
+export function useSafetyIncidents(projectId: string | null) {
+  return useQuery<SafetyIncident[]>(
+    () => [], // no demo store for safety yet
+    () => (projectId ? fetchSafetyIncidents(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useSafetyIncidentDetail(projectId: string, incidentId: string) {
+  return useQuery<SafetyIncident | null>(
+    () => null, // no demo store for safety yet
+    () => fetchSafetyIncident(incidentId, projectId),
+    [projectId, incidentId],
+    null,
   );
 }
 

@@ -182,7 +182,7 @@
 
 #### Week 2: Reports, Change Management (April 20–24)
 - [ ] Weekly Reports section (CM and Contractor)
-- [ ] Safety module (own box or within daily logs, incident reporting)
+- [x] Safety module (own box or within daily logs, incident reporting)
 - [ ] Change Orders in Budget box
 - [ ] Modifications & Amendments in Plans section
 - [ ] Demo data backfill (February through current date)
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 9, 2026 — Week 1 items complete (Phase 12)*
+*Last updated: April 10, 2026 — Safety module (Phase 12 Week 2)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

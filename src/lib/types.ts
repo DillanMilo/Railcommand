@@ -208,6 +208,32 @@ export interface PunchListItem {
 export type PunchListStatus = 'open' | 'in_progress' | 'resolved' | 'verified';
 export type Priority = 'critical' | 'high' | 'medium' | 'low';
 
+// Safety Incident
+export type IncidentType = 'near_miss' | 'first_aid' | 'recordable' | 'lost_time' | 'observation' | 'hazard';
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+
+export interface SafetyIncident {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "SAF-001"
+  reported_by: string;
+  reported_by_profile?: Profile;
+  incident_date: string;
+  title: string;
+  description: string;
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  location: string;
+  personnel_involved: string;
+  root_cause: string;
+  corrective_action: string;
+  daily_log_id: string | null;
+  attachments?: Attachment[];
+  created_at: string;
+}
+
 // Milestone
 export interface Milestone {
   id: string;
