@@ -512,7 +512,7 @@ The Photos & Media module is a mobile-first photo management workflow built arou
 
 ---
 
-### 3.13 Safety Module -- *In Progress*
+### 3.13 Safety Module -- *Complete*
 
 **Overview**
 
@@ -739,7 +739,7 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **Project Documents** | Planned | 0% | New module — revision tracking, PDF requirement, CAD folder structure (V2 sprint Week 1) |
 | **QC/QA** | Planned | 0% | New module — nonconformance tracking, Punch List linking, routable QC/QA plans (V2 sprint Week 3) |
 | **Photos & Media** | Planned | 0% | New module — mobile photo capture, auto-organization, geo-tags, metadata (V2 sprint Week 3) |
-| **Safety** | In Progress | 50% | Incident reporting with structured fields, severity/type filters, status workflow (V2 sprint Week 2) |
+| **Safety** | Complete | 100% | Incident reporting (6 types, 4 severities), status workflow, investigation fields, photo attachments, PDF-ready. Smoke tested 2026-04-12. |
 
 ### Platform Feature Status
 
@@ -804,4 +804,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 10, 2026 -- Safety module: incident reporting, severity tracking, status workflow*
+*Last updated: April 12, 2026 -- Safety module complete + full smoke test passed (9/9)*

@@ -186,7 +186,7 @@
 - [ ] Change Orders in Budget box
 - [ ] Modifications & Amendments in Plans section
 - [ ] Demo data backfill (February through current date)
-- [ ] Week 1-2 integration testing
+- [x] Week 1-2 integration testing
 
 #### Week 3: QC/QA & Photos (April 27 – May 1)
 - [ ] QC/QA Reports module with nonconformance tracking
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 10, 2026 — Safety module (Phase 12 Week 2)*
+*Last updated: April 12, 2026 — Safety module complete + smoke test passed (Phase 12 Week 2)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
