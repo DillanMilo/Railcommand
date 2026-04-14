@@ -45,6 +45,38 @@ export const MILESTONE_STATUS_COLORS: Record<string, string> = {
 };
 
 /**
+ * Status colors for safety incidents
+ */
+export const SAFETY_STATUS_COLORS: Record<string, string> = {
+  open: "bg-red-100 text-red-700",
+  in_progress: "bg-amber-100 text-amber-700",
+  resolved: "bg-blue-100 text-blue-700",
+  closed: "bg-emerald-100 text-emerald-700",
+};
+
+/**
+ * Severity colors for safety incidents
+ */
+export const SEVERITY_COLORS: Record<string, string> = {
+  critical: "bg-red-100 text-red-700",
+  high: "bg-orange-100 text-orange-700",
+  medium: "bg-amber-100 text-amber-700",
+  low: "bg-blue-100 text-blue-700",
+};
+
+/**
+ * Incident type labels for safety incidents
+ */
+export const INCIDENT_TYPE_LABELS: Record<string, string> = {
+  near_miss: "Near Miss",
+  first_aid: "First Aid",
+  recordable: "Recordable",
+  lost_time: "Lost Time",
+  observation: "Observation",
+  hazard: "Hazard",
+};
+
+/**
  * All status color maps grouped for convenience
  */
 export const STATUS_COLORS = {
@@ -52,6 +84,7 @@ export const STATUS_COLORS = {
   rfi: RFI_STATUS_COLORS,
   punchList: PUNCH_LIST_STATUS_COLORS,
   milestone: MILESTONE_STATUS_COLORS,
+  safety: SAFETY_STATUS_COLORS,
 } as const;
 
 /**
@@ -102,6 +135,7 @@ export function getNavItems(projectId: string): NavItem[] {
     { label: "RFIs", href: projectId ? `/projects/${projectId}/rfis` : "#", icon: "MessageSquareMore", requiresProject: true },
     { label: "Daily Logs", href: projectId ? `/projects/${projectId}/daily-logs` : "#", icon: "ClipboardList", requiresProject: true },
     { label: "Punch List", href: projectId ? `/projects/${projectId}/punch-list` : "#", icon: "ListChecks", requiresProject: true },
+    { label: "Safety", href: projectId ? `/projects/${projectId}/safety` : "#", icon: "ShieldAlert", requiresProject: true },
     { label: "Schedule", href: projectId ? `/projects/${projectId}/schedule` : "#", icon: "CalendarRange", requiresProject: true },
     { label: "Team", href: projectId ? `/projects/${projectId}/team` : "#", icon: "Users", requiresProject: true },
   ];

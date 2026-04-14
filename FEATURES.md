@@ -107,10 +107,10 @@ The Dashboard is the command center for every project. It provides a real-time, 
 - **Budget Health Summary** -- Visual representation of budget utilization with trend indicators
 - **Project Status Header** -- Project name, active status badge, and client name prominently displayed
 - **Clickable KPI Boxes** -- All 6 dashboard boxes are tappable, navigating to their respective detail/module pages with pre-filtering (e.g., the Open RFIs card lands on RFIs filtered to status=open) *(Complete)*
-- **Recent Activity Drilldown** -- Activity feed entries are tappable, linking to individual item detail views *(Planned)*
-- **CPI (Cost Performance Index)** -- Earned Value / Actual Cost with color-coded indicators: >1.0 Under budget (green), =1.0 On budget (yellow), <1.0 Over budget (red) *(Planned)*
-- **SPI (Schedule Performance Index)** -- Earned Value / Planned Value with same color coding *(Planned)*
-- **Schedule Benchmark Dates** -- Display Turnover Date, Substantial Completion Date, and Project Completion Date in the Schedule box *(Planned)*
+- **Recent Activity Drilldown** -- Activity feed entries are tappable, linking to individual item detail views *(Complete)*
+- **CPI (Cost Performance Index)** -- Earned Value / Actual Cost with color-coded indicators: >1.0 Under budget (green), =1.0 On budget (yellow), <1.0 Over budget (red) *(Complete)*
+- **SPI (Schedule Performance Index)** -- Earned Value / Planned Value with same color coding *(Complete)*
+- **Schedule Benchmark Dates** -- Display Turnover Date, Substantial Completion Date, and Project Completion Date in the Schedule box *(Complete)*
 
 **Permissions by Role**
 
@@ -205,7 +205,7 @@ The Daily Logs module provides a structured, digital replacement for paper-based
 - **Daily Log Detail View** -- Read-only presentation of a completed log with all structured data sections, with PDF export button for downloading individual log reports
 - **Photo Attachment Support** -- Upload site photos associated with the day's work
 - **Searchable History** -- Find past logs by date, content, or personnel
-- **7-Day Calendar View** -- Calendar displays full 7-day week instead of current view *(Planned)*
+- **7-Day Calendar View** -- Calendar displays full 7-day week instead of current view *(Complete)*
 - **Weekly Reports Section** -- Fields for Construction Manager and Contractor weekly reports *(Planned)*
 
 **Permissions by Role**
@@ -311,7 +311,7 @@ The Team Management module provides a directory of all project team members, the
 - **Assign Project Roles** -- Choose from Manager, Engineer, Contractor, Inspector, Foreman, or Superintendent
 - **Remove Team Members** -- Hover-to-reveal remove button on each team member card
 - **Contact Integration** -- Direct email and phone links for each team member
-- **Team Listing Prominence** -- Team directory surfaced directly on dashboard or sidebar instead of behind "More" button *(Planned)*
+- **Team Listing Prominence** -- Team directory surfaced directly on dashboard or sidebar instead of behind "More" button *(Complete)*
 - **RBAC Management UI** -- Interface for managing Read/Write/Create privileges per team member with role-based defaults and override capability *(Planned)*
 
 **Permissions by Role**
@@ -512,7 +512,7 @@ The Photos & Media module is a mobile-first photo management workflow built arou
 
 ---
 
-### 3.13 Safety Module -- *Planned*
+### 3.13 Safety Module -- *Complete*
 
 **Overview**
 
@@ -739,7 +739,7 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **Project Documents** | Planned | 0% | New module — revision tracking, PDF requirement, CAD folder structure (V2 sprint Week 1) |
 | **QC/QA** | Planned | 0% | New module — nonconformance tracking, Punch List linking, routable QC/QA plans (V2 sprint Week 3) |
 | **Photos & Media** | Planned | 0% | New module — mobile photo capture, auto-organization, geo-tags, metadata (V2 sprint Week 3) |
-| **Safety** | Planned | 0% | New module — dedicated safety tracking and incident reporting (V2 sprint Week 2) |
+| **Safety** | Complete | 100% | Incident reporting (6 types, 4 severities), status workflow, investigation fields, photo attachments, PDF-ready. Smoke tested 2026-04-12. |
 
 ### Platform Feature Status
 
@@ -804,4 +804,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 9, 2026 -- RailBot notifications summary tool + notification panel polish*
+*Last updated: April 12, 2026 -- Safety module complete + full smoke test passed (9/9)*

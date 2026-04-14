@@ -49,7 +49,7 @@ export default function MobileNav() {
   );
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-rc-card border-t border-rc-border pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-rc-card border-t border-rc-border pb-[max(8px,env(safe-area-inset-bottom))]">
       <div className="flex items-stretch justify-around">
         {mobileTabs.map(({ label, href, Icon, requiresProject }) => {
           if (href === '#more') {

@@ -171,22 +171,22 @@
 - [x] Backend hardening: private photo buckets with signed URLs + security audit (2026-04-09)
 - [x] Notification bell: categorized panel (Updates + Activity), read/unread/dismiss, patch notes, routing fix (2026-04-09)
 - [x] RailBot: notifications summary tool — "What's new?" returns patch notes + activity (2026-04-09)
-- [ ] Recent activity entries tappable → item detail views
-- [ ] Team listing moved to prominent position (not behind "More")
-- [ ] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
-- [ ] CPI calculation (Earned Value / Actual Cost) with color-coded indicators
-- [ ] SPI calculation (Earned Value / Planned Value) with color-coded indicators
+- [x] Recent activity entries tappable → item detail views
+- [x] Team listing moved to prominent position (not behind "More")
+- [x] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
+- [x] CPI calculation (Earned Value / Actual Cost) with color-coded indicators
+- [x] SPI calculation (Earned Value / Planned Value) with color-coded indicators
 - [ ] Project Documents dashboard box with revision tracking header
 - [ ] PDF format enforcement for drawings + AutoCAD/MicroStation folder
-- [ ] Daily logs calendar: full 7-day week view
+- [x] Daily logs calendar: full 7-day week view
 
 #### Week 2: Reports, Change Management (April 20–24)
 - [ ] Weekly Reports section (CM and Contractor)
-- [ ] Safety module (own box or within daily logs, incident reporting)
+- [x] Safety module (own box or within daily logs, incident reporting)
 - [ ] Change Orders in Budget box
 - [ ] Modifications & Amendments in Plans section
 - [ ] Demo data backfill (February through current date)
-- [ ] Week 1-2 integration testing
+- [x] Week 1-2 integration testing
 
 #### Week 3: QC/QA & Photos (April 27 – May 1)
 - [ ] QC/QA Reports module with nonconformance tracking
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 9, 2026 — RailBot notifications tool (Phase 12 Week 1)*
+*Last updated: April 12, 2026 — Safety module complete + smoke test passed (Phase 12 Week 2)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

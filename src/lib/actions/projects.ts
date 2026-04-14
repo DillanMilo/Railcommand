@@ -142,6 +142,9 @@ export async function updateProject(
     start_date?: string;
     target_end_date?: string;
     budget_total?: number;
+    turnover_date?: string | null;
+    substantial_completion_date?: string | null;
+    project_completion_date?: string | null;
   }
 ): Promise<ActionResult<Project>> {
   try {

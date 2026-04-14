@@ -151,6 +151,35 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         </div>
       </div>
 
+      {/* Benchmark Dates */}
+      {currentProject && (currentProject.turnover_date || currentProject.substantial_completion_date || currentProject.project_completion_date) && (
+        <Card className="mt-6 py-4">
+          <CardContent className="px-4">
+            <h2 className="text-sm font-semibold text-muted-foreground mb-3">Benchmark Dates</h2>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-xs text-muted-foreground">Turnover</p>
+                <p className="text-sm font-semibold mt-0.5">
+                  {currentProject.turnover_date ? format(parseISO(currentProject.turnover_date), 'MMM d, yyyy') : '\u2014'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Substantial Completion</p>
+                <p className="text-sm font-semibold mt-0.5">
+                  {currentProject.substantial_completion_date ? format(parseISO(currentProject.substantial_completion_date), 'MMM d, yyyy') : '\u2014'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Project Completion</p>
+                <p className="text-sm font-semibold mt-0.5">
+                  {currentProject.project_completion_date ? format(parseISO(currentProject.project_completion_date), 'MMM d, yyyy') : '\u2014'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-6">
         <KPICard title="Overall Progress" value={`${kpis.weightedProgress}%`} icon={TrendingUp} color="blue" />

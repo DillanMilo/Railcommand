@@ -604,7 +604,7 @@ export function removeProjectMember(id: string): void {
 // --- Project editing ---
 export function updateProject(
   id: string,
-  data: Partial<Pick<Project, 'name' | 'description' | 'location' | 'client' | 'start_date' | 'target_end_date' | 'budget_total'>>
+  data: Partial<Pick<Project, 'name' | 'description' | 'location' | 'client' | 'start_date' | 'target_end_date' | 'budget_total' | 'turnover_date' | 'substantial_completion_date' | 'project_completion_date'>>
 ): Project | null {
   let updated: Project | null = null;
   projects = projects.map((p) => {
