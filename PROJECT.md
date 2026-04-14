@@ -202,8 +202,8 @@
 - [x] Full integration testing across all new features
 - [x] Desktop vs mobile UX parity check
 - [x] Demo data updated for all new features
-- [ ] Pre-launch QA sweep
-- [ ] Staging release candidate tag
+- [x] Pre-launch QA sweep
+- [x] Staging release candidate tag
 
 #### Deferred to V2.5 (Post-Launch)
 - [ ] Live camera integration (Z-P-T controls, photo logs, time-lapse)
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 14, 2026 — QC/QA Reports + Project Documents modules (Phase 12 Week 3 started)*
+*Last updated: April 14, 2026 — Phase 12 Week 4 complete: QA sweep passed, all Caleb deliverables done*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

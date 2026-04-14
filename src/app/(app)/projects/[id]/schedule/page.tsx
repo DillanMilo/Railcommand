@@ -80,10 +80,11 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
   const { currentProject, isDemo } = useProject();
   const { can } = usePermissions(projectId);
   const currentProfile = getProfileWithOrg(getCurrentUserId());
-  const { data: rawMilestones, refetch } = useMilestones(projectId);
+  const { data: rawMilestones, loading: loadingMs, refetch } = useMilestones(projectId);
   const milestones = [...rawMilestones].sort((a, b) => a.sort_order - b.sort_order);
-  const { data: changeOrders, refetch: refetchCOs } = useChangeOrders(projectId);
-  const { data: modifications, refetch: refetchMods } = useModifications(projectId);
+  const { data: changeOrders, loading: loadingCOs, refetch: refetchCOs } = useChangeOrders(projectId);
+  const { data: modifications, loading: loadingMods, refetch: refetchMods } = useModifications(projectId);
+  const scheduleLoading = loadingMs || loadingCOs || loadingMods;
   const kpis = useKPIs(milestones);
 
   const approvedTotal = useMemo(() =>
@@ -218,6 +219,14 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
     setAddModSaving(false);
     setAddModOpen(false);
     resetAddModForm();
+  }
+
+  if (scheduleLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (

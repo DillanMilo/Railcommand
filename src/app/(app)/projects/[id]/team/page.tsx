@@ -102,7 +102,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   use(searchParams);
   const { isDemo } = useProject();
   const { can } = usePermissions(projectId);
-  const { data: projectMembers, refetch } = useProjectMembers(projectId);
+  const { data: projectMembers, loading, refetch } = useProjectMembers(projectId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
@@ -344,6 +344,14 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     newEmail.trim() &&
     newProjectRole &&
     (creatingNewOrg ? newOrgName.trim() && newOrgType : newOrgId);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -598,6 +606,14 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
             </Card>
           );
         })}
+
+        {members.length === 0 && (
+          <div className="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-rc-border py-16 text-muted-foreground">
+            <Users className="size-10 mb-3" />
+            <p className="text-sm font-medium">No team members yet</p>
+            <p className="text-xs mt-1">Add your first team member to get started</p>
+          </div>
+        )}
       </div>
 
       {/* Pending Invitations */}
