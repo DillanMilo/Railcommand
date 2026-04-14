@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, use } from 'react';
-import { Plus, Mail, Phone, X, UserPlus, Users, Mail as MailIcon, Clock, Send, CheckCircle2 } from 'lucide-react';
+import { Plus, Mail, Phone, X, UserPlus, Users, Mail as MailIcon, Clock, Send, CheckCircle2, ShieldCheck, ChevronDown } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import {
   getOrganizations,
   addProjectMember as storeAddProjectMember,
   removeProjectMember as storeRemoveProjectMember,
+  updateMemberRole as storeUpdateMemberRole,
   addProfile,
   addOrganization,
   getProjectInvitations as storeGetProjectInvitations,
@@ -43,11 +44,17 @@ import {
 } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
-import { ACTIONS } from '@/lib/permissions';
+import { ACTIONS, PERMISSION_MATRIX } from '@/lib/permissions';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember } from '@/lib/actions/team';
+import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember, updateMemberRole as serverUpdateMemberRole } from '@/lib/actions/team';
 import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation } from '@/lib/actions/invitations';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { TIER_LIMITS } from '@/lib/types';
 import type { ProjectInvitation, Tier, ProjectMember } from '@/lib/types';
 
@@ -313,6 +320,15 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     }
   }
 
+  async function handleRoleChange(memberId: string, newRole: ProjectMember['project_role']) {
+    if (isDemo) {
+      storeUpdateMemberRole(memberId, newRole);
+    } else {
+      await serverUpdateMemberRole(projectId, memberId, newRole);
+    }
+    refetch();
+  }
+
   function handleOrgSelectChange(value: string) {
     if (value === '__new__') {
       setCreatingNewOrg(true);
@@ -509,15 +525,52 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
 
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{profile.full_name}</p>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        'border-0 text-[10px] mt-0.5',
-                        ROLE_COLORS[member.project_role] ?? ROLE_COLORS.owner
-                      )}
-                    >
-                      {formatRole(member.project_role)}
-                    </Badge>
+                    {can(ACTIONS.TEAM_MANAGE) ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="inline-flex items-center gap-0.5 mt-0.5 group/role">
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                'border-0 text-[10px] cursor-pointer transition-opacity group-hover/role:opacity-80',
+                                ROLE_COLORS[member.project_role] ?? ROLE_COLORS.owner
+                              )}
+                            >
+                              {formatRole(member.project_role)}
+                              <ChevronDown className="size-2.5 ml-0.5" />
+                            </Badge>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="min-w-[160px]">
+                          {PROJECT_ROLES.map((r) => (
+                            <DropdownMenuItem
+                              key={r}
+                              onClick={() => handleRoleChange(member.id, r as ProjectMember['project_role'])}
+                              className={cn(
+                                'text-xs',
+                                r === member.project_role && 'font-semibold'
+                              )}
+                            >
+                              <span className={cn(
+                                'size-2 rounded-full shrink-0',
+                                r === member.project_role ? 'bg-rc-orange' : 'bg-muted-foreground/30'
+                              )} />
+                              {formatRole(r)}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          'border-0 text-[10px] mt-0.5',
+                          ROLE_COLORS[member.project_role] ?? ROLE_COLORS.owner
+                        )}
+                      >
+                        {formatRole(member.project_role)}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
@@ -602,6 +655,11 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
         </div>
       )}
 
+      {/* Permissions Reference */}
+      {can(ACTIONS.TEAM_MANAGE) && (
+        <PermissionsReference />
+      )}
+
       {/* Remove member confirmation dialog */}
       <Dialog open={pendingRemoveId !== null} onOpenChange={(open) => { if (!open) setPendingRemoveId(null); }}>
         <DialogContent>
@@ -621,6 +679,100 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Permissions Reference (collapsible)                                */
+/* ------------------------------------------------------------------ */
+
+const ACTION_LABELS: Record<string, string> = {
+  'submittal:create': 'Create Submittals',
+  'submittal:review': 'Review Submittals',
+  'rfi:create': 'Create RFIs',
+  'rfi:respond': 'Respond to RFIs',
+  'rfi:close': 'Close RFIs',
+  'daily_log:create': 'Create Daily Logs',
+  'daily_log:update': 'Update Daily Logs',
+  'punch_list:create': 'Create Punch Items',
+  'punch_list:resolve': 'Resolve Punch Items',
+  'punch_list:verify': 'Verify Punch Items',
+  'team:manage': 'Manage Team',
+  'project:manage': 'Manage Project',
+  'project:edit': 'Edit Project',
+  'schedule:edit': 'Edit Schedule',
+  'budget:view': 'View Budget',
+  'change_order:manage': 'Manage Change Orders',
+  'weekly_report:create': 'Create Weekly Reports',
+  'qcqa:create': 'Create QC/QA Reports',
+  'qcqa:close': 'Close QC/QA Reports',
+  'document:manage': 'Manage Documents',
+};
+
+const ROLE_ORDER: ProjectMember['project_role'][] = [
+  'manager', 'superintendent', 'engineer', 'foreman', 'contractor', 'inspector', 'owner',
+];
+
+function PermissionsReference() {
+  const [expanded, setExpanded] = useState(false);
+  const allActions = Object.values(ACTIONS);
+
+  return (
+    <div className="mt-10">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ShieldCheck className="size-4" />
+        Permissions by Role
+        <ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} />
+      </button>
+
+      {expanded && (
+        <div className="mt-4 overflow-x-auto rounded-lg border">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-muted/50 border-b">
+                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[160px]">
+                  Permission
+                </th>
+                {ROLE_ORDER.map((role) => (
+                  <th key={role} className="text-center px-2 py-2.5 font-medium whitespace-nowrap">
+                    <Badge
+                      variant="secondary"
+                      className={cn('border-0 text-[10px]', ROLE_COLORS[role] ?? ROLE_COLORS.owner)}
+                    >
+                      {formatRole(role)}
+                    </Badge>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allActions.map((action) => (
+                <tr key={action} className="border-b last:border-b-0 hover:bg-muted/30">
+                  <td className="px-3 py-2 text-muted-foreground sticky left-0 bg-white dark:bg-background">
+                    {ACTION_LABELS[action] ?? action}
+                  </td>
+                  {ROLE_ORDER.map((role) => {
+                    const allowed = PERMISSION_MATRIX[role]?.includes(action);
+                    return (
+                      <td key={role} className="text-center px-2 py-2">
+                        {allowed ? (
+                          <span className="text-rc-emerald font-bold">&#10003;</span>
+                        ) : (
+                          <span className="text-muted-foreground/30">&mdash;</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

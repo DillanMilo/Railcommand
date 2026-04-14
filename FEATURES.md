@@ -363,7 +363,7 @@ The Team Management module provides a directory of all project team members, the
 - **Remove Team Members** -- Hover-to-reveal remove button on each team member card
 - **Contact Integration** -- Direct email and phone links for each team member
 - **Team Listing Prominence** -- Team directory surfaced directly on dashboard or sidebar instead of behind "More" button *(Complete)*
-- **RBAC Management UI** -- Interface for managing Read/Write/Create privileges per team member with role-based defaults and override capability *(Planned)*
+- **RBAC Management UI** -- Managers can change any team member's role directly from their card via dropdown. Collapsible Permissions Reference table shows a full matrix of all 20 actions across all 7 roles *(Complete)*
 
 **Permissions by Role**
 

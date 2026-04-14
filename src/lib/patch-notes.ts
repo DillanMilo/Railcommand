@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v1.14.0',
+    version: '1.14.0',
+    title: 'RBAC Management',
+    description: 'Managers can now change team member roles directly from the Team page — click any role badge to reassign. New collapsible Permissions Reference table shows exactly what each role can do across all 20 actions.',
+    date: '2026-04-14',
+  },
+  {
     id: 'v1.13.0',
     version: '1.13.0',
     title: 'Photos & Media',

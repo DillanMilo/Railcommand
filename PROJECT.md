@@ -198,7 +198,7 @@
 - [x] Geo-tag and timestamp metadata capture
 
 #### Week 4: Permissions, Polish & Launch (May 4–8)
-- [ ] RBAC management UI (Read/Write/Create per team member)
+- [x] RBAC management UI (Read/Write/Create per team member)
 - [ ] Full integration testing across all new features
 - [ ] Desktop vs mobile UX parity check
 - [ ] Demo data updated for all new features

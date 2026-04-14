@@ -948,6 +948,14 @@ export function removeProjectMember(id: string): void {
   projectMembers = projectMembers.filter((m) => m.id !== id);
 }
 
+export function updateMemberRole(id: string, role: ProjectMember['project_role']): void {
+  projectMembers = projectMembers.map((m) =>
+    m.id === id
+      ? { ...m, project_role: role, can_edit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(role) }
+      : m
+  );
+}
+
 // --- Project editing ---
 export function updateProject(
   id: string,
