@@ -1,4 +1,4 @@
-import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment } from './types';
+import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment, SafetyIncident } from './types';
 
 // ============================================================
 // ORGANIZATIONS
@@ -1246,6 +1246,108 @@ export const seedPhotoAttachments: Attachment[] = [
 // ============================================================
 // COMBINED EXPORT
 // ============================================================
+// ============================================================
+// SAFETY INCIDENTS (6)
+// ============================================================
+export const seedSafetyIncidents: SafetyIncident[] = [
+  {
+    id: 'si-001', project_id: 'proj-001', number: 'SAF-001',
+    reported_by: 'prof-003',
+    incident_date: '2026-02-10',
+    title: 'Near miss — excavator swing radius contact with signal mast',
+    description: 'CAT 320 excavator boom swung within 6 inches of signal mast S-1 during trenching operations. No contact made, but operator was unaware of the clearance issue. Spotter was not assigned for the operation.',
+    incident_type: 'near_miss',
+    severity: 'high',
+    status: 'resolved',
+    location: 'Signal Location S-1, Siding 1',
+    personnel_involved: 'Equipment operator (Mountain West Track Services)',
+    root_cause: 'No spotter assigned for excavator operations near existing signal infrastructure. Operator was not briefed on signal mast locations during pre-shift safety meeting.',
+    corrective_action: 'Mandatory spotter requirement implemented for all excavator operations within 25 feet of signal infrastructure. Signal mast locations added to daily briefing maps. High-visibility barrier posts installed around all signal masts.',
+    daily_log_id: null,
+    created_at: '2026-02-10T14:30:00Z',
+  },
+  {
+    id: 'si-002', project_id: 'proj-001', number: 'SAF-002',
+    reported_by: 'prof-006',
+    incident_date: '2026-02-18',
+    title: 'First aid — laceration from rail clip installation',
+    description: 'Worker sustained a 2-inch laceration on left forearm while installing Pandrol e-clips on Siding 1. Clip slipped during installation and the spring steel edge cut through the worker\'s sleeve. First aid administered on site — wound cleaned, butterfly strips applied.',
+    incident_type: 'first_aid',
+    severity: 'low',
+    status: 'closed',
+    location: 'Siding 1, STA 11+00',
+    personnel_involved: 'Carlos Mendez (Front Range Signal Co.)',
+    root_cause: 'Worker was using improper clip installation technique and was not wearing cut-resistant sleeves as required by PPE policy.',
+    corrective_action: 'Toolbox talk conducted on proper e-clip installation technique. Cut-resistant sleeves added to required PPE for all clip installation work. Clip installation tools inspected and 3 worn tools replaced.',
+    daily_log_id: null,
+    created_at: '2026-02-18T10:15:00Z',
+  },
+  {
+    id: 'si-003', project_id: 'proj-001', number: 'SAF-003',
+    reported_by: 'prof-004',
+    incident_date: '2026-03-05',
+    title: 'Recordable — worker struck by falling ballast from conveyor',
+    description: 'During ballast placement on Siding 2, a section of the conveyor belt shifted, dropping approximately 200 lbs of ballast onto a worker standing below. Worker was struck on the right shoulder and upper back. Transported to urgent care — diagnosed with deep bruising and minor shoulder strain. Missed 0 days but placed on restricted duty for 5 days.',
+    incident_type: 'recordable',
+    severity: 'critical',
+    status: 'resolved',
+    location: 'Siding 2, STA 8+00',
+    personnel_involved: 'Travis Mitchell (Mountain West Track Services)',
+    root_cause: 'Conveyor belt tracking was misaligned due to worn guide rollers. Pre-operation inspection checklist did not include belt tracking verification. Worker was in the exclusion zone below the active conveyor.',
+    corrective_action: 'Conveyor belt guide rollers replaced. Pre-operation inspection checklist updated to include belt tracking and alignment check. Exclusion zones re-marked with high-visibility barricades. All conveyor operators retrained on pre-operation inspection. Incident reviewed at all-hands safety stand-down on 2026-03-07.',
+    daily_log_id: null,
+    created_at: '2026-03-05T09:45:00Z',
+  },
+  {
+    id: 'si-004', project_id: 'proj-001', number: 'SAF-004',
+    reported_by: 'prof-008',
+    incident_date: '2026-03-20',
+    title: 'Near miss — track panel dropped during crane lift',
+    description: 'During track panel placement on Siding 3, a 39-foot track panel shifted in the rigging and one end dropped approximately 3 feet before the crane operator arrested the load. Two workers were within 15 feet of the drop zone. No injuries occurred. Panel sustained minor tie damage.',
+    incident_type: 'near_miss',
+    severity: 'medium',
+    status: 'in_progress',
+    location: 'Siding 3, STA 2+50',
+    personnel_involved: 'Crane operator and rigging crew (Summit Grade Construction)',
+    root_cause: '',
+    corrective_action: '',
+    daily_log_id: null,
+    created_at: '2026-03-20T11:20:00Z',
+  },
+  {
+    id: 'si-005', project_id: 'proj-001', number: 'SAF-005',
+    reported_by: 'prof-009',
+    incident_date: '2026-04-02',
+    title: 'Observation — inadequate fall protection at signal mast',
+    description: 'During site walkthrough, inspector observed a signal technician working at approximately 12 feet elevation on signal mast S-2 without fall protection harness. Worker was attaching signal head mounting bracket. Work was stopped immediately and worker descended safely.',
+    incident_type: 'observation',
+    severity: 'medium',
+    status: 'in_progress',
+    location: 'Signal Location S-2',
+    personnel_involved: 'Signal technician (Front Range Signal Co.)',
+    root_cause: '',
+    corrective_action: '',
+    daily_log_id: null,
+    created_at: '2026-04-02T13:00:00Z',
+  },
+  {
+    id: 'si-006', project_id: 'proj-001', number: 'SAF-006',
+    reported_by: 'prof-005',
+    incident_date: '2026-04-10',
+    title: 'Hazard — exposed conduit trench left unbarricaded overnight',
+    description: 'During morning site inspection, an open signal conduit trench approximately 4 feet deep and 60 feet long was found without barricades or warning tape along the south yard access road. The trench had been excavated the previous afternoon and the barricades were not installed before the crew left for the day.',
+    incident_type: 'hazard',
+    severity: 'low',
+    status: 'open',
+    location: 'South yard signal conduit run, near JB-5',
+    personnel_involved: 'Excavation crew (Summit Grade Construction)',
+    root_cause: '',
+    corrective_action: '',
+    daily_log_id: null,
+    created_at: '2026-04-10T07:30:00Z',
+  },
+];
+
 export const seedData = {
   project: seedProject,
   organizations: seedOrganizations,
@@ -1263,4 +1365,5 @@ export const seedData = {
   projectDocuments: seedProjectDocuments,
   activityLog: seedActivityLog,
   photoAttachments: seedPhotoAttachments,
+  safetyIncidents: seedSafetyIncidents,
 };

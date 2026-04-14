@@ -199,9 +199,9 @@
 
 #### Week 4: Permissions, Polish & Launch (May 4–8)
 - [x] RBAC management UI (Read/Write/Create per team member)
-- [ ] Full integration testing across all new features
-- [ ] Desktop vs mobile UX parity check
-- [ ] Demo data updated for all new features
+- [x] Full integration testing across all new features
+- [x] Desktop vs mobile UX parity check
+- [x] Demo data updated for all new features
 - [ ] Pre-launch QA sweep
 - [ ] Staging release candidate tag
 

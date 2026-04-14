@@ -252,7 +252,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         <Card className="mt-6 py-4">
           <CardContent className="px-4">
             <h2 className="text-sm font-semibold text-muted-foreground mb-3">Benchmark Dates</h2>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-xs text-muted-foreground">Turnover</p>
                 <p className="text-sm font-semibold mt-0.5">
@@ -409,7 +409,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
               <label className="text-sm font-medium">Description</label>
               <Textarea value={addDescription} onChange={(e) => setAddDescription(e.target.value)} rows={2} className="mt-1" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Target Date <span className="text-red-500">*</span></label>
                 <Input type="date" value={addTargetDate} onChange={(e) => setAddTargetDate(e.target.value)} className="mt-1" />
@@ -715,7 +715,7 @@ function MilestoneCard({ milestone: ms, projectId, isDemo, canEdit, refetch }: {
               <label className="text-sm font-medium">Description</label>
               <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} className="mt-1" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Target Date</label>
                 <Input type="date" value={editTargetDate} onChange={(e) => setEditTargetDate(e.target.value)} className="mt-1" />

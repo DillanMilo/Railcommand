@@ -103,7 +103,7 @@ export default function MobileNav() {
                           href={item.href}
                           onClick={() => setMoreOpen(false)}
                           className={cn(
-                            'flex flex-col items-center gap-2 rounded-lg p-4 transition-colors',
+                            'flex flex-col items-center gap-2 rounded-lg p-4 transition-colors min-h-[56px]',
                             active ? 'bg-rc-orange/10 text-rc-orange' : 'hover:bg-accent text-muted-foreground'
                           )}
                         >

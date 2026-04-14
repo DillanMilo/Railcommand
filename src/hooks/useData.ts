@@ -285,7 +285,7 @@ export function useActivityLog(projectId: string, limit?: number) {
 
 export function useSafetyIncidents(projectId: string | null) {
   return useQuery<SafetyIncident[]>(
-    () => [], // no demo store for safety yet
+    () => (projectId ? store.getSafetyIncidents(projectId) : []),
     () => (projectId ? fetchSafetyIncidents(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -294,7 +294,7 @@ export function useSafetyIncidents(projectId: string | null) {
 
 export function useSafetyIncidentDetail(projectId: string, incidentId: string) {
   return useQuery<SafetyIncident | null>(
-    () => null, // no demo store for safety yet
+    () => store.getSafetyIncidentById(incidentId),
     () => fetchSafetyIncident(incidentId, projectId),
     [projectId, incidentId],
     null,

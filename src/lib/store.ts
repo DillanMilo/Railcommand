@@ -23,6 +23,7 @@ import {
   seedProjectDocuments,
   seedProject,
   seedPhotoAttachments,
+  seedSafetyIncidents,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
 import type {
@@ -59,6 +60,10 @@ import type {
   ProjectDocument,
   DocumentCategory,
   DocumentStatus,
+  SafetyIncident,
+  IncidentType,
+  IncidentSeverity,
+  IncidentStatus,
 } from './types';
 
 // Mutable copies of seed data
@@ -75,6 +80,7 @@ let weeklyReports: WeeklyReport[] = [...seedWeeklyReports];
 let modifications: Modification[] = [...seedModifications];
 let qcqaReports: QCQAReport[] = [...seedQCQAReports];
 let projectDocuments: ProjectDocument[] = [...seedProjectDocuments];
+let safetyIncidents: SafetyIncident[] = [...seedSafetyIncidents];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -97,6 +103,7 @@ export function initDemoData(): void {
   modifications = [...seedModifications];
   qcqaReports = [...seedQCQAReports];
   projectDocuments = [...seedProjectDocuments];
+  safetyIncidents = [...seedSafetyIncidents];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -116,6 +123,7 @@ export function initDemoData(): void {
   modificationCounter = modifications.length;
   qcqaReportCounter = qcqaReports.length;
   documentCounter = projectDocuments.length;
+  safetyIncidentCounter = safetyIncidents.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -137,6 +145,7 @@ export function initFreshData(name: string, email: string): string {
   modifications = [];
   qcqaReports = [];
   projectDocuments = [];
+  safetyIncidents = [];
   attachments = [];
   invitations = [];
 
@@ -170,6 +179,7 @@ export function initFreshData(name: string, email: string): string {
   modificationCounter = 0;
   qcqaReportCounter = 0;
   documentCounter = 0;
+  safetyIncidentCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -1097,6 +1107,62 @@ export function addInvitation(data: {
 
 export function updateInvitationStatus(id: string, status: ProjectInvitation['status']): void {
   invitations = invitations.map((i) => (i.id === id ? { ...i, status } : i));
+}
+
+// --- Safety Incident operations ---
+let safetyIncidentCounter = safetyIncidents.length;
+
+export function getSafetyIncidents(projectId?: string) {
+  if (!projectId) return safetyIncidents;
+  return safetyIncidents.filter((i) => i.project_id === projectId);
+}
+
+export function getSafetyIncidentById(id: string) {
+  return safetyIncidents.find((i) => i.id === id) ?? null;
+}
+
+export function addSafetyIncident(projectId: string, data: {
+  title: string;
+  description?: string;
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  location?: string;
+  personnel_involved?: string;
+  incident_date?: string;
+}): SafetyIncident {
+  safetyIncidentCounter++;
+  const num = String(safetyIncidentCounter).padStart(3, '0');
+  const newIncident: SafetyIncident = {
+    id: `si-${Date.now()}`,
+    project_id: projectId,
+    number: `SAF-${num}`,
+    reported_by: getCurrentUserId(),
+    incident_date: data.incident_date ?? getLocalDateString(),
+    title: data.title,
+    description: data.description ?? '',
+    incident_type: data.incident_type,
+    severity: data.severity,
+    status: 'open',
+    location: data.location ?? '',
+    personnel_involved: data.personnel_involved ?? '',
+    root_cause: '',
+    corrective_action: '',
+    daily_log_id: null,
+    created_at: new Date().toISOString(),
+  };
+  safetyIncidents = [newIncident, ...safetyIncidents];
+  addActivity(projectId, 'project', newIncident.id, 'created', `reported safety incident ${newIncident.number}: ${data.title}`);
+  return newIncident;
+}
+
+export function updateSafetyIncident(id: string, data: Partial<SafetyIncident>): void {
+  safetyIncidents = safetyIncidents.map((i) =>
+    i.id === id ? { ...i, ...data } : i
+  );
+}
+
+export function deleteSafetyIncident(id: string): void {
+  safetyIncidents = safetyIncidents.filter((i) => i.id !== id);
 }
 
 // --- Attachment operations ---

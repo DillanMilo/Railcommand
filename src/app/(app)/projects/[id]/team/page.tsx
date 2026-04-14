@@ -609,7 +609,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
               {pendingInvitations.length}
             </Badge>
           </div>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground border-b">
               <span>Email</span>
               <span>Role</span>
