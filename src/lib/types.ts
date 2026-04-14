@@ -389,7 +389,7 @@ export type PhotoCategory = 'standard' | 'thermal' | 'document';
 
 export interface Attachment {
   id: string;
-  entity_type: 'submittal' | 'rfi' | 'daily_log' | 'punch_list';
+  entity_type: 'submittal' | 'rfi' | 'daily_log' | 'punch_list' | 'safety_incident' | 'project_photo';
   entity_id: string;
   file_name: string;
   file_url: string;

@@ -22,6 +22,8 @@ import {
   seedQCQAReports,
   seedProjectDocuments,
   seedProject,
+  seedPhotoAttachments,
+  seedSafetyIncidents,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
 import type {
@@ -58,6 +60,10 @@ import type {
   ProjectDocument,
   DocumentCategory,
   DocumentStatus,
+  SafetyIncident,
+  IncidentType,
+  IncidentSeverity,
+  IncidentStatus,
 } from './types';
 
 // Mutable copies of seed data
@@ -74,6 +80,7 @@ let weeklyReports: WeeklyReport[] = [...seedWeeklyReports];
 let modifications: Modification[] = [...seedModifications];
 let qcqaReports: QCQAReport[] = [...seedQCQAReports];
 let projectDocuments: ProjectDocument[] = [...seedProjectDocuments];
+let safetyIncidents: SafetyIncident[] = [...seedSafetyIncidents];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -96,6 +103,7 @@ export function initDemoData(): void {
   modifications = [...seedModifications];
   qcqaReports = [...seedQCQAReports];
   projectDocuments = [...seedProjectDocuments];
+  safetyIncidents = [...seedSafetyIncidents];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -115,6 +123,7 @@ export function initDemoData(): void {
   modificationCounter = modifications.length;
   qcqaReportCounter = qcqaReports.length;
   documentCounter = projectDocuments.length;
+  safetyIncidentCounter = safetyIncidents.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -136,6 +145,7 @@ export function initFreshData(name: string, email: string): string {
   modifications = [];
   qcqaReports = [];
   projectDocuments = [];
+  safetyIncidents = [];
   attachments = [];
   invitations = [];
 
@@ -169,6 +179,7 @@ export function initFreshData(name: string, email: string): string {
   modificationCounter = 0;
   qcqaReportCounter = 0;
   documentCounter = 0;
+  safetyIncidentCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -947,6 +958,14 @@ export function removeProjectMember(id: string): void {
   projectMembers = projectMembers.filter((m) => m.id !== id);
 }
 
+export function updateMemberRole(id: string, role: ProjectMember['project_role']): void {
+  projectMembers = projectMembers.map((m) =>
+    m.id === id
+      ? { ...m, project_role: role, can_edit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(role) }
+      : m
+  );
+}
+
 // --- Project editing ---
 export function updateProject(
   id: string,
@@ -1090,8 +1109,64 @@ export function updateInvitationStatus(id: string, status: ProjectInvitation['st
   invitations = invitations.map((i) => (i.id === id ? { ...i, status } : i));
 }
 
+// --- Safety Incident operations ---
+let safetyIncidentCounter = safetyIncidents.length;
+
+export function getSafetyIncidents(projectId?: string) {
+  if (!projectId) return safetyIncidents;
+  return safetyIncidents.filter((i) => i.project_id === projectId);
+}
+
+export function getSafetyIncidentById(id: string) {
+  return safetyIncidents.find((i) => i.id === id) ?? null;
+}
+
+export function addSafetyIncident(projectId: string, data: {
+  title: string;
+  description?: string;
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  location?: string;
+  personnel_involved?: string;
+  incident_date?: string;
+}): SafetyIncident {
+  safetyIncidentCounter++;
+  const num = String(safetyIncidentCounter).padStart(3, '0');
+  const newIncident: SafetyIncident = {
+    id: `si-${Date.now()}`,
+    project_id: projectId,
+    number: `SAF-${num}`,
+    reported_by: getCurrentUserId(),
+    incident_date: data.incident_date ?? getLocalDateString(),
+    title: data.title,
+    description: data.description ?? '',
+    incident_type: data.incident_type,
+    severity: data.severity,
+    status: 'open',
+    location: data.location ?? '',
+    personnel_involved: data.personnel_involved ?? '',
+    root_cause: '',
+    corrective_action: '',
+    daily_log_id: null,
+    created_at: new Date().toISOString(),
+  };
+  safetyIncidents = [newIncident, ...safetyIncidents];
+  addActivity(projectId, 'project', newIncident.id, 'created', `reported safety incident ${newIncident.number}: ${data.title}`);
+  return newIncident;
+}
+
+export function updateSafetyIncident(id: string, data: Partial<SafetyIncident>): void {
+  safetyIncidents = safetyIncidents.map((i) =>
+    i.id === id ? { ...i, ...data } : i
+  );
+}
+
+export function deleteSafetyIncident(id: string): void {
+  safetyIncidents = safetyIncidents.filter((i) => i.id !== id);
+}
+
 // --- Attachment operations ---
-let attachments: Attachment[] = [];
+let attachments: Attachment[] = [...seedPhotoAttachments];
 let responseCounter = 0;
 let attachmentCounter = 0;
 
@@ -1132,6 +1207,47 @@ export function addAttachment(data: {
 
 export function removeAttachment(id: string): void {
   attachments = attachments.filter((a) => a.id !== id);
+}
+
+/** Get all image attachments across all entity types for a given project. */
+export function getAllProjectPhotos(projectId: string): Attachment[] {
+  // Collect entity IDs belonging to this project
+  const submittalIds = new Set(submittals.filter((s) => s.project_id === projectId).map((s) => s.id));
+  const rfiIds = new Set(rfis.filter((r) => r.project_id === projectId).map((r) => r.id));
+  const dailyLogIds = new Set(dailyLogs.filter((d) => d.project_id === projectId).map((d) => d.id));
+  const punchListIds = new Set(punchListItems.filter((p) => p.project_id === projectId).map((p) => p.id));
+
+  return attachments
+    .filter((a) => {
+      // Only images
+      if (!a.file_type.startsWith('image/') && a.photo_category !== 'thermal') return false;
+      // Project photos directly reference the project
+      if (a.entity_type === 'project_photo' && a.entity_id === projectId) return true;
+      // Otherwise check entity ownership
+      if (a.entity_type === 'submittal' && submittalIds.has(a.entity_id)) return true;
+      if (a.entity_type === 'rfi' && rfiIds.has(a.entity_id)) return true;
+      if (a.entity_type === 'daily_log' && dailyLogIds.has(a.entity_id)) return true;
+      if (a.entity_type === 'punch_list' && punchListIds.has(a.entity_id)) return true;
+      return false;
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+/** Add a standalone project photo (captured via camera). */
+export function addProjectPhoto(projectId: string, data: {
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  photo_category?: PhotoCategory;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+}): Attachment {
+  return addAttachment({
+    entity_type: 'project_photo',
+    entity_id: projectId,
+    ...data,
+  });
 }
 
 // --- Activity Log ---

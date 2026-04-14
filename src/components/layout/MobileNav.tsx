@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ClipboardPenLine,
   FolderOpen,
+  Camera,
   FileBarChart,
 } from 'lucide-react';
 import {
@@ -47,6 +48,7 @@ export default function MobileNav() {
     { label: 'Safety', href: hasProject ? `/projects/${currentProjectId}/safety` : '#', Icon: ShieldAlert, requiresProject: true },
     { label: 'QC/QA', href: hasProject ? `/projects/${currentProjectId}/qcqa` : '#', Icon: ClipboardPenLine, requiresProject: true },
     { label: 'Documents', href: hasProject ? `/projects/${currentProjectId}/documents` : '#', Icon: FolderOpen, requiresProject: true },
+    { label: 'Photos', href: hasProject ? `/projects/${currentProjectId}/photos` : '#', Icon: Camera, requiresProject: true },
     { label: 'Reports', href: hasProject ? `/projects/${currentProjectId}/weekly-reports` : '#', Icon: FileBarChart, requiresProject: true },
     { label: 'Schedule', href: hasProject ? `/projects/${currentProjectId}/schedule` : '#', Icon: GanttChart, requiresProject: true },
     { label: 'Team', href: hasProject ? `/projects/${currentProjectId}/team` : '#', Icon: Users, requiresProject: true },
@@ -101,7 +103,7 @@ export default function MobileNav() {
                           href={item.href}
                           onClick={() => setMoreOpen(false)}
                           className={cn(
-                            'flex flex-col items-center gap-2 rounded-lg p-4 transition-colors',
+                            'flex flex-col items-center gap-2 rounded-lg p-4 transition-colors min-h-[56px]',
                             active ? 'bg-rc-orange/10 text-rc-orange' : 'hover:bg-accent text-muted-foreground'
                           )}
                         >

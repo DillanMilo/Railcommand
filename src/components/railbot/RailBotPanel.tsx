@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Bot, Plus, Send, Loader2, History, Mic, Square, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { getProfiles } from '@/lib/store';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import RailBotHistory from './RailBotHistory';
 import SoundWaveAnimation from './SoundWaveAnimation';
@@ -43,6 +44,23 @@ export default function RailBotPanel({ open, onClose }: RailBotPanelProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('');
+
+  // Fetch user's first name for personalized greeting
+  useEffect(() => {
+    if (isDemo) {
+      const profile = getProfiles().find((p) => p.id === currentUserId);
+      setFirstName(profile?.full_name?.split(' ')[0] ?? '');
+    } else {
+      import('@/lib/actions/profiles').then(({ getMyProfile }) =>
+        getMyProfile().then((result) => {
+          if (result.data?.full_name) {
+            setFirstName(result.data.full_name.split(' ')[0]);
+          }
+        })
+      );
+    }
+  }, [isDemo, currentUserId]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -349,10 +367,12 @@ export default function RailBotPanel({ open, onClose }: RailBotPanelProps) {
                 <Bot className="h-8 w-8" />
               </div>
               <h3 className="mb-1 text-base font-semibold text-gray-900 dark:text-gray-100">
-                Hi, I&apos;m RailBot
+                {firstName ? `Hey ${firstName}, I\u2019m RailBot` : 'Hi, I\u2019m RailBot'}
               </h3>
               <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-                Your AI assistant for this project. Ask me anything about schedules, RFIs, submittals, and more.
+                {firstName
+                  ? `What can I help you with today, ${firstName}? Ask me anything about schedules, RFIs, submittals, and more.`
+                  : 'Your AI assistant for this project. Ask me anything about schedules, RFIs, submittals, and more.'}
               </p>
               <div className="flex w-full flex-col gap-2">
                 {SUGGESTED_PROMPTS.map((prompt) => (

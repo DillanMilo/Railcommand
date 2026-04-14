@@ -121,7 +121,7 @@ export default function WeeklyReportsListPage({ params, searchParams }: { params
           <button
             key={t.value}
             onClick={() => setStatusFilter(t.value)}
-            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors min-h-[44px] ${
               statusFilter === t.value
                 ? 'bg-rc-orange text-white'
                 : 'bg-muted text-muted-foreground hover:text-foreground'

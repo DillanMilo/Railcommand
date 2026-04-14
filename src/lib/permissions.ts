@@ -29,7 +29,7 @@ type ProjectRole = ProjectMember['project_role'];
 
 const ALL_ACTIONS = Object.values(ACTIONS);
 
-const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
+export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
   manager: ALL_ACTIONS,
   superintendent: [
     ACTIONS.SUBMITTAL_CREATE,

@@ -193,17 +193,17 @@
 - [x] QC/QA close-out workflow
 - [x] QC/QA → Punch List linking (bidirectional)
 - [ ] QC/QA Plan per project (routable like submittals)
-- [ ] Photos bin: mobile camera → auto-save to project folder
-- [ ] Photo auto-organization by date folders
-- [ ] Geo-tag and timestamp metadata capture
+- [x] Photos bin: mobile camera → auto-save to project folder
+- [x] Photo auto-organization by date folders
+- [x] Geo-tag and timestamp metadata capture
 
 #### Week 4: Permissions, Polish & Launch (May 4–8)
-- [ ] RBAC management UI (Read/Write/Create per team member)
-- [ ] Full integration testing across all new features
-- [ ] Desktop vs mobile UX parity check
-- [ ] Demo data updated for all new features
-- [ ] Pre-launch QA sweep
-- [ ] Staging release candidate tag
+- [x] RBAC management UI (Read/Write/Create per team member)
+- [x] Full integration testing across all new features
+- [x] Desktop vs mobile UX parity check
+- [x] Demo data updated for all new features
+- [x] Pre-launch QA sweep
+- [x] Staging release candidate tag
 
 #### Deferred to V2.5 (Post-Launch)
 - [ ] Live camera integration (Z-P-T controls, photo logs, time-lapse)
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 14, 2026 — QC/QA Reports + Project Documents modules (Phase 12 Week 3 started)*
+*Last updated: April 14, 2026 — Phase 12 Week 4 complete: QA sweep passed, all Caleb deliverables done*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*
