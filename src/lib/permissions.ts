@@ -18,6 +18,9 @@ export const ACTIONS = {
   BUDGET_VIEW: 'budget:view',
   CHANGE_ORDER_MANAGE: 'change_order:manage',
   WEEKLY_REPORT_CREATE: 'weekly_report:create',
+  QCQA_CREATE: 'qcqa:create',
+  QCQA_CLOSE: 'qcqa:close',
+  DOCUMENT_MANAGE: 'document:manage',
 } as const;
 
 export type Action = (typeof ACTIONS)[keyof typeof ACTIONS];
@@ -44,6 +47,9 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.BUDGET_VIEW,
     ACTIONS.CHANGE_ORDER_MANAGE,
     ACTIONS.WEEKLY_REPORT_CREATE,
+    ACTIONS.QCQA_CREATE,
+    ACTIONS.QCQA_CLOSE,
+    ACTIONS.DOCUMENT_MANAGE,
   ],
   foreman: [
     ACTIONS.DAILY_LOG_CREATE,
@@ -63,6 +69,9 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.BUDGET_VIEW,
     ACTIONS.CHANGE_ORDER_MANAGE,
     ACTIONS.WEEKLY_REPORT_CREATE,
+    ACTIONS.QCQA_CREATE,
+    ACTIONS.QCQA_CLOSE,
+    ACTIONS.DOCUMENT_MANAGE,
   ],
   contractor: [
     ACTIONS.SUBMITTAL_CREATE,
@@ -76,6 +85,8 @@ const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.PUNCH_LIST_CREATE,
     ACTIONS.PUNCH_LIST_VERIFY,
     ACTIONS.RFI_CREATE,
+    ACTIONS.QCQA_CREATE,
+    ACTIONS.QCQA_CLOSE,
   ],
   owner: [
     ACTIONS.BUDGET_VIEW,

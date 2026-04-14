@@ -477,61 +477,64 @@ RailBot is an AI-powered assistant that gives every team member a conversational
 
 ---
 
-### 3.10 Project Documents Module -- *Planned*
+### 3.10 Project Documents Module -- *Complete*
 
 **Overview**
 
-The Project Documents module gives every team member front-and-center visibility into the current project drawings, with revision tracking, version history, and a clear separation between distributable PDFs and native CAD files. This addresses one of Caleb Douglas's top priorities: it should always be obvious which drawing revision is current.
+The Project Documents module provides centralized document management with revision tracking, category organization, and an approval workflow. Every team member can see which revision is current at a glance.
 
 **Key Features**
 
-- **Project Documents Dashboard Box** -- A new KPI box on the main dashboard showing the current drawing set at a glance
-- **Revision Tracking Header** -- Prominent banner displaying "Current Project Documents Rev. #, dated month-date-year" so the latest revision is never in doubt
-- **PDF Format Requirement** -- All distributable project drawings must be uploaded as PDFs to ensure universal viewability
-- **Native CAD Folder** -- Separate folder structure for AutoCAD (`.dwg`) and MicroStation (`.dgn`) native files, kept alongside the PDFs but distinct from the distributable set
-- **Document Versioning** -- Each upload creates a new revision; full revision history retained with uploader, date, and notes
-- **Version Comparison** -- View previous revisions side-by-side with the current set
-- **Search & Filter** -- Find documents by revision number, discipline, sheet number, or upload date
+- **8 Document Categories** -- Drawings, Specifications, Submittals, Reports, Contracts, Correspondence, Photo Logs, Other
+- **Revision Tracking** -- Each document tracks revision number (Rev 0, Rev A, etc.) and revision date
+- **Status Workflow** -- Draft → Issued → Under Review → Approved → Superseded
+- **Category Tabs** -- Filter documents by category with tabbed navigation
+- **Status Filtering** -- Filter by document status with pill buttons
+- **Search** -- Search across title, description, and file name
+- **File Metadata** -- Track file name, file size (formatted KB/MB), upload date
+- **Linked Milestones** -- Optionally link documents to project milestones
+- **Review Tracking** -- Auto-records reviewer and review date on approval
+- **Responsive Design** -- Desktop table + mobile card layout
 
 **Permissions by Role**
 
 | Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
 |--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | View documents | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Upload new revision | Yes | Yes | - | Yes | Yes | - | - |
-| Manage revision history | Yes | - | - | Yes | - | - | - |
-| Delete document | Yes | - | - | Yes | - | - | - |
-| Download CAD originals | Yes | Yes | - | Yes | Yes | - | - |
+| Create/edit documents | Yes | Yes | - | Yes | - | - | - |
+| Approve documents | Yes | Yes | - | Yes | - | - | - |
+| Delete documents | Yes | Yes | - | Yes | - | - | - |
 
 ---
 
-### 3.11 QC/QA Module -- *Planned*
+### 3.11 QC/QA Module -- *Complete*
 
 **Overview**
 
-The QC/QA module brings Quality Control and Quality Assurance reporting into RailCommand with structured nonconformance tracking, a formal close-out workflow, and bidirectional links into the Punch List. A routable QC/QA Plan per project mirrors the submittal review workflow, giving inspectors and engineers a clear path from submission to disposition.
+The QC/QA module brings Quality Control and Quality Assurance reporting into RailCommand with structured nonconformance tracking, a close-out workflow, and bidirectional links to the Punch List.
 
 **Key Features**
 
-- **QC/QA Reports** -- Structured reports capturing inspection results, observed conditions, and nonconformance items
-- **Nonconformance Item Tracking** -- Each nonconforming item is logged with description, location, severity, and assigned responsible party
-- **Close-Out Workflow** -- Formal lifecycle for nonconformance items: Open → In Progress → Corrected → Verified → Closed
-- **Punch List Linking** -- Bidirectional link from QC/QA nonconforming items to Punch List items, so corrective actions tracked in either module stay in sync
-- **QC/QA Plan per Project** -- Project-level QC/QA plan stored as a routable document, similar to a submittal: submit → review → approve/reject with full audit trail
-- **Routing Workflow** -- Same routing capability as submittals, including reviewer assignment, due dates, and status filters
-- **Easy Locatability** -- Dedicated QC/QA section accessible from every project's sidebar so inspectors and engineers can find it without hunting
+- **4 Report Types** -- Inspection, Nonconformance (NCR), Test, Audit
+- **Nonconformance Tracking** -- Flag reports as NCRs with severity levels (Minor, Major, Critical)
+- **Close-Out Workflow** -- Draft → Open → In Review → Closed with auto-tracked close date and closer
+- **Punch List Linking** -- Link QC/QA items directly to open Punch List items for bidirectional traceability
+- **Structured Fields** -- Spec reference, location, findings, corrective action required
+- **Type Tabs** -- Filter by report type (Inspections, Nonconformances, Tests, Audits)
+- **Status Filtering** -- Filter by status with pill buttons
+- **Search** -- Search across title, findings, and spec references
+- **Severity Indicators** -- Color-coded severity badges on each report
+- **Responsive Design** -- Desktop table + mobile card layout
+- **QC/QA Plan per Project** -- *(Planned for future release)*
 
 **Permissions by Role**
 
 | Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
 |--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | View QC/QA reports | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Create QC/QA report | Yes | Yes | Yes | Yes | - | Yes | - |
-| Edit QC/QA report | Yes | Yes | Yes | Yes | - | - | - |
-| Log nonconformance item | Yes | Yes | Yes | Yes | - | Yes | - |
-| Verify / close nonconformance | Yes | - | - | Yes | - | Yes | - |
-| Submit / route QC/QA plan | Yes | - | - | Yes | - | - | - |
-| Approve / reject QC/QA plan | Yes | - | - | Yes | - | - | - |
+| Create QC/QA report | Yes | Yes | - | Yes | - | Yes | - |
+| Close QC/QA report | Yes | Yes | - | Yes | - | Yes | - |
+| Delete QC/QA report | Yes | Yes | - | Yes | - | - | - |
 
 ---
 
@@ -855,4 +858,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 14, 2026 -- Phase 12 Week 2 complete (Change Orders, Weekly Reports, Modifications, Safety, demo backfill)*
+*Last updated: April 14, 2026 -- QC/QA Reports + Project Documents complete (Phase 12 Week 3 started)*

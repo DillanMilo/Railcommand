@@ -176,7 +176,7 @@
 - [x] Schedule box: Turnover Date, Substantial Completion Date, Project Completion Date fields
 - [x] CPI calculation (Earned Value / Actual Cost) with color-coded indicators
 - [x] SPI calculation (Earned Value / Planned Value) with color-coded indicators
-- [ ] Project Documents dashboard box with revision tracking header
+- [x] Project Documents dashboard box with revision tracking header
 - [ ] PDF format enforcement for drawings + AutoCAD/MicroStation folder
 - [x] Daily logs calendar: full 7-day week view
 
@@ -189,9 +189,9 @@
 - [x] Week 1-2 integration testing
 
 #### Week 3: QC/QA & Photos (April 27 – May 1)
-- [ ] QC/QA Reports module with nonconformance tracking
-- [ ] QC/QA close-out workflow
-- [ ] QC/QA → Punch List linking (bidirectional)
+- [x] QC/QA Reports module with nonconformance tracking
+- [x] QC/QA close-out workflow
+- [x] QC/QA → Punch List linking (bidirectional)
 - [ ] QC/QA Plan per project (routable like submittals)
 - [ ] Photos bin: mobile camera → auto-save to project folder
 - [ ] Photo auto-organization by date folders
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 14, 2026 — Phase 12 Week 2 COMPLETE (all 6 items done)*
+*Last updated: April 14, 2026 — QC/QA Reports + Project Documents modules (Phase 12 Week 3 started)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

@@ -17,6 +17,8 @@ import type {
   SafetyIncident,
   WeeklyReport,
   Modification,
+  QCQAReport,
+  ProjectDocument,
 } from '@/lib/types';
 
 // Store (demo mode)
@@ -52,6 +54,14 @@ import {
   getSafetyIncidents as fetchSafetyIncidents,
   getSafetyIncident as fetchSafetyIncident,
 } from '@/lib/actions/safety';
+import {
+  getQCQAReports as fetchQCQAReports,
+  getQCQAReportById as fetchQCQAReportById,
+} from '@/lib/actions/qcqa';
+import {
+  getProjectDocuments as fetchProjectDocuments,
+  getProjectDocumentById as fetchProjectDocumentById,
+} from '@/lib/actions/documents';
 import {
   getWeeklyReports as fetchWeeklyReports,
   getWeeklyReportById as fetchWeeklyReportById,
@@ -315,6 +325,42 @@ export function useWeeklyReportDetail(projectId: string, reportId: string) {
     () => store.getWeeklyReportById(reportId),
     () => fetchWeeklyReportById(reportId, projectId),
     [projectId, reportId],
+    null,
+  );
+}
+
+export function useQCQAReports(projectId: string | null) {
+  return useQuery<QCQAReport[]>(
+    () => (projectId ? store.getQCQAReports(projectId) : []),
+    () => (projectId ? fetchQCQAReports(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useQCQAReportDetail(projectId: string, reportId: string) {
+  return useQuery<QCQAReport | null>(
+    () => store.getQCQAReportById(reportId),
+    () => fetchQCQAReportById(reportId, projectId),
+    [projectId, reportId],
+    null,
+  );
+}
+
+export function useProjectDocuments(projectId: string | null) {
+  return useQuery<ProjectDocument[]>(
+    () => (projectId ? store.getProjectDocuments(projectId) : []),
+    () => (projectId ? fetchProjectDocuments(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useProjectDocumentDetail(projectId: string, documentId: string) {
+  return useQuery<ProjectDocument | null>(
+    () => store.getProjectDocumentById(documentId),
+    () => fetchProjectDocumentById(documentId, projectId),
+    [projectId, documentId],
     null,
   );
 }

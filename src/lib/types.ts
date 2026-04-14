@@ -256,6 +256,59 @@ export interface ChangeOrder {
   created_at: string;
 }
 
+// QC/QA Report
+export type QCQAReportType = 'inspection' | 'nonconformance' | 'test' | 'audit';
+export type QCQAReportStatus = 'draft' | 'open' | 'in_review' | 'closed';
+
+export interface QCQAReport {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "QC-001"
+  report_type: QCQAReportType;
+  title: string;
+  description: string;
+  spec_reference: string; // e.g. "34 11 13 Section 3.2"
+  location: string;
+  status: QCQAReportStatus;
+  findings: string;
+  corrective_action: string;
+  is_nonconformance: boolean;
+  severity: 'minor' | 'major' | 'critical';
+  inspector: string;
+  inspector_profile?: Profile;
+  linked_punch_list_ids: string[];
+  closed_by: string | null;
+  closed_by_profile?: Profile;
+  closed_date: string | null;
+  created_at: string;
+}
+
+// Project Document
+export type DocumentCategory = 'drawing' | 'specification' | 'submittal' | 'report' | 'contract' | 'correspondence' | 'photo_log' | 'other';
+export type DocumentStatus = 'draft' | 'issued' | 'under_review' | 'approved' | 'superseded';
+
+export interface ProjectDocument {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "DOC-001"
+  title: string;
+  description: string;
+  category: DocumentCategory;
+  status: DocumentStatus;
+  revision: string; // e.g. "Rev 0", "Rev A"
+  revision_date: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_by_profile?: Pick<Profile, 'id' | 'full_name'>;
+  reviewed_by: string | null;
+  reviewed_by_profile?: Pick<Profile, 'id' | 'full_name'>;
+  review_date: string | null;
+  linked_milestone_id: string | null;
+  created_at: string;
+}
+
 // Modification / Amendment
 export type ModificationType = 'plan_revision' | 'spec_amendment' | 'contract_amendment' | 'design_change' | 'scope_change';
 export type ModificationStatus = 'draft' | 'issued' | 'acknowledged' | 'implemented' | 'void';

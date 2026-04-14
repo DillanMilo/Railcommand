@@ -4,7 +4,7 @@ import { STATUS_COLORS } from '@/lib/constants';
 
 interface StatusBadgeProps {
   status: string;
-  type?: 'submittal' | 'rfi' | 'punch_list' | 'milestone' | 'safety';
+  type?: 'submittal' | 'rfi' | 'punch_list' | 'milestone' | 'safety' | 'qcqa';
 }
 
 const COLOR_MAP_KEY: Record<string, keyof typeof STATUS_COLORS> = {
@@ -13,6 +13,7 @@ const COLOR_MAP_KEY: Record<string, keyof typeof STATUS_COLORS> = {
   punch_list: 'punchList',
   milestone: 'milestone',
   safety: 'safety',
+  qcqa: 'qcqa',
 };
 
 function formatStatus(status: string): string {

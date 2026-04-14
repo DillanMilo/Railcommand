@@ -19,6 +19,8 @@ import {
   seedChangeOrders,
   seedWeeklyReports,
   seedModifications,
+  seedQCQAReports,
+  seedProjectDocuments,
   seedProject,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
@@ -50,6 +52,12 @@ import type {
   Modification,
   ModificationType,
   ModificationStatus,
+  QCQAReport,
+  QCQAReportType,
+  QCQAReportStatus,
+  ProjectDocument,
+  DocumentCategory,
+  DocumentStatus,
 } from './types';
 
 // Mutable copies of seed data
@@ -64,6 +72,8 @@ let milestones: Milestone[] = [...seedMilestones];
 let changeOrders: ChangeOrder[] = [...seedChangeOrders];
 let weeklyReports: WeeklyReport[] = [...seedWeeklyReports];
 let modifications: Modification[] = [...seedModifications];
+let qcqaReports: QCQAReport[] = [...seedQCQAReports];
+let projectDocuments: ProjectDocument[] = [...seedProjectDocuments];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -84,6 +94,8 @@ export function initDemoData(): void {
   changeOrders = [...seedChangeOrders];
   weeklyReports = [...seedWeeklyReports];
   modifications = [...seedModifications];
+  qcqaReports = [...seedQCQAReports];
+  projectDocuments = [...seedProjectDocuments];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -101,6 +113,8 @@ export function initDemoData(): void {
   changeOrderCounter = changeOrders.length;
   weeklyReportCounter = weeklyReports.length;
   modificationCounter = modifications.length;
+  qcqaReportCounter = qcqaReports.length;
+  documentCounter = projectDocuments.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -120,6 +134,8 @@ export function initFreshData(name: string, email: string): string {
   changeOrders = [];
   weeklyReports = [];
   modifications = [];
+  qcqaReports = [];
+  projectDocuments = [];
   attachments = [];
   invitations = [];
 
@@ -151,6 +167,8 @@ export function initFreshData(name: string, email: string): string {
   changeOrderCounter = 0;
   weeklyReportCounter = 0;
   modificationCounter = 0;
+  qcqaReportCounter = 0;
+  documentCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -772,6 +790,141 @@ export function updateModification(id: string, data: Partial<Modification>): voi
 
 export function deleteModification(id: string): void {
   modifications = modifications.filter((m) => m.id !== id);
+}
+
+// --- QC/QA Report operations ---
+let qcqaReportCounter = qcqaReports.length;
+
+export function getQCQAReports(projectId?: string) {
+  if (!projectId) return qcqaReports;
+  return qcqaReports.filter((r) => r.project_id === projectId);
+}
+
+export function getQCQAReportById(id: string) {
+  return qcqaReports.find((r) => r.id === id) ?? null;
+}
+
+export function addQCQAReport(projectId: string, data: {
+  report_type: QCQAReportType;
+  title: string;
+  description?: string;
+  spec_reference?: string;
+  location?: string;
+  severity?: 'minor' | 'major' | 'critical';
+  findings?: string;
+  corrective_action?: string;
+  is_nonconformance?: boolean;
+  linked_punch_list_ids?: string[];
+}): QCQAReport {
+  qcqaReportCounter++;
+  const num = String(qcqaReportCounter).padStart(3, '0');
+  const profile = getProfileWithOrg(getCurrentUserId());
+  const newReport: QCQAReport = {
+    id: `qc-${Date.now()}`,
+    project_id: projectId,
+    number: `QC-${num}`,
+    report_type: data.report_type,
+    title: data.title,
+    description: data.description ?? '',
+    spec_reference: data.spec_reference ?? '',
+    location: data.location ?? '',
+    status: 'draft',
+    findings: data.findings ?? '',
+    corrective_action: data.corrective_action ?? '',
+    is_nonconformance: data.is_nonconformance ?? false,
+    severity: data.severity ?? 'minor',
+    inspector: getCurrentUserId(),
+    inspector_profile: profile ?? undefined,
+    linked_punch_list_ids: data.linked_punch_list_ids ?? [],
+    closed_by: null,
+    closed_date: null,
+    created_at: new Date().toISOString(),
+  };
+  qcqaReports = [newReport, ...qcqaReports];
+  addActivity(projectId, 'project', newReport.id, 'created', `created QC/QA report ${newReport.number}: ${data.title}`);
+  return newReport;
+}
+
+export function updateQCQAReport(id: string, data: Partial<QCQAReport>): void {
+  qcqaReports = qcqaReports.map((r) =>
+    r.id === id ? { ...r, ...data } : r
+  );
+}
+
+export function deleteQCQAReport(id: string): void {
+  qcqaReports = qcqaReports.filter((r) => r.id !== id);
+}
+
+// --- Project Document operations ---
+let documentCounter = projectDocuments.length;
+
+export function getProjectDocuments(projectId?: string) {
+  if (!projectId) return projectDocuments;
+  return projectDocuments.filter((d) => d.project_id === projectId);
+}
+
+export function getProjectDocumentById(id: string) {
+  return projectDocuments.find((d) => d.id === id) ?? null;
+}
+
+export function addProjectDocument(projectId: string, data: {
+  title: string;
+  category: DocumentCategory;
+  description?: string;
+  revision?: string;
+  revision_date?: string;
+  file_name?: string;
+  file_url?: string;
+  file_size?: number;
+  linked_milestone_id?: string | null;
+}): ProjectDocument {
+  documentCounter++;
+  const num = String(documentCounter).padStart(3, '0');
+  const profile = getProfileWithOrg(getCurrentUserId());
+  const newDoc: ProjectDocument = {
+    id: `doc-${num}`,
+    project_id: projectId,
+    number: `DOC-${num}`,
+    title: data.title,
+    description: data.description ?? '',
+    category: data.category,
+    status: 'draft',
+    revision: data.revision ?? 'Rev 0',
+    revision_date: data.revision_date ?? getLocalDateString(),
+    file_name: data.file_name ?? '',
+    file_url: data.file_url ?? '',
+    file_size: data.file_size ?? 0,
+    uploaded_by: getCurrentUserId(),
+    uploaded_by_profile: profile ? { id: profile.id, full_name: profile.full_name } : undefined,
+    reviewed_by: null,
+    review_date: null,
+    linked_milestone_id: data.linked_milestone_id ?? null,
+    created_at: new Date().toISOString(),
+  };
+  projectDocuments = [newDoc, ...projectDocuments];
+  addActivity(projectId, 'project', newDoc.id, 'created', `uploaded ${newDoc.number}: ${data.title}`);
+  return newDoc;
+}
+
+export function updateProjectDocument(id: string, data: Partial<ProjectDocument>): void {
+  projectDocuments = projectDocuments.map((d) => {
+    if (d.id !== id) return d;
+    const updated = { ...d, ...data };
+    // Auto-set reviewed_by and review_date on approval
+    if (data.status === 'approved') {
+      updated.reviewed_by = getCurrentUserId();
+      updated.review_date = getLocalDateString();
+      const profile = getProfileWithOrg(getCurrentUserId());
+      if (profile) {
+        updated.reviewed_by_profile = { id: profile.id, full_name: profile.full_name };
+      }
+    }
+    return updated;
+  });
+}
+
+export function deleteProjectDocument(id: string): void {
+  projectDocuments = projectDocuments.filter((d) => d.id !== id);
 }
 
 // --- Team operations ---

@@ -8,6 +8,20 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v1.12.0',
+    version: '1.12.0',
+    title: 'Project Documents',
+    description: 'New Documents section in the sidebar. Track drawings, specifications, contracts, reports, and correspondence with revision numbers, categories, and an approval workflow (Draft → Issued → Under Review → Approved → Superseded).',
+    date: '2026-04-14',
+  },
+  {
+    id: 'v1.11.0',
+    version: '1.11.0',
+    title: 'QC/QA Reports',
+    description: 'New QC/QA section in the sidebar. Create inspection reports, nonconformance reports (NCRs), tests, and audits. Track findings, corrective actions, and severity. Link QC/QA items directly to Punch List items for bidirectional traceability.',
+    date: '2026-04-14',
+  },
+  {
     id: 'v1.10.0',
     version: '1.10.0',
     title: 'Modifications & Amendments',
