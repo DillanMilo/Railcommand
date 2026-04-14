@@ -19,6 +19,7 @@ import type {
   Modification,
   QCQAReport,
   ProjectDocument,
+  Attachment,
 } from '@/lib/types';
 
 // Store (demo mode)
@@ -71,6 +72,7 @@ import {
   getProjectInvitations as fetchProjectInvitations,
   getPendingInvitationsForUser as fetchPendingInvitations,
 } from '@/lib/actions/invitations';
+import { getProjectPhotos as fetchProjectPhotos } from '@/lib/actions/photos';
 
 /* ------------------------------------------------------------------ */
 /*  Generic query hook                                                 */
@@ -373,6 +375,15 @@ export function usePendingInvitations() {
       return { data: result.data ?? [], error: result.error };
     },
     [],
+    [],
+  );
+}
+
+export function useProjectPhotos(projectId: string | null) {
+  return useQuery<Attachment[]>(
+    () => (projectId ? store.getAllProjectPhotos(projectId) : []),
+    () => (projectId ? fetchProjectPhotos(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
     [],
   );
 }

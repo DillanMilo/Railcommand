@@ -193,9 +193,9 @@
 - [x] QC/QA close-out workflow
 - [x] QC/QA → Punch List linking (bidirectional)
 - [ ] QC/QA Plan per project (routable like submittals)
-- [ ] Photos bin: mobile camera → auto-save to project folder
-- [ ] Photo auto-organization by date folders
-- [ ] Geo-tag and timestamp metadata capture
+- [x] Photos bin: mobile camera → auto-save to project folder
+- [x] Photo auto-organization by date folders
+- [x] Geo-tag and timestamp metadata capture
 
 #### Week 4: Permissions, Polish & Launch (May 4–8)
 - [ ] RBAC management UI (Read/Write/Create per team member)

@@ -538,20 +538,25 @@ The QC/QA module brings Quality Control and Quality Assurance reporting into Rai
 
 ---
 
-### 3.12 Photos & Media -- *Planned*
+### 3.12 Photos & Media -- *Complete*
 
 **Overview**
 
-The Photos & Media module is a mobile-first photo management workflow built around the way crews actually work in the field: take a picture, have it auto-saved to the right project folder, and never think about file organization again. Geo-tags, timestamps, and camera metadata are captured automatically for downstream sorting and reporting.
+Centralized photo gallery aggregating all project images across modules (Daily Logs, Punch Lists, RFIs, Submittals, Safety). Mobile-first camera capture with auto-save, GPS geo-tagging, and automatic date-based organization.
 
 **Key Features**
 
-- **Photos Bin** -- Take a photo from the mobile camera and auto-save it directly to the project folder with one tap
-- **Auto-Organization by Date** -- Photos automatically grouped into folders by capture date
-- **Geo-Tag Capture** -- Latitude/longitude metadata captured from the device camera and stored with each photo
-- **Timestamp Capture** -- Original capture timestamp preserved alongside the upload time
-- **Camera Metadata** -- EXIF data (camera model, orientation, resolution) preserved for sorting and provenance
-- **Project Folder Structure** -- Each project gets a top-level photos folder with date subfolders, browsable from web and mobile
+- **Photos Bin** (`/projects/[id]/photos/`) -- Centralized gallery showing all project photos across every module in one place
+- **Camera Capture** -- "Take Photo" button uses device camera via `capture="environment"`, compresses image, captures GPS, and uploads in one tap
+- **Auto-Organization by Date** -- Photos automatically grouped by capture date with smart headers (Today, Yesterday, This Week, or full date)
+- **Geo-Tag Capture** -- Latitude/longitude captured from device GPS at photo time; displayed as clickable Google Maps link in lightbox
+- **Timestamp Capture** -- Original capture timestamp preserved and displayed alongside upload time
+- **Filter Tabs** -- All, Standard, and Thermal photo filters with live counts
+- **Lightbox Detail** -- Click any photo for full-size view with metadata panel: file size, capture time, upload date, entity type, GPS coordinates
+- **Entity Badges** -- Each photo shows which module it belongs to (Daily Log, RFI, Punch List, etc.)
+- **Standalone Project Photos** -- Photos captured from the Photos page are stored as `project_photo` entity type, not tied to any specific module item
+- **Signed URLs** -- Private bucket photos served via time-limited signed URLs (1-hour expiry)
+- **Image Compression** -- Standard photos compressed to max 1920px / JPEG 0.75 quality; thermal images preserved unchanged
 - **Future (V2.5):** Live camera integration with Z-P-T (zoom/pan/tilt) controls, photo logs, and time-lapse video generation
 
 **Permissions by Role**

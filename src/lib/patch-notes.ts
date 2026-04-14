@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v1.13.0',
+    version: '1.13.0',
+    title: 'Photos & Media',
+    description: 'New Photos section in the sidebar. Centralized gallery showing all project photos across every module. Take photos directly from the app with GPS geo-tagging and automatic date grouping. Lightbox detail view with metadata, Google Maps link, and entity source badges.',
+    date: '2026-04-14',
+  },
+  {
     id: 'v1.12.0',
     version: '1.12.0',
     title: 'Project Documents',

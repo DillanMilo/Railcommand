@@ -22,6 +22,7 @@ import {
   seedQCQAReports,
   seedProjectDocuments,
   seedProject,
+  seedPhotoAttachments,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
 import type {
@@ -1091,7 +1092,7 @@ export function updateInvitationStatus(id: string, status: ProjectInvitation['st
 }
 
 // --- Attachment operations ---
-let attachments: Attachment[] = [];
+let attachments: Attachment[] = [...seedPhotoAttachments];
 let responseCounter = 0;
 let attachmentCounter = 0;
 
@@ -1132,6 +1133,47 @@ export function addAttachment(data: {
 
 export function removeAttachment(id: string): void {
   attachments = attachments.filter((a) => a.id !== id);
+}
+
+/** Get all image attachments across all entity types for a given project. */
+export function getAllProjectPhotos(projectId: string): Attachment[] {
+  // Collect entity IDs belonging to this project
+  const submittalIds = new Set(submittals.filter((s) => s.project_id === projectId).map((s) => s.id));
+  const rfiIds = new Set(rfis.filter((r) => r.project_id === projectId).map((r) => r.id));
+  const dailyLogIds = new Set(dailyLogs.filter((d) => d.project_id === projectId).map((d) => d.id));
+  const punchListIds = new Set(punchListItems.filter((p) => p.project_id === projectId).map((p) => p.id));
+
+  return attachments
+    .filter((a) => {
+      // Only images
+      if (!a.file_type.startsWith('image/') && a.photo_category !== 'thermal') return false;
+      // Project photos directly reference the project
+      if (a.entity_type === 'project_photo' && a.entity_id === projectId) return true;
+      // Otherwise check entity ownership
+      if (a.entity_type === 'submittal' && submittalIds.has(a.entity_id)) return true;
+      if (a.entity_type === 'rfi' && rfiIds.has(a.entity_id)) return true;
+      if (a.entity_type === 'daily_log' && dailyLogIds.has(a.entity_id)) return true;
+      if (a.entity_type === 'punch_list' && punchListIds.has(a.entity_id)) return true;
+      return false;
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+/** Add a standalone project photo (captured via camera). */
+export function addProjectPhoto(projectId: string, data: {
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  photo_category?: PhotoCategory;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+}): Attachment {
+  return addAttachment({
+    entity_type: 'project_photo',
+    entity_id: projectId,
+    ...data,
+  });
 }
 
 // --- Activity Log ---

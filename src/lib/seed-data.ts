@@ -1,4 +1,4 @@
-import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument } from './types';
+import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment } from './types';
 
 // ============================================================
 // ORGANIZATIONS
@@ -1118,6 +1118,132 @@ export const seedActivityLog: ActivityLogEntry[] = [
 ];
 
 // ============================================================
+// SEED PHOTO ATTACHMENTS
+// ============================================================
+export const seedPhotoAttachments: Attachment[] = [
+  {
+    id: 'att-seed-001',
+    entity_type: 'daily_log',
+    entity_id: 'dl-020',
+    file_name: 'track_alignment_siding1.jpg',
+    file_url: 'https://placehold.co/800x600/1e3a5f/ffffff?text=Track+Alignment',
+    file_type: 'image/jpeg',
+    file_size: 2_450_000,
+    photo_category: 'standard',
+    uploaded_by: 'prof-003',
+    geo_lat: 39.7392,
+    geo_lng: -104.9903,
+    captured_at: '2026-04-14T09:15:00Z',
+    created_at: '2026-04-14T09:15:00Z',
+  },
+  {
+    id: 'att-seed-002',
+    entity_type: 'daily_log',
+    entity_id: 'dl-020',
+    file_name: 'ballast_placement_sta12.jpg',
+    file_url: 'https://placehold.co/800x600/2d5016/ffffff?text=Ballast+Placement',
+    file_type: 'image/jpeg',
+    file_size: 1_820_000,
+    photo_category: 'standard',
+    uploaded_by: 'prof-003',
+    geo_lat: 39.7395,
+    geo_lng: -104.9910,
+    captured_at: '2026-04-14T11:30:00Z',
+    created_at: '2026-04-14T11:30:00Z',
+  },
+  {
+    id: 'att-seed-003',
+    entity_type: 'punch_list',
+    entity_id: 'pl-003',
+    file_name: 'signal_splice_box_jb3.jpg',
+    file_url: 'https://placehold.co/800x600/5c1e1e/ffffff?text=Signal+Splice+Box',
+    file_type: 'image/jpeg',
+    file_size: 3_100_000,
+    photo_category: 'standard',
+    uploaded_by: 'prof-006',
+    geo_lat: null,
+    geo_lng: null,
+    captured_at: '2026-04-13T14:00:00Z',
+    created_at: '2026-04-13T14:00:00Z',
+  },
+  {
+    id: 'att-seed-004',
+    entity_type: 'submittal',
+    entity_id: 'sub-003',
+    file_name: 'turnout_assembly_thermal.jpg',
+    file_url: 'https://placehold.co/800x600/8b4513/ffffff?text=Thermal+Scan',
+    file_type: 'image/jpeg',
+    file_size: 4_200_000,
+    photo_category: 'thermal',
+    uploaded_by: 'prof-004',
+    geo_lat: 39.7388,
+    geo_lng: -104.9920,
+    captured_at: '2026-04-13T10:45:00Z',
+    created_at: '2026-04-13T10:45:00Z',
+  },
+  {
+    id: 'att-seed-005',
+    entity_type: 'rfi',
+    entity_id: 'rfi-007',
+    file_name: 'grade_crossing_signal_layout.jpg',
+    file_url: 'https://placehold.co/800x600/1a3c6e/ffffff?text=Signal+Layout',
+    file_type: 'image/jpeg',
+    file_size: 1_560_000,
+    photo_category: 'standard',
+    uploaded_by: 'prof-006',
+    geo_lat: null,
+    geo_lng: null,
+    captured_at: '2026-04-12T08:20:00Z',
+    created_at: '2026-04-12T08:20:00Z',
+  },
+  {
+    id: 'att-seed-006',
+    entity_type: 'daily_log',
+    entity_id: 'dl-026',
+    file_name: 'subgrade_compaction_test.jpg',
+    file_url: 'https://placehold.co/800x600/3d6b4f/ffffff?text=Compaction+Test',
+    file_type: 'image/jpeg',
+    file_size: 2_780_000,
+    photo_category: 'standard',
+    uploaded_by: 'prof-003',
+    geo_lat: 39.7400,
+    geo_lng: -104.9895,
+    captured_at: '2026-04-10T15:00:00Z',
+    created_at: '2026-04-10T15:00:00Z',
+  },
+  {
+    id: 'att-seed-007',
+    entity_type: 'punch_list',
+    entity_id: 'pl-005',
+    file_name: 'drainage_grade_thermal_scan.jpg',
+    file_url: 'https://placehold.co/800x600/6b3d3d/ffffff?text=Drainage+Thermal',
+    file_type: 'image/jpeg',
+    file_size: 3_950_000,
+    photo_category: 'thermal',
+    uploaded_by: 'prof-005',
+    geo_lat: 39.7382,
+    geo_lng: -104.9930,
+    captured_at: '2026-04-08T13:30:00Z',
+    created_at: '2026-04-08T13:30:00Z',
+  },
+  {
+    id: 'att-seed-008',
+    entity_type: 'project_photo',
+    entity_id: 'proj-001',
+    file_name: 'aerial_site_overview.jpg',
+    file_url: 'https://placehold.co/800x600/2c3e50/ffffff?text=Site+Overview',
+    file_type: 'image/jpeg',
+    file_size: 5_100_000,
+    photo_category: 'standard',
+    uploaded_by: 'prof-001',
+    geo_lat: 39.7390,
+    geo_lng: -104.9905,
+    captured_at: '2026-04-05T07:45:00Z',
+    created_at: '2026-04-05T07:45:00Z',
+  },
+];
+
+// ============================================================
 // COMBINED EXPORT
 // ============================================================
 export const seedData = {
@@ -1136,4 +1262,5 @@ export const seedData = {
   qcqaReports: seedQCQAReports,
   projectDocuments: seedProjectDocuments,
   activityLog: seedActivityLog,
+  photoAttachments: seedPhotoAttachments,
 };

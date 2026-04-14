@@ -29,6 +29,7 @@ import {
   FileBarChart,
   ClipboardPenLine,
   FolderOpen,
+  Camera,
   ChevronDown,
   Plus,
   Check,
@@ -65,6 +66,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   ShieldAlert,
   ClipboardCheck2: ClipboardPenLine,
   FolderOpen,
+  Camera,
   FileBarChart,
   Users,
 };

@@ -286,6 +286,7 @@ export function getNavItems(projectId: string): NavItem[] {
     { label: "Safety", href: projectId ? `/projects/${projectId}/safety` : "#", icon: "ShieldAlert", requiresProject: true },
     { label: "QC/QA", href: projectId ? `/projects/${projectId}/qcqa` : "#", icon: "ClipboardCheck2", requiresProject: true },
     { label: "Documents", href: projectId ? `/projects/${projectId}/documents` : "#", icon: "FolderOpen", requiresProject: true },
+    { label: "Photos", href: projectId ? `/projects/${projectId}/photos` : "#", icon: "Camera", requiresProject: true },
     { label: "Reports", href: projectId ? `/projects/${projectId}/weekly-reports` : "#", icon: "FileBarChart", requiresProject: true },
     { label: "Schedule", href: projectId ? `/projects/${projectId}/schedule` : "#", icon: "CalendarRange", requiresProject: true },
     { label: "Team", href: projectId ? `/projects/${projectId}/team` : "#", icon: "Users", requiresProject: true },
