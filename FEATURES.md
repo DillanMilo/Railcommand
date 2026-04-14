@@ -278,8 +278,21 @@ The Schedule & Milestones module provides a high-level view of project timelines
 - **Linked Submittals & RFIs** -- Each milestone shows associated submittals and RFIs, providing context on blocking items
 - **Overall Schedule Health KPIs** -- Summary metrics for schedule performance across all milestones
 - **Target vs. Actual Dates** -- Clear comparison of planned and actual completion dates
-- **Change Orders** -- Track change orders within the Budget box *(Planned)*
-- **Modifications & Amendments** -- Accessible through Plans section *(Planned)*
+- **Change Orders** -- Full change order tracking integrated into the Schedule module:
+  - Create, edit, approve/reject, and void change orders
+  - Each CO has: number (CO-001), title, description, reason, amount (+/-), linked milestone
+  - Status workflow: Draft → Submitted → Approved / Rejected / Void
+  - Approved COs automatically adjust the project budget total on the dashboard
+  - Dashboard Budget KPI reflects adjusted budget and shows pending CO count
+  - CPI/SPI earned value calculations use the adjusted budget
+  - Quick status transition buttons (Submit, Approve, Reject) on each card
+  - Amount color-coded: red for cost increases, green for savings/deductions
+- **Modifications & Amendments** -- Track plan revisions, specification amendments, contract amendments, design changes, and scope changes:
+  - Each modification has: number (MOD-001), title, type, revision number, affected documents, linked milestone
+  - Status workflow: Draft → Issued → Acknowledged → Implemented / Void
+  - Five modification types: Plan Revision, Spec Amendment, Contract Amendment, Design Change, Scope Change
+  - Auto-tracks acknowledged-by and effective dates on status transitions
+  - Integrated as 4th tab in Schedule module alongside Milestones, Timeline, and Change Orders
 
 **Permissions by Role**
 
@@ -287,6 +300,7 @@ The Schedule & Milestones module provides a high-level view of project timelines
 |--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | View schedule/milestones | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Edit milestones | Yes | Yes | - | - | - | - | - |
+| Manage change orders | Yes | Yes | - | Yes | - | - | - |
 | View budget data | Yes | - | - | - | - | - | Yes |
 | View linked submittals/RFIs | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | View schedule health KPIs | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
@@ -295,7 +309,44 @@ The Schedule & Milestones module provides a high-level view of project timelines
 
 ---
 
-### 3.7 Team Management -- *Complete*
+### 3.7 Weekly Reports -- *Complete*
+
+**Overview**
+
+The Weekly Reports module enables Construction Managers (CM) and Contractors to submit structured weekly progress reports. Reports cover work accomplished, schedule status, safety, weather impact, upcoming work, and workforce metrics. Reports follow a review workflow (Draft → Submitted → Approved/Rejected).
+
+**Key Features**
+
+- **Two Report Types** -- CM Reports (construction management perspective) and Contractor Reports (field execution perspective)
+- **Structured Sections** -- Each report includes:
+  - Work Summary -- what was accomplished this week
+  - Schedule Summary -- progress against milestones, delays, critical path
+  - Safety Summary -- incidents, observations, toolbox talks
+  - Weather Summary -- conditions and impact on work
+  - Issues & Concerns -- risks, blockers, coordination needs
+  - Upcoming Work -- planned activities for next week
+- **Workforce Metrics** -- Manpower total (headcount) and equipment hours per week
+- **Week-Based Dating** -- Reports tied to Mon–Sun week periods with auto-calculated end date
+- **Status Workflow** -- Draft → Submitted → Approved / Rejected with one-click status transitions
+- **Filterable List** -- Filter by report type (CM/Contractor) and status (Draft/Submitted/Approved/Rejected)
+- **Search** -- Search across report titles and work summaries
+- **Responsive Design** -- Desktop table view + mobile card layout
+- **Navigation** -- "Reports" nav item in sidebar and mobile nav (More menu)
+
+**Permissions by Role**
+
+| Action | Project Manager | Superintendent | Foreman | Engineer | Contractor | Inspector | Owner / Client |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| View weekly reports | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Create/edit reports | Yes | Yes | - | Yes | Yes | - | - |
+| Approve/reject reports | Yes | Yes | - | Yes | - | - | - |
+| Delete reports | Yes | Yes | - | Yes | Yes | - | - |
+
+> **Note:** Contractors typically submit Contractor Reports while CMs submit CM Reports, but the system does not enforce which type a role can create.
+
+---
+
+### 3.8 Team Management -- *Complete*
 
 **Overview**
 
@@ -804,4 +855,4 @@ The following items will be removed or replaced before the production release:
 ---
 
 *Product: RailCommand -- by A5 Rail | Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
-*Last updated: April 12, 2026 -- Safety module complete + full smoke test passed (9/9)*
+*Last updated: April 14, 2026 -- Phase 12 Week 2 complete (Change Orders, Weekly Reports, Modifications, Safety, demo backfill)*

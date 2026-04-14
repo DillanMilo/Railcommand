@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const allPunch = dashboardData.punchListItems;
   const allLogs = dashboardData.dailyLogs;
   const allMilestones = dashboardData.milestones;
+  const allChangeOrders = dashboardData.changeOrders ?? [];
 
   if (!currentProject) {
     // Real auth user with no projects — show welcome state
@@ -95,10 +96,14 @@ export default function DashboardPage() {
     );
   }
 
-  const budgetDisplay = `$${(project.budget_total / 1_000_000).toFixed(1)}M`;
-  const budgetSpent = `$${(project.budget_spent / 1_000_000).toFixed(1)}M spent`;
-  const budgetPercent = project.budget_total > 0
-    ? Math.round((project.budget_spent / project.budget_total) * 100)
+  const approvedCOTotal = allChangeOrders.filter(co => co.status === 'approved').reduce((sum, co) => sum + co.amount, 0);
+  const pendingCOs = allChangeOrders.filter(co => co.status === 'submitted' || co.status === 'draft').length;
+  const adjustedBudget = project.budget_total + approvedCOTotal;
+
+  const budgetDisplay = `$${(adjustedBudget / 1_000_000).toFixed(1)}M`;
+  const budgetSpent = `$${(project.budget_spent / 1_000_000).toFixed(1)}M spent${pendingCOs > 0 ? ` · ${pendingCOs} CO pending` : ''}`;
+  const budgetPercent = adjustedBudget > 0
+    ? Math.round((project.budget_spent / adjustedBudget) * 100)
     : 0;
 
   const totalDays =
@@ -132,7 +137,7 @@ export default function DashboardPage() {
     0,
   );
   const timeRatio = totalDays > 0 ? Math.min(1, Math.max(0, elapsed / totalDays)) : 1;
-  const plannedValue = project.budget_total * timeRatio;
+  const plannedValue = adjustedBudget * timeRatio;
   const actualCost = project.budget_spent;
   const cpi = actualCost > 0 ? earnedValue / actualCost : 1.0;
   const spi = plannedValue > 0 ? earnedValue / plannedValue : 1.0;

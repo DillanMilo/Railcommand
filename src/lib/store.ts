@@ -16,6 +16,9 @@ import {
   seedProfiles,
   seedOrganizations,
   seedMilestones,
+  seedChangeOrders,
+  seedWeeklyReports,
+  seedModifications,
   seedProject,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
@@ -30,6 +33,8 @@ import type {
   DailyLog,
   PunchListItem,
   Milestone,
+  ChangeOrder,
+  ChangeOrderStatus,
   ProjectMember,
   ActivityLogEntry,
   Attachment,
@@ -39,6 +44,12 @@ import type {
   RFIStatus,
   PunchListStatus,
   MilestoneStatus,
+  WeeklyReport,
+  WeeklyReportStatus,
+  WeeklyReportType,
+  Modification,
+  ModificationType,
+  ModificationStatus,
 } from './types';
 
 // Mutable copies of seed data
@@ -50,6 +61,9 @@ let punchListItems: PunchListItem[] = [...seedPunchListItems];
 let projectMembers: ProjectMember[] = [...seedProjectMembers];
 let activityLog: ActivityLogEntry[] = [...seedActivityLog];
 let milestones: Milestone[] = [...seedMilestones];
+let changeOrders: ChangeOrder[] = [...seedChangeOrders];
+let weeklyReports: WeeklyReport[] = [...seedWeeklyReports];
+let modifications: Modification[] = [...seedModifications];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -67,6 +81,9 @@ export function initDemoData(): void {
   projectMembers = [...seedProjectMembers];
   activityLog = [...seedActivityLog];
   milestones = [...seedMilestones];
+  changeOrders = [...seedChangeOrders];
+  weeklyReports = [...seedWeeklyReports];
+  modifications = [...seedModifications];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -81,6 +98,9 @@ export function initDemoData(): void {
   activityCounter = activityLog.length;
   profileCounter = profiles.length;
   orgCounter = organizations.length;
+  changeOrderCounter = changeOrders.length;
+  weeklyReportCounter = weeklyReports.length;
+  modificationCounter = modifications.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -97,6 +117,9 @@ export function initFreshData(name: string, email: string): string {
   projectMembers = [];
   activityLog = [];
   milestones = [];
+  changeOrders = [];
+  weeklyReports = [];
+  modifications = [];
   attachments = [];
   invitations = [];
 
@@ -125,6 +148,9 @@ export function initFreshData(name: string, email: string): string {
   profileCounter = 1;
   orgCounter = 1;
   responseCounter = 0;
+  changeOrderCounter = 0;
+  weeklyReportCounter = 0;
+  modificationCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -221,6 +247,10 @@ export function getActivityLog(projectId?: string) {
 export function getMilestones(projectId?: string) {
   if (!projectId) return milestones;
   return milestones.filter((m) => m.project_id === projectId);
+}
+export function getChangeOrders(projectId?: string) {
+  if (!projectId) return changeOrders;
+  return changeOrders.filter((co) => co.project_id === projectId);
 }
 
 // Mutable profiles and organizations
@@ -579,6 +609,169 @@ export function addMilestone(projectId: string, data: {
 
 export function deleteMilestone(id: string): void {
   milestones = milestones.filter((m) => m.id !== id);
+}
+
+// --- Weekly Report operations ---
+let weeklyReportCounter = weeklyReports.length;
+
+export function getWeeklyReports(projectId?: string) {
+  return projectId ? weeklyReports.filter(wr => wr.project_id === projectId) : weeklyReports;
+}
+
+export function getWeeklyReportById(id: string) {
+  return weeklyReports.find(wr => wr.id === id) ?? null;
+}
+
+export function addWeeklyReport(projectId: string, data: {
+  report_type: WeeklyReportType;
+  week_start_date: string;
+  week_end_date: string;
+  title: string;
+  work_summary: string;
+  safety_summary: string;
+  schedule_summary: string;
+  issues_concerns: string;
+  upcoming_work: string;
+  weather_summary: string;
+  manpower_total: number;
+  equipment_hours: number;
+}): WeeklyReport {
+  weeklyReportCounter++;
+  const num = String(weeklyReportCounter).padStart(3, '0');
+  const newReport: WeeklyReport = {
+    id: `wr-${Date.now()}`,
+    project_id: projectId,
+    number: `WR-${num}`,
+    report_type: data.report_type,
+    week_start_date: data.week_start_date,
+    week_end_date: data.week_end_date,
+    title: data.title,
+    status: 'draft',
+    work_summary: data.work_summary,
+    safety_summary: data.safety_summary,
+    schedule_summary: data.schedule_summary,
+    issues_concerns: data.issues_concerns,
+    upcoming_work: data.upcoming_work,
+    weather_summary: data.weather_summary,
+    manpower_total: data.manpower_total,
+    equipment_hours: data.equipment_hours,
+    submitted_by: currentUserId,
+    approved_by: null,
+    submit_date: getLocalDateString(),
+    approval_date: null,
+    created_at: new Date().toISOString(),
+  };
+  weeklyReports = [newReport, ...weeklyReports];
+  addActivity(projectId, 'project', newReport.id, 'created', `created weekly report: ${data.title}`);
+  return newReport;
+}
+
+export function updateWeeklyReport(id: string, data: Partial<WeeklyReport>): void {
+  weeklyReports = weeklyReports.map((wr) => wr.id === id ? { ...wr, ...data } : wr);
+}
+
+export function deleteWeeklyReport(id: string): void {
+  weeklyReports = weeklyReports.filter((wr) => wr.id !== id);
+}
+
+// --- Change Order operations ---
+let changeOrderCounter = changeOrders.length;
+
+export function addChangeOrder(projectId: string, data: {
+  title: string;
+  description: string;
+  reason: string;
+  amount: number;
+  linked_milestone_id?: string | null;
+}): ChangeOrder {
+  changeOrderCounter++;
+  const number = `CO-${String(changeOrderCounter).padStart(3, '0')}`;
+  const newCO: ChangeOrder = {
+    id: `co-${Date.now()}`,
+    project_id: projectId,
+    number,
+    title: data.title,
+    description: data.description,
+    reason: data.reason,
+    amount: data.amount,
+    status: 'draft',
+    submitted_by: currentUserId,
+    submitted_by_profile: profiles.find((p) => p.id === currentUserId),
+    approved_by: null,
+    linked_milestone_id: data.linked_milestone_id ?? null,
+    submit_date: getLocalDateString(),
+    approval_date: null,
+    created_at: new Date().toISOString(),
+  };
+  changeOrders = [newCO, ...changeOrders];
+  addActivity(projectId, 'project', newCO.id, 'created', `created change order ${number}: ${data.title}`);
+  return newCO;
+}
+
+export function updateChangeOrder(id: string, data: Partial<ChangeOrder>): void {
+  changeOrders = changeOrders.map((co) =>
+    co.id === id ? { ...co, ...data } : co
+  );
+}
+
+export function deleteChangeOrder(id: string): void {
+  changeOrders = changeOrders.filter((co) => co.id !== id);
+}
+
+// --- Modification operations ---
+let modificationCounter = modifications.length;
+
+export function getModifications(projectId?: string) {
+  if (!projectId) return modifications;
+  return modifications.filter((m) => m.project_id === projectId);
+}
+
+export function getModificationById(id: string) {
+  return modifications.find((m) => m.id === id) ?? null;
+}
+
+export function addModification(projectId: string, data: {
+  title: string;
+  description: string;
+  modification_type: ModificationType;
+  revision_number: string;
+  affected_documents: string;
+  linked_milestone_id?: string | null;
+}): Modification {
+  modificationCounter++;
+  const num = String(modificationCounter).padStart(3, '0');
+  const profile = getProfileWithOrg(getCurrentUserId());
+  const newMod: Modification = {
+    id: `mod-${num}`,
+    project_id: projectId,
+    number: `MOD-${num}`,
+    title: data.title,
+    description: data.description,
+    modification_type: data.modification_type,
+    status: 'draft',
+    revision_number: data.revision_number,
+    affected_documents: data.affected_documents,
+    issued_by: getCurrentUserId(),
+    issued_by_profile: profile ?? undefined,
+    issued_date: getLocalDateString(),
+    effective_date: null,
+    acknowledged_by: null,
+    acknowledged_date: null,
+    linked_milestone_id: data.linked_milestone_id ?? null,
+    created_at: new Date().toISOString(),
+  };
+  modifications = [...modifications, newMod];
+  return newMod;
+}
+
+export function updateModification(id: string, data: Partial<Modification>): void {
+  modifications = modifications.map((m) =>
+    m.id === id ? { ...m, ...data } : m
+  );
+}
+
+export function deleteModification(id: string): void {
+  modifications = modifications.filter((m) => m.id !== id);
 }
 
 // --- Team operations ---

@@ -181,11 +181,11 @@
 - [x] Daily logs calendar: full 7-day week view
 
 #### Week 2: Reports, Change Management (April 20–24)
-- [ ] Weekly Reports section (CM and Contractor)
+- [x] Weekly Reports section (CM and Contractor)
 - [x] Safety module (own box or within daily logs, incident reporting)
-- [ ] Change Orders in Budget box
-- [ ] Modifications & Amendments in Plans section
-- [ ] Demo data backfill (February through current date)
+- [x] Change Orders in Budget box
+- [x] Modifications & Amendments in Plans section
+- [x] Demo data backfill (February through current date)
 - [x] Week 1-2 integration testing
 
 #### Week 3: QC/QA & Photos (April 27 – May 1)
@@ -274,6 +274,6 @@
 
 ---
 
-*Last updated: April 12, 2026 — Safety module complete + smoke test passed (Phase 12 Week 2)*
+*Last updated: April 14, 2026 — Phase 12 Week 2 COMPLETE (all 6 items done)*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

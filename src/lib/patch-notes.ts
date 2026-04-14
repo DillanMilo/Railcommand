@@ -8,6 +8,27 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v1.10.0',
+    version: '1.10.0',
+    title: 'Modifications & Amendments',
+    description: 'Track plan revisions, spec amendments, contract changes, design changes, and scope modifications in the Schedule module. Each modification tracks revision number, affected documents, and follows a Draft → Issued → Acknowledged → Implemented workflow.',
+    date: '2026-04-13',
+  },
+  {
+    id: 'v1.9.0',
+    version: '1.9.0',
+    title: 'Weekly Reports',
+    description: 'New Reports section in the sidebar. Submit CM and Contractor weekly reports with structured sections: work summary, schedule, safety, weather, issues, and upcoming work. Includes workforce metrics, status workflow (Draft → Submitted → Approved), and filterable list view.',
+    date: '2026-04-13',
+  },
+  {
+    id: 'v1.8.0',
+    version: '1.8.0',
+    title: 'Change Orders',
+    description: 'Track budget modifications with Change Orders in the Schedule module. Create, submit, approve/reject, and void COs with amount tracking. Approved COs automatically adjust the dashboard budget total and CPI/SPI calculations.',
+    date: '2026-04-12',
+  },
+  {
     id: 'v1.7.0',
     version: '1.7.0',
     title: 'Safety Module',
