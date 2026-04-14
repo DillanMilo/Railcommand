@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Submittal, RFI, DailyLog, PunchListItem, Milestone } from '@/lib/types';
+import type { Submittal, RFI, DailyLog, PunchListItem, Milestone, ChangeOrder } from '@/lib/types';
 import {
   type ActionResult,
   getAuthenticatedUser,
@@ -15,6 +15,7 @@ export interface DashboardData {
   punchListItems: PunchListItem[];
   dailyLogs: DailyLog[];
   milestones: Milestone[];
+  changeOrders: ChangeOrder[];
 }
 
 /**
@@ -32,8 +33,8 @@ export async function getDashboardData(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
-    // Run all 5 queries in parallel — single auth check above
-    const [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes] = await Promise.all([
+    // Run all 6 queries in parallel — single auth check above
+    const [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes, changeOrdersRes] = await Promise.all([
       supabase
         .from('submittals')
         .select(`
@@ -78,10 +79,20 @@ export async function getDashboardData(
         .select('*')
         .eq('project_id', projectId)
         .order('sort_order', { ascending: true }),
+
+      supabase
+        .from('change_orders')
+        .select(`
+          *,
+          submitted_by_profile:profiles!change_orders_submitted_by_fkey(id, full_name, email, avatar_url),
+          approved_by_profile:profiles!change_orders_approved_by_fkey(id, full_name, email, avatar_url)
+        `)
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false }),
     ]);
 
     // Return first error if any query failed
-    const firstError = [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes].find((r) => r.error);
+    const firstError = [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes, changeOrdersRes].find((r) => r.error);
     if (firstError?.error) return { error: firstError.error.message };
 
     return {
@@ -92,6 +103,7 @@ export async function getDashboardData(
         punchListItems: (punchRes.data as PunchListItem[]) ?? [],
         dailyLogs: (logsRes.data as DailyLog[]) ?? [],
         milestones: (milestonesRes.data as Milestone[]) ?? [],
+        changeOrders: (changeOrdersRes.data as ChangeOrder[]) ?? [],
       },
     };
   } catch (err) {

@@ -12,8 +12,13 @@ import type {
   PunchListItem,
   ProjectMember,
   Milestone,
+  ChangeOrder,
   ActivityLogEntry,
   SafetyIncident,
+  WeeklyReport,
+  Modification,
+  QCQAReport,
+  ProjectDocument,
 } from '@/lib/types';
 
 // Store (demo mode)
@@ -40,10 +45,27 @@ import {
 } from '@/lib/actions/punch-list';
 import { getProjectMembers as fetchMembers } from '@/lib/actions/team';
 import { getMilestones as fetchMilestones } from '@/lib/actions/milestones';
+import { getChangeOrders as fetchChangeOrders } from '@/lib/actions/change-orders';
+import {
+  getModifications as fetchModifications,
+  getModificationById as fetchModificationById,
+} from '@/lib/actions/modifications';
 import {
   getSafetyIncidents as fetchSafetyIncidents,
   getSafetyIncident as fetchSafetyIncident,
 } from '@/lib/actions/safety';
+import {
+  getQCQAReports as fetchQCQAReports,
+  getQCQAReportById as fetchQCQAReportById,
+} from '@/lib/actions/qcqa';
+import {
+  getProjectDocuments as fetchProjectDocuments,
+  getProjectDocumentById as fetchProjectDocumentById,
+} from '@/lib/actions/documents';
+import {
+  getWeeklyReports as fetchWeeklyReports,
+  getWeeklyReportById as fetchWeeklyReportById,
+} from '@/lib/actions/weekly-reports';
 import { getActivityLog as fetchActivity } from '@/lib/actions/activity-log';
 import {
   getProjectInvitations as fetchProjectInvitations,
@@ -111,15 +133,16 @@ export function useDashboardData(projectId: string | null) {
       punchListItems: projectId ? store.getPunchListItems(projectId) : [],
       dailyLogs: projectId ? store.getDailyLogs(projectId) : [],
       milestones: projectId ? store.getMilestones(projectId) : [],
+      changeOrders: projectId ? store.getChangeOrders(projectId) : [],
     }),
     () =>
       projectId
         ? fetchDashboardData(projectId)
         : Promise.resolve({
-            data: { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [] },
+            data: { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [], changeOrders: [] },
           }),
     [projectId],
-    { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [] },
+    { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [], changeOrders: [] },
   );
 }
 
@@ -222,6 +245,33 @@ export function useMilestones(projectId: string) {
   );
 }
 
+export function useChangeOrders(projectId: string | null) {
+  return useQuery<ChangeOrder[]>(
+    () => (projectId ? store.getChangeOrders(projectId) : []),
+    () => (projectId ? fetchChangeOrders(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useModifications(projectId: string | null) {
+  return useQuery<Modification[]>(
+    () => (projectId ? store.getModifications(projectId) : []),
+    () => (projectId ? fetchModifications(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useModificationDetail(projectId: string, modificationId: string) {
+  return useQuery<Modification | null>(
+    () => store.getModificationById(modificationId),
+    () => fetchModificationById(modificationId, projectId),
+    [projectId, modificationId],
+    null,
+  );
+}
+
 export function useActivityLog(projectId: string, limit?: number) {
   return useQuery<ActivityLogEntry[]>(
     () => store.getActivityLog(projectId).slice(0, limit),
@@ -258,6 +308,60 @@ export function useProjectInvitations(projectId: string) {
     },
     [projectId],
     [],
+  );
+}
+
+export function useWeeklyReports(projectId: string | null) {
+  return useQuery<WeeklyReport[]>(
+    () => (projectId ? store.getWeeklyReports(projectId) : []),
+    () => (projectId ? fetchWeeklyReports(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useWeeklyReportDetail(projectId: string, reportId: string) {
+  return useQuery<WeeklyReport | null>(
+    () => store.getWeeklyReportById(reportId),
+    () => fetchWeeklyReportById(reportId, projectId),
+    [projectId, reportId],
+    null,
+  );
+}
+
+export function useQCQAReports(projectId: string | null) {
+  return useQuery<QCQAReport[]>(
+    () => (projectId ? store.getQCQAReports(projectId) : []),
+    () => (projectId ? fetchQCQAReports(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useQCQAReportDetail(projectId: string, reportId: string) {
+  return useQuery<QCQAReport | null>(
+    () => store.getQCQAReportById(reportId),
+    () => fetchQCQAReportById(reportId, projectId),
+    [projectId, reportId],
+    null,
+  );
+}
+
+export function useProjectDocuments(projectId: string | null) {
+  return useQuery<ProjectDocument[]>(
+    () => (projectId ? store.getProjectDocuments(projectId) : []),
+    () => (projectId ? fetchProjectDocuments(projectId) : Promise.resolve({ data: [] })),
+    [projectId],
+    [],
+  );
+}
+
+export function useProjectDocumentDetail(projectId: string, documentId: string) {
+  return useQuery<ProjectDocument | null>(
+    () => store.getProjectDocumentById(documentId),
+    () => fetchProjectDocumentById(documentId, projectId),
+    [projectId, documentId],
+    null,
   );
 }
 

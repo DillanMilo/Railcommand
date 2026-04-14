@@ -16,6 +16,11 @@ import {
   seedProfiles,
   seedOrganizations,
   seedMilestones,
+  seedChangeOrders,
+  seedWeeklyReports,
+  seedModifications,
+  seedQCQAReports,
+  seedProjectDocuments,
   seedProject,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
@@ -30,6 +35,8 @@ import type {
   DailyLog,
   PunchListItem,
   Milestone,
+  ChangeOrder,
+  ChangeOrderStatus,
   ProjectMember,
   ActivityLogEntry,
   Attachment,
@@ -39,6 +46,18 @@ import type {
   RFIStatus,
   PunchListStatus,
   MilestoneStatus,
+  WeeklyReport,
+  WeeklyReportStatus,
+  WeeklyReportType,
+  Modification,
+  ModificationType,
+  ModificationStatus,
+  QCQAReport,
+  QCQAReportType,
+  QCQAReportStatus,
+  ProjectDocument,
+  DocumentCategory,
+  DocumentStatus,
 } from './types';
 
 // Mutable copies of seed data
@@ -50,6 +69,11 @@ let punchListItems: PunchListItem[] = [...seedPunchListItems];
 let projectMembers: ProjectMember[] = [...seedProjectMembers];
 let activityLog: ActivityLogEntry[] = [...seedActivityLog];
 let milestones: Milestone[] = [...seedMilestones];
+let changeOrders: ChangeOrder[] = [...seedChangeOrders];
+let weeklyReports: WeeklyReport[] = [...seedWeeklyReports];
+let modifications: Modification[] = [...seedModifications];
+let qcqaReports: QCQAReport[] = [...seedQCQAReports];
+let projectDocuments: ProjectDocument[] = [...seedProjectDocuments];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -67,6 +91,11 @@ export function initDemoData(): void {
   projectMembers = [...seedProjectMembers];
   activityLog = [...seedActivityLog];
   milestones = [...seedMilestones];
+  changeOrders = [...seedChangeOrders];
+  weeklyReports = [...seedWeeklyReports];
+  modifications = [...seedModifications];
+  qcqaReports = [...seedQCQAReports];
+  projectDocuments = [...seedProjectDocuments];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -81,6 +110,11 @@ export function initDemoData(): void {
   activityCounter = activityLog.length;
   profileCounter = profiles.length;
   orgCounter = organizations.length;
+  changeOrderCounter = changeOrders.length;
+  weeklyReportCounter = weeklyReports.length;
+  modificationCounter = modifications.length;
+  qcqaReportCounter = qcqaReports.length;
+  documentCounter = projectDocuments.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -97,6 +131,11 @@ export function initFreshData(name: string, email: string): string {
   projectMembers = [];
   activityLog = [];
   milestones = [];
+  changeOrders = [];
+  weeklyReports = [];
+  modifications = [];
+  qcqaReports = [];
+  projectDocuments = [];
   attachments = [];
   invitations = [];
 
@@ -125,6 +164,11 @@ export function initFreshData(name: string, email: string): string {
   profileCounter = 1;
   orgCounter = 1;
   responseCounter = 0;
+  changeOrderCounter = 0;
+  weeklyReportCounter = 0;
+  modificationCounter = 0;
+  qcqaReportCounter = 0;
+  documentCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -221,6 +265,10 @@ export function getActivityLog(projectId?: string) {
 export function getMilestones(projectId?: string) {
   if (!projectId) return milestones;
   return milestones.filter((m) => m.project_id === projectId);
+}
+export function getChangeOrders(projectId?: string) {
+  if (!projectId) return changeOrders;
+  return changeOrders.filter((co) => co.project_id === projectId);
 }
 
 // Mutable profiles and organizations
@@ -579,6 +627,304 @@ export function addMilestone(projectId: string, data: {
 
 export function deleteMilestone(id: string): void {
   milestones = milestones.filter((m) => m.id !== id);
+}
+
+// --- Weekly Report operations ---
+let weeklyReportCounter = weeklyReports.length;
+
+export function getWeeklyReports(projectId?: string) {
+  return projectId ? weeklyReports.filter(wr => wr.project_id === projectId) : weeklyReports;
+}
+
+export function getWeeklyReportById(id: string) {
+  return weeklyReports.find(wr => wr.id === id) ?? null;
+}
+
+export function addWeeklyReport(projectId: string, data: {
+  report_type: WeeklyReportType;
+  week_start_date: string;
+  week_end_date: string;
+  title: string;
+  work_summary: string;
+  safety_summary: string;
+  schedule_summary: string;
+  issues_concerns: string;
+  upcoming_work: string;
+  weather_summary: string;
+  manpower_total: number;
+  equipment_hours: number;
+}): WeeklyReport {
+  weeklyReportCounter++;
+  const num = String(weeklyReportCounter).padStart(3, '0');
+  const newReport: WeeklyReport = {
+    id: `wr-${Date.now()}`,
+    project_id: projectId,
+    number: `WR-${num}`,
+    report_type: data.report_type,
+    week_start_date: data.week_start_date,
+    week_end_date: data.week_end_date,
+    title: data.title,
+    status: 'draft',
+    work_summary: data.work_summary,
+    safety_summary: data.safety_summary,
+    schedule_summary: data.schedule_summary,
+    issues_concerns: data.issues_concerns,
+    upcoming_work: data.upcoming_work,
+    weather_summary: data.weather_summary,
+    manpower_total: data.manpower_total,
+    equipment_hours: data.equipment_hours,
+    submitted_by: currentUserId,
+    approved_by: null,
+    submit_date: getLocalDateString(),
+    approval_date: null,
+    created_at: new Date().toISOString(),
+  };
+  weeklyReports = [newReport, ...weeklyReports];
+  addActivity(projectId, 'project', newReport.id, 'created', `created weekly report: ${data.title}`);
+  return newReport;
+}
+
+export function updateWeeklyReport(id: string, data: Partial<WeeklyReport>): void {
+  weeklyReports = weeklyReports.map((wr) => wr.id === id ? { ...wr, ...data } : wr);
+}
+
+export function deleteWeeklyReport(id: string): void {
+  weeklyReports = weeklyReports.filter((wr) => wr.id !== id);
+}
+
+// --- Change Order operations ---
+let changeOrderCounter = changeOrders.length;
+
+export function addChangeOrder(projectId: string, data: {
+  title: string;
+  description: string;
+  reason: string;
+  amount: number;
+  linked_milestone_id?: string | null;
+}): ChangeOrder {
+  changeOrderCounter++;
+  const number = `CO-${String(changeOrderCounter).padStart(3, '0')}`;
+  const newCO: ChangeOrder = {
+    id: `co-${Date.now()}`,
+    project_id: projectId,
+    number,
+    title: data.title,
+    description: data.description,
+    reason: data.reason,
+    amount: data.amount,
+    status: 'draft',
+    submitted_by: currentUserId,
+    submitted_by_profile: profiles.find((p) => p.id === currentUserId),
+    approved_by: null,
+    linked_milestone_id: data.linked_milestone_id ?? null,
+    submit_date: getLocalDateString(),
+    approval_date: null,
+    created_at: new Date().toISOString(),
+  };
+  changeOrders = [newCO, ...changeOrders];
+  addActivity(projectId, 'project', newCO.id, 'created', `created change order ${number}: ${data.title}`);
+  return newCO;
+}
+
+export function updateChangeOrder(id: string, data: Partial<ChangeOrder>): void {
+  changeOrders = changeOrders.map((co) =>
+    co.id === id ? { ...co, ...data } : co
+  );
+}
+
+export function deleteChangeOrder(id: string): void {
+  changeOrders = changeOrders.filter((co) => co.id !== id);
+}
+
+// --- Modification operations ---
+let modificationCounter = modifications.length;
+
+export function getModifications(projectId?: string) {
+  if (!projectId) return modifications;
+  return modifications.filter((m) => m.project_id === projectId);
+}
+
+export function getModificationById(id: string) {
+  return modifications.find((m) => m.id === id) ?? null;
+}
+
+export function addModification(projectId: string, data: {
+  title: string;
+  description: string;
+  modification_type: ModificationType;
+  revision_number: string;
+  affected_documents: string;
+  linked_milestone_id?: string | null;
+}): Modification {
+  modificationCounter++;
+  const num = String(modificationCounter).padStart(3, '0');
+  const profile = getProfileWithOrg(getCurrentUserId());
+  const newMod: Modification = {
+    id: `mod-${num}`,
+    project_id: projectId,
+    number: `MOD-${num}`,
+    title: data.title,
+    description: data.description,
+    modification_type: data.modification_type,
+    status: 'draft',
+    revision_number: data.revision_number,
+    affected_documents: data.affected_documents,
+    issued_by: getCurrentUserId(),
+    issued_by_profile: profile ?? undefined,
+    issued_date: getLocalDateString(),
+    effective_date: null,
+    acknowledged_by: null,
+    acknowledged_date: null,
+    linked_milestone_id: data.linked_milestone_id ?? null,
+    created_at: new Date().toISOString(),
+  };
+  modifications = [...modifications, newMod];
+  return newMod;
+}
+
+export function updateModification(id: string, data: Partial<Modification>): void {
+  modifications = modifications.map((m) =>
+    m.id === id ? { ...m, ...data } : m
+  );
+}
+
+export function deleteModification(id: string): void {
+  modifications = modifications.filter((m) => m.id !== id);
+}
+
+// --- QC/QA Report operations ---
+let qcqaReportCounter = qcqaReports.length;
+
+export function getQCQAReports(projectId?: string) {
+  if (!projectId) return qcqaReports;
+  return qcqaReports.filter((r) => r.project_id === projectId);
+}
+
+export function getQCQAReportById(id: string) {
+  return qcqaReports.find((r) => r.id === id) ?? null;
+}
+
+export function addQCQAReport(projectId: string, data: {
+  report_type: QCQAReportType;
+  title: string;
+  description?: string;
+  spec_reference?: string;
+  location?: string;
+  severity?: 'minor' | 'major' | 'critical';
+  findings?: string;
+  corrective_action?: string;
+  is_nonconformance?: boolean;
+  linked_punch_list_ids?: string[];
+}): QCQAReport {
+  qcqaReportCounter++;
+  const num = String(qcqaReportCounter).padStart(3, '0');
+  const profile = getProfileWithOrg(getCurrentUserId());
+  const newReport: QCQAReport = {
+    id: `qc-${Date.now()}`,
+    project_id: projectId,
+    number: `QC-${num}`,
+    report_type: data.report_type,
+    title: data.title,
+    description: data.description ?? '',
+    spec_reference: data.spec_reference ?? '',
+    location: data.location ?? '',
+    status: 'draft',
+    findings: data.findings ?? '',
+    corrective_action: data.corrective_action ?? '',
+    is_nonconformance: data.is_nonconformance ?? false,
+    severity: data.severity ?? 'minor',
+    inspector: getCurrentUserId(),
+    inspector_profile: profile ?? undefined,
+    linked_punch_list_ids: data.linked_punch_list_ids ?? [],
+    closed_by: null,
+    closed_date: null,
+    created_at: new Date().toISOString(),
+  };
+  qcqaReports = [newReport, ...qcqaReports];
+  addActivity(projectId, 'project', newReport.id, 'created', `created QC/QA report ${newReport.number}: ${data.title}`);
+  return newReport;
+}
+
+export function updateQCQAReport(id: string, data: Partial<QCQAReport>): void {
+  qcqaReports = qcqaReports.map((r) =>
+    r.id === id ? { ...r, ...data } : r
+  );
+}
+
+export function deleteQCQAReport(id: string): void {
+  qcqaReports = qcqaReports.filter((r) => r.id !== id);
+}
+
+// --- Project Document operations ---
+let documentCounter = projectDocuments.length;
+
+export function getProjectDocuments(projectId?: string) {
+  if (!projectId) return projectDocuments;
+  return projectDocuments.filter((d) => d.project_id === projectId);
+}
+
+export function getProjectDocumentById(id: string) {
+  return projectDocuments.find((d) => d.id === id) ?? null;
+}
+
+export function addProjectDocument(projectId: string, data: {
+  title: string;
+  category: DocumentCategory;
+  description?: string;
+  revision?: string;
+  revision_date?: string;
+  file_name?: string;
+  file_url?: string;
+  file_size?: number;
+  linked_milestone_id?: string | null;
+}): ProjectDocument {
+  documentCounter++;
+  const num = String(documentCounter).padStart(3, '0');
+  const profile = getProfileWithOrg(getCurrentUserId());
+  const newDoc: ProjectDocument = {
+    id: `doc-${num}`,
+    project_id: projectId,
+    number: `DOC-${num}`,
+    title: data.title,
+    description: data.description ?? '',
+    category: data.category,
+    status: 'draft',
+    revision: data.revision ?? 'Rev 0',
+    revision_date: data.revision_date ?? getLocalDateString(),
+    file_name: data.file_name ?? '',
+    file_url: data.file_url ?? '',
+    file_size: data.file_size ?? 0,
+    uploaded_by: getCurrentUserId(),
+    uploaded_by_profile: profile ? { id: profile.id, full_name: profile.full_name } : undefined,
+    reviewed_by: null,
+    review_date: null,
+    linked_milestone_id: data.linked_milestone_id ?? null,
+    created_at: new Date().toISOString(),
+  };
+  projectDocuments = [newDoc, ...projectDocuments];
+  addActivity(projectId, 'project', newDoc.id, 'created', `uploaded ${newDoc.number}: ${data.title}`);
+  return newDoc;
+}
+
+export function updateProjectDocument(id: string, data: Partial<ProjectDocument>): void {
+  projectDocuments = projectDocuments.map((d) => {
+    if (d.id !== id) return d;
+    const updated = { ...d, ...data };
+    // Auto-set reviewed_by and review_date on approval
+    if (data.status === 'approved') {
+      updated.reviewed_by = getCurrentUserId();
+      updated.review_date = getLocalDateString();
+      const profile = getProfileWithOrg(getCurrentUserId());
+      if (profile) {
+        updated.reviewed_by_profile = { id: profile.id, full_name: profile.full_name };
+      }
+    }
+    return updated;
+  });
+}
+
+export function deleteProjectDocument(id: string): void {
+  projectDocuments = projectDocuments.filter((d) => d.id !== id);
 }
 
 // --- Team operations ---

@@ -14,6 +14,10 @@ import {
   GanttChart,
   Users,
   MoreHorizontal,
+  ShieldAlert,
+  ClipboardPenLine,
+  FolderOpen,
+  FileBarChart,
 } from 'lucide-react';
 import {
   Sheet,
@@ -40,6 +44,10 @@ export default function MobileNav() {
 
   const moreItems = [
     { label: 'Punch List', href: hasProject ? `/projects/${currentProjectId}/punch-list` : '#', Icon: ClipboardCheck, requiresProject: true },
+    { label: 'Safety', href: hasProject ? `/projects/${currentProjectId}/safety` : '#', Icon: ShieldAlert, requiresProject: true },
+    { label: 'QC/QA', href: hasProject ? `/projects/${currentProjectId}/qcqa` : '#', Icon: ClipboardPenLine, requiresProject: true },
+    { label: 'Documents', href: hasProject ? `/projects/${currentProjectId}/documents` : '#', Icon: FolderOpen, requiresProject: true },
+    { label: 'Reports', href: hasProject ? `/projects/${currentProjectId}/weekly-reports` : '#', Icon: FileBarChart, requiresProject: true },
     { label: 'Schedule', href: hasProject ? `/projects/${currentProjectId}/schedule` : '#', Icon: GanttChart, requiresProject: true },
     { label: 'Team', href: hasProject ? `/projects/${currentProjectId}/team` : '#', Icon: Users, requiresProject: true },
   ];

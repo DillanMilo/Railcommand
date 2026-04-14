@@ -234,6 +234,136 @@ export interface SafetyIncident {
   created_at: string;
 }
 
+// Change Order
+export type ChangeOrderStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'void';
+
+export interface ChangeOrder {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "CO-001"
+  title: string;
+  description: string;
+  reason: string;
+  amount: number; // positive = cost increase, negative = decrease
+  status: ChangeOrderStatus;
+  submitted_by: string;
+  submitted_by_profile?: Profile;
+  approved_by: string | null;
+  approved_by_profile?: Profile;
+  linked_milestone_id: string | null;
+  submit_date: string;
+  approval_date: string | null;
+  created_at: string;
+}
+
+// QC/QA Report
+export type QCQAReportType = 'inspection' | 'nonconformance' | 'test' | 'audit';
+export type QCQAReportStatus = 'draft' | 'open' | 'in_review' | 'closed';
+
+export interface QCQAReport {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "QC-001"
+  report_type: QCQAReportType;
+  title: string;
+  description: string;
+  spec_reference: string; // e.g. "34 11 13 Section 3.2"
+  location: string;
+  status: QCQAReportStatus;
+  findings: string;
+  corrective_action: string;
+  is_nonconformance: boolean;
+  severity: 'minor' | 'major' | 'critical';
+  inspector: string;
+  inspector_profile?: Profile;
+  linked_punch_list_ids: string[];
+  closed_by: string | null;
+  closed_by_profile?: Profile;
+  closed_date: string | null;
+  created_at: string;
+}
+
+// Project Document
+export type DocumentCategory = 'drawing' | 'specification' | 'submittal' | 'report' | 'contract' | 'correspondence' | 'photo_log' | 'other';
+export type DocumentStatus = 'draft' | 'issued' | 'under_review' | 'approved' | 'superseded';
+
+export interface ProjectDocument {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "DOC-001"
+  title: string;
+  description: string;
+  category: DocumentCategory;
+  status: DocumentStatus;
+  revision: string; // e.g. "Rev 0", "Rev A"
+  revision_date: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_by_profile?: Pick<Profile, 'id' | 'full_name'>;
+  reviewed_by: string | null;
+  reviewed_by_profile?: Pick<Profile, 'id' | 'full_name'>;
+  review_date: string | null;
+  linked_milestone_id: string | null;
+  created_at: string;
+}
+
+// Modification / Amendment
+export type ModificationType = 'plan_revision' | 'spec_amendment' | 'contract_amendment' | 'design_change' | 'scope_change';
+export type ModificationStatus = 'draft' | 'issued' | 'acknowledged' | 'implemented' | 'void';
+
+export interface Modification {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "MOD-001"
+  title: string;
+  description: string;
+  modification_type: ModificationType;
+  status: ModificationStatus;
+  revision_number: string; // e.g. "Rev 2", "Amendment A"
+  affected_documents: string; // e.g. "Sheet C-101, C-102"
+  issued_by: string;
+  issued_by_profile?: Profile;
+  issued_date: string;
+  effective_date: string | null;
+  acknowledged_by: string | null;
+  acknowledged_by_profile?: Profile;
+  acknowledged_date: string | null;
+  linked_milestone_id: string | null;
+  created_at: string;
+}
+
+// Weekly Report
+export type WeeklyReportType = 'cm' | 'contractor';
+export type WeeklyReportStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+
+export interface WeeklyReport {
+  id: string;
+  project_id: string;
+  number: string; // e.g. "WR-001"
+  report_type: WeeklyReportType;
+  week_start_date: string; // Monday
+  week_end_date: string; // Sunday
+  title: string;
+  status: WeeklyReportStatus;
+  work_summary: string;
+  safety_summary: string;
+  schedule_summary: string;
+  issues_concerns: string;
+  upcoming_work: string;
+  weather_summary: string;
+  manpower_total: number;
+  equipment_hours: number;
+  submitted_by: string;
+  submitted_by_profile?: Profile;
+  approved_by: string | null;
+  approved_by_profile?: Profile;
+  submit_date: string;
+  approval_date: string | null;
+  created_at: string;
+}
+
 // Milestone
 export interface Milestone {
   id: string;

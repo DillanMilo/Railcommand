@@ -26,6 +26,9 @@ import {
   PanelLeftOpen,
   ShieldAlert,
   ShieldCheck,
+  FileBarChart,
+  ClipboardPenLine,
+  FolderOpen,
   ChevronDown,
   Plus,
   Check,
@@ -60,6 +63,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   ListChecks: ClipboardCheck,
   CalendarRange: GanttChart,
   ShieldAlert,
+  ClipboardCheck2: ClipboardPenLine,
+  FolderOpen,
+  FileBarChart,
   Users,
 };
 
