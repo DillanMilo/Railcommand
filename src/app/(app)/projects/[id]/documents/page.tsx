@@ -81,9 +81,9 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
       if (search) {
         const q = search.toLowerCase();
         if (
-          !d.title.toLowerCase().includes(q) &&
-          !d.description.toLowerCase().includes(q) &&
-          !d.file_name.toLowerCase().includes(q)
+          !d.title?.toLowerCase().includes(q) &&
+          !(d.description ?? '').toLowerCase().includes(q) &&
+          !(d.file_name ?? '').toLowerCase().includes(q)
         ) return false;
       }
       return true;

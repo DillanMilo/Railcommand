@@ -46,7 +46,7 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
   const [revisionDate, setRevisionDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [fileName, setFileName] = useState('');
-  const [linkedMilestoneId, setLinkedMilestoneId] = useState<string>('');
+  const [linkedMilestoneId, setLinkedMilestoneId] = useState<string>('none');
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -63,7 +63,7 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
       revision_date: revisionDate,
       description,
       file_name: fileName,
-      linked_milestone_id: linkedMilestoneId || null,
+      linked_milestone_id: linkedMilestoneId === 'none' ? null : linkedMilestoneId,
     };
 
     if (isDemo) {
@@ -172,7 +172,7 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
               <Select value={linkedMilestoneId} onValueChange={setLinkedMilestoneId}>
                 <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {milestones.map((ms) => (
                     <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>
                   ))}

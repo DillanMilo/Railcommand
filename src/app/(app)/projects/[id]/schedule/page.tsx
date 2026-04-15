@@ -109,7 +109,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
   const [addCODescription, setAddCODescription] = useState('');
   const [addCOReason, setAddCOReason] = useState('');
   const [addCOAmount, setAddCOAmount] = useState(0);
-  const [addCOMilestoneId, setAddCOMilestoneId] = useState('');
+  const [addCOMilestoneId, setAddCOMilestoneId] = useState('none');
   const [addCOSaving, setAddCOSaving] = useState(false);
 
   // Add modification dialog state
@@ -119,7 +119,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
   const [addModType, setAddModType] = useState<ModificationType>('plan_revision');
   const [addModRevision, setAddModRevision] = useState('');
   const [addModAffectedDocs, setAddModAffectedDocs] = useState('');
-  const [addModMilestoneId, setAddModMilestoneId] = useState('');
+  const [addModMilestoneId, setAddModMilestoneId] = useState('none');
   const [addModSaving, setAddModSaving] = useState(false);
 
   function resetAddForm() {
@@ -182,7 +182,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
       description: addCODescription,
       reason: addCOReason,
       amount: addCOAmount,
-      linked_milestone_id: addCOMilestoneId || null,
+      linked_milestone_id: addCOMilestoneId === 'none' ? null : addCOMilestoneId,
     };
     if (isDemo) {
       storeAddCO(projectId, data);
@@ -206,7 +206,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
       modification_type: addModType,
       revision_number: addModRevision,
       affected_documents: addModAffectedDocs,
-      linked_milestone_id: addModMilestoneId || null,
+      linked_milestone_id: addModMilestoneId === 'none' ? null : addModMilestoneId,
     };
     if (isDemo) {
       storeAddMod(projectId, data);
@@ -487,7 +487,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
               <Select value={addCOMilestoneId} onValueChange={setAddCOMilestoneId}>
                 <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {milestones.map((ms) => <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -542,7 +542,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
               <Select value={addModMilestoneId} onValueChange={setAddModMilestoneId}>
                 <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {milestones.map((ms) => <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -811,7 +811,7 @@ function ChangeOrderCard({ changeOrder: co, projectId, isDemo, canManage, refetc
     setEditDescription(co.description ?? '');
     setEditReason(co.reason ?? '');
     setEditAmount(co.amount);
-    setEditMilestoneId(co.linked_milestone_id ?? '');
+    setEditMilestoneId(co.linked_milestone_id ?? 'none');
     setEditOpen(true);
   }
 
@@ -822,7 +822,7 @@ function ChangeOrderCard({ changeOrder: co, projectId, isDemo, canManage, refetc
       description: editDescription,
       reason: editReason,
       amount: editAmount,
-      linked_milestone_id: editMilestoneId || null,
+      linked_milestone_id: editMilestoneId === 'none' ? null : editMilestoneId,
     };
     if (isDemo) {
       storeUpdateCO(co.id, data);
@@ -990,7 +990,7 @@ function ChangeOrderCard({ changeOrder: co, projectId, isDemo, canManage, refetc
               <Select value={editMilestoneId} onValueChange={setEditMilestoneId}>
                 <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {milestones.map((ms) => <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -1057,7 +1057,7 @@ function ModificationCard({ modification: mod, projectId, isDemo, canEdit, refet
     setEditType(mod.modification_type);
     setEditRevision(mod.revision_number ?? '');
     setEditAffectedDocs(mod.affected_documents ?? '');
-    setEditMilestoneId(mod.linked_milestone_id ?? '');
+    setEditMilestoneId(mod.linked_milestone_id ?? 'none');
     setEditOpen(true);
   }
 
@@ -1069,7 +1069,7 @@ function ModificationCard({ modification: mod, projectId, isDemo, canEdit, refet
       modification_type: editType,
       revision_number: editRevision,
       affected_documents: editAffectedDocs,
-      linked_milestone_id: editMilestoneId || null,
+      linked_milestone_id: editMilestoneId === 'none' ? null : editMilestoneId,
     };
     if (isDemo) {
       storeUpdateMod(mod.id, data);
@@ -1258,7 +1258,7 @@ function ModificationCard({ modification: mod, projectId, isDemo, canEdit, refet
               <Select value={editMilestoneId} onValueChange={setEditMilestoneId}>
                 <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {milestones.map((ms) => <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>)}
                 </SelectContent>
               </Select>
