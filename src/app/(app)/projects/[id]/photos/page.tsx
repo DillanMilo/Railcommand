@@ -11,6 +11,7 @@ import {
   X,
   Loader2,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,7 @@ export default function PhotosPage({
   const [filter, setFilter] = useState<PhotoFilter>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<Attachment | null>(null);
   const [captureLoading, setCaptureLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,6 +172,33 @@ export default function PhotosPage({
         alert('Failed to capture photo');
       } finally {
         setCaptureLoading(false);
+      }
+    },
+    [isDemo, projectId, refetch]
+  );
+
+  /* ---- Delete handler ---- */
+  const handleDelete = useCallback(
+    async (photo: Attachment) => {
+      if (!confirm('Delete this photo? This cannot be undone.')) return;
+      setDeleting(true);
+      try {
+        if (isDemo) {
+          store.removeAttachment(photo.id);
+        } else {
+          const { deleteAttachment } = await import('@/lib/actions/attachments');
+          const result = await deleteAttachment(photo.id, projectId);
+          if (result.error) {
+            alert(`Delete failed: ${result.error}`);
+            return;
+          }
+        }
+        setSelectedPhoto(null);
+        refetch();
+      } catch {
+        alert('Failed to delete photo');
+      } finally {
+        setDeleting(false);
       }
     },
     [isDemo, projectId, refetch]
@@ -404,30 +433,46 @@ export default function PhotosPage({
                   </div>
                 </div>
 
-                {/* Badges row */}
-                <div className="flex flex-wrap gap-2">
-                  {selectedPhoto.photo_category === 'thermal' && (
-                    <span className="flex items-center gap-1 text-xs text-rc-orange">
-                      <Thermometer className="size-3" />
-                      Thermal Image
-                    </span>
-                  )}
-                  {selectedPhoto.geo_lat !== null &&
-                    selectedPhoto.geo_lng !== null && (
-                      <a
-                        href={`https://www.google.com/maps?q=${selectedPhoto.geo_lat},${selectedPhoto.geo_lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                          'flex items-center gap-1 text-xs text-rc-emerald hover:underline'
-                        )}
-                      >
-                        <MapPin className="size-3" />
-                        {selectedPhoto.geo_lat.toFixed(6)},{' '}
-                        {selectedPhoto.geo_lng.toFixed(6)}
-                        <ExternalLink className="size-2.5" />
-                      </a>
+                {/* Badges row + delete */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPhoto.photo_category === 'thermal' && (
+                      <span className="flex items-center gap-1 text-xs text-rc-orange">
+                        <Thermometer className="size-3" />
+                        Thermal Image
+                      </span>
                     )}
+                    {selectedPhoto.geo_lat !== null &&
+                      selectedPhoto.geo_lng !== null && (
+                        <a
+                          href={`https://www.google.com/maps?q=${selectedPhoto.geo_lat},${selectedPhoto.geo_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            'flex items-center gap-1 text-xs text-rc-emerald hover:underline'
+                          )}
+                        >
+                          <MapPin className="size-3" />
+                          {selectedPhoto.geo_lat.toFixed(6)},{' '}
+                          {selectedPhoto.geo_lng.toFixed(6)}
+                          <ExternalLink className="size-2.5" />
+                        </a>
+                      )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={deleting}
+                    onClick={() => handleDelete(selectedPhoto)}
+                    className="text-muted-foreground hover:text-red-500 hover:bg-red-50 h-8 px-2"
+                  >
+                    {deleting ? (
+                      <Loader2 className="size-3.5 animate-spin mr-1" />
+                    ) : (
+                      <Trash2 className="size-3.5 mr-1" />
+                    )}
+                    Delete
+                  </Button>
                 </div>
               </div>
             </div>
