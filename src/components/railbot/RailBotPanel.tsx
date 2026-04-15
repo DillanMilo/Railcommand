@@ -367,12 +367,10 @@ export default function RailBotPanel({ open, onClose }: RailBotPanelProps) {
                 <Bot className="h-8 w-8" />
               </div>
               <h3 className="mb-1 text-base font-semibold text-gray-900 dark:text-gray-100">
-                {firstName ? `Hey ${firstName}, I\u2019m RailBot` : 'Hi, I\u2019m RailBot'}
+                {firstName ? `Hey ${firstName}` : 'Hey there'}
               </h3>
               <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-                {firstName
-                  ? `What can I help you with today, ${firstName}? Ask me anything about schedules, RFIs, submittals, and more.`
-                  : 'Your AI assistant for this project. Ask me anything about schedules, RFIs, submittals, and more.'}
+                What can I help you with today? Ask me about schedules, RFIs, submittals, safety, change orders, and more.
               </p>
               <div className="flex w-full flex-col gap-2">
                 {SUGGESTED_PROMPTS.map((prompt) => (
