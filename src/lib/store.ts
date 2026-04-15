@@ -908,6 +908,7 @@ export function addProjectDocument(projectId: string, data: {
     uploaded_by: getCurrentUserId(),
     uploaded_by_profile: profile ? { id: profile.id, full_name: profile.full_name } : undefined,
     reviewed_by: null,
+    reviewed_by_profile: undefined,
     review_date: null,
     linked_milestone_id: data.linked_milestone_id ?? null,
     created_at: new Date().toISOString(),
