@@ -176,15 +176,9 @@ export async function acceptInvitation(
       return { error: 'Invitation not found, expired, or already used.' };
     }
 
-    // Update invitation status
-    const { error: updateError } = await supabase
-      .from('project_invitations')
-      .update({ status: 'accepted' })
-      .eq('id', invitation.id);
-
-    if (updateError) return { error: updateError.message };
-
-    // Add user as a project member
+    // Add user as a project member FIRST (while invitation is still pending —
+    // required by the RLS policy on project_members INSERT which checks for
+    // a pending invitation as proof of authorization)
     const { error: memberError } = await supabase
       .from('project_members')
       .insert({
@@ -197,6 +191,14 @@ export async function acceptInvitation(
       });
 
     if (memberError) return { error: memberError.message };
+
+    // Now update invitation status to accepted
+    const { error: updateError } = await supabase
+      .from('project_invitations')
+      .update({ status: 'accepted' })
+      .eq('id', invitation.id);
+
+    if (updateError) return { error: updateError.message };
 
     await logActivity(
       supabase,
