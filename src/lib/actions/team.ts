@@ -55,6 +55,45 @@ export async function getProjectMembers(
 }
 
 // ---------------------------------------------------------------------------
+// getRecentMembers -- members added in the last `sinceISOString` or last 7 days
+// Used by the dashboard "new members" alert banner.
+// ---------------------------------------------------------------------------
+export async function getRecentMembers(
+  projectId: string,
+  sinceISOString?: string
+): Promise<ActionResult<ProjectMember[]>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const access = await checkProjectMembership(supabase, user.id, projectId);
+    if (!access.isMember) return { error: access.error };
+
+    // Default: last 7 days
+    const since = sinceISOString
+      ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('project_members')
+      .select(`
+        *,
+        profile:profiles(id, full_name, email, avatar_url)
+      `)
+      .eq('project_id', projectId)
+      .gt('added_at', since)
+      .neq('profile_id', user.id) // exclude yourself — you know you joined
+      .order('added_at', { ascending: false });
+
+    if (error) return { error: error.message };
+
+    return { success: true, data: (data as ProjectMember[]) ?? [] };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to fetch recent members' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // addProjectMember -- requires team:manage
 // ---------------------------------------------------------------------------
 export async function addProjectMember(

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import PendingInvitations from '@/components/dashboard/PendingInvitations';
+import NewMembersAlert from '@/components/dashboard/NewMembersAlert';
 import KPICard from '@/components/dashboard/KPICard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import QuickActions from '@/components/dashboard/QuickActions';
@@ -179,6 +180,9 @@ export default function DashboardPage() {
 
       {/* Pending invitations banner (real auth only) */}
       {!isDemo && <PendingInvitations />}
+
+      {/* New team members alert (real auth only) */}
+      {!isDemo && <NewMembersAlert />}
 
       {/* Project header */}
       <div>
