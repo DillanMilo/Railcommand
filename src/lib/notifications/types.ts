@@ -135,7 +135,7 @@ export interface TeamUpdatePayload {
   type: 'team_update';
   recipientEmail: string;
   recipientName: string;
-  action: 'added' | 'removed';
+  action: 'added' | 'removed' | 'left';
   memberName: string;
   memberRole: string;
   changedByName: string;

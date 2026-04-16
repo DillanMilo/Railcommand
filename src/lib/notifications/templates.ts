@@ -373,7 +373,10 @@ function dailyLogReminder(payload: DailyLogReminderPayload): { subject: string; 
 // Template: Team Update
 // ---------------------------------------------------------------------------
 function teamUpdate(payload: TeamUpdatePayload): { subject: string; html: string } {
-  const action = payload.action === 'added' ? 'added to' : 'removed from';
+  const action =
+    payload.action === 'added' ? 'added to'
+    : payload.action === 'left' ? 'left'
+    : 'removed from';
   const subject = `${payload.memberName} ${action} ${payload.projectName}`;
   const html = emailLayout(`
     <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Team Update</h2>
@@ -391,7 +394,7 @@ function teamUpdate(payload: TeamUpdatePayload): { subject: string; html: string
       <tr>
         <td style="padding:8px 16px;">
           <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Action</p>
-          <p style="margin:0;color:#1e293b;font-size:14px;">${payload.action === 'added' ? 'Added as' : 'Removed from'} <strong>${payload.memberRole}</strong></p>
+          <p style="margin:0;color:#1e293b;font-size:14px;">${payload.action === 'added' ? 'Added as' : payload.action === 'left' ? 'Left as' : 'Removed from'} <strong>${payload.memberRole}</strong></p>
         </td>
       </tr>
     </table>

@@ -252,6 +252,109 @@ export async function removeProjectMember(
 }
 
 // ---------------------------------------------------------------------------
+// leaveProject -- any member can voluntarily leave a project
+// Contributions (submittals, RFIs, daily logs, photos, etc.) stay behind —
+// only the membership row is deleted.
+// Edge case: prevent the last manager from leaving (avoids orphaned projects).
+// ---------------------------------------------------------------------------
+export async function leaveProject(
+  projectId: string
+): Promise<ActionResult<undefined>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    // Find the caller's membership row
+    const { data: ownMembership, error: membershipError } = await supabase
+      .from('project_members')
+      .select('id, project_role')
+      .eq('project_id', projectId)
+      .eq('profile_id', user.id)
+      .single();
+
+    if (membershipError || !ownMembership) {
+      return { error: 'You are not a member of this project' };
+    }
+
+    // Safety check — if the leaver is a manager, make sure another manager exists
+    if (ownMembership.project_role === 'manager') {
+      const { count: otherManagers } = await supabase
+        .from('project_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .eq('project_role', 'manager')
+        .neq('profile_id', user.id);
+
+      if ((otherManagers ?? 0) === 0) {
+        return {
+          error:
+            'You are the only manager on this project. Promote another member to manager before leaving.',
+        };
+      }
+    }
+
+    // Get profile name for activity log + notifications (before delete)
+    const { data: leaverProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    // Delete the membership row — RLS allows self-delete
+    const { error: deleteError } = await supabase
+      .from('project_members')
+      .delete()
+      .eq('id', ownMembership.id)
+      .eq('project_id', projectId);
+
+    if (deleteError) return { error: deleteError.message };
+
+    await logActivity(
+      supabase,
+      projectId,
+      'project',
+      projectId,
+      'updated',
+      `${leaverProfile?.full_name ?? 'A team member'} left the project`,
+      user.id
+    );
+
+    // Notify remaining members
+    try {
+      const projectName = await getProjectName(projectId);
+      const { data: remainingMembers } = await supabase
+        .from('project_members')
+        .select('profile_id')
+        .eq('project_id', projectId);
+
+      for (const m of remainingMembers ?? []) {
+        sendNotificationToUser(m.profile_id, (recipient) => ({
+          type: 'team_update',
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          action: 'left',
+          memberName: leaverProfile?.full_name ?? 'A team member',
+          memberRole: ownMembership.project_role,
+          changedByName: leaverProfile?.full_name ?? 'A team member',
+          projectName,
+          projectId,
+        } satisfies TeamUpdatePayload));
+      }
+    } catch {
+      // Never let notification failures break the main flow
+    }
+
+    revalidatePath(`/projects/${projectId}/team`);
+    revalidatePath('/dashboard');
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to leave project' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // updateMemberRole -- requires team:manage
 // ---------------------------------------------------------------------------
 export async function updateMemberRole(
