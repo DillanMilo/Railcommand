@@ -263,3 +263,4 @@ To add a brand new prospect (e.g., CSX, BNSF, CPKC):
 | 2026-04-16 | Confirmed `dillanxx@gmail.com` has admin role. Production URL: railcommand.vercel.app |
 | 2026-04-16 | Team demo created and tested working. Credentials shared with Mark & Caleb. |
 | 2026-04-16 | Fixed infinite recursion RLS bug on project_members + projects tables (was blocking invitation acceptance). Migration: `2026-04-16_fix_project_members_recursion.sql` |
+| 2026-04-16 | Fixed invitation accept flow (reorder INSERT before status UPDATE) + profiles RLS so team members can see each other. Migration: `2026-04-16_profiles_rls_team_visibility.sql` |
