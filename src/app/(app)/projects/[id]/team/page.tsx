@@ -47,7 +47,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS, PERMISSION_MATRIX } from '@/lib/permissions';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember, updateMemberRole as serverUpdateMemberRole } from '@/lib/actions/team';
+import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember, updateMemberRole as serverUpdateMemberRole, leaveProject as serverLeaveProject } from '@/lib/actions/team';
 import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation } from '@/lib/actions/invitations';
 import {
   DropdownMenu,
@@ -100,7 +100,7 @@ function formatRole(role: string) {
 export default function TeamPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const { isDemo } = useProject();
+  const { isDemo, currentUserId } = useProject();
   const { can } = usePermissions(projectId);
   const { data: projectMembers, loading, refetch } = useProjectMembers(projectId);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -302,6 +302,9 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   }
 
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
 
   function handleRemoveMember(memberId: string) {
     setPendingRemoveId(memberId);
@@ -317,6 +320,38 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
       setPendingRemoveId(null);
       refetch();
       fetchInvitations();
+    }
+  }
+
+  async function confirmLeaveProject() {
+    setLeaveError(null);
+    setLeaveSubmitting(true);
+    try {
+      if (isDemo) {
+        // In demo mode, find current user's membership and remove it
+        const ownMembership = (projectMembers ?? []).find(
+          (m) => m.profile_id === currentUserId
+        );
+        if (ownMembership) {
+          storeRemoveProjectMember(ownMembership.id);
+        }
+        setLeaveDialogOpen(false);
+        // Redirect to dashboard since user is no longer a member
+        window.location.href = '/dashboard';
+      } else {
+        const result = await serverLeaveProject(projectId);
+        if (result.error) {
+          setLeaveError(result.error);
+          setLeaveSubmitting(false);
+          return;
+        }
+        setLeaveDialogOpen(false);
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      setLeaveError(err instanceof Error ? err.message : 'Failed to leave project');
+      setLeaveSubmitting(false);
     }
   }
 
@@ -509,15 +544,21 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
 
           return (
             <Card key={member.id} className="gap-0 py-4 hover:border-rc-orange/40 transition-colors relative group">
-              {can(ACTIONS.TEAM_MANAGE) && (
+              {can(ACTIONS.TEAM_MANAGE) && member.profile_id !== currentUserId && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute top-2 right-2 size-9 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500"
                   onClick={() => handleRemoveMember(member.id)}
+                  title="Remove from project"
                 >
                   <X className="size-3.5" />
                 </Button>
+              )}
+              {member.profile_id === currentUserId && (
+                <Badge variant="outline" className="absolute top-2 right-2 text-[10px]">
+                  You
+                </Badge>
               )}
               <CardContent className="px-4 space-y-3">
                 <div className="flex items-start gap-3">
@@ -675,6 +716,53 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
       {can(ACTIONS.TEAM_MANAGE) && (
         <PermissionsReference />
       )}
+
+      {/* Leave Project section (for current user) */}
+      {members.some((m) => m.member.profile_id === currentUserId) && (
+        <div className="mt-8 pt-6 border-t border-rc-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Leave this project</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                You&apos;ll lose access, but any work you&apos;ve contributed (RFIs, photos, daily logs, etc.) stays with the project.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLeaveDialogOpen(true)}
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950"
+            >
+              Leave Project
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Leave project confirmation dialog */}
+      <Dialog open={leaveDialogOpen} onOpenChange={(open) => { if (!open) { setLeaveDialogOpen(false); setLeaveError(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave Project</DialogTitle>
+            <DialogDescription>
+              You&apos;re about to leave this project. You will lose access immediately. Your contributions (RFIs, submittals, daily logs, photos, etc.) will remain with the project for the team to continue using.
+            </DialogDescription>
+          </DialogHeader>
+          {leaveError && (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-red-800 text-sm">
+              {leaveError}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setLeaveDialogOpen(false)} disabled={leaveSubmitting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmLeaveProject} disabled={leaveSubmitting}>
+              {leaveSubmitting ? 'Leaving...' : 'Leave Project'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Remove member confirmation dialog */}
       <Dialog open={pendingRemoveId !== null} onOpenChange={(open) => { if (!open) setPendingRemoveId(null); }}>
