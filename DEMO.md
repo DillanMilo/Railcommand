@@ -268,3 +268,4 @@ To add a brand new prospect (e.g., CSX, BNSF, CPKC):
 | 2026-04-16 | Cowork applied the FK hardening migration (v2 with per-column loop + orphan cleanup). All 20 contribution FKs now ON DELETE SET NULL. Cleaned up one pre-existing orphan in activity_log from prior demo reset. Profile deletions only happen via demo reset utility — now safe. |
 | 2026-04-16 | Added inline Leave button on user's own team card (mobile discoverability). |
 | 2026-04-16 | Removed platform-admin bypass from project-level RLS for true multi-tenant isolation. Admins must now be project members to view project data. /admin/demos still works (uses service role). Migration: `2026-04-16_remove_admin_bypass_project_rls.sql` |
+| 2026-04-16 | Added NewMembersAlert on dashboard — green banner shows team members added in last 7 days, individually dismissible + "Dismiss all". Uses localStorage to remember dismissed IDs. |
