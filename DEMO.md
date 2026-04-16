@@ -269,3 +269,4 @@ To add a brand new prospect (e.g., CSX, BNSF, CPKC):
 | 2026-04-16 | Added inline Leave button on user's own team card (mobile discoverability). |
 | 2026-04-16 | Removed platform-admin bypass from project-level RLS for true multi-tenant isolation. Admins must now be project members to view project data. /admin/demos still works (uses service role). Migration: `2026-04-16_remove_admin_bypass_project_rls.sql` |
 | 2026-04-16 | Added NewMembersAlert on dashboard — green banner shows team members added in last 7 days, individually dismissible + "Dismiss all". Uses localStorage to remember dismissed IDs. |
+| 2026-04-16 | Dropped two legacy recursive SELECT policies (`Members can read project members`, `Members can read their projects`) that slipped past earlier migration DROPs. They used a non-SECURITY-DEFINER helper `get_my_project_ids()` causing recursion when evaluated alongside our new clean policies. Migration: `2026-04-16_drop_legacy_recursive_policies.sql` |
