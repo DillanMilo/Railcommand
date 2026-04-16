@@ -67,6 +67,7 @@ export async function uploadAttachment(
       .insert({
         entity_type: entityType,
         entity_id: entityId,
+        project_id: projectId,
         file_name: file.name,
         file_url: fileUrl,
         file_type: file.type,

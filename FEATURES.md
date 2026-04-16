@@ -795,9 +795,10 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **Schedule & Milestones** | Complete | 100% | Timeline view, budget tracking, linked submittals/RFIs, PDF export |
 | **Team Management** | Complete | 100% | Full invite/add/remove workflow with role assignment |
 | **Settings & Profile** | Complete | 100% | Profile editing, dark mode, notification preferences, security |
-| **Project Documents** | Planned | 0% | New module — revision tracking, PDF requirement, CAD folder structure (V2 sprint Week 1) |
-| **QC/QA** | Planned | 0% | New module — nonconformance tracking, Punch List linking, routable QC/QA plans (V2 sprint Week 3) |
-| **Photos & Media** | Planned | 0% | New module — mobile photo capture, auto-organization, geo-tags, metadata (V2 sprint Week 3) |
+| **Project Documents** | Complete | 100% | Revision tracking, category filtering, milestone linking, approval workflow |
+| **QC/QA** | Complete | 100% | Inspections, nonconformance, tests, audits with punch list linking |
+| **Photos & Media** | Complete | 100% | Mobile camera capture, GPS geo-tagging, date grouping, lightbox, delete |
+| **Enterprise Demo System** | Complete | 100% | Slug-based auto-auth, team + prospect presets, admin dashboard, reset/wipe, data isolation via RLS |
 | **Safety** | Complete | 100% | Incident reporting (6 types, 4 severities), status workflow, investigation fields, photo attachments, PDF-ready. Smoke tested 2026-04-12. |
 
 ### Platform Feature Status

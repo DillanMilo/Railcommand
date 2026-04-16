@@ -1178,6 +1178,7 @@ export function getAttachments(entityType: Attachment['entity_type'], entityId: 
 export function addAttachment(data: {
   entity_type: Attachment['entity_type'];
   entity_id: string;
+  project_id?: string;
   file_name: string;
   file_url: string;
   file_type: string;
@@ -1191,6 +1192,7 @@ export function addAttachment(data: {
     id: `att-${String(attachmentCounter).padStart(3, '0')}`,
     entity_type: data.entity_type,
     entity_id: data.entity_id,
+    project_id: data.project_id ?? 'proj-001',
     file_name: data.file_name,
     file_url: data.file_url,
     file_type: data.file_type,
