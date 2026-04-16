@@ -272,8 +272,23 @@
 - [x] Guard rails and security hardening (input validation, HTML stripping, argument validation)
 - [x] Voice dictation (Whisper API + mic UI)
 
+### Phase 13: Enterprise Demo Account System (April 2026)
+- [x] SQL migration for `demo_accounts` + `demo_team_logins` tables
+- [x] Demo seeder utility — creates full Supabase auth users, org, project, and all 12 modules of realistic data
+- [x] Demo presets: Team (Dillan/Caleb/Mark), Union Pacific, TVA
+- [x] `/demo/[slug]` auto-auth entry route — zero-friction prospect access
+- [x] Team demo role picker — each person logs in with different permissions
+- [x] Demo banner component (subtle, dismissible)
+- [x] Admin dashboard at `/admin/demos` — create, reset, deactivate, delete demos
+- [x] Admin API routes: create, reset, list, lookup, track access
+- [x] Demo reset/wipe utility — preserves credentials, re-seeds fresh data
+- [x] Middleware updated for `/demo/*` public routes
+- [ ] Run migration in Supabase Dashboard
+- [ ] Seed first demos (team + UP + TVA)
+- [ ] End-to-end testing with real Supabase auth
+
 ---
 
-*Last updated: April 14, 2026 — Phase 12 Week 4 complete: QA sweep passed, all Caleb deliverables done*
+*Last updated: April 15, 2026 — Phase 13: Enterprise Demo Account System built*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

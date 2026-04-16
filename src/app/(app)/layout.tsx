@@ -1,6 +1,7 @@
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
+import DemoBanner from '@/components/layout/DemoBanner';
 import PageTransition from '@/components/shared/PageTransition';
 import ProjectProvider from '@/components/providers/ProjectProvider';
 import RailBotTrigger from '@/components/railbot/RailBotTrigger';
@@ -19,6 +20,7 @@ export default function AppLayout({
         {/* Main content area */}
         <div className="flex flex-col flex-1 min-w-0">
           <Topbar />
+          <DemoBanner />
 
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-6 lg:pb-8">
             <div className="mx-auto max-w-screen-2xl">

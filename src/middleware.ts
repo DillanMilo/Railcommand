@@ -42,7 +42,10 @@ export async function middleware(request: NextRequest) {
   // Public routes that never require auth
   const isPublicRoute =
     pathname === '/login' ||
-    pathname.startsWith('/auth/');
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/demo/') ||
+    pathname === '/api/admin/demo/lookup' ||
+    pathname === '/api/admin/demo/track';
 
   // If not authenticated, not demo, and not on a public route → redirect to login
   if (!user && !isDemoMode && !isPublicRoute) {

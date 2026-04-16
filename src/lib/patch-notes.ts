@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.1.0',
+    version: '2.1.0',
+    title: 'Enterprise Demo Accounts',
+    description: 'New enterprise demo system for prospect presentations. Share a simple link — no sign-up required. Team demos support multiple logins with different roles (PM, Superintendent, Owner). Admin dashboard for creating, resetting, and managing demos. Full data isolation via RLS policies.',
+    date: '2026-04-15',
+  },
+  {
     id: 'v1.14.0',
     version: '1.14.0',
     title: 'RBAC Management',
