@@ -27,12 +27,14 @@ This document covers everything you need to know about the enterprise demo accou
 | Vercel env vars installed | ✅ Confirmed |
 | SQL migrations run | ✅ Confirmed (by cowork) |
 | Attachments RLS hardened | ✅ Confirmed (by cowork) |
-| Admin role set on `dillanxx@gmail.com` | ⬜ TODO — run SQL below |
+| Admin role set on `dillanxx@gmail.com` | ✅ Confirmed 2026-04-16 |
 | Vercel deploy complete | ⬜ Check Vercel dashboard |
-| Team demo created | ⬜ Via `/admin/demos` |
-| Team demo tested | ⬜ Via `/demo/team` incognito |
+| Team demo created | ✅ Live on production |
+| Team demo tested | ✅ Confirmed working |
 | UP prospect demo created | ⬜ After team demo works |
 | TVA prospect demo created | ⬜ After team demo works |
+
+**Production URL:** `https://railcommand.vercel.app`
 
 ---
 
@@ -258,3 +260,6 @@ To add a brand new prospect (e.g., CSX, BNSF, CPKC):
 | 2026-04-15 | Attachments RLS hardened (added `project_id` + membership policies) |
 | 2026-04-16 | Demo emails updated to real emails (`dillan@creativecurrents.io`, `caleb@lenaserv.com`, `mark.allen@a5rail.com`) |
 | 2026-04-16 | DEMO.md created |
+| 2026-04-16 | Confirmed `dillanxx@gmail.com` has admin role. Production URL: railcommand.vercel.app |
+| 2026-04-16 | Team demo created and tested working. Credentials shared with Mark & Caleb. |
+| 2026-04-16 | Fixed infinite recursion RLS bug on project_members + projects tables (was blocking invitation acceptance). Migration: `2026-04-16_fix_project_members_recursion.sql` |
