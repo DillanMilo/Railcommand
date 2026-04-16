@@ -31,6 +31,9 @@ This document covers everything you need to know about the enterprise demo accou
 | Vercel deploy complete | ⬜ Check Vercel dashboard |
 | Team demo created | ✅ Live on production |
 | Team demo tested | ✅ Confirmed working |
+| Invitation flow tested end-to-end | ✅ Confirmed working (2026-04-16) |
+| Leave Project flow tested | ✅ Confirmed working (2026-04-16) |
+| Enterprise RLS isolation | ✅ Confirmed (admin bypass removed) |
 | UP prospect demo created | ⬜ After team demo works |
 | TVA prospect demo created | ⬜ After team demo works |
 
