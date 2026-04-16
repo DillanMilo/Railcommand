@@ -556,9 +556,18 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                 </Button>
               )}
               {member.profile_id === currentUserId && (
-                <Badge variant="outline" className="absolute top-2 right-2 text-[10px]">
-                  You
-                </Badge>
+                <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[10px]">
+                    You
+                  </Badge>
+                  <button
+                    onClick={() => setLeaveDialogOpen(true)}
+                    className="text-[10px] text-red-600 hover:text-red-700 hover:underline px-1.5 py-0.5 rounded border border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950 transition-colors"
+                    title="Leave this project"
+                  >
+                    Leave
+                  </button>
+                </div>
               )}
               <CardContent className="px-4 space-y-3">
                 <div className="flex items-start gap-3">
