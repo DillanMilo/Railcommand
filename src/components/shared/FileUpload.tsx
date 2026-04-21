@@ -12,7 +12,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { uploadAttachment, deleteAttachment } from '@/lib/actions/attachments';
+import { recordAttachment, deleteAttachment } from '@/lib/actions/attachments';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
 import type { Attachment } from '@/lib/types';
 
 export interface PendingFile {
@@ -118,18 +120,43 @@ export default function FileUpload({
 
       setUploading((prev) => [...prev, ...pending]);
 
+      const supabase = createSupabaseBrowserClient();
+      const bucket = getBucket('document');
+
       for (const pf of pending) {
         try {
-          const formData = new FormData();
-          formData.append('file', pf.file);
-          formData.append('entity_type', entityType!);
-          formData.append('entity_id', entityId!);
-          formData.append('project_id', projectId!);
-          formData.append('photo_category', 'document');
+          const storagePath = buildStoragePath(projectId!, entityType!, entityId!, pf.file.name);
 
-          const result = await uploadAttachment(formData);
+          // 1. Upload directly to Supabase Storage — bypasses Vercel body limit.
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(storagePath, pf.file, { contentType: pf.file.type, upsert: false });
+
+          if (uploadError) {
+            setUploading((prev) =>
+              prev.map((f) =>
+                f.id === pf.id ? { ...f, uploading: false, uploadError: uploadError.message } : f
+              )
+            );
+            continue;
+          }
+
+          // 2. Record the attachment row via a tiny server action.
+          const result = await recordAttachment({
+            entityType: entityType!,
+            entityId: entityId!,
+            projectId: projectId!,
+            storagePath,
+            bucket,
+            fileName: pf.file.name,
+            fileType: pf.file.type,
+            fileSize: pf.file.size,
+            photoCategory: 'document',
+          });
 
           if (result.error) {
+            // Roll back the uploaded object if the DB insert failed.
+            await supabase.storage.from(bucket).remove([storagePath]);
             setUploading((prev) =>
               prev.map((f) =>
                 f.id === pf.id ? { ...f, uploading: false, uploadError: result.error } : f
@@ -139,10 +166,11 @@ export default function FileUpload({
             setUploading((prev) => prev.filter((f) => f.id !== pf.id));
             if (result.data) onUploadComplete?.(result.data);
           }
-        } catch {
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Upload failed';
           setUploading((prev) =>
             prev.map((f) =>
-              f.id === pf.id ? { ...f, uploading: false, uploadError: 'Upload failed' } : f
+              f.id === pf.id ? { ...f, uploading: false, uploadError: msg } : f
             )
           );
         }

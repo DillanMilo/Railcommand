@@ -5,18 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { getAuthenticatedUser } from './permissions-helper';
 import type { ActionResult } from './permissions-helper';
 import type { Attachment } from '@/lib/types';
+import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
-
-const BUCKET_MAP: Record<string, string> = {
-  standard: 'project-photos',
-  thermal: 'thermal-photos',
-  document: 'project-documents',
-};
-
-function getBucket(category: string): string {
-  return BUCKET_MAP[category] ?? 'project-photos';
-}
 
 export async function uploadAttachment(
   formData: FormData
@@ -48,8 +39,7 @@ export async function uploadAttachment(
     }
 
     const bucket = getBucket(photoCategory);
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `${projectId}/${entityType}/${entityId}/${Date.now()}-${safeName}`;
+    const storagePath = buildStoragePath(projectId, entityType, entityId, file.name);
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -91,6 +81,81 @@ export async function uploadAttachment(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : 'Upload failed',
+    };
+  }
+}
+
+/**
+ * Record an attachment row after the browser has already uploaded the file
+ * directly to Supabase Storage. This avoids routing file bytes through
+ * Vercel's Server Action body (which caps well below real project file
+ * sizes even on Pro + Fluid Compute).
+ *
+ * The payload is tiny (path + metadata), so it passes Vercel's body limit
+ * trivially. RLS on the attachments table still enforces project membership.
+ */
+export async function recordAttachment(input: {
+  entityType: string;
+  entityId: string;
+  projectId: string;
+  storagePath: string;
+  bucket: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  photoCategory?: string;
+  geoLat?: number | null;
+  geoLng?: number | null;
+  capturedAt?: string | null;
+}): Promise<ActionResult<Attachment>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    if (!input.entityType || !input.entityId || !input.projectId || !input.storagePath) {
+      return { error: 'Missing required fields' };
+    }
+
+    if (input.fileSize > MAX_FILE_SIZE) {
+      return { error: `File size exceeds maximum of ${MAX_FILE_SIZE / (1024 * 1024)}MB` };
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(input.bucket)
+      .getPublicUrl(input.storagePath);
+    const fileUrl = urlData.publicUrl;
+
+    const { data: attachment, error: dbError } = await supabase
+      .from('attachments')
+      .insert({
+        entity_type: input.entityType,
+        entity_id: input.entityId,
+        project_id: input.projectId,
+        file_name: input.fileName,
+        file_url: fileUrl,
+        file_type: input.fileType,
+        file_size: input.fileSize,
+        photo_category: input.photoCategory ?? 'document',
+        geo_lat: input.geoLat ?? null,
+        geo_lng: input.geoLng ?? null,
+        uploaded_by: user.id,
+        captured_at: input.capturedAt ?? new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      // Best-effort cleanup — orphan object otherwise
+      await supabase.storage.from(input.bucket).remove([input.storagePath]);
+      return { error: dbError.message };
+    }
+
+    revalidatePath(`/projects/${input.projectId}`);
+    return { success: true, data: attachment as Attachment };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to record attachment',
     };
   }
 }

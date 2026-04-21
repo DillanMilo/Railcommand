@@ -1,4 +1,6 @@
-import { uploadAttachment } from '@/lib/actions/attachments';
+import { uploadAttachment, recordAttachment } from '@/lib/actions/attachments';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
 import { compressImage } from '@/lib/compressImage';
 import type { PhotoFile } from '@/components/shared/PhotoUpload';
 
@@ -84,19 +86,40 @@ export async function uploadFilesAfterCreate(
 ): Promise<UploadResult> {
   const result: UploadResult = { total: files.length, succeeded: 0, failed: 0, errors: [] };
 
+  const supabase = createSupabaseBrowserClient();
+  const bucket = getBucket('document');
+
   const uploadPromises = files.map(async (file) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('entity_type', entityType);
-      formData.append('entity_id', entityId);
-      formData.append('project_id', projectId);
-      formData.append('photo_category', 'document');
+      const storagePath = buildStoragePath(projectId, entityType, entityId, file.name);
 
-      const uploadResult = await uploadAttachment(formData);
-      if (uploadResult.error) {
-        return { success: false, name: file.name, error: uploadResult.error };
+      // 1. Direct upload to Supabase Storage — bypasses Vercel body limits.
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) {
+        return { success: false, name: file.name, error: uploadError.message };
       }
+
+      // 2. Tiny server action to record the attachment row.
+      const recordResult = await recordAttachment({
+        entityType,
+        entityId,
+        projectId,
+        storagePath,
+        bucket,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        photoCategory: 'document',
+      });
+
+      if (recordResult.error) {
+        await supabase.storage.from(bucket).remove([storagePath]);
+        return { success: false, name: file.name, error: recordResult.error };
+      }
+
       return { success: true, name: file.name };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
