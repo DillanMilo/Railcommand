@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from './permissions-helper';
 import type { ActionResult } from './permissions-helper';
 import type { Attachment } from '@/lib/types';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
 const BUCKET_MAP: Record<string, string> = {
   standard: 'project-photos',

@@ -47,7 +47,7 @@ interface FileUploadProps {
 }
 
 const DEFAULT_ACCEPT = '.pdf,.doc,.docx,.dwg,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp,.heic';
-const DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const DEFAULT_MAX_SIZE = 100 * 1024 * 1024; // 100 MB
 
 function getFileIcon(fileType: string) {
   if (fileType.startsWith('image/')) return <ImageIcon className="size-4 text-blue-500" />;
