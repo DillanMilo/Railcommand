@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.2.0',
+    version: '2.2.0',
+    title: 'Document Uploads',
+    description: 'Upload files to the Documents section directly from your phone or computer. Drag and drop or tap to browse — the same upload flow used for submittals is now available on the Documents create page and each document detail page. Supports PDFs, drawings (DWG), images, and Office files up to 10 MB each.',
+    date: '2026-04-21',
+  },
+  {
     id: 'v2.1.0',
     version: '2.1.0',
     title: 'Enterprise Demo Accounts',
