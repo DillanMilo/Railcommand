@@ -206,13 +206,13 @@ export async function getAttachments(
 }
 
 /** Buckets that require signed URLs (private buckets). */
-const PRIVATE_BUCKETS = new Set(['project-photos', 'thermal-photos']);
+const PRIVATE_BUCKETS = new Set(['project-photos', 'thermal-photos', 'project-documents']);
 
 /**
  * Fetch all attachments for an entity and batch-resolve signed URLs for
- * private photo buckets (project-photos, thermal-photos).
+ * private buckets (project-photos, thermal-photos, project-documents).
  *
- * Attachments in public buckets (project-documents, avatars) are returned
+ * Attachments in public buckets (avatars) are returned
  * with `signed_url` left undefined — callers should fall back to `file_url`.
  */
 export async function getAttachmentsWithSignedUrls(
