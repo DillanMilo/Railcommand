@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.2.1',
+    version: '2.2.1',
+    title: 'Larger Uploads — 100 MB per file',
+    description: 'The per-file upload limit has been raised from 10 MB to 100 MB across the entire app (Documents, Submittals, RFIs, Daily Logs, Punch List, Safety). Full plan sets, DWG drawings, geotech reports, and SWPPP plans should now upload without needing to be compressed. Large uploads on slow mobile connections may take a few minutes — stay on the page until the spinner finishes.',
+    date: '2026-04-21',
+  },
+  {
     id: 'v2.2.0',
     version: '2.2.0',
     title: 'Document Uploads',
