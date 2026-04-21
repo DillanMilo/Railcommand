@@ -10,13 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import FileUpload from '@/components/shared/FileUpload';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMilestones } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
-import { DOCUMENT_CATEGORY_LABELS } from '@/lib/constants';
-import { addProjectDocument as storeAddDocument } from '@/lib/store';
+import { addProjectDocument as storeAddDocument, addAttachment as storeAddAttachment } from '@/lib/store';
 import { createProjectDocument } from '@/lib/actions/documents';
+import { uploadFilesAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import type { DocumentCategory } from '@/lib/types';
 
 const CATEGORIES: { label: string; value: DocumentCategory }[] = [
@@ -45,29 +46,43 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
   const [revision, setRevision] = useState('Rev 0');
   const [revisionDate, setRevisionDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
-  const [fileName, setFileName] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [linkedMilestoneId, setLinkedMilestoneId] = useState<string>('none');
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
     setSubmitting(true);
 
+    const primaryFile = files[0];
     const payload = {
       title,
       category,
       revision,
       revision_date: revisionDate,
       description,
-      file_name: fileName,
+      file_name: primaryFile?.name ?? '',
+      file_size: primaryFile?.size ?? 0,
       linked_milestone_id: linkedMilestoneId === 'none' ? null : linkedMilestoneId,
     };
 
     if (isDemo) {
       const doc = storeAddDocument(projectId, payload);
+      for (const file of files) {
+        storeAddAttachment({
+          entity_type: 'project_document',
+          entity_id: doc.id,
+          project_id: projectId,
+          file_name: file.name,
+          file_url: URL.createObjectURL(file),
+          file_type: file.type,
+          file_size: file.size,
+        });
+      }
       setSuccess(true);
       setTimeout(() => router.push(`${basePath}/${doc.id}`), 1200);
       return;
@@ -75,18 +90,28 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
 
     const result = await createProjectDocument(projectId, payload);
 
-    if (result.error) {
-      setErrorMsg(result.error);
+    if (result.error || !result.data) {
+      setErrorMsg(result.error ?? 'Failed to create document');
       setSubmitting(false);
       return;
     }
 
-    setSuccess(true);
-    if (result.data) {
-      setTimeout(() => router.push(`${basePath}/${result.data!.id}`), 1200);
-    } else {
-      setTimeout(() => router.push(basePath), 1200);
+    const createdDoc = result.data;
+
+    if (files.length > 0) {
+      setUploadProgress(`Uploading ${files.length} file${files.length !== 1 ? 's' : ''}…`);
+      const uploadResult = await uploadFilesAfterCreate(files, 'project_document', createdDoc.id, projectId);
+      setUploadProgress(null);
+
+      if (uploadResult.failed > 0) {
+        setErrorMsg(`${uploadResult.succeeded} of ${uploadResult.total} files uploaded. ${uploadResult.failed} failed.`);
+        setSubmitting(false);
+        return;
+      }
     }
+
+    setSuccess(true);
+    setTimeout(() => router.push(`${basePath}/${createdDoc.id}`), 1200);
   }
 
   if (!can(ACTIONS.DOCUMENT_MANAGE)) {
@@ -123,7 +148,7 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
       <h1 className="font-heading text-2xl font-bold">Upload Document</h1>
 
       <p className="text-sm text-muted-foreground">
-        Track document metadata here. Actual file upload/storage will be available in a future update.
+        Add document metadata and upload one or more files from your phone or computer.
       </p>
 
       {errorMsg && (
@@ -132,63 +157,68 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
         </div>
       )}
 
-      <Card className="max-w-3xl">
-        <CardHeader><CardTitle className="text-base">Document Details</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Title <span className="text-red-500">*</span></label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Document title" required className="mt-1" />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Document Details</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Category <span className="text-red-500">*</span></label>
-                <Select value={category} onValueChange={(v) => setCategory(v as DocumentCategory)}>
-                  <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium">Title <span className="text-red-500">*</span></label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Document title" required className="mt-1" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium">Category <span className="text-red-500">*</span></label>
+                  <Select value={category} onValueChange={(v) => setCategory(v as DocumentCategory)}>
+                    <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Revision</label>
+                  <Input value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="Rev 0" className="mt-1" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Revision Date</label>
+                  <Input type="date" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Linked Milestone (optional)</label>
+                  <Select value={linkedMilestoneId} onValueChange={setLinkedMilestoneId}>
+                    <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {milestones.map((ms) => (
+                        <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
-                <label className="text-sm font-medium">Revision</label>
-                <Input value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="Rev 0" className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Revision Date</label>
-                <Input type="date" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">File Name</label>
-                <Input value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="e.g. track-layout-siding1.pdf" className="mt-1" />
+                <label className="text-sm font-medium">Description</label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of this document..." rows={3} className="mt-1" />
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium">Description</label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of this document..." rows={3} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Linked Milestone (optional)</label>
-              <Select value={linkedMilestoneId} onValueChange={setLinkedMilestoneId}>
-                <SelectTrigger className="mt-1 w-full"><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {milestones.map((ms) => (
-                    <SelectItem key={ms.id} value={ms.id}>{ms.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button type="submit" disabled={submitting || success} className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">
-                {submitting ? 'Creating...' : 'Create Document'}
-              </Button>
-              <Button type="button" variant="outline" className="w-full sm:w-auto" asChild><Link href={basePath}>Cancel</Link></Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        <FileUpload
+          pendingFiles={files}
+          onPendingFilesChange={setFiles}
+          accept=".pdf,.dwg,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.webp,.heic"
+          title="Attachments"
+        />
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Button type="submit" disabled={submitting || success} className="bg-rc-orange hover:bg-rc-orange-dark text-white w-full sm:w-auto">
+            {uploadProgress ?? (submitting ? 'Creating…' : 'Create Document')}
+          </Button>
+          <Button type="button" variant="outline" className="w-full sm:w-auto" asChild><Link href={basePath}>Cancel</Link></Button>
+        </div>
+      </form>
     </div>
   );
 }

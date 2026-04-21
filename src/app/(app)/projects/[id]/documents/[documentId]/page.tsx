@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
@@ -10,15 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import FileUpload from '@/components/shared/FileUpload';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectDocumentDetail, useMilestones } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
-import { updateProjectDocument as storeUpdateDocument, deleteProjectDocument as storeDeleteDocument } from '@/lib/store';
+import { updateProjectDocument as storeUpdateDocument, deleteProjectDocument as storeDeleteDocument, getAttachments as storeGetAttachments } from '@/lib/store';
 import { updateProjectDocument, deleteProjectDocument } from '@/lib/actions/documents';
+import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
 import { DOCUMENT_STATUS_COLORS, DOCUMENT_STATUS_LABELS, DOCUMENT_CATEGORY_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import type { DocumentStatus } from '@/lib/types';
+import type { Attachment, DocumentStatus } from '@/lib/types';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '--';
@@ -49,6 +51,17 @@ export default function DocumentDetailPage({ params, searchParams }: { params: P
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const loadAttachments = useCallback(async () => {
+    if (isDemo) {
+      setAttachments(storeGetAttachments('project_document', documentId));
+      return;
+    }
+    const result = await getAttachmentsWithSignedUrls('project_document', documentId);
+    if (result.data) setAttachments(result.data);
+  }, [isDemo, documentId]);
+  useEffect(() => { loadAttachments(); }, [loadAttachments]);
 
   const basePath = `/projects/${projectId}/documents`;
 
@@ -180,7 +193,19 @@ export default function DocumentDetailPage({ params, searchParams }: { params: P
         </Card>
       )}
 
-      {/* File Info */}
+      {/* Attachments */}
+      <FileUpload
+        existingAttachments={attachments}
+        entityType="project_document"
+        entityId={documentId}
+        projectId={projectId}
+        onUploadComplete={() => loadAttachments()}
+        onDeleteComplete={() => loadAttachments()}
+        accept=".pdf,.dwg,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.webp,.heic"
+        title={`Attachments (${attachments.length})`}
+      />
+
+      {/* File Info (metadata) */}
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">File Information</CardTitle></CardHeader>
         <CardContent className="space-y-2">
