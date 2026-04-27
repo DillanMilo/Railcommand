@@ -63,7 +63,7 @@ async function main() {
               </h2>
               <p style="margin:0 0 12px;color:#334155;font-size:15px;line-height:1.6;">
                 If you're reading this, email delivery from
-                <strong>railcommand.a5rail.com</strong> is working correctly!
+                <strong>railcommand.io</strong> is working correctly!
               </p>
               <p style="margin:0;color:#94a3b8;font-size:13px;">
                 Sent at: ${timestamp}
@@ -90,7 +90,7 @@ async function main() {
   console.log(`Sending test email to ${recipient}...`);
 
   const { data, error } = await resend.emails.send({
-    from: 'RailCommand <noreply@railcommand.a5rail.com>',
+    from: process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>',
     to: recipient,
     subject: 'RailCommand Email Test',
     html,

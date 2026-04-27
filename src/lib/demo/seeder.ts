@@ -301,13 +301,13 @@ interface NPCMember {
 
 function generateNPCTeamMembers(orgId: string): NPCMember[] {
   return [
-    { email: `npc-foreman-${Date.now()}@demo.railcommand.app`, fullName: 'Bobby Hernandez', phone: '(720) 555-0201', orgRole: 'member', orgId },
-    { email: `npc-contractor-${Date.now()}a@demo.railcommand.app`, fullName: 'Travis Mitchell', phone: '(720) 555-0202', orgRole: 'member', orgId },
-    { email: `npc-inspector-${Date.now()}@demo.railcommand.app`, fullName: 'Patricia Morrison', phone: '(303) 555-0501', orgRole: 'viewer', orgId },
-    { email: `npc-engineer-${Date.now()}@demo.railcommand.app`, fullName: 'Dr. Nathan Park', phone: '(303) 555-0601', orgRole: 'manager', orgId },
-    { email: `npc-contractor-${Date.now()}b@demo.railcommand.app`, fullName: 'Derek Washington', phone: '(303) 555-0301', orgRole: 'member', orgId },
-    { email: `npc-foreman2-${Date.now()}@demo.railcommand.app`, fullName: 'Jake Turner', phone: '(719) 555-0401', orgRole: 'member', orgId },
-    { email: `npc-contractor-${Date.now()}c@demo.railcommand.app`, fullName: 'Amy Larson', phone: '(720) 555-0203', orgRole: 'member', orgId },
+    { email: `npc-foreman-${Date.now()}@demo.railcommand.io`, fullName: 'Bobby Hernandez', phone: '(720) 555-0201', orgRole: 'member', orgId },
+    { email: `npc-contractor-${Date.now()}a@demo.railcommand.io`, fullName: 'Travis Mitchell', phone: '(720) 555-0202', orgRole: 'member', orgId },
+    { email: `npc-inspector-${Date.now()}@demo.railcommand.io`, fullName: 'Patricia Morrison', phone: '(303) 555-0501', orgRole: 'viewer', orgId },
+    { email: `npc-engineer-${Date.now()}@demo.railcommand.io`, fullName: 'Dr. Nathan Park', phone: '(303) 555-0601', orgRole: 'manager', orgId },
+    { email: `npc-contractor-${Date.now()}b@demo.railcommand.io`, fullName: 'Derek Washington', phone: '(303) 555-0301', orgRole: 'member', orgId },
+    { email: `npc-foreman2-${Date.now()}@demo.railcommand.io`, fullName: 'Jake Turner', phone: '(719) 555-0401', orgRole: 'member', orgId },
+    { email: `npc-contractor-${Date.now()}c@demo.railcommand.io`, fullName: 'Amy Larson', phone: '(720) 555-0203', orgRole: 'member', orgId },
   ];
 }
 

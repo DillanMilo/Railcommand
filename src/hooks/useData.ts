@@ -369,7 +369,7 @@ export function useProjectDocumentDetail(projectId: string, documentId: string) 
 
 export function usePendingInvitations() {
   return useQuery<ProjectInvitation[]>(
-    () => store.getUserInvitations('demo@railcommand.app'),
+    () => store.getUserInvitations('demo@railcommand.io'),
     async () => {
       const result = await fetchPendingInvitations();
       return { data: result.data ?? [], error: result.error };

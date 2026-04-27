@@ -462,7 +462,7 @@ export default function ProfilePage() {
                 aria-label="Email address (read-only)"
               />
               <p className="text-xs text-muted-foreground">
-                Email is managed by your sign-in provider. Contact support@railcommand.com to change it.
+                Email is managed by your sign-in provider. Contact support@railcommand.io to change it.
               </p>
             </div>
 
@@ -734,7 +734,7 @@ export default function ProfilePage() {
           <div className="rounded-lg border border-rc-border bg-muted/40 dark:bg-muted/15 p-4 text-sm text-muted-foreground leading-relaxed">
             To delete your account and all associated data, please contact support
             at{' '}
-            <span className="font-medium text-foreground">support@railcommand.com</span>{' '}
+            <span className="font-medium text-foreground">support@railcommand.io</span>{' '}
             or reach out to your organization administrator. This ensures all project
             data is properly transferred or archived before removal.
           </div>

@@ -120,7 +120,7 @@ export const DEMO_PRESETS: Record<string, DemoPreset> = {
     },
     primaryUser: {
       fullName: 'Demo Project Manager',
-      email: 'up-demo@railcommand.app',
+      email: 'up-demo@railcommand.io',
       password: 'RailDemo2026!up',
       orgRole: 'admin',
       projectRole: 'manager',
@@ -143,7 +143,7 @@ export const DEMO_PRESETS: Record<string, DemoPreset> = {
     },
     primaryUser: {
       fullName: 'Demo Project Manager',
-      email: 'tva-demo@railcommand.app',
+      email: 'tva-demo@railcommand.io',
       password: 'RailDemo2026!tva',
       orgRole: 'admin',
       projectRole: 'manager',

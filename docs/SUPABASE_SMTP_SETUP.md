@@ -25,7 +25,7 @@ Open the Supabase Dashboard for the project:
 | Username           | `resend`                             |
 | Password           | _(RESEND_API_KEY from Vercel env vars)_ |
 | Sender name        | `RailCommand`                        |
-| Sender email       | `noreply@railcommand.a5rail.com`     |
+| Sender email       | `noreply@railcommand.io`     |
 | Minimum interval   | `0` seconds                          |
 
 Click **Save**.
@@ -47,14 +47,14 @@ All Supabase Auth emails will now route through Resend:
 
 1. Open the RailCommand login page.
 2. Click "Forgot password" and enter a valid email address.
-3. Verify the reset email arrives from `noreply@railcommand.a5rail.com`.
+3. Verify the reset email arrives from `noreply@railcommand.io`.
 4. Check the Resend dashboard for delivery status if the email does not arrive.
 
 ---
 
 ## 5. Important Notes
 
-- The `RESEND_API_KEY` must have sending permission for the `railcommand.a5rail.com` domain in Resend.
+- The `RESEND_API_KEY` must have sending permission for the `railcommand.io` domain in Resend.
 - Google OAuth sign-in is **unaffected** by this change.
 - The 3/hour throttle only applies to Supabase's built-in mailer. Once custom SMTP is configured, Supabase imposes no send-rate limit (Resend handles its own rate limiting).
 - The minimum interval of 0 seconds is safe because Resend manages rate limiting on their end.

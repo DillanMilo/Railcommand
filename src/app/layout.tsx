@@ -24,6 +24,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://railcommand.io"),
   title: {
     default: "RailCommand",
     template: "%s | RailCommand",
@@ -47,6 +48,7 @@ export const metadata: Metadata = {
     title: "RailCommand",
     description:
       "Construction & Rail Project Management -- track submittals, RFIs, daily logs, punch lists, and schedules in one place.",
+    url: "https://railcommand.io",
     siteName: "RailCommand",
     type: "website",
   },

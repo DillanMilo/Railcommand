@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.a5rail.com>';
+const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
 
 // Simple in-memory rate limiter (resets on cold start — fine for serverless)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();

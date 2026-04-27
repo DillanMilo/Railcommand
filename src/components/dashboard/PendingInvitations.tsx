@@ -23,7 +23,7 @@ export default function PendingInvitations() {
     async function fetchInvitations() {
       if (isDemo) {
         // In demo mode, use the store with a placeholder email
-        const demoInvitations = getUserInvitations('demo@railcommand.app');
+        const demoInvitations = getUserInvitations('demo@railcommand.io');
         if (!cancelled) {
           setInvitations(demoInvitations);
           setLoading(false);
