@@ -5764,6 +5764,98 @@ The middleware (`src/middleware.ts`) now includes onboarding checks after auth v
 
 ---
 
-*Document updated: March 3, 2026*
+## 28. Enterprise Production Readiness Reference
+
+This section captures the April 28, 2026 production-domain and backend security pass for `railcommand.io`. It is intended as a practical launch reference, not a broad rewrite plan.
+
+### 28.1 Completed Production Cutover Checks
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Production domain | Complete | `railcommand.io` is live on Vercel with valid TLS. |
+| `www` redirect | Complete | `www.railcommand.io` redirects to `https://railcommand.io/`. |
+| Resend sending domain | Complete | `noreply@railcommand.io` is verified and sending. |
+| Support forwarding | Complete | Cloudflare Email Routing forwards `support@railcommand.io`; catch-all is enabled. |
+| Supabase Auth URLs | Complete | Site URL and redirect URLs include `railcommand.io` and `www.railcommand.io`. |
+| Google OAuth redirects | Complete | OAuth client includes `railcommand.io/auth/callback` and `www.railcommand.io/auth/callback`. |
+| Invitation email smoke test | Complete | Production invite to `xhourrides@gmail.com` was received. |
+| Team plan enforcement | Complete | Invitation tier check uses authorized server-side tier lookup and no longer downgrades hidden org rows to Free. |
+| Team plan display | Complete | Team page displays the live Supabase organization plan; example verified as `Enterprise plan`. |
+
+### 28.2 Live Security Checks Performed
+
+These checks were performed without deleting, updating, or rewriting user data.
+
+| Check | Result |
+|-------|--------|
+| Anonymous reads on core production tables | Passed. Core tables returned zero rows with the anon key. |
+| Private storage buckets | Passed. `project-photos`, `thermal-photos`, and `project-documents` are private; anonymous download failed even with known object-path shape. |
+| Cron route protection | Passed. `CRON_SECRET` is set in Vercel Production and Preview. |
+| Service-role key exposure | Passed in code review. `SUPABASE_SERVICE_ROLE_KEY` is only used from server-side modules/routes. |
+| Demo credential direct table reads | Fixed. Public SELECT policies were removed from `demo_accounts` and `demo_team_logins`. |
+| Demo lookup route | Passed after fix. Public demo lookup still works through the server route for known active slugs. |
+
+### 28.3 Demo Credential Lockdown
+
+The migration `docs/migrations/2026-04-28_lock_down_demo_credentials.sql` removes direct anonymous table access to demo credential tables:
+
+```sql
+drop policy if exists "demo_accounts_select"
+  on public.demo_accounts;
+
+drop policy if exists "demo_team_logins_select"
+  on public.demo_team_logins;
+```
+
+This migration does not delete or update data. It only removes permissive SELECT policies. Demo pages should continue to use the public server route:
+
+```text
+GET /api/admin/demo/lookup?slug={slug}
+```
+
+That route uses the service-role client server-side to return only the demo login data required for a known valid slug.
+
+### 28.4 Supabase Auth Rate Limits
+
+Current observed Supabase Auth rate limits:
+
+| Limit | Current Value | Enterprise Note |
+|-------|---------------|-----------------|
+| Email sends | `30 emails/hour` | Increase before larger onboarding waves. |
+| Sign-ups/sign-ins | `30 requests / 5 min` per IP | Reasonable for pilot use; monitor during launch. |
+| Token verification | `30 requests / 5 min` per IP | Reasonable for pilot use. |
+| Token refresh | `150 requests / 5 min` per IP | Reasonable for normal app usage. |
+
+For an enterprise onboarding event, raise the email-send limit in Supabase Auth settings before inviting a large group.
+
+### 28.5 Remaining Enterprise Hardening Checklist
+
+Keep this checklist focused on concrete risk. Avoid speculative refactors unless a check fails.
+
+1. Table-by-table RLS review in Supabase SQL editor:
+   - Confirm every project-scoped table requires membership on SELECT.
+   - Confirm writes require the matching app permission or RLS equivalent.
+   - Confirm admin-only/demo tables are not directly readable by anon/authenticated roles unless intentionally public.
+2. Two-user isolation test:
+   - User A in Project A should not see Project B records.
+   - User B in Project B should not see Project A records.
+   - Non-manager roles should fail team-management actions.
+3. Storage isolation test:
+   - User without project membership cannot list/download project files.
+   - Project member can access only files under projects they belong to.
+4. Production operational settings:
+   - Confirm Supabase backups/PITR plan meets client requirements.
+   - Confirm logs and alerting expectations.
+   - Confirm incident recovery process and owner.
+5. Launch email capacity:
+   - Raise Auth email rate limits if the expected invite/signup volume exceeds 30 emails/hour.
+
+### 28.6 Practical Launch Position
+
+The current state is appropriate for controlled enterprise demos and pilot usage with monitored onboarding. Before a broad enterprise rollout, complete the remaining RLS isolation tests above and adjust Auth email rate limits for the expected invite volume.
+
+---
+
+*Document updated: April 28, 2026*
 *Product: RailCommand -- by A5 Rail*
 *Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
