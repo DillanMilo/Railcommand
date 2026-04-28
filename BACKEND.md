@@ -5241,13 +5241,28 @@ CREATE POLICY "Authenticated users can insert activity log"
 ### 24.6 Entity Number Sequences Policy
 
 ```sql
--- Allow the trigger function to manage sequences (service role)
--- Regular users don't need direct access to this table
-CREATE POLICY "Allow sequence management"
+-- Allow authenticated project members to manage sequence counters for projects
+-- they belong to. Anonymous clients must not be able to read or mutate counters.
+CREATE POLICY "Project members can manage entity number sequences"
   ON public.entity_number_sequences
   FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.project_members pm
+      WHERE pm.project_id = entity_number_sequences.project_id
+        AND pm.profile_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.project_members pm
+      WHERE pm.project_id = entity_number_sequences.project_id
+        AND pm.profile_id = auth.uid()
+    )
+  );
 ```
 
 ---
@@ -5794,6 +5809,10 @@ These checks were performed without deleting, updating, or rewriting user data.
 | Service-role key exposure | Passed in code review. `SUPABASE_SERVICE_ROLE_KEY` is only used from server-side modules/routes. |
 | Demo credential direct table reads | Fixed. Public SELECT policies were removed from `demo_accounts` and `demo_team_logins`. |
 | Demo lookup route | Passed after fix. Public demo lookup still works through the server route for known active slugs. |
+| Entity number sequence RLS | Fixed. Per-project counters are limited to authenticated project members instead of `USING (true)`. |
+| Table-by-table RLS catalog review | Passed with one fix. Public app tables have RLS enabled; the only broad counter policy was tightened. |
+| Two-project isolation smoke test | Passed. A demo project user saw their own project records and zero rows for a separate project. |
+| Storage isolation smoke test | Passed. A project document in the user's own project downloaded; a private object outside the project was denied. |
 
 ### 28.3 Demo Credential Lockdown
 
@@ -5828,31 +5847,36 @@ Current observed Supabase Auth rate limits:
 
 For an enterprise onboarding event, raise the email-send limit in Supabase Auth settings before inviting a large group.
 
-### 28.5 Remaining Enterprise Hardening Checklist
+### 28.5 Completed Enterprise Hardening Pass
+
+Completed on April 28, 2026:
+
+1. Live Supabase catalog review confirmed public app tables have RLS enabled.
+2. Anonymous API checks across 27 app tables returned zero visible rows.
+3. Demo credential tables remain server-only with no direct public policies.
+4. `entity_number_sequences` no longer has a public `USING (true)` policy.
+5. A real demo login could read its own project records but not a separate project's rows.
+6. Private storage access respected project membership boundaries.
+7. Admin demo management endpoints redirect unauthenticated requests to `/login`.
+8. Public demo lookup still works for valid active demo slugs.
+
+### 28.6 Remaining Enterprise Hardening Checklist
 
 Keep this checklist focused on concrete risk. Avoid speculative refactors unless a check fails.
 
-1. Table-by-table RLS review in Supabase SQL editor:
-   - Confirm every project-scoped table requires membership on SELECT.
-   - Confirm writes require the matching app permission or RLS equivalent.
-   - Confirm admin-only/demo tables are not directly readable by anon/authenticated roles unless intentionally public.
-2. Two-user isolation test:
-   - User A in Project A should not see Project B records.
-   - User B in Project B should not see Project A records.
+1. Role-specific mutation test with a non-manager/non-admin account:
    - Non-manager roles should fail team-management actions.
-3. Storage isolation test:
-   - User without project membership cannot list/download project files.
-   - Project member can access only files under projects they belong to.
-4. Production operational settings:
+   - Viewer roles should fail create/update/delete actions.
+2. Production operational settings:
    - Confirm Supabase backups/PITR plan meets client requirements.
    - Confirm logs and alerting expectations.
    - Confirm incident recovery process and owner.
-5. Launch email capacity:
+3. Launch email capacity:
    - Raise Auth email rate limits if the expected invite/signup volume exceeds 30 emails/hour.
 
-### 28.6 Practical Launch Position
+### 28.7 Practical Launch Position
 
-The current state is appropriate for controlled enterprise demos and pilot usage with monitored onboarding. Before a broad enterprise rollout, complete the remaining RLS isolation tests above and adjust Auth email rate limits for the expected invite volume.
+The current state is appropriate for controlled enterprise demos and pilot usage with monitored onboarding. Before a broad enterprise rollout, complete the remaining role-specific mutation test and adjust Auth email rate limits for the expected invite volume.
 
 ---
 
