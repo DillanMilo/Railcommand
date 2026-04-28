@@ -30,6 +30,7 @@ export async function createInvitation(
 
     const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.TEAM_MANAGE);
     if (!perm.allowed) return { error: perm.error };
+    const adminClient = createAdminClient();
 
     // Get project + org for tier check
     const { data: project, error: projError } = await supabase
@@ -40,22 +41,26 @@ export async function createInvitation(
 
     if (projError || !project) return { error: 'Project not found' };
 
-    const { data: org } = await supabase
+    // Use the admin client after authorization so RLS on organizations cannot
+    // silently hide the tier and downgrade an eligible org to the free limit.
+    const { data: org, error: orgError } = await adminClient
       .from('organizations')
       .select('tier')
       .eq('id', project.organization_id)
       .single();
 
+    if (orgError || !org) return { error: 'Organization plan not found' };
+
     const tier = (org?.tier ?? 'free') as Tier;
     const limit = TIER_LIMITS[tier];
 
     // Count existing members + pending invitations
-    const { count: memberCount } = await supabase
+    const { count: memberCount } = await adminClient
       .from('project_members')
       .select('id', { count: 'exact', head: true })
       .eq('project_id', projectId);
 
-    const { count: pendingCount } = await supabase
+    const { count: pendingCount } = await adminClient
       .from('project_invitations')
       .select('id', { count: 'exact', head: true })
       .eq('project_id', projectId)
@@ -111,7 +116,6 @@ export async function createInvitation(
     }
 
     // Check if user exists in auth and send email if they're new
-    const adminClient = createAdminClient();
     const { data: existingProfile } = await adminClient
       .from('profiles')
       .select('id')
