@@ -33,9 +33,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Allow demo-mode users through (cookie set by the "Explore Demo" button)
-  const isDemoMode =
+  const hasDemoModeCookie =
     request.cookies.get('rc-mode')?.value === 'demo' ||
     request.cookies.get('rc-mode')?.value === 'fresh';
+  const isDemoMode = !user && hasDemoModeCookie;
 
   const { pathname } = request.nextUrl;
 

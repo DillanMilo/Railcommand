@@ -109,13 +109,11 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     }
   }, [validUrlProject]);
 
-  // Check Supabase session and load projects for real auth users
+  // Check Supabase session and load projects for real auth users.
+  // A real authenticated session must win over stale demo/fresh mode flags; otherwise
+  // users who tried the demo before signing in can hit demo-only limits in production.
   useEffect(() => {
     const mode = localStorage.getItem(MODE_KEY);
-    if (mode === 'demo' || mode === 'fresh') {
-      setIsDemo(true);
-      return;
-    }
 
     // Guard against setState after unmount: if the provider tears down mid-flight
     // (e.g. fast navigation on a slow network), skip the writes so we don't leave
@@ -127,6 +125,10 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (cancelled) return;
       if (user) {
+        try {
+          localStorage.removeItem(MODE_KEY);
+          document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+        } catch { /* noop */ }
         setIsDemo(false);
         setCurrentUserIdState(user.id);
         // Fetch projects from the database
@@ -142,6 +144,11 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
             }
           }
         });
+      } else if (mode === 'demo' || mode === 'fresh') {
+        setIsDemo(true);
+        setStoredProjectId(getStoredProjectId(true));
+        setProjects(getStoreProjects());
+        setCurrentUserIdState(getCurrentUserId());
       } else {
         // No session and no demo mode — redirect to login
         router.push('/login');

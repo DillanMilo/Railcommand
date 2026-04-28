@@ -355,6 +355,10 @@ function LoginPageInner() {
       } else {
         document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
       }
+      try {
+        localStorage.removeItem('rc-mode');
+        document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+      } catch { /* noop */ }
       router.push('/dashboard');
     },
     [router, rememberMe]
@@ -385,8 +389,8 @@ function LoginPageInner() {
         document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
         initFreshData(data.fullName, data.email);
         try {
-          localStorage.setItem('rc-mode', 'fresh');
-          document.cookie = 'rc-mode=fresh; path=/; max-age=604800; SameSite=Lax';
+          localStorage.removeItem('rc-mode');
+          document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
         } catch { /* noop */ }
         router.push('/dashboard');
         return;
@@ -422,6 +426,10 @@ function LoginPageInner() {
     } else {
       document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
     }
+    try {
+      localStorage.removeItem('rc-mode');
+      document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+    } catch { /* noop */ }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
