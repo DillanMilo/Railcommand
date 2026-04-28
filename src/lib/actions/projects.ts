@@ -3,8 +3,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ACTIONS } from '@/lib/permissions';
-import type { Project } from '@/lib/types';
+import { TIER_LIMITS } from '@/lib/types';
+import type { Project, Tier } from '@/lib/types';
 import {
   type ActionResult,
   getAuthenticatedUser,
@@ -82,6 +84,44 @@ export async function getProjectById(projectId: string): Promise<ActionResult<Pr
     return { success: true, data: data as Project };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch project' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getProjectPlanInfo -- tier and member limit for a project organization
+// ---------------------------------------------------------------------------
+export async function getProjectPlanInfo(
+  projectId: string
+): Promise<ActionResult<{ tier: Tier; limit: number }>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const access = await checkProjectMembership(supabase, user.id, projectId);
+    if (!access.isMember) return { error: access.error };
+
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('organization_id')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) return { error: 'Project not found' };
+
+    const admin = createAdminClient();
+    const { data: org, error: orgError } = await admin
+      .from('organizations')
+      .select('tier')
+      .eq('id', project.organization_id)
+      .single();
+
+    if (orgError || !org) return { error: 'Organization plan not found' };
+
+    const tier = org.tier as Tier;
+    return { success: true, data: { tier, limit: TIER_LIMITS[tier] } };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to fetch project plan' };
   }
 }
 

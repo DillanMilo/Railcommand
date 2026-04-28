@@ -47,6 +47,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS, PERMISSION_MATRIX } from '@/lib/permissions';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { getProjectPlanInfo } from '@/lib/actions/projects';
 import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember, updateMemberRole as serverUpdateMemberRole, leaveProject as serverLeaveProject } from '@/lib/actions/team';
 import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation } from '@/lib/actions/invitations';
 import {
@@ -124,6 +125,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [inviteError, setInviteError] = useState('');
   const [projectInvitations, setProjectInvitations] = useState<ProjectInvitation[]>([]);
+  const [serverTierInfo, setServerTierInfo] = useState<{ tier: Tier; limit: number } | null>(null);
 
   // Fetch invitations
   const fetchInvitations = useCallback(async () => {
@@ -139,6 +141,21 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     fetchInvitations();
   }, [fetchInvitations]);
 
+  useEffect(() => {
+    if (isDemo) {
+      setServerTierInfo(null);
+      return;
+    }
+
+    let cancelled = false;
+    getProjectPlanInfo(projectId).then((result) => {
+      if (!cancelled && result.data) {
+        setServerTierInfo(result.data);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isDemo, projectId]);
+
   // Tier info
   const tierInfo = useMemo(() => {
     if (isDemo) {
@@ -150,9 +167,8 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
         return { tier, limit };
       }
     }
-    // Fallback: default to pro
-    return { tier: 'pro' as Tier, limit: TIER_LIMITS.pro };
-  }, [isDemo, projectId]);
+    return serverTierInfo;
+  }, [isDemo, projectId, serverTierInfo]);
 
   const pendingInvitations = useMemo(
     () => projectInvitations.filter((i) => i.status === 'pending'),
@@ -169,7 +185,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   }, [projectMembers]);
 
   const totalCount = members.length + pendingInvitations.length;
-  const atLimit = totalCount >= tierInfo.limit;
+  const atLimit = tierInfo ? totalCount >= tierInfo.limit : false;
 
   const availableProfiles = getProfiles().filter(
     (p) => !projectMembers.some((pm) => pm.profile_id === p.id)
@@ -260,7 +276,9 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
       if (isDemo) {
         // Check tier limit in demo mode
         if (atLimit) {
-          setInviteError(`Your ${tierInfo.tier} plan allows up to ${tierInfo.limit} members per project. Upgrade to add more.`);
+          const tier = tierInfo?.tier ?? 'free';
+          const limit = tierInfo?.limit ?? TIER_LIMITS.free;
+          setInviteError(`Your ${tier} plan allows up to ${limit} members per project. Upgrade to add more.`);
           setInviteSending(false);
           return;
         }
@@ -411,7 +429,9 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
               atLimit ? 'border-red-300 text-red-600 bg-red-50' : 'text-muted-foreground'
             )}
           >
-            {totalCount}/{tierInfo.limit === Infinity ? '\u221E' : tierInfo.limit} members ({tierInfo.tier.charAt(0).toUpperCase() + tierInfo.tier.slice(1)} plan)
+            {tierInfo
+              ? `${totalCount}/${tierInfo.limit === Infinity ? '\u221E' : tierInfo.limit} members (${tierInfo.tier.charAt(0).toUpperCase() + tierInfo.tier.slice(1)} plan)`
+              : `${totalCount} members`}
           </Badge>
         </div>
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
