@@ -5781,7 +5781,7 @@ The middleware (`src/middleware.ts`) now includes onboarding checks after auth v
 
 ## 28. Enterprise Production Readiness Reference
 
-This section captures the April 28, 2026 production-domain and backend security pass for `railcommand.io`. It is intended as a practical launch reference, not a broad rewrite plan.
+This section captures the April 28-29, 2026 production-domain, backend security, and v1 readiness pass for `railcommand.io`. It is intended as a practical launch reference, not a broad rewrite plan.
 
 ### 28.1 Completed Production Cutover Checks
 
@@ -5796,6 +5796,8 @@ This section captures the April 28, 2026 production-domain and backend security 
 | Invitation email smoke test | Complete | Production invite to `xhourrides@gmail.com` was received. |
 | Team plan enforcement | Complete | Invitation tier check uses authorized server-side tier lookup and no longer downgrades hidden org rows to Free. |
 | Team plan display | Complete | Team page displays the live Supabase organization plan; example verified as `Enterprise plan`. |
+| Production build | Complete | `npm run build` completed successfully on `main` on April 29, 2026. |
+| Vercel production deployment | Complete | Vercel deployment for `railcommand.io` is `Ready` and aliased to apex and `www`. |
 
 ### 28.2 Live Security Checks Performed
 
@@ -5847,7 +5849,25 @@ Current observed Supabase Auth rate limits:
 
 For an enterprise onboarding event, raise the email-send limit in Supabase Auth settings before inviting a large group.
 
-### 28.5 Completed Enterprise Hardening Pass
+### 28.5 V1 Smoke/Ops Check
+
+Completed on April 29, 2026:
+
+| Check | Result |
+|-------|--------|
+| Apex domain | Passed. `https://railcommand.io` responds and redirects unauthenticated users to `/login`. |
+| `www` redirect | Passed. `https://www.railcommand.io` returns a 301 to `https://railcommand.io/`. |
+| TLS | Passed. Certificate is valid for `railcommand.io`; observed expiry July 27, 2026. |
+| Login page UI | Passed. `/login` rendered successfully with no browser console errors. |
+| Demo dashboard UI | Passed. Demo entry reached `/dashboard`; dashboard data rendered with no browser console errors. |
+| Demo auth isolation | Passed. Demo login authenticated, saw its own project, and saw zero rows for another project. |
+| Anonymous table access | Passed. Anonymous API checks across 27 app tables returned zero visible rows. |
+| Storage buckets | Passed. `avatars` remains public; project photo/document buckets remain private. |
+| Vercel deployment | Passed. Production deployment status is `Ready`; aliases include apex and `www`. |
+| Supabase Auth limits | Needs launch planning. Email limit remains `30 emails/hour`; raise before a larger invite wave. |
+| Supabase backup/PITR plan | Needs owner confirmation. Dashboard database settings showed Free Plan messaging and current login lacks billing/admin permission to confirm or upgrade plan. |
+
+### 28.6 Completed Enterprise Hardening Pass
 
 Completed on April 28, 2026:
 
@@ -5860,26 +5880,29 @@ Completed on April 28, 2026:
 7. Admin demo management endpoints redirect unauthenticated requests to `/login`.
 8. Public demo lookup still works for valid active demo slugs.
 
-### 28.6 Remaining Enterprise Hardening Checklist
+### 28.7 Remaining V1 Exit Checklist
 
 Keep this checklist focused on concrete risk. Avoid speculative refactors unless a check fails.
 
 1. Role-specific mutation test with a non-manager/non-admin account:
    - Non-manager roles should fail team-management actions.
    - Viewer roles should fail create/update/delete actions.
-2. Production operational settings:
-   - Confirm Supabase backups/PITR plan meets client requirements.
-   - Confirm logs and alerting expectations.
-   - Confirm incident recovery process and owner.
+2. Supabase production plan:
+   - Confirm the project is on the intended paid plan for client launch.
+   - Confirm backup retention and whether PITR is required by the client.
+   - Upgrade before removing beta labeling if the dashboard still shows Free Plan messaging.
 3. Launch email capacity:
    - Raise Auth email rate limits if the expected invite/signup volume exceeds 30 emails/hour.
+4. Production ownership:
+   - Confirm logs and alerting expectations.
+   - Confirm incident recovery process and owner.
 
-### 28.7 Practical Launch Position
+### 28.8 Practical Launch Position
 
-The current state is appropriate for controlled enterprise demos and pilot usage with monitored onboarding. Before a broad enterprise rollout, complete the remaining role-specific mutation test and adjust Auth email rate limits for the expected invite volume.
+The current state is appropriate for controlled enterprise demos and pilot usage with monitored onboarding. Keep beta labeling until the Supabase plan/backup status is confirmed, Auth email capacity is adjusted for the launch wave, and one non-manager/viewer mutation test is completed.
 
 ---
 
-*Document updated: April 28, 2026*
+*Document updated: April 29, 2026*
 *Product: RailCommand -- by A5 Rail*
 *Developer: Dillan Milosevich, CTO -- Creative Currents LLC*
