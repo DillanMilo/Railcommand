@@ -66,7 +66,7 @@ export default function PunchListDetailPage({ params, searchParams }: { params: 
 
   const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
     ? members.map((m) => m.profile!).filter(Boolean)
-    : getProfiles();
+    : isDemo ? getProfiles() : [];
 
   // Sync state when item loads
   useEffect(() => {

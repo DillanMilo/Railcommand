@@ -50,10 +50,12 @@ export default function NewPunchListItemPage({ params, searchParams }: { params:
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
-  // Build assignable profiles: prefer members with embedded profile, fall back to store
+  // Build assignable profiles: prefer members with embedded profile, fall back to
+  // the in-memory store only in demo mode — real accounts shouldn't see seeded
+  // placeholder names when a project has no teammates yet.
   const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
     ? members.map((m) => m.profile!).filter(Boolean)
-    : getProfiles();
+    : isDemo ? getProfiles() : [];
 
   if (!can(ACTIONS.PUNCH_LIST_CREATE)) {
     return (

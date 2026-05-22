@@ -187,9 +187,14 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   const totalCount = members.length + pendingInvitations.length;
   const atLimit = tierInfo ? totalCount >= tierInfo.limit : false;
 
-  const availableProfiles = getProfiles().filter(
-    (p) => !projectMembers.some((pm) => pm.profile_id === p.id)
-  );
+  // The in-memory store is seeded with placeholder profiles for the demo. Real
+  // accounts have no such roster in memory, so showing those names on a fresh
+  // project would surface people who don't actually exist for the user.
+  const availableProfiles = isDemo
+    ? getProfiles().filter(
+        (p) => !projectMembers.some((pm) => pm.profile_id === p.id)
+      )
+    : [];
 
   function resetDialogState() {
     setSelectedProfile('');
@@ -470,7 +475,11 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                           <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                         ))}
                         {availableProfiles.length === 0 && (
-                          <div className="px-2 py-3 text-sm text-muted-foreground text-center">All team members already added</div>
+                          <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                            {isDemo
+                              ? 'All team members already added'
+                              : 'No existing members yet — use “Invite by Email” to add teammates.'}
+                          </div>
                         )}
                       </SelectContent>
                     </Select>

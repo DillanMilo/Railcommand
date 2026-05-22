@@ -38,10 +38,13 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   const { data: members, loading: membersLoading } = useProjectMembers(projectId);
   const { data: milestones, loading: milestonesLoading } = useMilestones(projectId);
 
-  // Build assignable profiles: prefer members with embedded profile, fall back to store
+  // Build assignable profiles: prefer members with embedded profile, fall back to
+  // the in-memory store only in demo mode — real accounts shouldn't see seeded
+  // placeholder names when a project has no teammates yet.
   const assignableProfiles = (() => {
     const fromMembers = members.map((m) => (m as any).profile).filter(Boolean);
-    return fromMembers.length > 0 ? fromMembers : getProfiles();
+    if (fromMembers.length > 0) return fromMembers;
+    return isDemo ? getProfiles() : [];
   })();
 
   const [subject, setSubject] = useState('');

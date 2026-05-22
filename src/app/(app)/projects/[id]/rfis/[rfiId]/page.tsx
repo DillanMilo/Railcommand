@@ -93,7 +93,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
 
   const assignableProfiles = members.length > 0 && members.some((m) => m.profile)
     ? members.map((m) => m.profile!).filter(Boolean)
-    : getProfiles();
+    : isDemo ? getProfiles() : [];
 
   // Reset state when navigating to a different RFI
   const [prevRfiId, setPrevRfiId] = useState(rfiId);
