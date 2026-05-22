@@ -313,6 +313,11 @@ function LoginPageInner() {
   const [resetSent, setResetSent] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const nextParam = searchParams.get('next');
+  const redirectPath =
+    nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+      ? nextParam
+      : '/dashboard';
 
   // Show errors from auth callback redirects (e.g. ?error=auth_callback_error)
   useEffect(() => {
@@ -359,9 +364,9 @@ function LoginPageInner() {
         localStorage.removeItem('rc-mode');
         document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
       } catch { /* noop */ }
-      router.push('/dashboard');
+      router.push(redirectPath);
     },
-    [router, rememberMe]
+    [redirectPath, router, rememberMe]
   );
 
   const handleSignUp = useCallback(
@@ -374,7 +379,7 @@ function LoginPageInner() {
         password: data.password,
         options: {
           data: { full_name: data.fullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
         },
       });
       setIsLoading(false);
@@ -392,7 +397,7 @@ function LoginPageInner() {
           localStorage.removeItem('rc-mode');
           document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
         } catch { /* noop */ }
-        router.push('/dashboard');
+        router.push(redirectPath);
         return;
       }
 
@@ -400,7 +405,7 @@ function LoginPageInner() {
       setSignUpEmail(data.email);
       setShowEmailConfirmation(true);
     },
-    [router]
+    [redirectPath, router]
   );
 
   const handleResendConfirmation = useCallback(async () => {
@@ -411,11 +416,11 @@ function LoginPageInner() {
       type: 'signup',
       email: signUpEmail,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
       },
     });
     setIsResending(false);
-  }, [signUpEmail]);
+  }, [redirectPath, signUpEmail]);
 
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
@@ -434,7 +439,7 @@ function LoginPageInner() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
       },
     });
     if (error) {
@@ -442,7 +447,7 @@ function LoginPageInner() {
       setAuthError(error.message);
     }
     // Browser will redirect to Google — no need to setIsLoading(false) on success
-  }, [rememberMe]);
+  }, [redirectPath, rememberMe]);
 
   const handleTryDemo = useCallback(async () => {
     setIsLoading(true);

@@ -1,6 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+function getSafeRedirectPath(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return null;
+  }
+  return value;
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -52,6 +59,8 @@ export async function middleware(request: NextRequest) {
   if (!user && !isDemoMode && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.search = '';
+    url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
 
@@ -62,6 +71,8 @@ export async function middleware(request: NextRequest) {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.search = '';
+    url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
     const response = NextResponse.redirect(url);
     // Clear Supabase auth cookies
     request.cookies.getAll().forEach(({ name }) => {
@@ -74,8 +85,8 @@ export async function middleware(request: NextRequest) {
 
   // If authenticated + remembered and visiting /login → redirect to dashboard
   if (user && hasRememberCookie && pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    const safeNext = getSafeRedirectPath(request.nextUrl.searchParams.get('next'));
+    const url = new URL(safeNext ?? '/dashboard', request.nextUrl.origin);
     return NextResponse.redirect(url);
   }
 

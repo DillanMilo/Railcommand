@@ -2,6 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { Resend } from 'resend';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ACTIONS } from '@/lib/permissions';
@@ -15,6 +16,173 @@ import {
   logActivity,
 } from './permissions-helper';
 
+const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
+
+let resendClient: Resend | null = null;
+
+function getSiteUrl(): string {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    'http://localhost:3000';
+  return siteUrl.replace(/\/$/, '');
+}
+
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  resendClient ??= new Resend(process.env.RESEND_API_KEY);
+  return resendClient;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatRole(role: string): string {
+  return role
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function buildExistingUserInviteEmail(input: {
+  inviteUrl: string;
+  projectName: string;
+  projectRole: string;
+  invitedByName: string;
+}): string {
+  const projectName = escapeHtml(input.projectName);
+  const invitedByName = escapeHtml(input.invitedByName);
+  const projectRole = escapeHtml(formatRole(input.projectRole));
+  const inviteUrl = escapeHtml(input.inviteUrl);
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RailCommand Project Invitation</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background-color:#1e293b;padding:20px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">RailCommand</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Project Invitation</h2>
+              <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;">
+                ${invitedByName} invited you to join <strong>${projectName}</strong> as <strong>${projectRole}</strong>.
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:6px;padding:16px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:8px 16px;">
+                    <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Project</p>
+                    <p style="margin:0;color:#1e293b;font-size:14px;font-weight:600;">${projectName}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 16px;">
+                    <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Role</p>
+                    <p style="margin:0;color:#1e293b;font-size:14px;">${projectRole}</p>
+                  </td>
+                </tr>
+              </table>
+              <a href="${inviteUrl}" style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
+                View Invitation
+              </a>
+              <p style="margin:20px 0 0;color:#64748b;font-size:13px;line-height:1.5;">
+                If you are asked to sign in first, use this same email address and RailCommand will bring you back to the invitation.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
+                This is an automated invitation from RailCommand.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+}
+
+async function sendExistingUserInvitationEmail(input: {
+  email: string;
+  token: string;
+  projectName: string;
+  projectRole: string;
+  invitedByName: string;
+}): Promise<string | null> {
+  const resend = getResendClient();
+  if (!resend) {
+    return 'RESEND_API_KEY is not configured';
+  }
+
+  const inviteUrl = `${getSiteUrl()}/invite/${encodeURIComponent(input.token)}`;
+  const safeProjectName = input.projectName.replace(/[\r\n]+/g, ' ');
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: input.email,
+      subject: `You're invited to ${safeProjectName} on RailCommand`,
+      html: buildExistingUserInviteEmail({
+        inviteUrl,
+        projectName: input.projectName,
+        projectRole: input.projectRole,
+        invitedByName: input.invitedByName,
+      }),
+      tags: [{ name: 'type', value: 'project_invitation' }],
+    });
+
+    return error?.message ?? null;
+  } catch (err) {
+    return err instanceof Error ? err.message : 'Unknown email provider error';
+  }
+}
+
+async function sendInvitationEmail(
+  adminClient: ReturnType<typeof createAdminClient>,
+  input: {
+    email: string;
+    token: string;
+    projectName: string;
+    projectRole: string;
+    invitedByName: string;
+    isExistingUser: boolean;
+  }
+): Promise<string | null> {
+  if (input.isExistingUser) {
+    return sendExistingUserInvitationEmail(input);
+  }
+
+  try {
+    const { error } = await adminClient.auth.admin.inviteUserByEmail(input.email, {
+      data: { invite_token: input.token },
+      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(`/invite/${input.token}`)}`,
+    });
+    return error?.message ?? null;
+  } catch (err) {
+    return err instanceof Error ? err.message : 'Unknown email provider error';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // createInvitation -- invite someone by email to a project
 // ---------------------------------------------------------------------------
@@ -24,6 +192,9 @@ export async function createInvitation(
   projectRole: ProjectMember['project_role']
 ): Promise<ActionResult<ProjectInvitation>> {
   try {
+    const inviteEmail = email.trim().toLowerCase();
+    if (!inviteEmail) return { error: 'Email is required' };
+
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
@@ -53,8 +224,101 @@ export async function createInvitation(
 
     const tier = (org?.tier ?? 'free') as Tier;
     const limit = TIER_LIMITS[tier];
+    const nowIso = new Date().toISOString();
 
-    // Count existing members + pending invitations
+    await adminClient
+      .from('project_invitations')
+      .update({ status: 'expired' })
+      .eq('project_id', projectId)
+      .eq('status', 'pending')
+      .lte('expires_at', nowIso);
+
+    // Check if email is already a member
+    const { data: existingMember } = await supabase
+      .from('project_members')
+      .select('id, profile:profiles!project_members_profile_id_fkey(email)')
+      .eq('project_id', projectId);
+
+    const alreadyMember = existingMember?.some(
+      (m) =>
+        (m.profile as unknown as { email?: string })?.email?.toLowerCase() ===
+        inviteEmail
+    );
+    if (alreadyMember) {
+      return { error: 'This person is already a member of this project' };
+    }
+
+    const { data: inviterProfile } = await adminClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const invitedByName = inviterProfile?.full_name ?? user.email ?? 'A team member';
+
+    // Check if user exists in RailCommand and send the right invitation email.
+    const { data: existingProfile } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('email', inviteEmail)
+      .maybeSingle();
+
+    // Check for existing pending invitation
+    const { data: existingInvite } = await supabase
+      .from('project_invitations')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('email', inviteEmail)
+      .eq('status', 'pending')
+      .gt('expires_at', nowIso)
+      .maybeSingle();
+
+    if (existingInvite) {
+      const { data: refreshedInvite, error: refreshError } = await adminClient
+        .from('project_invitations')
+        .update({
+          project_role: projectRole,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq('id', existingInvite.id)
+        .select()
+        .single();
+
+      if (refreshError || !refreshedInvite) {
+        return { error: refreshError?.message ?? 'Failed to refresh invitation' };
+      }
+
+      const emailError = await sendInvitationEmail(adminClient, {
+        email: inviteEmail,
+        token: refreshedInvite.token,
+        projectName: project.name,
+        projectRole,
+        invitedByName,
+        isExistingUser: Boolean(existingProfile),
+      });
+
+      if (emailError) {
+        return {
+          error: `Invitation email could not be sent: ${emailError}`,
+        };
+      }
+
+      await logActivity(
+        supabase,
+        projectId,
+        'project',
+        projectId,
+        'assigned',
+        `resent invitation to ${inviteEmail} as ${projectRole}`,
+        user.id
+      );
+
+      revalidatePath(`/projects/${projectId}/team`);
+
+      return { success: true, data: refreshedInvite as ProjectInvitation };
+    }
+
+    // Count existing members + pending invitations before adding a new invite.
     const { count: memberCount } = await adminClient
       .from('project_members')
       .select('id', { count: 'exact', head: true })
@@ -64,7 +328,8 @@ export async function createInvitation(
       .from('project_invitations')
       .select('id', { count: 'exact', head: true })
       .eq('project_id', projectId)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .gt('expires_at', nowIso);
 
     const total = (memberCount ?? 0) + (pendingCount ?? 0);
     if (total >= limit) {
@@ -73,38 +338,12 @@ export async function createInvitation(
       };
     }
 
-    // Check if email is already a member
-    const { data: existingMember } = await supabase
-      .from('project_members')
-      .select('id, profile:profiles!project_members_profile_id_fkey(email)')
-      .eq('project_id', projectId);
-
-    const alreadyMember = existingMember?.some(
-      (m) => (m.profile as unknown as { email: string })?.email === email
-    );
-    if (alreadyMember) {
-      return { error: 'This person is already a member of this project' };
-    }
-
-    // Check for existing pending invitation
-    const { data: existingInvite } = await supabase
-      .from('project_invitations')
-      .select('id')
-      .eq('project_id', projectId)
-      .eq('email', email)
-      .eq('status', 'pending')
-      .maybeSingle();
-
-    if (existingInvite) {
-      return { error: 'An invitation has already been sent to this email' };
-    }
-
     // Create the invitation record
     const { data: invitation, error: insertError } = await supabase
       .from('project_invitations')
       .insert({
         project_id: projectId,
-        email,
+        email: inviteEmail,
         project_role: projectRole,
         invited_by: user.id,
       })
@@ -115,24 +354,24 @@ export async function createInvitation(
       return { error: insertError?.message ?? 'Failed to create invitation' };
     }
 
-    // Check if user exists in auth and send email if they're new
-    const { data: existingProfile } = await adminClient
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
+    const emailError = await sendInvitationEmail(adminClient, {
+      email: inviteEmail,
+      token: invitation.token,
+      projectName: project.name,
+      projectRole,
+      invitedByName,
+      isExistingUser: Boolean(existingProfile),
+    });
 
-    if (!existingProfile) {
-      // User doesn't exist — send Supabase auth invite email
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-      try {
-        await adminClient.auth.admin.inviteUserByEmail(email, {
-          data: { invite_token: invitation.token },
-          redirectTo: `${siteUrl}/auth/callback?next=/invite/${invitation.token}`,
-        });
-      } catch {
-        // Invitation record still created — user can be re-invited if email fails
-      }
+    if (emailError) {
+      await adminClient
+        .from('project_invitations')
+        .update({ status: 'expired' })
+        .eq('id', invitation.id);
+
+      return {
+        error: `Invitation email could not be sent: ${emailError}`,
+      };
     }
 
     await logActivity(
@@ -141,7 +380,7 @@ export async function createInvitation(
       'project',
       projectId,
       'assigned',
-      `invited ${email} as ${projectRole}`,
+      `invited ${inviteEmail} as ${projectRole}`,
       user.id
     );
 

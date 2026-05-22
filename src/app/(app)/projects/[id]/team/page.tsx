@@ -171,7 +171,10 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   }, [isDemo, projectId, serverTierInfo]);
 
   const pendingInvitations = useMemo(
-    () => projectInvitations.filter((i) => i.status === 'pending'),
+    () =>
+      projectInvitations.filter(
+        (i) => i.status === 'pending' && new Date(i.expires_at) > new Date()
+      ),
     [projectInvitations]
   );
 

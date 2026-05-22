@@ -2,19 +2,26 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
 
+function getSafeRedirectPath(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return null;
+  }
+  return value;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type');
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
+  const next = getSafeRedirectPath(searchParams.get('next')) ?? '/dashboard';
 
   // Email confirmation via token_hash (e.g. signup confirmation)
   if (token_hash && type) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as EmailOtpType });
     if (!error) {
-      const response = NextResponse.redirect(`${origin}/onboarding`);
+      const response = NextResponse.redirect(`${origin}${next === '/dashboard' ? '/onboarding' : next}`);
       response.cookies.set('rc-remember', 'true', {
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
