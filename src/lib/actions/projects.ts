@@ -108,6 +108,9 @@ export async function getProjectPlanInfo(
       .single();
 
     if (projectError || !project) return { error: 'Project not found' };
+    if (!project.organization_id) {
+      return { error: 'This project is not linked to an organization. Please contact support.' };
+    }
 
     const admin = createAdminClient();
     const { data: org, error: orgError } = await admin
@@ -141,6 +144,17 @@ export async function createProject(data: {
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.organization_id) {
+      return { error: 'Your profile is not linked to an organization' };
+    }
+
     const { data: project, error } = await supabase.rpc('create_project', {
       p_name: data.name,
       p_description: data.description,
@@ -152,18 +166,40 @@ export async function createProject(data: {
     });
     if (error) return { error: error.message };
     if (!project) return { error: 'Failed to create project' };
+
+    let createdProject = project as Project;
+
+    if (!createdProject.organization_id) {
+      const admin = createAdminClient();
+      const { data: updatedProject, error: updateError } = await admin
+        .from('projects')
+        .update({ organization_id: profile.organization_id })
+        .eq('id', createdProject.id)
+        .eq('created_by', user.id)
+        .select()
+        .single();
+
+      if (updateError || !updatedProject) {
+        return {
+          error: updateError?.message ?? 'Failed to link project to organization',
+        };
+      }
+
+      createdProject = updatedProject as Project;
+    }
+
     await logActivity(
       supabase,
-      project.id,
+      createdProject.id,
       'project',
-      project.id,
+      createdProject.id,
       'created',
-      `created project: ${project.name}`,
+      `created project: ${createdProject.name}`,
       user.id
     );
     revalidatePath('/dashboard');
     revalidatePath('/projects');
-    return { success: true, data: project as Project };
+    return { success: true, data: createdProject };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to create project' };
   }
