@@ -211,6 +211,9 @@ export async function createInvitation(
       .single();
 
     if (projError || !project) return { error: 'Project not found' };
+    if (!project.organization_id) {
+      return { error: 'This project is not linked to an organization. Please contact support.' };
+    }
 
     // Use the admin client after authorization so RLS on organizations cannot
     // silently hide the tier and downgrade an eligible org to the free limit.
