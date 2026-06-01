@@ -319,10 +319,11 @@ export async function getAttachmentsWithSignedUrls(
         if (error || !data) return;
 
         for (let j = 0; j < data.length; j++) {
-          if (data[j].signedUrl) {
+          const signedUrl = data[j]?.signedUrl ?? undefined;
+          if (signedUrl) {
             attachments[items[j].index] = {
               ...attachments[items[j].index],
-              signed_url: data[j].signedUrl,
+              signed_url: signedUrl,
             };
           }
         }

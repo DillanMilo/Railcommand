@@ -93,10 +93,11 @@ export async function getProjectPhotos(
         if (error || !data) return;
 
         for (let j = 0; j < data.length; j++) {
-          if (data[j].signedUrl) {
+          const signedUrl = data[j]?.signedUrl ?? undefined;
+          if (signedUrl) {
             photos[items[j].index] = {
               ...photos[items[j].index],
-              signed_url: data[j].signedUrl,
+              signed_url: signedUrl,
             };
           }
         }
