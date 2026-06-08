@@ -51,7 +51,7 @@ function formatRole(role: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function buildExistingUserInviteEmail(input: {
+function buildInvitationEmailHtml(input: {
   inviteUrl: string;
   projectName: string;
   projectRole: string;
@@ -123,7 +123,24 @@ function buildExistingUserInviteEmail(input: {
 </html>`.trim();
 }
 
-async function sendExistingUserInvitationEmail(input: {
+function buildInvitationEmailText(input: {
+  inviteUrl: string;
+  projectName: string;
+  projectRole: string;
+  invitedByName: string;
+}): string {
+  return [
+    'RailCommand project invitation',
+    '',
+    `${input.invitedByName} invited you to join ${input.projectName} as ${formatRole(input.projectRole)}.`,
+    '',
+    `View invitation: ${input.inviteUrl}`,
+    '',
+    'If you are asked to sign in first, use this same email address and RailCommand will bring you back to the invitation.',
+  ].join('\n');
+}
+
+async function sendInvitationEmail(input: {
   email: string;
   token: string;
   projectName: string;
@@ -142,7 +159,13 @@ async function sendExistingUserInvitationEmail(input: {
       from: FROM_ADDRESS,
       to: input.email,
       subject: `You're invited to ${safeProjectName} on RailCommand`,
-      html: buildExistingUserInviteEmail({
+      html: buildInvitationEmailHtml({
+        inviteUrl,
+        projectName: input.projectName,
+        projectRole: input.projectRole,
+        invitedByName: input.invitedByName,
+      }),
+      text: buildInvitationEmailText({
         inviteUrl,
         projectName: input.projectName,
         projectRole: input.projectRole,
@@ -151,32 +174,6 @@ async function sendExistingUserInvitationEmail(input: {
       tags: [{ name: 'type', value: 'project_invitation' }],
     });
 
-    return error?.message ?? null;
-  } catch (err) {
-    return err instanceof Error ? err.message : 'Unknown email provider error';
-  }
-}
-
-async function sendInvitationEmail(
-  adminClient: ReturnType<typeof createAdminClient>,
-  input: {
-    email: string;
-    token: string;
-    projectName: string;
-    projectRole: string;
-    invitedByName: string;
-    isExistingUser: boolean;
-  }
-): Promise<string | null> {
-  if (input.isExistingUser) {
-    return sendExistingUserInvitationEmail(input);
-  }
-
-  try {
-    const { error } = await adminClient.auth.admin.inviteUserByEmail(input.email, {
-      data: { invite_token: input.token },
-      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(`/invite/${input.token}`)}`,
-    });
     return error?.message ?? null;
   } catch (err) {
     return err instanceof Error ? err.message : 'Unknown email provider error';
@@ -259,13 +256,6 @@ export async function createInvitation(
 
     const invitedByName = inviterProfile?.full_name ?? user.email ?? 'A team member';
 
-    // Check if user exists in RailCommand and send the right invitation email.
-    const { data: existingProfile } = await adminClient
-      .from('profiles')
-      .select('id')
-      .eq('email', inviteEmail)
-      .maybeSingle();
-
     // Check for existing pending invitation
     const { data: existingInvite } = await supabase
       .from('project_invitations')
@@ -291,13 +281,12 @@ export async function createInvitation(
         return { error: refreshError?.message ?? 'Failed to refresh invitation' };
       }
 
-      const emailError = await sendInvitationEmail(adminClient, {
+      const emailError = await sendInvitationEmail({
         email: inviteEmail,
         token: refreshedInvite.token,
         projectName: project.name,
         projectRole,
         invitedByName,
-        isExistingUser: Boolean(existingProfile),
       });
 
       if (emailError) {
@@ -357,13 +346,12 @@ export async function createInvitation(
       return { error: insertError?.message ?? 'Failed to create invitation' };
     }
 
-    const emailError = await sendInvitationEmail(adminClient, {
+    const emailError = await sendInvitationEmail({
       email: inviteEmail,
       token: invitation.token,
       projectName: project.name,
       projectRole,
       invitedByName,
-      isExistingUser: Boolean(existingProfile),
     });
 
     if (emailError) {
@@ -398,6 +386,53 @@ export async function createInvitation(
 }
 
 // ---------------------------------------------------------------------------
+// getInvitationByToken -- public lookup for a single invite link
+// ---------------------------------------------------------------------------
+export async function getInvitationByToken(token: string): Promise<
+  ActionResult<{ invitation: ProjectInvitation; viewerEmail: string | null }>
+> {
+  try {
+    const normalizedToken = token.trim();
+    if (!/^[a-f0-9]{32,128}$/i.test(normalizedToken)) {
+      return { error: 'Invitation not found, expired, or already used.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const adminClient = createAdminClient();
+    const { data, error } = await adminClient
+      .from('project_invitations')
+      .select(`
+        *,
+        project:projects(id, name),
+        invited_by_profile:profiles!project_invitations_invited_by_fkey(id, full_name)
+      `)
+      .eq('token', normalizedToken)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (error) return { error: error.message };
+    if (!data) return { error: 'Invitation not found, expired, or already used.' };
+
+    return {
+      success: true,
+      data: {
+        invitation: data as ProjectInvitation,
+        viewerEmail: user?.email?.toLowerCase() ?? null,
+      },
+    };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to fetch invitation',
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // acceptInvitation -- accept a project invitation by token
 // ---------------------------------------------------------------------------
 export async function acceptInvitation(
@@ -407,13 +442,15 @@ export async function acceptInvitation(
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
+    const userEmail = user.email?.toLowerCase();
+    if (!userEmail) return { error: 'Your account does not have an email address.' };
 
     // Find the invitation
     const { data: invitation, error: findError } = await supabase
       .from('project_invitations')
       .select('*')
       .eq('token', token)
-      .eq('email', user.email)
+      .eq('email', userEmail)
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
       .single();
@@ -477,12 +514,14 @@ export async function declineInvitation(
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
+    const userEmail = user.email?.toLowerCase();
+    if (!userEmail) return { error: 'Your account does not have an email address.' };
 
     const { data: invitation, error: findError } = await supabase
       .from('project_invitations')
       .select('id')
       .eq('token', token)
-      .eq('email', user.email)
+      .eq('email', userEmail)
       .eq('status', 'pending')
       .single();
 
@@ -517,6 +556,8 @@ export async function getPendingInvitationsForUser(): Promise<
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
+    const userEmail = user.email?.toLowerCase();
+    if (!userEmail) return { error: 'Your account does not have an email address.' };
 
     const { data, error } = await supabase
       .from('project_invitations')
@@ -525,7 +566,7 @@ export async function getPendingInvitationsForUser(): Promise<
         project:projects(id, name),
         invited_by_profile:profiles!project_invitations_invited_by_fkey(id, full_name)
       `)
-      .eq('email', user.email)
+      .eq('email', userEmail)
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });
@@ -569,6 +610,99 @@ export async function getProjectInvitations(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : 'Failed to fetch project invitations',
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// resendInvitation -- resend a pending invitation (manager only)
+// ---------------------------------------------------------------------------
+export async function resendInvitation(
+  invitationId: string,
+  projectId: string
+): Promise<ActionResult<ProjectInvitation>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.TEAM_MANAGE);
+    if (!perm.allowed) return { error: perm.error };
+
+    const adminClient = createAdminClient();
+    const nowIso = new Date().toISOString();
+    await adminClient
+      .from('project_invitations')
+      .update({ status: 'expired' })
+      .eq('project_id', projectId)
+      .eq('status', 'pending')
+      .lte('expires_at', nowIso);
+
+    const { data: invitation, error: findError } = await adminClient
+      .from('project_invitations')
+      .select(`
+        *,
+        project:projects(id, name),
+        invited_by_profile:profiles!project_invitations_invited_by_fkey(id, full_name)
+      `)
+      .eq('id', invitationId)
+      .eq('project_id', projectId)
+      .eq('status', 'pending')
+      .gt('expires_at', nowIso)
+      .maybeSingle();
+
+    if (findError) return { error: findError.message };
+    if (!invitation) {
+      return { error: 'This invitation has expired. Send a new invitation instead.' };
+    }
+
+    const invitedByName =
+      invitation.invited_by_profile?.full_name ?? user.email ?? 'A team member';
+    const projectName = invitation.project?.name ?? 'RailCommand project';
+
+    const { data: refreshedInvite, error: refreshError } = await adminClient
+      .from('project_invitations')
+      .update({
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq('id', invitation.id)
+      .select()
+      .single();
+
+    if (refreshError || !refreshedInvite) {
+      return { error: refreshError?.message ?? 'Failed to refresh invitation' };
+    }
+
+    const emailError = await sendInvitationEmail({
+      email: refreshedInvite.email,
+      token: refreshedInvite.token,
+      projectName,
+      projectRole: refreshedInvite.project_role,
+      invitedByName,
+    });
+
+    if (emailError) {
+      return {
+        error: `Invitation email could not be sent: ${emailError}`,
+      };
+    }
+
+    await logActivity(
+      supabase,
+      projectId,
+      'project',
+      projectId,
+      'assigned',
+      `resent invitation to ${refreshedInvite.email} as ${refreshedInvite.project_role}`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/team`);
+
+    return { success: true, data: refreshedInvite as ProjectInvitation };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to resend invitation',
     };
   }
 }

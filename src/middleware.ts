@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { fetchWithTimeout } from '@/lib/supabase/connectivity';
 
 function getSafeRedirectPath(value: string | null): string | null {
   if (!value || !value.startsWith('/') || value.startsWith('//')) {
@@ -28,6 +29,9 @@ export async function middleware(request: NextRequest) {
             supabaseResponse.cookies.set(name, value, options)
           );
         },
+      },
+      global: {
+        fetch: fetchWithTimeout,
       },
     }
   );

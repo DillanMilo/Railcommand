@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, use } from 'react';
-import { Plus, Mail, Phone, X, UserPlus, Users, Mail as MailIcon, Clock, Send, CheckCircle2, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Plus, Mail, Phone, X, UserPlus, Users, Mail as MailIcon, Clock, Send, CheckCircle2, ShieldCheck, ChevronDown, Copy, RefreshCw } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { getProjectPlanInfo } from '@/lib/actions/projects';
 import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember, updateMemberRole as serverUpdateMemberRole, leaveProject as serverLeaveProject } from '@/lib/actions/team';
-import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation } from '@/lib/actions/invitations';
+import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation, resendInvitation as serverResendInvitation } from '@/lib/actions/invitations';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,6 +126,8 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   const [inviteError, setInviteError] = useState('');
   const [projectInvitations, setProjectInvitations] = useState<ProjectInvitation[]>([]);
   const [serverTierInfo, setServerTierInfo] = useState<{ tier: Tier; limit: number } | null>(null);
+  const [resendingInvitationId, setResendingInvitationId] = useState<string | null>(null);
+  const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
 
   // Fetch invitations
   const fetchInvitations = useCallback(async () => {
@@ -325,6 +327,45 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
       await serverCancelInvitation(invitationId, projectId);
     }
     fetchInvitations();
+  }
+
+  async function handleResendInvitation(invitationId: string) {
+    setInviteError('');
+    setInviteSuccess('');
+    setResendingInvitationId(invitationId);
+    try {
+      if (isDemo) {
+        setInviteSuccess('Invitation resent');
+      } else {
+        const result = await serverResendInvitation(invitationId, projectId);
+        if (result.error) {
+          setInviteError(result.error);
+          return;
+        }
+        setInviteSuccess(`Invitation resent to ${result.data?.email ?? 'recipient'}`);
+        fetchInvitations();
+      }
+    } catch {
+      setInviteError('Failed to resend invitation');
+    } finally {
+      setResendingInvitationId(null);
+    }
+  }
+
+  async function handleCopyInvitationLink(invitation: ProjectInvitation) {
+    setInviteError('');
+    const inviteUrl = `${window.location.origin}/invite/${encodeURIComponent(invitation.token)}`;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopiedInvitationId(invitation.id);
+      window.setTimeout(() => {
+        setCopiedInvitationId((current) =>
+          current === invitation.id ? null : current
+        );
+      }, 2000);
+    } catch {
+      setInviteError('Could not copy invitation link');
+    }
   }
 
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
@@ -707,6 +748,17 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
               {pendingInvitations.length}
             </Badge>
           </div>
+          {!dialogOpen && inviteSuccess && (
+            <div className="mb-3 flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
+              <CheckCircle2 className="size-4 shrink-0" />
+              {inviteSuccess}
+            </div>
+          )}
+          {!dialogOpen && inviteError && (
+            <div className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+              {inviteError}
+            </div>
+          )}
           <div className="rounded-md border overflow-x-auto">
             <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground border-b">
               <span>Email</span>
@@ -737,15 +789,41 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                   {new Date(invitation.created_at).toLocaleDateString()}
                 </div>
                 {can(ACTIONS.TEAM_MANAGE) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-muted-foreground hover:text-red-500 h-7 px-2"
-                    onClick={() => handleCancelInvitation(invitation.id)}
-                  >
-                    <X className="size-3 mr-1" />
-                    Cancel
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => handleCopyInvitationLink(invitation)}
+                    >
+                      <Copy className="size-3 mr-1" />
+                      {copiedInvitationId === invitation.id ? 'Copied' : 'Copy link'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      disabled={resendingInvitationId === invitation.id}
+                      onClick={() => handleResendInvitation(invitation.id)}
+                    >
+                      <RefreshCw
+                        className={cn(
+                          'size-3 mr-1',
+                          resendingInvitationId === invitation.id && 'animate-spin'
+                        )}
+                      />
+                      Resend
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-red-500 h-7 px-2"
+                      onClick={() => handleCancelInvitation(invitation.id)}
+                    >
+                      <X className="size-3 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
                 )}
               </div>
             ))}

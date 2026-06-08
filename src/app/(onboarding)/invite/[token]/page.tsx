@@ -3,13 +3,13 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Users, Check, X, Clock, AlertCircle } from 'lucide-react';
+import { Users, Check, X, Clock, AlertCircle, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   acceptInvitation,
   declineInvitation,
-  getPendingInvitationsForUser,
+  getInvitationByToken,
 } from '@/lib/actions/invitations';
 import type { ProjectInvitation } from '@/lib/types';
 
@@ -48,12 +48,13 @@ export default function InvitePage({
   const [actionLoading, setActionLoading] = useState<'accept' | 'decline' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [invalidToken, setInvalidToken] = useState(false);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
   /* ---- Fetch invitation details on mount ---- */
   useEffect(() => {
     async function fetchInvitation() {
       try {
-        const result = await getPendingInvitationsForUser();
+        const result = await getInvitationByToken(token);
 
         if (result.error || !result.data) {
           setInvalidToken(true);
@@ -61,17 +62,8 @@ export default function InvitePage({
           return;
         }
 
-        const match = result.data.find(
-          (inv: ProjectInvitation) => inv.token === token,
-        );
-
-        if (!match) {
-          setInvalidToken(true);
-          setLoading(false);
-          return;
-        }
-
-        setInvitation(match);
+        setInvitation(result.data.invitation);
+        setViewerEmail(result.data.viewerEmail);
       } catch {
         setInvalidToken(true);
       } finally {
@@ -82,8 +74,34 @@ export default function InvitePage({
     fetchInvitation();
   }, [token]);
 
+  function goToAuth(mode: 'signin' | 'signup' = 'signin') {
+    const params = new URLSearchParams({
+      next: `/invite/${token}`,
+    });
+    if (mode === 'signup') params.set('mode', 'signup');
+    if (invitation?.email) params.set('email', invitation.email);
+    router.push(`/login?${params.toString()}`);
+  }
+
+  function canHandleInvitation() {
+    if (!invitation) return false;
+    if (!viewerEmail) {
+      goToAuth('signin');
+      return false;
+    }
+    if (viewerEmail !== invitation.email.toLowerCase()) {
+      setError(
+        `This invitation is for ${invitation.email}. You are signed in as ${viewerEmail}.`
+      );
+      return false;
+    }
+    return true;
+  }
+
   /* ---- Accept handler ---- */
   async function handleAccept() {
+    if (!canHandleInvitation()) return;
+
     setActionLoading('accept');
     setError(null);
 
@@ -105,6 +123,8 @@ export default function InvitePage({
 
   /* ---- Decline handler ---- */
   async function handleDecline() {
+    if (!canHandleInvitation()) return;
+
     setActionLoading('decline');
     setError(null);
 
@@ -199,6 +219,7 @@ export default function InvitePage({
   const invitedByName =
     invitation.invited_by_profile?.full_name ?? 'A team member';
   const role = invitation.project_role;
+  const viewerMatchesInvite = viewerEmail === invitation.email.toLowerCase();
 
   return (
     <div className="w-full max-w-[460px]">
@@ -241,6 +262,16 @@ export default function InvitePage({
               </span>
             </div>
 
+            {/* Email */}
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                Invited Email
+              </p>
+              <p className="text-sm font-medium text-foreground break-all">
+                {invitation.email}
+              </p>
+            </div>
+
             {/* Invited by */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="size-3.5 shrink-0" />
@@ -261,44 +292,79 @@ export default function InvitePage({
           )}
 
           {/* Actions */}
-          <div className="flex gap-3">
-            <Button
-              onClick={handleDecline}
-              variant="outline"
-              disabled={actionLoading !== null}
-              className="flex-1 h-12 font-semibold text-sm gap-2"
-            >
-              {actionLoading === 'decline' ? (
-                <span className="flex items-center gap-2">
-                  <span className="size-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-                  Declining...
-                </span>
-              ) : (
-                <>
-                  <X className="size-4" />
-                  Decline
-                </>
-              )}
-            </Button>
+          {!viewerEmail ? (
+            <div className="space-y-3">
+              <Button
+                onClick={() => goToAuth('signin')}
+                className="h-12 w-full bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
+              >
+                <LogIn className="size-4" />
+                Sign in to accept
+              </Button>
+              <Button
+                onClick={() => goToAuth('signup')}
+                variant="outline"
+                className="h-12 w-full font-semibold text-sm"
+              >
+                Create account
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Use {invitation.email} to accept this invitation.
+              </p>
+            </div>
+          ) : !viewerMatchesInvite ? (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                Sign out and use {invitation.email} to accept this invitation.
+              </div>
+              <Button
+                onClick={() => router.push('/dashboard')}
+                variant="outline"
+                className="h-12 w-full font-semibold text-sm"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <Button
+                onClick={handleDecline}
+                variant="outline"
+                disabled={actionLoading !== null}
+                className="flex-1 h-12 font-semibold text-sm gap-2"
+              >
+                {actionLoading === 'decline' ? (
+                  <span className="flex items-center gap-2">
+                    <span className="size-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                    Declining...
+                  </span>
+                ) : (
+                  <>
+                    <X className="size-4" />
+                    Decline
+                  </>
+                )}
+              </Button>
 
-            <Button
-              onClick={handleAccept}
-              disabled={actionLoading !== null}
-              className="flex-1 h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
-            >
-              {actionLoading === 'accept' ? (
-                <span className="flex items-center gap-2">
-                  <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Accepting...
-                </span>
-              ) : (
-                <>
-                  <Check className="size-4" />
-                  Accept
-                </>
-              )}
-            </Button>
-          </div>
+              <Button
+                onClick={handleAccept}
+                disabled={actionLoading !== null}
+                className="flex-1 h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
+              >
+                {actionLoading === 'accept' ? (
+                  <span className="flex items-center gap-2">
+                    <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Accepting...
+                  </span>
+                ) : (
+                  <>
+                    <Check className="size-4" />
+                    Accept
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
