@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { initDemoData, initFreshData } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
+import { getSupabaseAuthErrorMessage } from '@/lib/supabase/connectivity';
 
 /* ------------------------------------------------------------------ */
 /*  Schemas                                                            */
@@ -344,27 +345,32 @@ function LoginPageInner() {
     async (data: SignInData) => {
       setIsLoading(true);
       setAuthError(null);
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      setIsLoading(false);
-      if (error) {
-        setAuthError(error.message);
-        return;
-      }
-      // Set remember cookie — persistent if checked, session-only if not
-      if (rememberMe) {
-        document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
-      } else {
-        document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
-      }
       try {
-        localStorage.removeItem('rc-mode');
-        document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
-      } catch { /* noop */ }
-      router.push(redirectPath);
+        const supabase = createClient();
+        const { error } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+        if (error) {
+          setAuthError(getSupabaseAuthErrorMessage(error));
+          return;
+        }
+        // Set remember cookie — persistent if checked, session-only if not
+        if (rememberMe) {
+          document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
+        } else {
+          document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
+        }
+        try {
+          localStorage.removeItem('rc-mode');
+          document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+        } catch { /* noop */ }
+        router.push(redirectPath);
+      } catch (error) {
+        setAuthError(getSupabaseAuthErrorMessage(error));
+      } finally {
+        setIsLoading(false);
+      }
     },
     [redirectPath, router, rememberMe]
   );
@@ -373,37 +379,42 @@ function LoginPageInner() {
     async (data: SignUpData) => {
       setIsLoading(true);
       setAuthError(null);
-      const supabase = createClient();
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: { full_name: data.fullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
-        },
-      });
-      setIsLoading(false);
-      if (error) {
-        setAuthError(error.message);
-        return;
-      }
+      try {
+        const supabase = createClient();
+        const { data: signUpData, error } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: { full_name: data.fullName },
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
+          },
+        });
+        if (error) {
+          setAuthError(getSupabaseAuthErrorMessage(error));
+          return;
+        }
 
-      // If Supabase returned a session, the user is auto-confirmed (e.g. email
-      // confirmation is disabled in project settings). Log them straight in.
-      if (signUpData.session) {
-        document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
-        initFreshData(data.fullName, data.email);
-        try {
-          localStorage.removeItem('rc-mode');
-          document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
-        } catch { /* noop */ }
-        router.push(redirectPath);
-        return;
-      }
+        // If Supabase returned a session, the user is auto-confirmed (e.g. email
+        // confirmation is disabled in project settings). Log them straight in.
+        if (signUpData.session) {
+          document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
+          initFreshData(data.fullName, data.email);
+          try {
+            localStorage.removeItem('rc-mode');
+            document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+          } catch { /* noop */ }
+          router.push(redirectPath);
+          return;
+        }
 
-      // Email confirmation required — show the "check your email" screen
-      setSignUpEmail(data.email);
-      setShowEmailConfirmation(true);
+        // Email confirmation required — show the "check your email" screen
+        setSignUpEmail(data.email);
+        setShowEmailConfirmation(true);
+      } catch (error) {
+        setAuthError(getSupabaseAuthErrorMessage(error));
+      } finally {
+        setIsLoading(false);
+      }
     },
     [redirectPath, router]
   );
@@ -411,15 +422,24 @@ function LoginPageInner() {
   const handleResendConfirmation = useCallback(async () => {
     if (!signUpEmail) return;
     setIsResending(true);
-    const supabase = createClient();
-    await supabase.auth.resend({
-      type: 'signup',
-      email: signUpEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
-      },
-    });
-    setIsResending(false);
+    setAuthError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: signUpEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
+        },
+      });
+      if (error) {
+        setAuthError(getSupabaseAuthErrorMessage(error));
+      }
+    } catch (error) {
+      setAuthError(getSupabaseAuthErrorMessage(error));
+    } finally {
+      setIsResending(false);
+    }
   }, [redirectPath, signUpEmail]);
 
   const handleGoogleSignIn = useCallback(async () => {
@@ -435,16 +455,21 @@ function LoginPageInner() {
       localStorage.removeItem('rc-mode');
       document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
     } catch { /* noop */ }
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
-      },
-    });
-    if (error) {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
+        },
+      });
+      if (error) {
+        setIsLoading(false);
+        setAuthError(getSupabaseAuthErrorMessage(error));
+      }
+    } catch (error) {
       setIsLoading(false);
-      setAuthError(error.message);
+      setAuthError(getSupabaseAuthErrorMessage(error));
     }
     // Browser will redirect to Google — no need to setIsLoading(false) on success
   }, [redirectPath, rememberMe]);
@@ -467,14 +492,23 @@ function LoginPageInner() {
     setAuthError(null);
     const form = e.currentTarget;
     const email = (form.elements.namedItem('reset-email') as HTMLInputElement)?.value;
-    if (email) {
-      const supabase = createClient();
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
-      });
+    try {
+      if (email) {
+        const supabase = createClient();
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
+        });
+        if (error) {
+          setAuthError(getSupabaseAuthErrorMessage(error));
+          return;
+        }
+      }
+      setResetSent(true);
+    } catch (error) {
+      setAuthError(getSupabaseAuthErrorMessage(error));
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-    setResetSent(true);
   }, []);
 
   const switchMode = useCallback((newMode: 'signin' | 'signup') => {
