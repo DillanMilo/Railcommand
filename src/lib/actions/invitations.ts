@@ -61,6 +61,9 @@ function buildInvitationEmailHtml(input: {
   const invitedByName = escapeHtml(input.invitedByName);
   const projectRole = escapeHtml(formatRole(input.projectRole));
   const inviteUrl = escapeHtml(input.inviteUrl);
+  const previewText = escapeHtml(
+    `${input.invitedByName} invited you to join ${input.projectName} on RailCommand.`
+  );
 
   return `
 <!DOCTYPE html>
@@ -70,48 +73,112 @@ function buildInvitationEmailHtml(input: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RailCommand Project Invitation</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:24px 0;">
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;line-height:1px;font-size:1px;">
+    ${previewText}
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;background-color:#f8fafc;padding:32px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background-color:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 18px 45px rgba(15,23,42,0.12);">
           <tr>
-            <td style="background-color:#1e293b;padding:20px 32px;">
-              <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">RailCommand</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px;">
-              <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Project Invitation</h2>
-              <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;">
-                ${invitedByName} invited you to join <strong>${projectName}</strong> as <strong>${projectRole}</strong>.
-              </p>
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:6px;padding:16px;margin-bottom:24px;">
+            <td style="background:#0f172a;background-color:#0f172a;padding:0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding:8px 16px;">
-                    <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Project</p>
-                    <p style="margin:0;color:#1e293b;font-size:14px;font-weight:600;">${projectName}</p>
+                  <td style="padding:28px 32px 22px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="vertical-align:middle;">
+                          <table role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width:44px;height:44px;border-radius:12px;background-color:#f97316;color:#ffffff;text-align:center;font-size:18px;line-height:44px;font-weight:800;letter-spacing:0;">
+                                RC
+                              </td>
+                              <td style="padding-left:12px;">
+                                <p style="margin:0;color:#ffffff;font-size:22px;line-height:1.2;font-weight:800;letter-spacing:0;">RailCommand</p>
+                                <p style="margin:3px 0 0;color:#cbd5e1;font-size:12px;line-height:1.4;font-weight:600;text-transform:uppercase;">by A5 Rail</p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td align="right" style="vertical-align:middle;">
+                          <span style="display:inline-block;background-color:rgba(249,115,22,0.16);border:1px solid rgba(249,115,22,0.42);border-radius:999px;color:#fed7aa;font-size:12px;font-weight:700;padding:7px 12px;text-transform:uppercase;">
+                            Project Invite
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:8px 16px;">
-                    <p style="margin:0 0 4px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Role</p>
-                    <p style="margin:0;color:#1e293b;font-size:14px;">${projectRole}</p>
+                  <td style="height:8px;background-color:#f97316;line-height:8px;font-size:8px;">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:34px 32px 32px;">
+              <p style="margin:0 0 10px;color:#f97316;font-size:12px;line-height:1.4;font-weight:800;text-transform:uppercase;">
+                You have been invited
+              </p>
+              <h1 style="margin:0;color:#0f172a;font-size:28px;line-height:1.18;font-weight:800;letter-spacing:0;">
+                Join ${projectName} in RailCommand
+              </h1>
+              <p style="margin:16px 0 0;color:#475569;font-size:16px;line-height:1.65;">
+                ${invitedByName} invited you to collaborate on this project workspace. Accept the invite to access team updates, documents, RFIs, daily logs, and project activity in one place.
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;background-color:#fff7ed;border:1px solid #fed7aa;border-radius:14px;">
+                <tr>
+                  <td style="padding:20px 22px 8px;">
+                    <p style="margin:0 0 6px;color:#ea580c;font-size:12px;line-height:1.4;font-weight:800;text-transform:uppercase;">Project</p>
+                    <p style="margin:0;color:#0f172a;font-size:18px;line-height:1.35;font-weight:800;">${projectName}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 22px 20px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:12px 14px;background-color:#ffffff;border:1px solid #ffedd5;border-radius:10px;">
+                          <p style="margin:0 0 5px;color:#94a3b8;font-size:11px;line-height:1.4;font-weight:800;text-transform:uppercase;">Your role</p>
+                          <p style="margin:0;color:#0f172a;font-size:15px;line-height:1.35;font-weight:700;">${projectRole}</p>
+                        </td>
+                        <td style="width:12px;">&nbsp;</td>
+                        <td style="padding:12px 14px;background-color:#ffffff;border:1px solid #ffedd5;border-radius:10px;">
+                          <p style="margin:0 0 5px;color:#94a3b8;font-size:11px;line-height:1.4;font-weight:800;text-transform:uppercase;">Invited by</p>
+                          <p style="margin:0;color:#0f172a;font-size:15px;line-height:1.35;font-weight:700;">${invitedByName}</p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
-              <a href="${inviteUrl}" style="display:inline-block;padding:10px 20px;background-color:#1e293b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">
-                View Invitation
-              </a>
-              <p style="margin:20px 0 0;color:#64748b;font-size:13px;line-height:1.5;">
+
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:30px 0 0;">
+                <tr>
+                  <td style="border-radius:12px;background-color:#f97316;">
+                    <a href="${inviteUrl}" style="display:inline-block;padding:15px 24px;border-radius:12px;background-color:#f97316;color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;line-height:1.2;">
+                      Accept invitation
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:22px 0 0;color:#64748b;font-size:13px;line-height:1.6;">
                 If you are asked to sign in first, use this same email address and RailCommand will bring you back to the invitation.
+              </p>
+              <p style="margin:14px 0 0;color:#94a3b8;font-size:12px;line-height:1.6;">
+                Button not working? Copy and paste this link into your browser:<br />
+                <a href="${inviteUrl}" style="color:#ea580c;text-decoration:underline;word-break:break-all;">${inviteUrl}</a>
               </p>
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
-              <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
-                This is an automated invitation from RailCommand.
+            <td style="padding:20px 32px;background-color:#0f172a;border-top:1px solid #1e293b;">
+              <p style="margin:0;color:#ffffff;font-size:13px;line-height:1.5;font-weight:700;">
+                RailCommand
+              </p>
+              <p style="margin:4px 0 0;color:#94a3b8;font-size:12px;line-height:1.6;">
+                Project coordination built for rail teams. This is an automated invitation from RailCommand.
               </p>
             </td>
           </tr>
