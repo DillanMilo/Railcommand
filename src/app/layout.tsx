@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
+import SupabaseStatusBanner from "@/components/layout/SupabaseStatusBanner";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -83,6 +84,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ServiceWorkerProvider>
+            <SupabaseStatusBanner />
             <TooltipProvider>{children}</TooltipProvider>
           </ServiceWorkerProvider>
         </ThemeProvider>
