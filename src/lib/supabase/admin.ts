@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { fetchWithTimeout } from './connectivity';
 
 /**
- * Service-role Supabase client for admin operations (e.g. inviteUserByEmail).
+ * Service-role Supabase client for trusted server-side admin operations.
  * ONLY use in server-side code (server actions, API routes).
  * Bypasses all RLS policies.
  */
@@ -13,6 +14,9 @@ export function createAdminClient() {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+      },
+      global: {
+        fetch: fetchWithTimeout,
       },
     }
   );

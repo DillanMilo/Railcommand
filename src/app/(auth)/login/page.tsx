@@ -302,7 +302,12 @@ export default function LoginPage() {
 function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const modeParam = searchParams.get('mode');
+  const initialMode = modeParam === 'signup' ? 'signup' : 'signin';
+  const emailParam = searchParams.get('email') ?? '';
+  const initialEmail =
+    emailParam.includes('@') && emailParam.length <= 320 ? emailParam : '';
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -330,13 +335,35 @@ function LoginPageInner() {
 
   const signInForm = useForm<SignInData>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: initialEmail, password: '' },
   });
 
   const signUpForm = useForm<SignUpData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { fullName: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: {
+      fullName: '',
+      email: initialEmail,
+      password: '',
+      confirmPassword: '',
+    },
   });
+
+  useEffect(() => {
+    if (modeParam === 'signup' || modeParam === 'signin') {
+      setMode(modeParam);
+      setForgotMode(false);
+      setResetSent(false);
+      setShowEmailConfirmation(false);
+      setShowInstall(false);
+      setAuthError(null);
+    }
+  }, [modeParam]);
+
+  useEffect(() => {
+    if (!initialEmail) return;
+    signInForm.setValue('email', initialEmail);
+    signUpForm.setValue('email', initialEmail);
+  }, [initialEmail, signInForm, signUpForm]);
 
   const watchPassword = signUpForm.watch('password');
   const strength = getPasswordStrength(watchPassword || '');

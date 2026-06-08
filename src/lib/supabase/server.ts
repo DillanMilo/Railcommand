@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { fetchWithTimeout } from './connectivity';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -23,6 +24,9 @@ export async function createClient() {
             // is refreshing user sessions.
           }
         },
+      },
+      global: {
+        fetch: fetchWithTimeout,
       },
     }
   );
