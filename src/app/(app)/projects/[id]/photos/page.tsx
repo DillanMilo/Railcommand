@@ -15,13 +15,13 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectPhotos } from '@/hooks/useData';
 import * as store from '@/lib/store';
 import { compressImage } from '@/lib/compressImage';
+import { resolvePhotoGeo } from '@/lib/photoGeotag';
 import type { Attachment, PhotoCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -117,26 +117,10 @@ export default function PhotosPage({
 
       try {
         const file = fileList[0];
+        const geo = await resolvePhotoGeo(file, { allowDeviceGeo: true });
+        const geoLat = geo?.lat ?? null;
+        const geoLng = geo?.lng ?? null;
         const compressed = await compressImage(file, 'standard');
-
-        // Try to capture GPS
-        let geoLat: number | null = null;
-        let geoLng: number | null = null;
-        if (navigator.geolocation) {
-          try {
-            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 60000,
-              });
-            });
-            geoLat = pos.coords.latitude;
-            geoLng = pos.coords.longitude;
-          } catch {
-            // GPS not available, that's fine
-          }
-        }
 
         if (isDemo) {
           const previewUrl = URL.createObjectURL(compressed);
