@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.3.0-us-only-access-controls',
+    version: '2.3.0',
+    title: 'US-Only Access Controls',
+    description: 'RailCommand now restricts sign-in and protected project workflows to approved United States network locations. Non-US, masked, or unknown locations are routed to a restricted-access page before project data loads.',
+    date: '2026-06-15',
+  },
+  {
     id: 'v2.2.1',
     version: '2.2.1',
     title: 'Larger Uploads — 100 MB per file',
