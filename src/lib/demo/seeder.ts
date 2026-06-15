@@ -3,6 +3,136 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { DemoPreset } from './types';
 
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+type SupabaseFailure = {
+  message?: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+};
+
+type CheckedResult<TData> = {
+  data: TData;
+  error: SupabaseFailure | null;
+};
+
+type CheckedAuthResult = {
+  data: {
+    user: {
+      id: string;
+    } | null;
+  };
+  error: SupabaseFailure | null;
+};
+
+type PartialDemo = {
+  demoAccountId?: string;
+  projectId?: string;
+  organizationId?: string;
+  authUserIds: string[];
+};
+
+function formatSupabaseError(step: string, error: SupabaseFailure): string {
+  const parts = [
+    error.message,
+    error.code ? `code=${error.code}` : null,
+    error.details ? `details=${error.details}` : null,
+    error.hint ? `hint=${error.hint}` : null,
+  ].filter(Boolean);
+
+  return `${step} failed: ${parts.join(' | ') || 'Unknown Supabase error'}`;
+}
+
+async function checked<TData>(
+  step: string,
+  request: PromiseLike<CheckedResult<TData>>
+): Promise<NonNullable<TData>> {
+  const { data, error } = await request;
+  if (error) {
+    throw new Error(formatSupabaseError(step, error));
+  }
+  if (data === null || data === undefined) {
+    throw new Error(`${step} failed: Supabase returned no data`);
+  }
+  return data as NonNullable<TData>;
+}
+
+async function checkedMutation<TData>(
+  step: string,
+  request: PromiseLike<CheckedResult<TData>>
+): Promise<void> {
+  const { error } = await request;
+  if (error) {
+    throw new Error(formatSupabaseError(step, error));
+  }
+}
+
+async function checkedAuthUser(
+  step: string,
+  request: PromiseLike<CheckedAuthResult>
+): Promise<{ user: { id: string } }> {
+  const { data, error } = await request;
+  if (error) {
+    throw new Error(formatSupabaseError(step, error));
+  }
+  if (!data.user) {
+    throw new Error(`${step} failed: Supabase returned no auth user`);
+  }
+  return { user: data.user };
+}
+
+async function assertProjectCount(
+  admin: AdminClient,
+  projectId: string,
+  table: string,
+  expected: number,
+  mode: 'exact' | 'atLeast' = 'exact'
+) {
+  const { count, error } = await admin
+    .from(table)
+    .select('id', { count: 'exact', head: true })
+    .eq('project_id', projectId);
+
+  if (error) {
+    throw new Error(formatSupabaseError(`Verify ${table} seed count`, error));
+  }
+
+  const actual = count ?? 0;
+  const valid = mode === 'exact' ? actual === expected : actual >= expected;
+
+  if (!valid) {
+    throw new Error(
+      `Verify ${table} seed count failed: expected ${mode === 'exact' ? '' : 'at least '}${expected}, found ${actual}`
+    );
+  }
+}
+
+async function cleanupPartialDemo(admin: AdminClient, partial: PartialDemo) {
+  const cleanupTasks: PromiseLike<unknown>[] = [];
+
+  if (partial.demoAccountId) {
+    cleanupTasks.push(
+      admin.from('demo_team_logins').delete().eq('demo_account_id', partial.demoAccountId),
+      admin.from('demo_accounts').delete().eq('id', partial.demoAccountId)
+    );
+  }
+
+  if (partial.projectId) {
+    cleanupTasks.push(admin.from('projects').delete().eq('id', partial.projectId));
+  }
+
+  for (const authUserId of partial.authUserIds) {
+    cleanupTasks.push(admin.auth.admin.deleteUser(authUserId));
+  }
+
+  if (partial.organizationId) {
+    cleanupTasks.push(admin.from('organizations').delete().eq('id', partial.organizationId));
+  }
+
+  await Promise.allSettled(cleanupTasks);
+}
+
 /**
  * Seed a complete demo project with all 12 modules of realistic railroad data.
  * Uses the service-role client to bypass RLS during setup.
@@ -11,19 +141,23 @@ import type { DemoPreset } from './types';
  */
 export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?: string }> {
   const admin = createAdminClient();
+  const partial: PartialDemo = { authUserIds: [] };
 
   try {
     // ─── 1. Create auth users ───────────────────────────────────
     const createdUsers: { authId: string; email: string; fullName: string; orgRole: string; projectRole: string; isPrimary: boolean; password: string }[] = [];
 
     // Primary user
-    const { data: primaryAuth, error: primaryAuthErr } = await admin.auth.admin.createUser({
-      email: preset.primaryUser.email,
-      password: preset.primaryUser.password,
-      email_confirm: true,
-      user_metadata: { full_name: preset.primaryUser.fullName },
-    });
-    if (primaryAuthErr) return { id: '', error: `Failed to create primary user: ${primaryAuthErr.message}` };
+    const primaryAuth = await checkedAuthUser(
+      'Create primary demo auth user',
+      admin.auth.admin.createUser({
+        email: preset.primaryUser.email,
+        password: preset.primaryUser.password,
+        email_confirm: true,
+        user_metadata: { full_name: preset.primaryUser.fullName },
+      })
+    );
+    partial.authUserIds.push(primaryAuth.user.id);
 
     createdUsers.push({
       authId: primaryAuth.user.id,
@@ -38,13 +172,16 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
     // Team users
     if (preset.teamUsers) {
       for (const tu of preset.teamUsers) {
-        const { data: teamAuth, error: teamAuthErr } = await admin.auth.admin.createUser({
-          email: tu.email,
-          password: tu.password,
-          email_confirm: true,
-          user_metadata: { full_name: tu.fullName },
-        });
-        if (teamAuthErr) return { id: '', error: `Failed to create team user ${tu.email}: ${teamAuthErr.message}` };
+        const teamAuth = await checkedAuthUser(
+          `Create team demo auth user ${tu.email}`,
+          admin.auth.admin.createUser({
+            email: tu.email,
+            password: tu.password,
+            email_confirm: true,
+            user_metadata: { full_name: tu.fullName },
+          })
+        );
+        partial.authUserIds.push(teamAuth.user.id);
 
         createdUsers.push({
           authId: teamAuth.user.id,
@@ -59,34 +196,39 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
     }
 
     // ─── 2. Create organization ─────────────────────────────────
-    const { data: org, error: orgErr } = await admin
-      .from('organizations')
-      .insert({
-        name: `${preset.companyName} (Demo)`,
-        type: 'contractor',
-        tier: 'enterprise',
-      })
-      .select()
-      .single();
-    if (orgErr) return { id: '', error: `Failed to create organization: ${orgErr.message}` };
+    const org = await checked(
+      'Create demo organization',
+      admin
+        .from('organizations')
+        .insert({
+          name: `${preset.companyName} (Demo)`,
+          type: 'contractor',
+          tier: 'enterprise',
+        })
+        .select()
+        .single()
+    );
+    partial.organizationId = org.id;
 
     // ─── 3. Create profiles linked to auth users ────────────────
     const profileIds: string[] = [];
     for (const u of createdUsers) {
-      const { data: profile, error: profErr } = await admin
-        .from('profiles')
-        .upsert({
-          id: u.authId,
-          email: u.email,
-          full_name: u.fullName,
-          phone: '',
-          role: u.orgRole,
-          organization_id: org.id,
-          avatar_url: '',
-        }, { onConflict: 'id' })
-        .select()
-        .single();
-      if (profErr) return { id: '', error: `Failed to create profile for ${u.email}: ${profErr.message}` };
+      const profile = await checked(
+        `Create profile for ${u.email}`,
+        admin
+          .from('profiles')
+          .upsert({
+            id: u.authId,
+            email: u.email,
+            full_name: u.fullName,
+            phone: '',
+            role: u.orgRole,
+            organization_id: org.id,
+            avatar_url: '',
+          }, { onConflict: 'id' })
+          .select()
+          .single()
+      );
       profileIds.push(profile.id);
     }
 
@@ -94,23 +236,29 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
     const npcMembers = generateNPCTeamMembers(org.id);
     for (const npc of npcMembers) {
       // Create auth user for NPC (needed for RLS FK refs)
-      const { data: npcAuth, error: npcAuthErr } = await admin.auth.admin.createUser({
-        email: npc.email,
-        password: `NPC-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        email_confirm: true,
-        user_metadata: { full_name: npc.fullName },
-      });
-      if (npcAuthErr) continue; // Skip NPC if creation fails
+      const npcAuth = await checkedAuthUser(
+        `Create NPC demo auth user ${npc.email}`,
+        admin.auth.admin.createUser({
+          email: npc.email,
+          password: `NPC-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          email_confirm: true,
+          user_metadata: { full_name: npc.fullName },
+        })
+      );
+      partial.authUserIds.push(npcAuth.user.id);
 
-      await admin.from('profiles').upsert({
-        id: npcAuth.user.id,
-        email: npc.email,
-        full_name: npc.fullName,
-        phone: npc.phone,
-        role: npc.orgRole,
-        organization_id: npc.orgId,
-        avatar_url: '',
-      }, { onConflict: 'id' });
+      await checkedMutation(
+        `Create NPC profile for ${npc.email}`,
+        admin.from('profiles').upsert({
+          id: npcAuth.user.id,
+          email: npc.email,
+          full_name: npc.fullName,
+          phone: npc.phone,
+          role: npc.orgRole,
+          organization_id: npc.orgId,
+          avatar_url: '',
+        }, { onConflict: 'id' })
+      );
 
       profileIds.push(npcAuth.user.id);
       npc.resolvedId = npcAuth.user.id;
@@ -118,25 +266,28 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
 
     // ─── 4. Create project ──────────────────────────────────────
     const primaryProfileId = createdUsers[0].authId;
-    const { data: project, error: projErr } = await admin
-      .from('projects')
-      .insert({
-        organization_id: org.id,
-        name: preset.project.name,
-        description: preset.project.description,
-        status: 'active',
-        start_date: preset.project.startDate,
-        target_end_date: preset.project.targetEndDate,
-        actual_end_date: null,
-        budget_total: preset.project.budgetTotal,
-        budget_spent: preset.project.budgetSpent,
-        location: preset.project.location,
-        client: preset.project.client,
-        created_by: primaryProfileId,
-      })
-      .select()
-      .single();
-    if (projErr) return { id: '', error: `Failed to create project: ${projErr.message}` };
+    const project = await checked(
+      'Create demo project',
+      admin
+        .from('projects')
+        .insert({
+          organization_id: org.id,
+          name: preset.project.name,
+          description: preset.project.description,
+          status: 'active',
+          start_date: preset.project.startDate,
+          target_end_date: preset.project.targetEndDate,
+          actual_end_date: null,
+          budget_total: preset.project.budgetTotal,
+          budget_spent: preset.project.budgetSpent,
+          location: preset.project.location,
+          client: preset.project.client,
+          created_by: primaryProfileId,
+        })
+        .select()
+        .single()
+    );
+    partial.projectId = project.id;
 
     // ─── 5. Add project members ─────────────────────────────────
     const allMembers: { profileId: string; projectRole: string; canEdit: boolean }[] = [];
@@ -162,126 +313,163 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
     }
 
     for (const m of allMembers) {
-      await admin.from('project_members').insert({
-        project_id: project.id,
-        profile_id: m.profileId,
-        project_role: m.projectRole,
-        can_edit: m.canEdit,
-      });
+      await checkedMutation(
+        `Add project member ${m.profileId}`,
+        admin.from('project_members').insert({
+          project_id: project.id,
+          profile_id: m.profileId,
+          project_role: m.projectRole,
+          can_edit: m.canEdit,
+        })
+      );
     }
 
     // Collect profile IDs for data attribution
     const teamIds = allMembers.map(m => m.profileId);
-    const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
     // ─── 6. Seed milestones ─────────────────────────────────────
     const milestoneData = generateMilestones(project.id, preset);
-    const { data: milestones } = await admin
-      .from('milestones')
-      .insert(milestoneData)
-      .select();
-    const milestoneIds = (milestones ?? []).map((m: any) => m.id);
+    const milestones = await checked(
+      'Seed milestones',
+      admin
+        .from('milestones')
+        .insert(milestoneData)
+        .select('id')
+    );
+    const milestoneIds = (milestones ?? []).map((m) => m.id);
 
     // ─── 7. Seed submittals ─────────────────────────────────────
     const submittalData = generateSubmittals(project.id, teamIds, milestoneIds, preset);
-    await admin.from('submittals').insert(submittalData);
+    await checkedMutation('Seed submittals', admin.from('submittals').insert(submittalData));
 
     // ─── 8. Seed RFIs ───────────────────────────────────────────
     const rfiData = generateRFIs(project.id, teamIds, milestoneIds, preset);
-    await admin.from('rfis').insert(rfiData);
+    await checkedMutation('Seed RFIs', admin.from('rfis').insert(rfiData));
 
     // ─── 9. Seed daily logs ─────────────────────────────────────
     const dailyLogData = generateDailyLogs(project.id, teamIds, preset);
     for (const log of dailyLogData) {
       const { personnel, equipment, work_items, ...logCore } = log;
-      const { data: insertedLog } = await admin.from('daily_logs').insert(logCore).select().single();
-      if (insertedLog) {
-        if (personnel.length > 0) {
-          await admin.from('daily_log_personnel').insert(
-            personnel.map((p: any) => ({ ...p, daily_log_id: insertedLog.id }))
-          );
-        }
-        if (equipment.length > 0) {
-          await admin.from('daily_log_equipment').insert(
-            equipment.map((e: any) => ({ ...e, daily_log_id: insertedLog.id }))
-          );
-        }
-        if (work_items.length > 0) {
-          await admin.from('daily_log_work_items').insert(
-            work_items.map((w: any) => ({ ...w, daily_log_id: insertedLog.id }))
-          );
-        }
+      const insertedLog = await checked(
+        `Seed daily log ${log.log_date}`,
+        admin.from('daily_logs').insert(logCore).select('id').single()
+      );
+      if (personnel.length > 0) {
+        await checkedMutation(
+          `Seed daily log personnel ${log.log_date}`,
+          admin.from('daily_log_personnel').insert(
+            personnel.map((p) => ({ ...p, daily_log_id: insertedLog.id }))
+          )
+        );
+      }
+      if (equipment.length > 0) {
+        await checkedMutation(
+          `Seed daily log equipment ${log.log_date}`,
+          admin.from('daily_log_equipment').insert(
+            equipment.map((e) => ({ ...e, daily_log_id: insertedLog.id }))
+          )
+        );
+      }
+      if (work_items.length > 0) {
+        await checkedMutation(
+          `Seed daily log work items ${log.log_date}`,
+          admin.from('daily_log_work_items').insert(
+            work_items.map((w) => ({ ...w, daily_log_id: insertedLog.id }))
+          )
+        );
       }
     }
 
     // ─── 10. Seed punch list items ──────────────────────────────
     const punchData = generatePunchListItems(project.id, teamIds, preset);
-    await admin.from('punch_list_items').insert(punchData);
+    await checkedMutation('Seed punch list items', admin.from('punch_list_items').insert(punchData));
 
     // ─── 11. Seed safety incidents ──────────────────────────────
     const safetyData = generateSafetyIncidents(project.id, teamIds, preset);
-    await admin.from('safety_incidents').insert(safetyData);
+    await checkedMutation('Seed safety incidents', admin.from('safety_incidents').insert(safetyData));
 
     // ─── 12. Seed change orders ─────────────────────────────────
     const changeOrderData = generateChangeOrders(project.id, teamIds, milestoneIds, preset);
-    await admin.from('change_orders').insert(changeOrderData);
+    await checkedMutation('Seed change orders', admin.from('change_orders').insert(changeOrderData));
 
     // ─── 13. Seed QC/QA reports ─────────────────────────────────
     const qcqaData = generateQCQAReports(project.id, teamIds, preset);
-    await admin.from('qcqa_reports').insert(qcqaData);
+    await checkedMutation('Seed QC/QA reports', admin.from('qcqa_reports').insert(qcqaData));
 
     // ─── 14. Seed project documents ─────────────────────────────
     const docData = generateDocuments(project.id, teamIds, milestoneIds, preset);
-    await admin.from('project_documents').insert(docData);
+    await checkedMutation('Seed project documents', admin.from('project_documents').insert(docData));
 
     // ─── 15. Seed weekly reports ────────────────────────────────
     const weeklyData = generateWeeklyReports(project.id, teamIds, preset);
-    await admin.from('weekly_reports').insert(weeklyData);
+    await checkedMutation('Seed weekly reports', admin.from('weekly_reports').insert(weeklyData));
 
     // ─── 16. Seed modifications ─────────────────────────────────
     const modData = generateModifications(project.id, teamIds, milestoneIds, preset);
-    await admin.from('modifications').insert(modData);
+    await checkedMutation('Seed modifications', admin.from('modifications').insert(modData));
 
     // ─── 17. Seed activity log ──────────────────────────────────
     const activityData = generateActivityLog(project.id, teamIds);
-    await admin.from('activity_log').insert(activityData);
+    await checkedMutation('Seed activity log', admin.from('activity_log').insert(activityData));
+
+    await Promise.all([
+      assertProjectCount(admin, project.id, 'milestones', milestoneData.length),
+      assertProjectCount(admin, project.id, 'submittals', submittalData.length),
+      assertProjectCount(admin, project.id, 'rfis', rfiData.length),
+      assertProjectCount(admin, project.id, 'daily_logs', dailyLogData.length),
+      assertProjectCount(admin, project.id, 'punch_list_items', punchData.length),
+      assertProjectCount(admin, project.id, 'safety_incidents', safetyData.length),
+      assertProjectCount(admin, project.id, 'change_orders', changeOrderData.length),
+      assertProjectCount(admin, project.id, 'qcqa_reports', qcqaData.length),
+      assertProjectCount(admin, project.id, 'project_documents', docData.length),
+      assertProjectCount(admin, project.id, 'weekly_reports', weeklyData.length),
+      assertProjectCount(admin, project.id, 'modifications', modData.length),
+      assertProjectCount(admin, project.id, 'activity_log', activityData.length, 'atLeast'),
+    ]);
 
     // ─── 18. Create demo_accounts record ────────────────────────
-    const { data: demoAccount, error: demoErr } = await admin
-      .from('demo_accounts')
-      .insert({
-        slug: preset.slug,
-        company_name: preset.companyName,
-        description: preset.description,
-        organization_id: org.id,
-        project_id: project.id,
-        demo_user_id: primaryProfileId,
-        is_active: true,
-        is_team_demo: preset.isTeamDemo,
-        demo_password: preset.primaryUser.password,
-      })
-      .select()
-      .single();
-    if (demoErr) return { id: '', error: `Failed to create demo account record: ${demoErr.message}` };
+    const demoAccount = await checked(
+      'Create demo account record',
+      admin
+        .from('demo_accounts')
+        .insert({
+          slug: preset.slug,
+          company_name: preset.companyName,
+          description: preset.description,
+          organization_id: org.id,
+          project_id: project.id,
+          demo_user_id: primaryProfileId,
+          is_active: true,
+          is_team_demo: preset.isTeamDemo,
+          demo_password: preset.primaryUser.password,
+        })
+        .select()
+        .single()
+    );
+    partial.demoAccountId = demoAccount.id;
 
     // ─── 18. Create team login records (for team demos) ─────────
     if (preset.isTeamDemo && preset.teamUsers) {
       for (let i = 0; i < preset.teamUsers.length; i++) {
         const tu = preset.teamUsers[i];
         const cu = createdUsers[i + 1]; // +1 because index 0 is primary
-        await admin.from('demo_team_logins').insert({
-          demo_account_id: demoAccount.id,
-          profile_id: cu.authId,
-          email: tu.email,
-          display_name: tu.fullName,
-          project_role: tu.projectRole,
-          demo_password: tu.password,
-        });
+        await checkedMutation(
+          `Create team login record for ${tu.email}`,
+          admin.from('demo_team_logins').insert({
+            demo_account_id: demoAccount.id,
+            profile_id: cu.authId,
+            email: tu.email,
+            display_name: tu.fullName,
+            project_role: tu.projectRole,
+            demo_password: tu.password,
+          })
+        );
       }
     }
 
     return { id: demoAccount.id };
   } catch (err) {
+    await cleanupPartialDemo(admin, partial);
     return { id: '', error: err instanceof Error ? err.message : 'Unknown seeder error' };
   }
 }

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Thermometer, X, MapPin, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { compressImage } from '@/lib/compressImage';
 import { uploadAttachment } from '@/lib/actions/attachments';
+import { resolvePhotoGeoBatch, type PhotoGeoSource } from '@/lib/photoGeotag';
 import type { PhotoCategory, Attachment } from '@/lib/types';
 
 export interface PhotoFile {
@@ -16,6 +17,7 @@ export interface PhotoFile {
   category: PhotoCategory;
   geo_lat: number | null;
   geo_lng: number | null;
+  geo_source?: PhotoGeoSource | null;
   uploading?: boolean;
   uploadError?: string;
   originalSize?: number;
@@ -52,43 +54,38 @@ export default function PhotoUpload({
   const [geoLoading, setGeoLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photosRef = useRef(photos);
-  photosRef.current = photos;
 
-  const captureGeoForPhoto = useCallback((): Promise<{ lat: number; lng: number } | null> => {
-    if (!showGeoCapture || !navigator.geolocation) return Promise.resolve(null);
-
-    return new Promise((resolve) => {
-      setGeoLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGeoLoading(false);
-          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        () => {
-          setGeoLoading(false);
-          resolve(null);
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
-      );
-    });
-  }, [showGeoCapture]);
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
 
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList) return;
 
     const remaining = maxFiles - photos.length;
-    const files = Array.from(fileList).slice(0, remaining);
-    const geo = await captureGeoForPhoto();
+    if (remaining <= 0) return;
+
+    const files = Array.from(fileList)
+      .slice(0, remaining)
+      .filter((file) => file.size <= MAX_FILE_SIZE);
+    if (files.length === 0) return;
+
+    setGeoLoading(showGeoCapture);
+    const geos = showGeoCapture
+      ? await resolvePhotoGeoBatch(files, { allowDeviceGeo: true }).finally(() =>
+          setGeoLoading(false)
+        )
+      : files.map(() => null);
 
     const newPhotos: PhotoFile[] = files
-      .filter((f) => f.size <= MAX_FILE_SIZE)
-      .map((file) => ({
+      .map((file, index) => ({
         id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         file,
         preview: URL.createObjectURL(file),
         category,
-        geo_lat: geo?.lat ?? null,
-        geo_lng: geo?.lng ?? null,
+        geo_lat: geos[index]?.lat ?? null,
+        geo_lng: geos[index]?.lng ?? null,
+        geo_source: geos[index]?.source ?? null,
         uploading: !!(entityType && entityId && projectId),
         originalSize: file.size,
       }));
@@ -134,7 +131,7 @@ export default function PhotoUpload({
         alert(`Upload failed for ${photo.file.name}`);
       }
     }
-  }, [photos, onPhotosChange, maxFiles, category, captureGeoForPhoto, entityType, entityId, projectId, onUploadComplete]);
+  }, [photos, onPhotosChange, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete]);
 
   const removePhoto = useCallback((id: string) => {
     const photo = photos.find((p) => p.id === id);
@@ -196,7 +193,7 @@ export default function PhotoUpload({
           {geoLoading ? (
             <>
               <Loader2 className="size-8 animate-spin text-rc-blue" />
-              <p className="text-sm text-muted-foreground">Capturing location...</p>
+              <p className="text-sm text-muted-foreground">Reading photo location...</p>
             </>
           ) : (
             <>
@@ -210,7 +207,7 @@ export default function PhotoUpload({
               {showGeoCapture && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <MapPin className="size-3" />
-                  GPS location will be attached when permitted
+                  Uses readable photo GPS first, then device location when permitted
                 </p>
               )}
             </>
@@ -264,11 +261,17 @@ export default function PhotoUpload({
                   >
                     {photo.category === 'thermal' ? 'Thermal' : 'Photo'}
                   </Badge>
-                  {photo.geo_lat !== null && (
+                  {photo.geo_lat !== null && photo.geo_lng !== null ? (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-rc-emerald/90 text-white">
-                      <MapPin className="mr-0.5 size-2.5" />GPS
+                      <MapPin className="mr-0.5 size-2.5" />
+                      {photo.geo_source === 'exif' ? 'EXIF GPS' : 'GPS'}
                     </Badge>
-                  )}
+                  ) : showGeoCapture ? (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-500/90 text-white">
+                      <MapPin className="mr-0.5 size-2.5" />
+                      No GPS
+                    </Badge>
+                  ) : null}
                   {photo.originalSize && photo.file.size < photo.originalSize * 0.8 && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-600 text-white">
                       Optimised
@@ -293,6 +296,11 @@ export default function PhotoUpload({
         {photos.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {photos.length} / {maxFiles} photos attached
+            {showGeoCapture &&
+              ` - ${
+                photos.filter((photo) => photo.geo_lat !== null && photo.geo_lng !== null)
+                  .length
+              } with GPS`}
           </p>
         )}
       </CardContent>
