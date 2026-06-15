@@ -26,6 +26,8 @@ import {
   Check,
   Play,
   RefreshCw,
+  ShieldCheck,
+  MapPin,
 } from 'lucide-react';
 import { initDemoData, initFreshData } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
@@ -606,7 +608,7 @@ function LoginPageInner() {
 
             {/* Feature pills */}
             <div className="flex flex-wrap gap-2 mt-8">
-              {['Submittals', 'RFIs', 'Daily Logs', 'Punch Lists', 'Schedules'].map(
+              {['Submittals', 'RFIs', 'Daily Logs', 'Punch Lists', 'Schedules', 'US-Only Access'].map(
                 (item) => (
                   <span
                     key={item}
@@ -789,6 +791,29 @@ function LoginPageInner() {
                   Sign Up
                 </button>
               </div>
+
+              {mode === 'signup' && (
+                <div className="mb-4 rounded-lg border border-rc-emerald/20 bg-rc-emerald/5 p-3 dark:bg-rc-emerald/10">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-rc-emerald/10 text-rc-emerald dark:bg-rc-emerald/15">
+                      <ShieldCheck className="size-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">
+                        US-only access controls
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Logins and project workflows are restricted to approved
+                        United States network locations.
+                      </p>
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-rc-emerald">
+                        <MapPin className="size-3.5" />
+                        <span>IP-based location checks before data loads</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Try Demo */}
               <Button

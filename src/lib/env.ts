@@ -52,4 +52,13 @@ export const env = {
   get CRON_SECRET() {
     return process.env.CRON_SECRET;
   },
+  get US_ONLY_ACCESS_ENABLED() {
+    return process.env.US_ONLY_ACCESS_ENABLED;
+  },
+  get US_ONLY_ALLOWED_COUNTRIES() {
+    return process.env.US_ONLY_ALLOWED_COUNTRIES;
+  },
+  get US_ONLY_BLOCK_UNKNOWN_COUNTRY() {
+    return process.env.US_ONLY_BLOCK_UNKNOWN_COUNTRY;
+  },
 } as const;

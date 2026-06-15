@@ -3,6 +3,39 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
 import { fetchWithTimeout } from '@/lib/supabase/connectivity';
 
+const GEO_RESTRICTED_PAGE = '/geo-restricted';
+
+const GEO_RESTRICTED_EXACT_PATHS = new Set(['/login']);
+
+const GEO_RESTRICTED_PREFIXES = [
+  '/admin',
+  '/auth',
+  '/dashboard',
+  '/demo',
+  '/invite',
+  '/onboarding',
+  '/projects',
+  '/search',
+  '/settings',
+  '/api/admin/demo',
+  '/api/chat',
+  '/api/email/send',
+  '/api/notifications',
+];
+
+const GEO_EXEMPT_PREFIXES = ['/api/cron/'];
+const GEO_EXEMPT_EXACT_PATHS = new Set(['/api/health/supabase', GEO_RESTRICTED_PAGE]);
+const FALSE_ENV_VALUES = new Set(['0', 'false', 'no', 'off', 'disabled']);
+const TRUE_ENV_VALUES = new Set(['1', 'true', 'yes', 'on', 'enabled']);
+const DEFAULT_ALLOWED_COUNTRIES = ['US'];
+
+type GeoAccessDecision = {
+  blocked: boolean;
+  country: string | null;
+  reason: string;
+  allowedCountries: Set<string>;
+};
+
 function getSafeRedirectPath(value: string | null): string | null {
   if (!value || !value.startsWith('/') || value.startsWith('//')) {
     return null;
@@ -10,7 +43,156 @@ function getSafeRedirectPath(value: string | null): string | null {
   return value;
 }
 
+function getEnvFlag(value: string | undefined, defaultValue: boolean): boolean {
+  if (!value) return defaultValue;
+
+  const normalized = value.trim().toLowerCase();
+  if (TRUE_ENV_VALUES.has(normalized)) return true;
+  if (FALSE_ENV_VALUES.has(normalized)) return false;
+
+  return defaultValue;
+}
+
+function getAllowedCountries(): Set<string> {
+  const configuredCountries = env.US_ONLY_ALLOWED_COUNTRIES
+    ?.split(',')
+    .map((country) => country.trim().toUpperCase())
+    .filter(Boolean);
+
+  return new Set(
+    configuredCountries && configuredCountries.length > 0
+      ? configuredCountries
+      : DEFAULT_ALLOWED_COUNTRIES
+  );
+}
+
+function getTestCountry(request: NextRequest): string | null {
+  if (process.env.NODE_ENV === 'production') return null;
+
+  const country = request.headers.get('x-rc-test-country')?.trim().toUpperCase();
+  return country || null;
+}
+
+function getRequestCountry(request: NextRequest): string | null {
+  const testCountry = getTestCountry(request);
+  const country =
+    testCountry ??
+    request.headers.get('x-vercel-ip-country') ??
+    request.headers.get('cf-ipcountry') ??
+    request.headers.get('cloudfront-viewer-country');
+
+  const normalizedCountry = country?.trim().toUpperCase();
+  if (!normalizedCountry || normalizedCountry === 'UNKNOWN') return null;
+
+  return normalizedCountry;
+}
+
+function isGeoRestrictionEnabled(request: NextRequest): boolean {
+  if (getTestCountry(request)) return true;
+
+  return getEnvFlag(
+    env.US_ONLY_ACCESS_ENABLED,
+    process.env.NODE_ENV === 'production'
+  );
+}
+
+function shouldBlockUnknownCountry(): boolean {
+  return getEnvFlag(
+    env.US_ONLY_BLOCK_UNKNOWN_COUNTRY,
+    process.env.NODE_ENV === 'production'
+  );
+}
+
+function isGeoRestrictedPath(pathname: string): boolean {
+  if (GEO_EXEMPT_EXACT_PATHS.has(pathname)) return false;
+  if (GEO_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return false;
+  }
+  if (GEO_RESTRICTED_EXACT_PATHS.has(pathname)) return true;
+
+  return GEO_RESTRICTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
+function shouldBlockForGeo(
+  request: NextRequest,
+  pathname: string
+): GeoAccessDecision {
+  if (!isGeoRestrictedPath(pathname) || !isGeoRestrictionEnabled(request)) {
+    return {
+      blocked: false,
+      country: null,
+      reason: 'not_restricted',
+      allowedCountries: getAllowedCountries(),
+    };
+  }
+
+  const allowedCountries = getAllowedCountries();
+  const country = getRequestCountry(request);
+
+  if (!country) {
+    return {
+      blocked: shouldBlockUnknownCountry(),
+      country,
+      reason: 'unknown_country',
+      allowedCountries,
+    };
+  }
+
+  return {
+    blocked: !allowedCountries.has(country),
+    country,
+    reason: 'outside_allowed_country',
+    allowedCountries,
+  };
+}
+
+function getGeoBlockedResponse(
+  request: NextRequest,
+  pathname: string,
+  country: string | null,
+  reason: string
+) {
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json(
+      {
+        error: 'Access is restricted to users located within the United States.',
+      },
+      { status: 403 }
+    );
+  }
+
+  const url = request.nextUrl.clone();
+  url.pathname = GEO_RESTRICTED_PAGE;
+  url.search = '';
+  url.searchParams.set('reason', reason);
+  if (country) url.searchParams.set('country', country);
+  url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+
+  return NextResponse.redirect(url);
+}
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const geoBlock = shouldBlockForGeo(request, pathname);
+
+  if (geoBlock.blocked) {
+    console.warn('[middleware] Geo access blocked', {
+      pathname,
+      country: geoBlock.country ?? 'unknown',
+      reason: geoBlock.reason,
+      allowedCountries: Array.from(geoBlock.allowedCountries),
+    });
+
+    return getGeoBlockedResponse(
+      request,
+      pathname,
+      geoBlock.country,
+      geoBlock.reason
+    );
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -50,11 +232,10 @@ export async function middleware(request: NextRequest) {
     request.cookies.get('rc-mode')?.value === 'fresh';
   const isDemoMode = !user && hasDemoModeCookie;
 
-  const { pathname } = request.nextUrl;
-
   // Public routes that never require auth
   const isPublicRoute =
     pathname === '/login' ||
+    pathname === GEO_RESTRICTED_PAGE ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/demo/') ||
     pathname === '/api/health/supabase' ||
