@@ -205,9 +205,10 @@ export default function PhotoUpload({
                 Drag & drop or click to browse. Max {MAX_FILE_SIZE / (1024 * 1024)}MB per file.
               </p>
               {showGeoCapture && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <MapPin className="size-3" />
-                  Uses readable photo GPS first, then device location when permitted
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 text-center max-w-sm">
+                  <MapPin className="size-3 shrink-0" />
+                  Location data is read from each photo (or your device when permitted),
+                  stored with the photo, and visible to your project team.
                 </p>
               )}
             </>
