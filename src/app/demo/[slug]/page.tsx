@@ -1,19 +1,17 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Train, Lock, Users, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { createClient } from '@/lib/supabase/client';
 
 interface TeamLogin {
   display_name: string;
   email: string;
   project_role: string;
-  demo_password: string;
 }
 
 interface DemoData {
@@ -22,7 +20,6 @@ interface DemoData {
   is_team_demo: boolean;
   project_id: string;
   demo_user_email: string;
-  demo_password: string;
   team_logins: TeamLogin[];
 }
 
@@ -53,31 +50,22 @@ export default function DemoEntryPage({ params }: { params: Promise<{ slug: stri
     loadDemo();
   }, [slug]);
 
-  async function handleLogin(email: string, password: string) {
+  const handleLogin = useCallback(async (email: string) => {
     setAuthLoading(true);
     setError(null);
 
     try {
-      const supabase = createClient();
-
-      // Sign out any existing session first
-      await supabase.auth.signOut();
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/admin/demo/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, email }),
       });
 
-      if (signInError) {
-        setError(`Login failed: ${signInError.message}`);
+      if (!res.ok) {
+        setError('Login failed. Please try again.');
         setAuthLoading(false);
         return;
       }
-
-      // Set demo session markers
-      document.cookie = `rc-remember=true; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-      document.cookie = `rc-onboarded=true; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
-      document.cookie = `rc-demo-slug=${slug}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
       // Clear any old client-side demo mode
       localStorage.removeItem('rc-mode');
@@ -91,7 +79,13 @@ export default function DemoEntryPage({ params }: { params: Promise<{ slug: stri
       setError('Authentication failed. Please try again.');
       setAuthLoading(false);
     }
-  }
+  }, [router, slug]);
+
+  useEffect(() => {
+    if (demoData && !demoData.is_team_demo && !authLoading) {
+      handleLogin(demoData.demo_user_email);
+    }
+  }, [authLoading, demoData, handleLogin]);
 
   if (loading) {
     return (
@@ -127,9 +121,6 @@ export default function DemoEntryPage({ params }: { params: Promise<{ slug: stri
 
   // Single-user demo: auto-login immediately
   if (!demoData.is_team_demo) {
-    if (!authLoading) {
-      handleLogin(demoData.demo_user_email, demoData.demo_password);
-    }
     return (
       <div className="min-h-screen bg-rc-bg flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -148,7 +139,6 @@ export default function DemoEntryPage({ params }: { params: Promise<{ slug: stri
       display_name: demoData.demo_user_email.split('@')[0].replace('-demo', '').replace(/^\w/, (c: string) => c.toUpperCase()),
       email: demoData.demo_user_email,
       project_role: 'manager',
-      demo_password: demoData.demo_password,
     },
     ...demoData.team_logins,
   ];
@@ -185,7 +175,7 @@ export default function DemoEntryPage({ params }: { params: Promise<{ slug: stri
             {allLogins.map((login) => (
               <button
                 key={login.email}
-                onClick={() => handleLogin(login.email, login.demo_password)}
+                onClick={() => handleLogin(login.email)}
                 disabled={authLoading}
                 className="w-full flex items-center justify-between p-4 rounded-lg border border-rc-border hover:border-rc-orange hover:bg-rc-orange/5 transition-colors text-left disabled:opacity-50"
               >

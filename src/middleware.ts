@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { env } from '@/lib/env';
 import { fetchWithTimeout } from '@/lib/supabase/connectivity';
 
 function getSafeRedirectPath(value: string | null): string | null {
@@ -13,8 +14,8 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -58,7 +59,12 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/demo/') ||
     pathname === '/api/health/supabase' ||
     pathname === '/api/admin/demo/lookup' ||
-    pathname === '/api/admin/demo/track';
+    pathname === '/api/admin/demo/session' ||
+    pathname === '/api/admin/demo/track' ||
+    pathname === '/api/chat/transcribe' ||
+    pathname === '/api/email/send' ||
+    pathname === '/api/notifications' ||
+    pathname.startsWith('/api/cron/');
 
   // If not authenticated, not demo, and not on a public route → redirect to login
   if (!user && !isDemoMode && !isPublicRoute) {

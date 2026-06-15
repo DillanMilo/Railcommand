@@ -4,6 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { DemoAccount, DemoTeamLogin } from './types';
 
+type TeamLoginWithDemoAccount = {
+  demo_accounts?: { slug?: string } | { slug?: string }[] | null;
+};
+
 /**
  * Look up a demo account by slug. Returns null if not found or inactive.
  */
@@ -71,7 +75,9 @@ export async function isCurrentUserDemo(): Promise<{ isDemo: boolean; demoSlug?:
     .single();
 
   if (teamLogin) {
-    return { isDemo: true, demoSlug: (teamLogin as any).demo_accounts?.slug };
+    const demoAccounts = (teamLogin as TeamLoginWithDemoAccount).demo_accounts;
+    const demoSlug = Array.isArray(demoAccounts) ? demoAccounts[0]?.slug : demoAccounts?.slug;
+    return { isDemo: true, demoSlug };
   }
 
   return { isDemo: false };

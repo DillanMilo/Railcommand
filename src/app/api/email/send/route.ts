@@ -12,6 +12,7 @@ const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@rail
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 100; // max emails per window
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function checkRateLimit(key: string): boolean {
   const now = Date.now();
@@ -30,7 +31,10 @@ export async function POST(request: NextRequest) {
     // Auth: require bearer token matching RESEND_API_KEY or a dedicated EMAIL_API_KEY
     const authHeader = request.headers.get('authorization');
     const expectedKey = process.env.EMAIL_API_KEY ?? process.env.NOTIFICATIONS_API_KEY;
-    if (expectedKey && authHeader !== `Bearer ${expectedKey}`) {
+    if (!expectedKey) {
+      return NextResponse.json({ error: 'Email endpoint not configured' }, { status: 500 });
+    }
+    if (authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -47,6 +51,10 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields: to, subject, html' },
         { status: 400 },
       );
+    }
+
+    if (!EMAIL_REGEX.test(to)) {
+      return NextResponse.json({ error: 'Invalid recipient email' }, { status: 400 });
     }
 
     // Rate limit by recipient
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[api/email/send] Resend error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, id: data?.id });

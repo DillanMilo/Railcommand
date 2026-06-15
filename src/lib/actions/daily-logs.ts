@@ -16,7 +16,10 @@ import {
 // ---------------------------------------------------------------------------
 // getDailyLogs -- all daily logs for a project
 // ---------------------------------------------------------------------------
-export async function getDailyLogs(projectId: string): Promise<ActionResult<DailyLog[]>> {
+export async function getDailyLogs(
+  projectId: string,
+  options: { offset?: number; limit?: number } = {}
+): Promise<ActionResult<DailyLog[]>> {
   try {
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
@@ -25,6 +28,9 @@ export async function getDailyLogs(projectId: string): Promise<ActionResult<Dail
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
+    const offset = Math.max(options.offset ?? 0, 0);
+    const limit = Math.min(Math.max(options.limit ?? 500, 1), 500);
+
     const { data, error } = await supabase
       .from('daily_logs')
       .select(`
@@ -32,7 +38,8 @@ export async function getDailyLogs(projectId: string): Promise<ActionResult<Dail
         created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('project_id', projectId)
-      .order('log_date', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) return { error: error.message };
 

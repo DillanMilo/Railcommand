@@ -11,10 +11,21 @@ import type { DailyLogReminderPayload } from '@/lib/notifications';
 
 export const maxDuration = 60;
 
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Cron endpoint not configured' }, { status: 500 });
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -38,7 +49,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, emailsSent: 0 });
     }
 
-    let sent = 0;
+    const reminders: {
+      userId: string;
+      projectId: string;
+      projectName: string;
+    }[] = [];
 
     for (const project of projects) {
       // Get members with edit permissions (typically the ones filing logs)
@@ -63,26 +78,46 @@ export async function GET(request: NextRequest) {
       const needsReminder = memberIds.filter((id) => !filedUserIds.has(id));
 
       for (const userId of needsReminder) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('email, full_name')
-          .eq('id', userId)
-          .single();
-
-        if (!profile?.email) continue;
-
-        const payload: DailyLogReminderPayload = {
-          type: 'daily_log_reminder',
-          recipientEmail: profile.email,
-          recipientName: profile.full_name ?? 'Team Member',
-          date: todayFormatted,
-          projectName: project.name,
+        reminders.push({
+          userId,
           projectId: project.id,
-        };
-
-        await sendNotification(userId, payload);
-        sent++;
+          projectName: project.name,
+        });
       }
+    }
+
+    const userIds = Array.from(new Set(reminders.map((entry) => entry.userId)));
+    const { data: profiles } = userIds.length
+      ? await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', userIds)
+      : { data: [] };
+
+    const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+    const tasks = reminders.flatMap((entry) => {
+      const profile = profileById.get(entry.userId);
+      if (!profile?.email) return [];
+
+      const payload: DailyLogReminderPayload = {
+        type: 'daily_log_reminder',
+        recipientEmail: profile.email,
+        recipientName: profile.full_name ?? 'Team Member',
+        date: todayFormatted,
+        projectName: entry.projectName,
+        projectId: entry.projectId,
+      };
+
+      return [async () => {
+        await sendNotification(entry.userId, payload);
+        return 1;
+      }];
+    });
+
+    let sent = 0;
+    for (const batch of chunk(tasks, 10)) {
+      const results = await Promise.all(batch.map((task) => task()));
+      sent += results.reduce((sum, value) => sum + value, 0);
     }
 
     return NextResponse.json({ success: true, emailsSent: sent });

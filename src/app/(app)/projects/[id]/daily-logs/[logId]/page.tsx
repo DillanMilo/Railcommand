@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState, useEffect, useCallback } from 'react';
-import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
+import { formatDateSafe } from '@/lib/date-utils';
 import Link from 'next/link';
 import { Cloud, Sun, Snowflake, Wind, ShieldAlert, Users, Wrench, ClipboardList, MapPin, Pencil } from 'lucide-react';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
@@ -32,6 +32,20 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
   const { data: log, loading } = useDailyLogDetail(projectId, logId);
+  const rawAttachments: Attachment[] = log
+    ? (log as DailyLog & { attachments?: Attachment[] }).attachments?.length
+      ? (log as DailyLog & { attachments?: Attachment[] }).attachments!
+      : isDemo ? getAttachments('daily_log', logId) : []
+    : [];
+  const [signedAttachments, setSignedAttachments] = useState<Attachment[]>([]);
+
+  const resolveSignedUrls = useCallback(async () => {
+    if (isDemo || !log) return;
+    const result = await getAttachmentsWithSignedUrls('daily_log', logId);
+    if (result.data) setSignedAttachments(result.data);
+  }, [isDemo, log, logId]);
+
+  useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
 
   if (loading) {
     return (
@@ -56,19 +70,6 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
     ?? (isDemo ? getProfiles().find((p) => p.id === log.created_by)?.full_name : undefined);
   const totalHeadcount = (log.personnel ?? []).reduce((s, r) => s + r.headcount, 0);
-  const rawAttachments = (log as DailyLog & { attachments?: unknown[] }).attachments?.length
-    ? (log as DailyLog & { attachments?: unknown[] }).attachments!
-    : isDemo ? getAttachments('daily_log', logId) : [];
-  const [signedAttachments, setSignedAttachments] = useState<typeof rawAttachments>(rawAttachments);
-
-  const resolveSignedUrls = useCallback(async () => {
-    if (isDemo || !log) return;
-    const result = await getAttachmentsWithSignedUrls('daily_log', logId);
-    if (result.data) setSignedAttachments(result.data);
-  }, [isDemo, log, logId]);
-
-  useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
-
   const attachments = isDemo ? rawAttachments : signedAttachments;
 
   return (

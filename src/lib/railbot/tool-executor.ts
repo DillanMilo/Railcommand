@@ -100,6 +100,10 @@ export async function executeTool(
 
 // ── Read Tool Handlers ──────────────────────────────────────────────────
 
+function escapeIlikeWildcard(value: string): string {
+  return value.replace(/[%_]/g, (char) => `\\${char}`);
+}
+
 async function searchSubmittals(
   supabase: SupabaseClient,
   projectId: string,
@@ -113,7 +117,10 @@ async function searchSubmittals(
     .limit(20);
 
   if (args.status) query = query.eq('status', args.status as string);
-  if (args.search) query = query.or(`title.ilike.%${args.search}%,spec_section.ilike.%${args.search}%`);
+  if (args.search) {
+    const safe = escapeIlikeWildcard(args.search as string);
+    query = query.or(`title.ilike.%${safe}%,spec_section.ilike.%${safe}%`);
+  }
   if (args.due_before) query = query.lte('due_date', args.due_before as string);
   if (args.due_after) query = query.gte('due_date', args.due_after as string);
 
@@ -136,7 +143,10 @@ async function searchRFIs(
 
   if (args.status) query = query.eq('status', args.status as string);
   if (args.priority) query = query.eq('priority', args.priority as string);
-  if (args.search) query = query.ilike('subject', `%${args.search}%`);
+  if (args.search) {
+    const safe = escapeIlikeWildcard(args.search as string);
+    query = query.ilike('subject', `%${safe}%`);
+  }
   if (args.due_before) query = query.lte('due_date', args.due_before as string);
   if (args.due_after) query = query.gte('due_date', args.due_after as string);
 
@@ -159,7 +169,10 @@ async function searchPunchList(
 
   if (args.status) query = query.eq('status', args.status as string);
   if (args.priority) query = query.eq('priority', args.priority as string);
-  if (args.search) query = query.or(`title.ilike.%${args.search}%,location.ilike.%${args.search}%`);
+  if (args.search) {
+    const safe = escapeIlikeWildcard(args.search as string);
+    query = query.or(`title.ilike.%${safe}%,location.ilike.%${safe}%`);
+  }
   if (args.assigned_to) query = query.eq('assigned_to', args.assigned_to as string);
 
   const { data, error } = await query;
@@ -181,7 +194,10 @@ async function searchDailyLogs(
 
   if (args.date_from) query = query.gte('log_date', args.date_from as string);
   if (args.date_to) query = query.lte('log_date', args.date_to as string);
-  if (args.search) query = query.ilike('work_summary', `%${args.search}%`);
+  if (args.search) {
+    const safe = escapeIlikeWildcard(args.search as string);
+    query = query.ilike('work_summary', `%${safe}%`);
+  }
 
   const { data, error } = await query;
   if (error) return { success: false, error: error.message };

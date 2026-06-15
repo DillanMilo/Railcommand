@@ -17,13 +17,15 @@ import {
 } from '@/lib/seed-data';
 import type { ProjectSummary } from '@/lib/railbot/system-prompt';
 import type { ChatMessage } from '@/lib/railbot/types';
-import type { Profile, ProjectMember } from '@/lib/types';
+import type { Organization, Profile, ProjectMember } from '@/lib/types';
 import type { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const maxDuration = 300;
 
 // Maximum number of tool-call round-trips to prevent infinite loops
 const MAX_TOOL_ROUNDS = 5;
+type ProfileWithOrganization = Profile & { organization?: Organization | null };
 
 /**
  * Filter the tools array based on the user's project role so OpenAI only sees
@@ -181,8 +183,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 2. Authenticate (real auth or demo mode) ─────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let profile: Profile & { organization?: any };
+    let profile: ProfileWithOrganization;
     let membership: ProjectMember;
     let userId: string;
     let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
@@ -270,7 +271,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      profile = profileResult.data as Profile & { organization?: any };
+      profile = profileResult.data as ProfileWithOrganization;
       membership = mem as ProjectMember;
     }
 
@@ -453,10 +454,10 @@ export async function POST(request: NextRequest) {
             }
           };
 
-          let currentMessages = [...openaiMessages];
+          const currentMessages = [...openaiMessages];
           let toolRounds = 0;
           // Track all tool calls across rounds for persistence
-          let toolCallsForPersistence: { id: string; type: 'function'; function: { name: string; arguments: string } }[] = [];
+          const toolCallsForPersistence: { id: string; type: 'function'; function: { name: string; arguments: string } }[] = [];
 
           while (toolRounds <= MAX_TOOL_ROUNDS) {
             const completion = await openai.chat.completions.create({

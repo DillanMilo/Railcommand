@@ -18,7 +18,7 @@ import { createRFI as serverCreateRFI } from '@/lib/actions/rfis';
 import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { Priority } from '@/lib/types';
+import type { Priority, Profile, ProjectMember } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +26,7 @@ const PRIORITIES: Priority[] = ['critical', 'high', 'medium', 'low'];
 
 const nativeSelectClasses =
   'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] md:text-sm';
+type AssignableProfile = Pick<Profile, 'id' | 'full_name'>;
 
 export default function NewRFIPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
@@ -41,8 +42,11 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
   // Build assignable profiles: prefer members with embedded profile, fall back to
   // the in-memory store only in demo mode — real accounts shouldn't see seeded
   // placeholder names when a project has no teammates yet.
-  const assignableProfiles = (() => {
-    const fromMembers = members.map((m) => (m as any).profile).filter(Boolean);
+  const assignableProfiles: AssignableProfile[] = (() => {
+    const fromMembers = members
+      .map((m: ProjectMember) => m.profile)
+      .filter((profile): profile is Profile => Boolean(profile))
+      .map(({ id, full_name }) => ({ id, full_name }));
     if (fromMembers.length > 0) return fromMembers;
     return isDemo ? getProfiles() : [];
   })();
@@ -202,7 +206,7 @@ export default function NewRFIPage({ params, searchParams }: { params: Promise<{
                   className={nativeSelectClasses}
                 >
                   <option value="">Select team member</option>
-                  {assignableProfiles.map((p: any) => (
+                  {assignableProfiles.map((p: AssignableProfile) => (
                     <option key={p.id} value={p.id}>{p.full_name}</option>
                   ))}
                 </select>

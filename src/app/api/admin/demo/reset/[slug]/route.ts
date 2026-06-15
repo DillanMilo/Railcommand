@@ -55,7 +55,12 @@ export async function POST(
   }
 
   if (!result.success) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    console.error('[api/admin/demo/reset] Failed to run demo action:', {
+      slug,
+      action,
+      error: result.error,
+    });
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, action });

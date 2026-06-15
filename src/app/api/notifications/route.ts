@@ -14,9 +14,10 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const expectedKey = process.env.NOTIFICATIONS_API_KEY;
 
-    // If an API key is configured, enforce it. Otherwise allow
-    // server-to-server calls (e.g. from same-origin server actions).
-    if (expectedKey && authHeader !== `Bearer ${expectedKey}`) {
+    if (!expectedKey) {
+      return NextResponse.json({ error: 'Notifications endpoint not configured' }, { status: 500 });
+    }
+    if (authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -19,7 +19,7 @@ import ExportPDFButton from '@/components/shared/ExportPDFButton';
 import { useRFIs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import type { RFI, RFIStatus } from '@/lib/types';
+import type { Profile, RFI, RFIStatus } from '@/lib/types';
 
 const TABS: { label: string; value: RFIStatus | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -37,6 +37,19 @@ function getProfile(id: string, demo?: boolean) {
 function daysOpen(rfi: RFI): number {
   const end = rfi.response_date ? parseDateSafe(rfi.response_date) : new Date();
   return differenceInCalendarDays(end, parseDateSafe(rfi.submit_date));
+}
+
+type RFIWithProfiles = RFI & {
+  submitted_by_profile?: Pick<Profile, 'full_name'> | null;
+  assigned_to_profile?: Pick<Profile, 'full_name'> | null;
+};
+
+function getSubmittedByName(rfi: RFIWithProfiles, isDemo: boolean): string {
+  return rfi.submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by, isDemo)?.full_name ?? '';
+}
+
+function getAssignedToName(rfi: RFIWithProfiles, isDemo: boolean): string {
+  return rfi.assigned_to_profile?.full_name ?? getProfile(rfi.assigned_to, isDemo)?.full_name ?? '';
 }
 
 export default function RFIsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -61,7 +74,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
       if (tab !== 'all' && r.status !== tab) return false;
       if (search) {
         const q = search.toLowerCase();
-        const submitterName = (r as any).submitted_by_profile?.full_name ?? getProfile(r.submitted_by, isDemo)?.full_name ?? '';
+        const submitterName = getSubmittedByName(r, isDemo);
         return (
           r.number.toLowerCase().includes(q) ||
           r.subject.toLowerCase().includes(q) ||
@@ -70,7 +83,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
       }
       return true;
     });
-  }, [tab, search, rfis]);
+  }, [isDemo, tab, search, rfis]);
 
   const basePath = `/projects/${projectId}/rfis`;
 
@@ -160,8 +173,8 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </TableCell>
                   <TableCell><StatusBadge status={rfi.status} type="rfi" /></TableCell>
                   <TableCell><PriorityBadge priority={rfi.priority} /></TableCell>
-                  <TableCell>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by, isDemo)?.full_name ?? '—'}</TableCell>
-                  <TableCell>{(rfi as any).assigned_to_profile?.full_name ?? getProfile(rfi.assigned_to, isDemo)?.full_name ?? '—'}</TableCell>
+                  <TableCell>{getSubmittedByName(rfi, isDemo) || '—'}</TableCell>
+                  <TableCell>{getAssignedToName(rfi, isDemo) || '—'}</TableCell>
                   <TableCell>{formatDateSafe(rfi.due_date, 'MMM d, yyyy')}</TableCell>
                   <TableCell className={`text-right font-medium ${isOverdue ? 'text-red-600' : ''}`}>{days}</TableCell>
                 </TableRow>
@@ -189,7 +202,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
                   </div>
                   <p className="font-medium text-sm line-clamp-2">{rfi.subject}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{(rfi as any).submitted_by_profile?.full_name ?? getProfile(rfi.submitted_by, isDemo)?.full_name}</span>
+                    <span>{getSubmittedByName(rfi, isDemo)}</span>
                     <span className={isOverdue ? 'text-red-600 font-medium' : ''}>{days}d open</span>
                   </div>
                   <div className="flex items-center gap-2">

@@ -61,6 +61,25 @@ function getDateKey(dateStr: string): string {
   return format(date, 'MMMM d, yyyy');
 }
 
+function getPhotoUrl(photo: Attachment, variant: 'thumbnail' | 'full'): string {
+  if (variant === 'thumbnail' && photo.thumbnail_url) {
+    return photo.thumbnail_url;
+  }
+
+  const source = photo.signed_url ?? photo.file_url;
+  if (variant === 'full' || source.startsWith('blob:') || source.startsWith('data:')) {
+    return source;
+  }
+
+  try {
+    const url = new URL(source);
+    url.searchParams.set('width', '400');
+    return url.toString();
+  } catch {
+    return source;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
@@ -301,7 +320,7 @@ export default function PhotosPage({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={photo.signed_url ?? photo.file_url}
+                      src={getPhotoUrl(photo, 'thumbnail')}
                       alt={photo.file_name}
                       className="aspect-square w-full object-cover"
                     />
@@ -364,7 +383,7 @@ export default function PhotosPage({
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={selectedPhoto.signed_url ?? selectedPhoto.file_url}
+                src={getPhotoUrl(selectedPhoto, 'full')}
                 alt={selectedPhoto.file_name}
                 className="w-full max-h-[70vh] object-contain bg-black"
               />

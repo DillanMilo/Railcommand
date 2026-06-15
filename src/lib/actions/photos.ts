@@ -17,6 +17,16 @@ function getBucket(category: string): string {
   return BUCKET_MAP[category] ?? 'project-photos';
 }
 
+function withThumbnailWidth(source: string): string {
+  try {
+    const url = new URL(source);
+    url.searchParams.set('width', '400');
+    return url.toString();
+  } catch {
+    return source;
+  }
+}
+
 /**
  * Fetch all photo attachments for a project by querying entity tables
  * for IDs belonging to the project, then fetching matching attachments.
@@ -56,7 +66,8 @@ export async function getProjectPhotos(
       .from('attachments')
       .select('*')
       .in('entity_id', entityIds)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000);
 
     if (fetchError) return { error: fetchError.message };
 
@@ -86,18 +97,17 @@ export async function getProjectPhotos(
     await Promise.all(
       Object.entries(grouped).map(async ([bucket, items]) => {
         const paths = items.map((item) => item.path);
-        const { data, error } = await supabase.storage
-          .from(bucket)
-          .createSignedUrls(paths, 3600);
+        const fullSize = await supabase.storage.from(bucket).createSignedUrls(paths, 3600);
 
-        if (error || !data) return;
+        if (fullSize.error || !fullSize.data) return;
 
-        for (let j = 0; j < data.length; j++) {
-          const signedUrl = data[j]?.signedUrl ?? undefined;
+        for (let j = 0; j < fullSize.data.length; j++) {
+          const signedUrl = fullSize.data[j]?.signedUrl ?? undefined;
           if (signedUrl) {
             photos[items[j].index] = {
               ...photos[items[j].index],
               signed_url: signedUrl,
+              thumbnail_url: withThumbnailWidth(signedUrl),
             };
           }
         }

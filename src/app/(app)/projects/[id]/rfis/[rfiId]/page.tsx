@@ -22,7 +22,7 @@ import { updateRFIStatus as serverUpdateRFIStatus, addRFIResponse as serverAddRF
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
-import type { Attachment, Priority } from '@/lib/types';
+import type { Attachment, Milestone, Priority, Profile, RFI } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,7 @@ const PRIORITIES: { label: string; value: Priority }[] = [
 
 const nativeSelectClasses =
   'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] md:text-sm';
+type RFIWithMilestone = RFI & { milestone?: Milestone | null };
 
 function getProfile(id: string) {
   return getProfiles().find((p) => p.id === id);
@@ -121,9 +122,9 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
 
   if (!rfi) return <p className="p-8 text-muted-foreground">RFI not found.</p>;
 
-  const submitter = (rfi as any).submitted_by_profile ?? getProfile(rfi.submitted_by);
-  const assignee = (rfi as any).assigned_to_profile ?? getProfile(rfi.assigned_to);
-  const milestone = (rfi as any).milestone ?? getMilestoneById(rfi.milestone_id, projectId);
+  const submitter = rfi.submitted_by_profile ?? getProfile(rfi.submitted_by);
+  const assignee = rfi.assigned_to_profile ?? getProfile(rfi.assigned_to);
+  const milestone = (rfi as RFIWithMilestone).milestone ?? getMilestoneById(rfi.milestone_id, projectId);
   const isOverdue = status === 'overdue';
   const canRespond = status === 'open' || status === 'overdue';
   const basePath = `/projects/${projectId}/rfis`;
@@ -315,7 +316,7 @@ export default function RFIDetailPage({ params, searchParams }: { params: Promis
             <p className="text-sm text-muted-foreground py-4 text-center">No responses yet.</p>
           )}
           {rfi.responses?.map((resp) => {
-            const author = (resp as any).author ?? getProfile(resp.author_id);
+            const author = (resp.author ?? getProfile(resp.author_id)) as Profile | undefined;
             const org = author ? getOrg(author.organization_id) : null;
             return (
               <div

@@ -32,7 +32,8 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[api/admin/demo/list] Failed to fetch demos:', error);
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 });
   }
 
   return NextResponse.json(demos ?? []);

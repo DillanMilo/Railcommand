@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
   const result = await seedDemo(preset);
 
   if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    console.error('[api/admin/demo/create] Failed to seed demo:', result.error);
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 });
   }
 
   return NextResponse.json({ id: result.id, slug: preset.slug }, { status: 201 });

@@ -22,7 +22,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date());
   const basePath = `/projects/${projectId}/daily-logs`;
 
-  const { data: rawLogs, loading } = useDailyLogs(projectId);
+  const { data: rawLogs, loading, hasMore, loadingMore, loadMore } = useDailyLogs(projectId);
 
   const logs = useMemo(
     () => [...rawLogs].sort((a, b) => b.log_date.localeCompare(a.log_date)),
@@ -179,6 +179,14 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading...' : 'Load more'}
+          </Button>
         </div>
       )}
     </div>

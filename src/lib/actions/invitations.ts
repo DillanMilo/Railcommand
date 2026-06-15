@@ -17,6 +17,7 @@ import {
 } from './permissions-helper';
 
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let resendClient: Resend | null = null;
 
@@ -258,6 +259,7 @@ export async function createInvitation(
   try {
     const inviteEmail = email.trim().toLowerCase();
     if (!inviteEmail) return { error: 'Email is required' };
+    if (!EMAIL_REGEX.test(inviteEmail)) return { error: 'Enter a valid email address' };
 
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);

@@ -2,6 +2,15 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
+const isDevelopment = process.env.NODE_ENV === "development";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+type NavigatorWithStandalone = Navigator & { standalone?: boolean };
+
 interface PWAContextType {
   isInstallable: boolean;
   isInstalled: boolean;
@@ -31,14 +40,14 @@ export default function ServiceWorkerProvider({
   const [isInstalled, setIsInstalled] = useState(false);
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   // Detect if already installed (standalone mode)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-        || (window.navigator as any).standalone === true;
+        || (window.navigator as NavigatorWithStandalone).standalone === true;
       setIsInstalled(isStandalone);
       setIsOffline(!navigator.onLine);
 
@@ -56,8 +65,9 @@ export default function ServiceWorkerProvider({
   // Capture install prompt
   useEffect(() => {
     const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      promptEvent.preventDefault();
+      setDeferredPrompt(promptEvent);
       setIsInstallable(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
@@ -84,7 +94,7 @@ export default function ServiceWorkerProvider({
     const isLocalhost = window.location.hostname === "localhost"
       || window.location.hostname === "127.0.0.1";
     if (isLocalhost) {
-      console.log("[SW] Skipping registration on localhost");
+      if (isDevelopment) console.log("[SW] Skipping registration on localhost");
       return;
     }
 
@@ -92,7 +102,7 @@ export default function ServiceWorkerProvider({
       .register("/sw.js")
       .then((reg) => {
         setRegistration(reg);
-        console.log("[SW] Registered:", reg.scope);
+        if (isDevelopment) console.log("[SW] Registered:", reg.scope);
 
         // Check for updates
         reg.addEventListener("updatefound", () => {
@@ -106,7 +116,7 @@ export default function ServiceWorkerProvider({
         });
       })
       .catch((error) => {
-        console.log("[SW] Registration failed:", error);
+        if (isDevelopment) console.log("[SW] Registration failed:", error);
       });
   }, []);
 

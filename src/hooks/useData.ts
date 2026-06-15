@@ -74,6 +74,8 @@ import {
 } from '@/lib/actions/invitations';
 import { getProjectPhotos as fetchProjectPhotos } from '@/lib/actions/photos';
 
+const DAILY_LOG_PAGE_SIZE = 500;
+
 /* ------------------------------------------------------------------ */
 /*  Generic query hook                                                 */
 /* ------------------------------------------------------------------ */
@@ -194,12 +196,72 @@ export function useRFIDetail(projectId: string, rfiId: string) {
 }
 
 export function useDailyLogs(projectId: string | null) {
-  return useQuery<DailyLog[]>(
-    () => (projectId ? store.getDailyLogs(projectId) : []),
-    () => (projectId ? fetchDailyLogs(projectId) : Promise.resolve({ data: [] })),
-    [projectId],
-    [],
+  const { isDemo } = useProject();
+  const [data, setData] = useState<DailyLog[]>(() => (isDemo && projectId ? store.getDailyLogs(projectId) : []));
+  const [loading, setLoading] = useState(!isDemo);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+
+  const loadPage = useCallback(
+    async (offset: number, append: boolean) => {
+      if (!projectId) {
+        setData([]);
+        setLoading(false);
+        setLoadingMore(false);
+        setError(null);
+        setHasMore(false);
+        return;
+      }
+
+      if (isDemo) {
+        setData(store.getDailyLogs(projectId));
+        setLoading(false);
+        setLoadingMore(false);
+        setError(null);
+        setHasMore(false);
+        return;
+      }
+
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      const result = await fetchDailyLogs(projectId, {
+        offset,
+        limit: DAILY_LOG_PAGE_SIZE,
+      });
+
+      if (result.error) {
+        setError(result.error);
+      } else if (result.data) {
+        setData((current) => (append ? [...current, ...result.data!] : result.data!));
+        setHasMore(result.data.length === DAILY_LOG_PAGE_SIZE);
+      }
+
+      setLoading(false);
+      setLoadingMore(false);
+    },
+    [isDemo, projectId],
   );
+
+  const refetch = useCallback(() => {
+    void loadPage(0, false);
+  }, [loadPage]);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    void loadPage(data.length, true);
+  }, [data.length, hasMore, loadPage, loadingMore]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { data, loading, error, refetch, hasMore, loadingMore, loadMore };
 }
 
 export function useDailyLogDetail(projectId: string, logId: string) {

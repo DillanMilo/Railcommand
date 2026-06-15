@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkProjectMembership } from '@/lib/actions/permissions-helper';
 
 /**
  * GET /api/chat/conversations?projectId=...
@@ -76,6 +77,11 @@ export async function POST(request: NextRequest) {
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const access = await checkProjectMembership(supabase, user.id, projectId);
+  if (!access.isMember) {
+    return NextResponse.json({ error: 'Not a member of this project' }, { status: 403 });
   }
 
   const { data, error } = await supabase

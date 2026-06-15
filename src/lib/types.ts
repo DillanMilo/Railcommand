@@ -404,6 +404,8 @@ export interface Attachment {
   created_at: string;
   /** Transient field — populated at fetch time for private buckets, never stored in DB */
   signed_url?: string;
+  /** Transient field — smaller image URL for grids/previews, never stored in DB */
+  thumbnail_url?: string;
 }
 
 // Geo-tag for jobs and work items
