@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendNotification } from '@/lib/notifications';
+import { getDemoProjectIds, sendNotification, shouldSuppressNotificationEmail } from '@/lib/notifications';
 import type { OverdueReminderPayload } from '@/lib/notifications';
 
 export const maxDuration = 60; // allow up to 60s for this cron
@@ -59,8 +59,15 @@ export async function GET(request: NextRequest) {
     }>();
 
     const todayDate = new Date(today);
+    const overdueProjectIds = Array.from(new Set([
+      ...(overdueRfis ?? []).map((rfi) => rfi.project_id),
+      ...(overdueSubmittals ?? []).map((submittal) => submittal.project_id),
+    ]));
+    const demoProjectIds = await getDemoProjectIds(supabase, overdueProjectIds);
+    const eligibleRfis = (overdueRfis ?? []).filter((rfi) => !demoProjectIds.has(rfi.project_id));
+    const eligibleSubmittals = (overdueSubmittals ?? []).filter((submittal) => !demoProjectIds.has(submittal.project_id));
 
-    for (const rfi of overdueRfis ?? []) {
+    for (const rfi of eligibleRfis) {
       const key = `${rfi.assigned_to}:${rfi.project_id}`;
       const dueDate = new Date(rfi.due_date);
       const daysOverdue = Math.floor((todayDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -84,7 +91,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    for (const sub of overdueSubmittals ?? []) {
+    for (const sub of eligibleSubmittals) {
       const key = `${sub.submitted_by}:${sub.project_id}`;
       const dueDate = new Date(sub.due_date);
       const daysOverdue = Math.floor((todayDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -120,9 +127,14 @@ export async function GET(request: NextRequest) {
     const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
 
     // Send a single digest email per user per project
+    let suppressedRecipients = 0;
     const tasks = entries.flatMap((entry) => {
       const profile = profileById.get(entry.userId);
       if (!profile?.email) return [];
+      if (shouldSuppressNotificationEmail(profile.email)) {
+        suppressedRecipients += 1;
+        return [];
+      }
 
       const payload: OverdueReminderPayload = {
         type: 'overdue_reminder',
@@ -147,9 +159,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      overdueRfis: overdueRfis?.length ?? 0,
-      overdueSubmittals: overdueSubmittals?.length ?? 0,
+      overdueRfis: eligibleRfis.length,
+      overdueSubmittals: eligibleSubmittals.length,
       emailsSent: sent,
+      skippedDemoProjects: demoProjectIds.size,
+      skippedDemoItems: (overdueRfis?.length ?? 0) + (overdueSubmittals?.length ?? 0) - eligibleRfis.length - eligibleSubmittals.length,
+      suppressedRecipients,
     });
   } catch (err) {
     console.error('[cron/overdue-reminders] Error:', err);

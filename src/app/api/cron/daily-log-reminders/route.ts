@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendNotification } from '@/lib/notifications';
+import { getDemoProjectIds, sendNotification, shouldSuppressNotificationEmail } from '@/lib/notifications';
 import type { DailyLogReminderPayload } from '@/lib/notifications';
 
 export const maxDuration = 60;
@@ -49,13 +49,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, emailsSent: 0 });
     }
 
+    const demoProjectIds = await getDemoProjectIds(
+      supabase,
+      projects.map((project) => project.id)
+    );
+    const eligibleProjects = projects.filter((project) => !demoProjectIds.has(project.id));
+
     const reminders: {
       userId: string;
       projectId: string;
       projectName: string;
     }[] = [];
 
-    for (const project of projects) {
+    for (const project of eligibleProjects) {
       // Get members with edit permissions (typically the ones filing logs)
       const { data: members } = await supabase
         .from('project_members')
@@ -95,9 +101,14 @@ export async function GET(request: NextRequest) {
       : { data: [] };
 
     const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+    let suppressedRecipients = 0;
     const tasks = reminders.flatMap((entry) => {
       const profile = profileById.get(entry.userId);
       if (!profile?.email) return [];
+      if (shouldSuppressNotificationEmail(profile.email)) {
+        suppressedRecipients += 1;
+        return [];
+      }
 
       const payload: DailyLogReminderPayload = {
         type: 'daily_log_reminder',
@@ -120,7 +131,12 @@ export async function GET(request: NextRequest) {
       sent += results.reduce((sum, value) => sum + value, 0);
     }
 
-    return NextResponse.json({ success: true, emailsSent: sent });
+    return NextResponse.json({
+      success: true,
+      emailsSent: sent,
+      skippedDemoProjects: demoProjectIds.size,
+      suppressedRecipients,
+    });
   } catch (err) {
     console.error('[cron/daily-log-reminders] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

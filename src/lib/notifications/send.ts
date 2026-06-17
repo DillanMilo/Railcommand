@@ -5,6 +5,7 @@
 
 import { Resend } from 'resend';
 import { renderNotificationEmail } from './templates';
+import { shouldSuppressNotificationEmail } from './filters';
 import type { NotificationPayload, NotificationType, NotificationPreferences } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 import { createClient } from '@/lib/supabase/server';
@@ -102,6 +103,11 @@ export async function sendNotification(
     const prefs = await getUserNotificationPreferences(recipientUserId);
     if (!isNotificationEnabled(prefs, payload.type)) {
       return; // User has opted out of this notification type
+    }
+
+    if (shouldSuppressNotificationEmail(payload.recipientEmail)) {
+      console.warn(`[notifications] Suppressed ${payload.type} to non-deliverable address: ${payload.recipientEmail}`);
+      return;
     }
 
     // 2. Get Resend client

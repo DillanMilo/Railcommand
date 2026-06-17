@@ -2,6 +2,7 @@
 // Barrel export for the notifications module
 
 export { sendNotification, sendNotificationToUser, getUserProfile, getProjectName } from './send';
+export { getDemoProjectIds, shouldSuppressNotificationEmail } from './filters';
 export { renderNotificationEmail } from './templates';
 export type {
   NotificationType,
