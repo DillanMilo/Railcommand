@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useMilestones, useChangeOrders, useModifications } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import ProjectHistoryExportButton from '@/components/shared/ProjectHistoryExportButton';
 import { getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -29,7 +30,6 @@ import { addMilestone as storeAddMilestone, updateMilestone as storeUpdateMilest
 import { addChangeOrder as storeAddCO, updateChangeOrder as storeUpdateCO, deleteChangeOrder as storeDeleteCO } from '@/lib/store';
 import { addModification as storeAddMod, updateModification as storeUpdateMod, deleteModification as storeDeleteMod } from '@/lib/store';
 import { CHANGE_ORDER_STATUS_COLORS, CHANGE_ORDER_STATUS_LABELS, MODIFICATION_STATUS_COLORS, MODIFICATION_STATUS_LABELS, MODIFICATION_TYPE_LABELS } from '@/lib/constants';
-import { Badge } from '@/components/ui/badge';
 import type { Milestone, MilestoneStatus, ChangeOrder, ChangeOrderStatus, Modification, ModificationType, ModificationStatus } from '@/lib/types';
 
 const STATUS_BAR_COLOR: Record<MilestoneStatus, string> = {
@@ -238,15 +238,24 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         ]}
       />
 
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex flex-col gap-3 mt-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold">Schedule &amp; Milestones</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ExportPDFButton
             getDocument={async () => {
               const { default: SchedulePDF } = await import('@/lib/pdf/SchedulePDF');
               return <SchedulePDF milestones={milestones} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} budgetPlanned={kpis.budgetPlanned} budgetActual={kpis.budgetActual} />;
             }}
             fileName={`schedule-report-${projectId}`}
+          />
+          <ProjectHistoryExportButton
+            projectId={projectId}
+            project={currentProject}
+            milestones={milestones}
+            changeOrders={changeOrders}
+            modifications={modifications}
+            generatedBy={currentProfile?.full_name ?? 'User'}
+            isDemo={isDemo}
           />
           {can(ACTIONS.SCHEDULE_EDIT) && (
             <Button onClick={() => setAddOpen(true)} className="bg-rc-orange hover:bg-rc-orange-dark text-white">

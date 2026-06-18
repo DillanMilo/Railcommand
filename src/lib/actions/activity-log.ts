@@ -9,12 +9,14 @@ import {
   checkProjectMembership,
 } from './permissions-helper';
 
+const ACTIVITY_EXPORT_PAGE_SIZE = 1000;
+
 // ---------------------------------------------------------------------------
 // getActivityLog -- recent activity for a project
 // ---------------------------------------------------------------------------
 export async function getActivityLog(
   projectId: string,
-  limit: number = 50
+  limit: number | 'all' = 50
 ): Promise<ActionResult<ActivityLogEntry[]>> {
   try {
     const supabase = await createClient();
@@ -24,10 +26,7 @@ export async function getActivityLog(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
-    // Clamp limit to a reasonable range
-    const safeLimit = Math.min(Math.max(1, limit), 200);
-
-    const { data, error } = await supabase
+    const baseQuery = () => supabase
       .from('activity_log')
       .select(`
         *,
@@ -39,8 +38,34 @@ export async function getActivityLog(
         )
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
-      .limit(safeLimit);
+      .order('created_at', { ascending: false });
+
+    if (limit === 'all') {
+      const allRows: ActivityLogEntry[] = [];
+      let offset = 0;
+
+      while (true) {
+        const { data, error } = await baseQuery().range(
+          offset,
+          offset + ACTIVITY_EXPORT_PAGE_SIZE - 1
+        );
+
+        if (error) return { error: error.message };
+
+        const page = (data as ActivityLogEntry[]) ?? [];
+        allRows.push(...page);
+
+        if (page.length < ACTIVITY_EXPORT_PAGE_SIZE) {
+          return { success: true, data: allRows };
+        }
+
+        offset += ACTIVITY_EXPORT_PAGE_SIZE;
+      }
+    }
+
+    // Clamp list views to a reasonable range while allowing explicit full-history exports.
+    const safeLimit = Math.min(Math.max(1, limit), 200);
+    const { data, error } = await baseQuery().limit(safeLimit);
 
     if (error) return { error: error.message };
 

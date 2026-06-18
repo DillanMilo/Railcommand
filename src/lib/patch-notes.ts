@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.4.0-one-click-history-export',
+    version: '2.4.0',
+    title: 'One-Click History Export',
+    description: 'Project teams can now export a Schedule history package as PDF or CSV. Choose a focused CO package or the full project history, including project snapshot, change orders, modifications, milestones, and activity history.',
+    date: '2026-06-18',
+  },
+  {
     id: 'v2.3.0-us-only-access-controls',
     version: '2.3.0',
     title: 'US-Only Access Controls',
