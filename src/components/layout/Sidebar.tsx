@@ -254,9 +254,6 @@ export default function Sidebar() {
                 <span className="text-[10px] text-white/40 tracking-wide uppercase ml-0.5">
                   by A5
                 </span>
-                <span className="text-[9px] font-semibold text-rc-orange/80 tracking-wider uppercase px-1.5 py-0.5 rounded border border-rc-orange/30 leading-none">
-                  Beta
-                </span>
               </div>
             </div>
           )}
@@ -343,7 +340,16 @@ export default function Sidebar() {
                   className="flex items-center gap-3.5 px-3 h-11 rounded-lg text-sm font-medium text-white/30 cursor-not-allowed"
                 >
                   {Icon && <Icon className="size-5 shrink-0" />}
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && (
+                    <span className="min-w-0">
+                      <span className="block truncate">{item.label}</span>
+                      {item.badge && (
+                        <span className="block text-[10px] font-semibold text-white/35 leading-none">
+                          {item.badge}
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </span>
               );
 
@@ -372,7 +378,19 @@ export default function Sidebar() {
                   <Icon className="size-5 shrink-0" />
                 )}
                 {!collapsed && (
-                  <span className="truncate">{item.label}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate">{item.label}</span>
+                    {item.badge && (
+                      <span
+                        className={cn(
+                          'block text-[10px] font-semibold leading-none',
+                          isActive ? 'text-white/80' : 'text-rc-orange/80'
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
                 )}
               </Link>
             );
@@ -382,7 +400,7 @@ export default function Sidebar() {
                 <Tooltip key={item.href} delayDuration={0}>
                   <TooltipTrigger asChild>{link}</TooltipTrigger>
                   <TooltipContent side="right" sideOffset={8}>
-                    {item.label}
+                    {item.badge ? `${item.label} (${item.badge})` : item.label}
                   </TooltipContent>
                 </Tooltip>
               );
