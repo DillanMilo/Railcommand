@@ -21,6 +21,10 @@ export const ACTIONS = {
   QCQA_CREATE: 'qcqa:create',
   QCQA_CLOSE: 'qcqa:close',
   DOCUMENT_MANAGE: 'document:manage',
+  EARTHCAM_VIEW: 'earthcam:view',
+  EARTHCAM_ADMIN: 'earthcam:admin',
+  EARTHCAM_MANAGE: 'earthcam:manage',
+  EARTHCAM_CAPTURE: 'earthcam:capture',
 } as const;
 
 export type Action = (typeof ACTIONS)[keyof typeof ACTIONS];
@@ -50,6 +54,9 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.QCQA_CREATE,
     ACTIONS.QCQA_CLOSE,
     ACTIONS.DOCUMENT_MANAGE,
+    ACTIONS.EARTHCAM_VIEW,
+    ACTIONS.EARTHCAM_MANAGE,
+    ACTIONS.EARTHCAM_CAPTURE,
   ],
   foreman: [
     ACTIONS.DAILY_LOG_CREATE,
@@ -57,6 +64,8 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.PUNCH_LIST_CREATE,
     ACTIONS.PUNCH_LIST_RESOLVE,
     ACTIONS.RFI_CREATE,
+    ACTIONS.EARTHCAM_VIEW,
+    ACTIONS.EARTHCAM_CAPTURE,
   ],
   engineer: [
     ACTIONS.SUBMITTAL_CREATE,
@@ -72,6 +81,9 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.QCQA_CREATE,
     ACTIONS.QCQA_CLOSE,
     ACTIONS.DOCUMENT_MANAGE,
+    ACTIONS.EARTHCAM_VIEW,
+    ACTIONS.EARTHCAM_MANAGE,
+    ACTIONS.EARTHCAM_CAPTURE,
   ],
   contractor: [
     ACTIONS.SUBMITTAL_CREATE,
@@ -80,6 +92,8 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.DAILY_LOG_UPDATE,
     ACTIONS.PUNCH_LIST_CREATE,
     ACTIONS.WEEKLY_REPORT_CREATE,
+    ACTIONS.EARTHCAM_VIEW,
+    ACTIONS.EARTHCAM_CAPTURE,
   ],
   inspector: [
     ACTIONS.PUNCH_LIST_CREATE,
@@ -87,10 +101,13 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.RFI_CREATE,
     ACTIONS.QCQA_CREATE,
     ACTIONS.QCQA_CLOSE,
+    ACTIONS.EARTHCAM_VIEW,
+    ACTIONS.EARTHCAM_CAPTURE,
   ],
   owner: [
     ACTIONS.BUDGET_VIEW,
     ACTIONS.RFI_CREATE,
+    ACTIONS.EARTHCAM_VIEW,
   ],
 };
 

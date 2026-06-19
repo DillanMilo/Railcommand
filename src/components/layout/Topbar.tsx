@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, ChevronRight, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban, Sparkles, CheckCheck, X } from 'lucide-react';
+import { Bell, BellOff, Search, Settings, LogOut, User, Check, ChevronDown, ChevronRight, Plus, FileCheck, MessageSquareMore, ClipboardCheck, CalendarDays, GanttChart, FolderKanban, Sparkles, CheckCheck, X, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -43,6 +43,9 @@ const ENTITY_ICONS: Record<EntityType, typeof FileCheck> = {
   daily_log: CalendarDays,
   milestone: GanttChart,
   project: FolderKanban,
+  earthcam_connection: Video,
+  earthcam_camera: Video,
+  earthcam_evidence: Video,
 };
 
 const ENTITY_LABELS: Record<EntityType, string> = {
@@ -52,6 +55,9 @@ const ENTITY_LABELS: Record<EntityType, string> = {
   daily_log: 'Daily Log',
   milestone: 'Milestone',
   project: 'Project',
+  earthcam_connection: 'EarthCam',
+  earthcam_camera: 'Camera',
+  earthcam_evidence: 'Camera Evidence',
 };
 
 const STATUS_DOT_COLORS: Record<Project['status'], string> = {
@@ -178,6 +184,10 @@ export default function Topbar({ children }: TopbarProps) {
         return `/projects/${project_id}/schedule`;
       case 'project':
         return `/dashboard`;
+      case 'earthcam_connection':
+      case 'earthcam_camera':
+      case 'earthcam_evidence':
+        return `/projects/${project_id}/cameras`;
       default:
         return null;
     }

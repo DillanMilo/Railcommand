@@ -408,6 +408,60 @@ export interface Attachment {
   thumbnail_url?: string;
 }
 
+// EarthCam
+export type EarthCamConnectionStatus = 'connected' | 'needs_auth' | 'disabled';
+export type EarthCamCameraStatus = 'online' | 'offline' | 'maintenance';
+export type EarthCamEvidenceType = 'snapshot' | 'clip';
+
+export interface EarthCamConnection {
+  id: string;
+  organization_id: string;
+  account_name: string;
+  status: EarthCamConnectionStatus;
+  auth_mode: 'api_key' | 'oauth' | 'service_account';
+  api_base_url: string | null;
+  api_key_last4: string | null;
+  connected_by: string;
+  connected_at: string;
+  last_sync_at: string | null;
+  credentials_updated_at: string | null;
+  created_at: string;
+}
+
+export interface EarthCamCamera {
+  id: string;
+  project_id: string;
+  connection_id: string;
+  earthcam_camera_id: string;
+  name: string;
+  location_label: string;
+  rail_area: string;
+  live_embed_url: string;
+  live_stream_url: string;
+  thumbnail_url: string;
+  status: EarthCamCameraStatus;
+  ptz_enabled: boolean;
+  last_seen_at: string | null;
+  created_at: string;
+}
+
+export interface EarthCamEvidence {
+  id: string;
+  project_id: string;
+  camera_id: string;
+  evidence_type: EarthCamEvidenceType;
+  title: string;
+  description: string;
+  captured_at: string;
+  start_time: string | null;
+  end_time: string | null;
+  earthcam_asset_id: string | null;
+  earthcam_url: string;
+  thumbnail_url: string;
+  created_by: string;
+  created_at: string;
+}
+
 // Geo-tag for jobs and work items
 export interface GeoTag {
   lat: number;
@@ -421,9 +475,18 @@ export interface GeoTag {
 export interface ActivityLogEntry {
   id: string;
   project_id: string;
-  entity_type: 'submittal' | 'rfi' | 'daily_log' | 'punch_list' | 'milestone' | 'project';
+  entity_type:
+    | 'submittal'
+    | 'rfi'
+    | 'daily_log'
+    | 'punch_list'
+    | 'milestone'
+    | 'project'
+    | 'earthcam_connection'
+    | 'earthcam_camera'
+    | 'earthcam_evidence';
   entity_id: string;
-  action: 'created' | 'updated' | 'status_changed' | 'commented' | 'approved' | 'rejected' | 'submitted' | 'assigned';
+  action: 'created' | 'updated' | 'status_changed' | 'commented' | 'approved' | 'rejected' | 'submitted' | 'assigned' | 'deleted';
   description: string;
   performed_by: string;
   performed_by_profile?: Profile;

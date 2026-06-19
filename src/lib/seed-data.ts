@@ -1,4 +1,4 @@
-import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment, SafetyIncident } from './types';
+import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment, SafetyIncident, EarthCamConnection, EarthCamCamera, EarthCamEvidence } from './types';
 
 // ============================================================
 // ORGANIZATIONS
@@ -56,6 +56,110 @@ export const seedProject: Project = {
   created_by: 'prof-001',
   created_at: '2025-07-15T00:00:00Z',
 };
+
+// ============================================================
+// EARTHCAM
+// ============================================================
+export const seedEarthCamConnection: EarthCamConnection = {
+  id: 'ec-conn-001',
+  organization_id: 'org-001',
+  account_name: 'A5 Rail EarthCam',
+  status: 'connected',
+  auth_mode: 'api_key',
+  api_base_url: '',
+  api_key_last4: '8422',
+  connected_by: 'prof-001',
+  connected_at: '2026-02-01T09:00:00Z',
+  last_sync_at: '2026-06-15T08:15:00Z',
+  credentials_updated_at: '2026-02-01T09:00:00Z',
+  created_at: '2026-02-01T09:00:00Z',
+};
+
+export const seedEarthCamCameras: EarthCamCamera[] = [
+  {
+    id: 'ec-cam-001',
+    project_id: 'proj-001',
+    connection_id: 'ec-conn-001',
+    earthcam_camera_id: 'UP-ENG-NORTH-LEAD',
+    name: 'North Lead',
+    location_label: 'Englewood Yard - North Lead',
+    rail_area: 'Mainline interface',
+    live_embed_url: 'https://www.earthcam.net/',
+    live_stream_url: 'https://www.earthcam.net/',
+    thumbnail_url: '',
+    status: 'online',
+    ptz_enabled: true,
+    last_seen_at: '2026-06-15T08:10:00Z',
+    created_at: '2026-02-01T09:10:00Z',
+  },
+  {
+    id: 'ec-cam-002',
+    project_id: 'proj-001',
+    connection_id: 'ec-conn-001',
+    earthcam_camera_id: 'UP-ENG-GC-12',
+    name: 'Gate 12 Crossing',
+    location_label: 'Main St. Grade Crossing',
+    rail_area: 'Crossing protection',
+    live_embed_url: 'https://www.earthcam.net/',
+    live_stream_url: 'https://www.earthcam.net/',
+    thumbnail_url: '',
+    status: 'online',
+    ptz_enabled: false,
+    last_seen_at: '2026-06-15T08:12:00Z',
+    created_at: '2026-02-01T09:20:00Z',
+  },
+  {
+    id: 'ec-cam-003',
+    project_id: 'proj-001',
+    connection_id: 'ec-conn-001',
+    earthcam_camera_id: 'UP-ENG-SIGNAL-BUNGALOW',
+    name: 'Signal Bungalow',
+    location_label: 'Signal bungalow staging pad',
+    rail_area: 'Signal systems',
+    live_embed_url: 'https://www.earthcam.net/',
+    live_stream_url: 'https://www.earthcam.net/',
+    thumbnail_url: '',
+    status: 'maintenance',
+    ptz_enabled: false,
+    last_seen_at: '2026-06-14T17:45:00Z',
+    created_at: '2026-02-01T09:30:00Z',
+  },
+];
+
+export const seedEarthCamEvidence: EarthCamEvidence[] = [
+  {
+    id: 'ec-ev-001',
+    project_id: 'proj-001',
+    camera_id: 'ec-cam-001',
+    evidence_type: 'snapshot',
+    title: 'North lead ballast delivery',
+    description: 'Point-in-time visual record attached from the EarthCam north lead view.',
+    captured_at: '2026-06-15T08:05:00Z',
+    start_time: null,
+    end_time: null,
+    earthcam_asset_id: 'snap-20260615-0805',
+    earthcam_url: 'https://www.earthcam.net/',
+    thumbnail_url: '',
+    created_by: 'prof-001',
+    created_at: '2026-06-15T08:06:00Z',
+  },
+  {
+    id: 'ec-ev-002',
+    project_id: 'proj-001',
+    camera_id: 'ec-cam-002',
+    evidence_type: 'clip',
+    title: 'Gate test clip',
+    description: 'EarthCam clip reference for grade crossing gate cycle review.',
+    captured_at: '2026-06-14T15:32:00Z',
+    start_time: '2026-06-14T15:30:00Z',
+    end_time: '2026-06-14T15:35:00Z',
+    earthcam_asset_id: 'clip-20260614-1530',
+    earthcam_url: 'https://www.earthcam.net/',
+    thumbnail_url: '',
+    created_by: 'prof-006',
+    created_at: '2026-06-14T15:40:00Z',
+  },
+];
 
 // ============================================================
 // PROJECT MEMBERS
@@ -1371,6 +1475,9 @@ export const seedData = {
   modifications: seedModifications,
   qcqaReports: seedQCQAReports,
   projectDocuments: seedProjectDocuments,
+  earthCamConnection: seedEarthCamConnection,
+  earthCamCameras: seedEarthCamCameras,
+  earthCamEvidence: seedEarthCamEvidence,
   activityLog: seedActivityLog,
   photoAttachments: seedPhotoAttachments,
   safetyIncidents: seedSafetyIncidents,

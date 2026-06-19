@@ -20,6 +20,9 @@ import type {
   QCQAReport,
   ProjectDocument,
   Attachment,
+  EarthCamConnection,
+  EarthCamCamera,
+  EarthCamEvidence,
 } from '@/lib/types';
 
 // Store (demo mode)
@@ -73,6 +76,8 @@ import {
   getPendingInvitationsForUser as fetchPendingInvitations,
 } from '@/lib/actions/invitations';
 import { getProjectPhotos as fetchProjectPhotos } from '@/lib/actions/photos';
+import { getEarthCamWorkspace as fetchEarthCamWorkspace } from '@/lib/actions/earthcam';
+import type { EarthCamWorkspace } from '@/lib/actions/earthcam';
 
 const DAILY_LOG_PAGE_SIZE = 500;
 
@@ -447,5 +452,27 @@ export function useProjectPhotos(projectId: string | null) {
     () => (projectId ? fetchProjectPhotos(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
+  );
+}
+
+export function useEarthCamWorkspace(projectId: string | null) {
+  return useQuery<EarthCamWorkspace>(
+    () => ({
+      connection: store.getEarthCamConnection(),
+      cameras: projectId ? store.getEarthCamCameras(projectId) : [],
+      evidence: projectId ? store.getEarthCamEvidence(projectId) : [],
+    }),
+    () =>
+      projectId
+        ? fetchEarthCamWorkspace(projectId)
+        : Promise.resolve({
+            data: {
+              connection: null as EarthCamConnection | null,
+              cameras: [] as EarthCamCamera[],
+              evidence: [] as EarthCamEvidence[],
+            },
+          }),
+    [projectId],
+    { connection: null, cameras: [], evidence: [] },
   );
 }

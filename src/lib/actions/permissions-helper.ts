@@ -123,7 +123,16 @@ export async function checkProjectMembership(
 export async function logActivity(
   supabase: SupabaseClient,
   projectId: string,
-  entityType: 'submittal' | 'rfi' | 'daily_log' | 'punch_list' | 'milestone' | 'project',
+  entityType:
+    | 'submittal'
+    | 'rfi'
+    | 'daily_log'
+    | 'punch_list'
+    | 'milestone'
+    | 'project'
+    | 'earthcam_connection'
+    | 'earthcam_camera'
+    | 'earthcam_evidence',
   entityId: string,
   action: 'created' | 'updated' | 'status_changed' | 'commented' | 'approved' | 'rejected' | 'submitted' | 'assigned' | 'deleted',
   description: string,

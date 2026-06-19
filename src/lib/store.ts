@@ -24,6 +24,9 @@ import {
   seedProject,
   seedPhotoAttachments,
   seedSafetyIncidents,
+  seedEarthCamConnection,
+  seedEarthCamCameras,
+  seedEarthCamEvidence,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
 import type {
@@ -64,6 +67,11 @@ import type {
   IncidentType,
   IncidentSeverity,
   IncidentStatus,
+  EarthCamConnection,
+  EarthCamCamera,
+  EarthCamCameraStatus,
+  EarthCamEvidence,
+  EarthCamEvidenceType,
 } from './types';
 
 // Mutable copies of seed data
@@ -81,6 +89,9 @@ let modifications: Modification[] = [...seedModifications];
 let qcqaReports: QCQAReport[] = [...seedQCQAReports];
 let projectDocuments: ProjectDocument[] = [...seedProjectDocuments];
 let safetyIncidents: SafetyIncident[] = [...seedSafetyIncidents];
+let earthCamConnection: EarthCamConnection | null = { ...seedEarthCamConnection };
+let earthCamCameras: EarthCamCamera[] = [...seedEarthCamCameras];
+let earthCamEvidence: EarthCamEvidence[] = [...seedEarthCamEvidence];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -104,6 +115,9 @@ export function initDemoData(): void {
   qcqaReports = [...seedQCQAReports];
   projectDocuments = [...seedProjectDocuments];
   safetyIncidents = [...seedSafetyIncidents];
+  earthCamConnection = { ...seedEarthCamConnection };
+  earthCamCameras = [...seedEarthCamCameras];
+  earthCamEvidence = [...seedEarthCamEvidence];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -124,6 +138,8 @@ export function initDemoData(): void {
   qcqaReportCounter = qcqaReports.length;
   documentCounter = projectDocuments.length;
   safetyIncidentCounter = safetyIncidents.length;
+  earthCamCameraCounter = earthCamCameras.length;
+  earthCamEvidenceCounter = earthCamEvidence.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -146,6 +162,9 @@ export function initFreshData(name: string, email: string): string {
   qcqaReports = [];
   projectDocuments = [];
   safetyIncidents = [];
+  earthCamConnection = null;
+  earthCamCameras = [];
+  earthCamEvidence = [];
   attachments = [];
   invitations = [];
 
@@ -180,6 +199,8 @@ export function initFreshData(name: string, email: string): string {
   qcqaReportCounter = 0;
   documentCounter = 0;
   safetyIncidentCounter = 0;
+  earthCamCameraCounter = 0;
+  earthCamEvidenceCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -202,6 +223,8 @@ let dailyLogCounter = dailyLogs.length;
 let punchListCounter = punchListItems.length;
 let memberCounter = projectMembers.length;
 let activityCounter = activityLog.length;
+let earthCamCameraCounter = earthCamCameras.length;
+let earthCamEvidenceCounter = earthCamEvidence.length;
 
 // --- Project operations ---
 export function getProjects(): Project[] { return projects; }
@@ -294,6 +317,147 @@ export { seedProject };
 // Profile / Organization getters
 export function getProfiles(): Profile[] { return profiles; }
 export function getOrganizations(): Organization[] { return organizations; }
+
+function getCurrentOrganizationId(): string {
+  return profiles.find((p) => p.id === getCurrentUserId())?.organization_id ?? 'org-001';
+}
+
+// --- EarthCam operations ---
+export function getEarthCamConnection(): EarthCamConnection | null {
+  const organizationId = getCurrentOrganizationId();
+  return earthCamConnection?.organization_id === organizationId ? earthCamConnection : null;
+}
+
+export function saveEarthCamConnection(data: {
+  account_name: string;
+  auth_mode?: EarthCamConnection['auth_mode'];
+  api_key?: string;
+  api_base_url?: string;
+}): EarthCamConnection {
+  const now = new Date().toISOString();
+  const apiKey = data.api_key?.trim();
+  const existing = getEarthCamConnection();
+  const connection: EarthCamConnection = {
+    id: existing?.id ?? 'ec-conn-001',
+    organization_id: getCurrentOrganizationId(),
+    account_name: data.account_name.trim() || 'EarthCam',
+    status: 'connected',
+    auth_mode: data.auth_mode ?? existing?.auth_mode ?? 'api_key',
+    api_base_url: data.api_base_url?.trim() ?? existing?.api_base_url ?? '',
+    api_key_last4: apiKey ? apiKey.slice(-4) : existing?.api_key_last4 ?? null,
+    connected_by: existing?.connected_by ?? getCurrentUserId(),
+    connected_at: existing?.connected_at ?? now,
+    last_sync_at: now,
+    credentials_updated_at: apiKey ? now : existing?.credentials_updated_at ?? null,
+    created_at: existing?.created_at ?? now,
+  };
+  earthCamConnection = connection;
+  return connection;
+}
+
+export function getEarthCamCameras(projectId: string): EarthCamCamera[] {
+  return earthCamCameras
+    .filter((camera) => camera.project_id === projectId)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function addEarthCamCamera(projectId: string, data: {
+  earthcam_camera_id: string;
+  name: string;
+  location_label: string;
+  rail_area: string;
+  live_embed_url?: string;
+  live_stream_url?: string;
+  thumbnail_url?: string;
+  status?: EarthCamCameraStatus;
+  ptz_enabled?: boolean;
+}): EarthCamCamera {
+  earthCamCameraCounter++;
+  const connection = getEarthCamConnection() ?? saveEarthCamConnection({ account_name: 'EarthCam' });
+  const now = new Date().toISOString();
+  const camera: EarthCamCamera = {
+    id: `ec-cam-${String(earthCamCameraCounter).padStart(3, '0')}`,
+    project_id: projectId,
+    connection_id: connection.id,
+    earthcam_camera_id: data.earthcam_camera_id.trim(),
+    name: data.name.trim(),
+    location_label: data.location_label.trim(),
+    rail_area: data.rail_area.trim(),
+    live_embed_url: data.live_embed_url?.trim() ?? '',
+    live_stream_url: data.live_stream_url?.trim() ?? '',
+    thumbnail_url: data.thumbnail_url?.trim() ?? '',
+    status: data.status ?? 'online',
+    ptz_enabled: data.ptz_enabled ?? false,
+    last_seen_at: now,
+    created_at: now,
+  };
+  earthCamCameras = [...earthCamCameras, camera];
+  return camera;
+}
+
+export function updateEarthCamCamera(
+  cameraId: string,
+  data: Partial<Omit<EarthCamCamera, 'id' | 'project_id' | 'connection_id' | 'created_at'>>
+): EarthCamCamera | null {
+  let updated: EarthCamCamera | null = null;
+  earthCamCameras = earthCamCameras.map((camera) => {
+    if (camera.id !== cameraId) return camera;
+    const next = { ...camera, ...data };
+    updated = next;
+    return next;
+  });
+  return updated;
+}
+
+export function deleteEarthCamCamera(cameraId: string): void {
+  earthCamCameras = earthCamCameras.filter((camera) => camera.id !== cameraId);
+  earthCamEvidence = earthCamEvidence.filter((item) => item.camera_id !== cameraId);
+}
+
+export function getEarthCamEvidence(projectId: string): EarthCamEvidence[] {
+  return earthCamEvidence
+    .filter((item) => item.project_id === projectId)
+    .sort((a, b) => new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime());
+}
+
+export function addEarthCamEvidence(projectId: string, data: {
+  camera_id: string;
+  evidence_type: EarthCamEvidenceType;
+  title: string;
+  description?: string;
+  captured_at?: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  earthcam_asset_id?: string | null;
+  earthcam_url?: string;
+  thumbnail_url?: string;
+}): EarthCamEvidence {
+  earthCamEvidenceCounter++;
+  const camera = earthCamCameras.find((item) => item.id === data.camera_id);
+  const now = new Date().toISOString();
+  const evidence: EarthCamEvidence = {
+    id: `ec-ev-${String(earthCamEvidenceCounter).padStart(3, '0')}`,
+    project_id: projectId,
+    camera_id: data.camera_id,
+    evidence_type: data.evidence_type,
+    title: data.title.trim(),
+    description: data.description?.trim() ?? '',
+    captured_at: data.captured_at ?? now,
+    start_time: data.start_time ?? null,
+    end_time: data.end_time ?? null,
+    earthcam_asset_id: data.earthcam_asset_id?.trim() || null,
+    earthcam_url: data.earthcam_url?.trim() || camera?.live_stream_url || camera?.live_embed_url || '',
+    thumbnail_url: data.thumbnail_url?.trim() || camera?.thumbnail_url || '',
+    created_by: getCurrentUserId(),
+    created_at: now,
+  };
+  earthCamEvidence = [evidence, ...earthCamEvidence];
+  return evidence;
+}
+
+export function removeEarthCamEvidence(evidenceId: string): void {
+  earthCamEvidence = earthCamEvidence.filter((item) => item.id !== evidenceId);
+}
 
 // Updated getProfileWithOrg that uses mutable data
 export function getProfileWithOrg(profileId: string): (Profile & { organization: Organization }) | null {
@@ -1249,6 +1413,7 @@ export function addProjectPhoto(projectId: string, data: {
   return addAttachment({
     entity_type: 'project_photo',
     entity_id: projectId,
+    project_id: projectId,
     ...data,
   });
 }

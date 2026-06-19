@@ -1,3 +1,5 @@
+import { ACTIONS, type Action } from './permissions';
+
 export const PROJECT_NAME = "RailCommand";
 
 /**
@@ -274,6 +276,7 @@ export interface NavItem {
   href: string;
   icon: string;
   requiresProject?: boolean;
+  requiredAction?: Action;
 }
 
 export function getNavItems(projectId: string): NavItem[] {
@@ -286,6 +289,7 @@ export function getNavItems(projectId: string): NavItem[] {
     { label: "Safety", href: projectId ? `/projects/${projectId}/safety` : "#", icon: "ShieldAlert", requiresProject: true },
     { label: "QC/QA", href: projectId ? `/projects/${projectId}/qcqa` : "#", icon: "ClipboardCheck2", requiresProject: true },
     { label: "Documents", href: projectId ? `/projects/${projectId}/documents` : "#", icon: "FolderOpen", requiresProject: true },
+    { label: "Cameras", href: projectId ? `/projects/${projectId}/cameras` : "#", icon: "Video", requiresProject: true, requiredAction: ACTIONS.EARTHCAM_VIEW },
     { label: "Photos", href: projectId ? `/projects/${projectId}/photos` : "#", icon: "Camera", requiresProject: true },
     { label: "Reports", href: projectId ? `/projects/${projectId}/weekly-reports` : "#", icon: "FileBarChart", requiresProject: true },
     { label: "Schedule", href: projectId ? `/projects/${projectId}/schedule` : "#", icon: "CalendarRange", requiresProject: true },

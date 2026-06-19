@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.5.0-earthcam-field-testing',
+    version: '2.5.0',
+    title: 'EarthCam Field Testing',
+    description: 'The new Cameras workspace is ready for field testing with project-level EarthCam onboarding, managed/SSO/API setup options, camera mapping, and snapshot or clip evidence references. Final live EarthCam API/SSO validation still requires EarthCam credentials and vendor configuration.',
+    date: '2026-06-19',
+  },
+  {
     id: 'v2.4.0-one-click-history-export',
     version: '2.4.0',
     title: 'One-Click History Export',

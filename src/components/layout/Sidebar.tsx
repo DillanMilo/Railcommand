@@ -30,6 +30,7 @@ import {
   ClipboardPenLine,
   FolderOpen,
   Camera,
+  Video,
   ChevronDown,
   Plus,
   Check,
@@ -67,6 +68,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   ClipboardCheck2: ClipboardPenLine,
   FolderOpen,
   Camera,
+  Video,
   FileBarChart,
   Users,
 };
@@ -329,6 +331,10 @@ export default function Sidebar() {
             const disabled = item.requiresProject && !currentProjectId;
             const isActive =
               !disabled && (pathname === item.href || pathname.startsWith(item.href + '/'));
+
+            if (item.requiredAction && !can(item.requiredAction)) {
+              return null;
+            }
 
             if (disabled) {
               const disabledEl = (
