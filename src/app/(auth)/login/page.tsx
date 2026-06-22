@@ -21,7 +21,7 @@ import {
   Share,
   Plus,
   SquarePlus,
-  Chrome,
+  Globe,
   MoreVertical,
   Check,
   Play,
@@ -158,7 +158,7 @@ function InstallGuide({ onDismiss }: { onDismiss: () => void }) {
         )}
         {activeTab === 'desktop' && (
           <>
-            <Step number={1} icon={<Chrome className="size-4" />} text={'Open RailCommand in Chrome or Edge'} />
+            <Step number={1} icon={<Globe className="size-4" />} text={'Open RailCommand in Chrome or Edge'} />
             <Step number={2} icon={<Plus className="size-4" />} text={'Click the install icon in the address bar'} />
             <Step number={3} icon={<Check className="size-4" />} text={'Click "Install" — opens like a native app'} />
           </>

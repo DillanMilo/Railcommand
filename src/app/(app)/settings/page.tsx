@@ -41,7 +41,7 @@ import {
   AlertTriangle,
   Download,
   Smartphone,
-  Chrome,
+  Globe,
   RefreshCw,
 } from 'lucide-react';
 
@@ -257,7 +257,7 @@ function InstallAppCard() {
     },
     {
       title: 'Android (Chrome)',
-      icon: Chrome,
+      icon: Globe,
       steps: [
         'Open RailCommand in Chrome',
         'Tap the three-dot menu (top right)',
