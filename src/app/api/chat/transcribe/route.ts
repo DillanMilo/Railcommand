@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import { getOpenAIClient } from '@/lib/openai/client';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Audio file is too large' }, { status: 413 });
     }
 
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getOpenAIClient().audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
       response_format: 'text',

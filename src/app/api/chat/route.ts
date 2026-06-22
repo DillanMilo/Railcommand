@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getAllowedActions, canPerform, ACTIONS } from '@/lib/permissions';
+import { getOpenAIClient } from '@/lib/openai/client';
 import { buildSystemPrompt } from '@/lib/railbot/system-prompt';
 import { RAILBOT_TOOLS } from '@/lib/railbot/tools';
 import { executeTool, executeDemoTool } from '@/lib/railbot/tool-executor';
@@ -20,7 +20,6 @@ import type { ChatMessage } from '@/lib/railbot/types';
 import type { Organization, Profile, ProjectMember } from '@/lib/types';
 import type { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export const maxDuration = 300;
 
 // Maximum number of tool-call round-trips to prevent infinite loops
@@ -456,6 +455,7 @@ export async function POST(request: NextRequest) {
 
           const currentMessages = [...openaiMessages];
           let toolRounds = 0;
+          const openai = getOpenAIClient();
           // Track all tool calls across rounds for persistence
           const toolCallsForPersistence: { id: string; type: 'function'; function: { name: string; arguments: string } }[] = [];
 
