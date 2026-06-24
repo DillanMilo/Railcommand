@@ -308,6 +308,20 @@ export async function middleware(request: NextRequest) {
         .single();
 
       if (!profile?.organization_id) {
+        const { count: projectMembershipCount } = await supabase
+          .from('project_members')
+          .select('id', { count: 'exact', head: true })
+          .eq('profile_id', user.id);
+
+        if ((projectMembershipCount ?? 0) > 0) {
+          supabaseResponse.cookies.set('rc-onboarded', 'true', {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30,
+            sameSite: 'lax',
+          });
+          return supabaseResponse;
+        }
+
         // Redirect to onboarding, preserving the original destination
         const url = request.nextUrl.clone();
         url.pathname = '/onboarding';
