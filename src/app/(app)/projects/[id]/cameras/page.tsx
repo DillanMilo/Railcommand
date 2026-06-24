@@ -3,6 +3,8 @@
 import { FormEvent, use, useState } from 'react';
 import {
   AlertTriangle,
+  Check,
+  Copy,
   ExternalLink,
   Loader2,
   Pencil,
@@ -43,6 +45,8 @@ const emptyForm: EmbedForm = {
 
 const samplePlaceholder =
   'https://share.earthcam.net/tJ90CoLmq7TzrY396Yd88CKvRQt1vEA9ny7MYZgQXUg';
+const sampleScriptEmbed =
+  "<script class='earthcam-embed' aria-label='earthcam-embed' type='text/javascript' src='https://share.earthcam.net/embed/tJ90CoLmq7TzrY396Yd88CBZ6eUvO_kGBU2Oymm58jU/tJ90CoLmq7TzrY396Yd88Ju_fYJhq66H9_yXQ-88-eI'></script>";
 
 function EarthCamFrame({ embed }: { embed: EarthCamEmbed }) {
   return (
@@ -83,6 +87,7 @@ export default function CamerasPage({
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<EmbedForm>(emptyForm);
   const [formError, setFormError] = useState('');
+  const [copiedSample, setCopiedSample] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EarthCamEmbed | null>(null);
 
   function openForm(embed?: EarthCamEmbed) {
@@ -156,6 +161,25 @@ export default function CamerasPage({
       setDeleteTarget(null);
     } finally {
       setSaving(false);
+    }
+  }
+
+  function applySampleFeed() {
+    setForm((current) => ({
+      ...current,
+      label: current.label || 'EarthCam Sample Feed',
+      embedInput: samplePlaceholder,
+    }));
+    setFormError('');
+  }
+
+  async function copySampleUrl() {
+    try {
+      await navigator.clipboard.writeText(samplePlaceholder);
+      setCopiedSample(true);
+      window.setTimeout(() => setCopiedSample(false), 1600);
+    } catch {
+      applySampleFeed();
     }
   }
 
@@ -285,16 +309,16 @@ export default function CamerasPage({
       )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <form onSubmit={handleSave} className="space-y-4">
-            <DialogHeader>
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-3 overflow-y-auto p-4 sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:gap-4 sm:p-6">
+          <form onSubmit={handleSave} className="w-full min-w-0 space-y-4">
+            <DialogHeader className="pr-8 text-left">
               <DialogTitle>{form.id ? 'Edit EarthCam Feed' : 'Add EarthCam Feed'}</DialogTitle>
               <DialogDescription>
                 Paste the EarthCam share URL or full Broadway Media Player embed code. RailCommand stores only the URL reference.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3">
-              <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            <div className="min-w-0 space-y-3">
+              <label className="block min-w-0 space-y-1.5 text-xs font-medium text-muted-foreground">
                 Label
                 <Input
                   value={form.label}
@@ -302,13 +326,13 @@ export default function CamerasPage({
                   placeholder="North Yard Camera"
                 />
               </label>
-              <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+              <label className="block min-w-0 space-y-1.5 text-xs font-medium text-muted-foreground">
                 EarthCam share URL or embed code
                 <Textarea
                   value={form.embedInput}
                   onChange={(event) => setForm((current) => ({ ...current, embedInput: event.target.value }))}
                   placeholder={samplePlaceholder}
-                  className="min-h-28 font-mono text-xs"
+                  className="min-h-28 resize-y font-mono text-xs leading-relaxed"
                 />
               </label>
               {formError && (
@@ -318,9 +342,64 @@ export default function CamerasPage({
                 </div>
               )}
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-rc-orange text-white hover:bg-rc-orange-dark">
+
+            <div className="min-w-0 rounded-lg border border-dashed border-rc-border bg-muted/30 p-3 sm:p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Example feed</p>
+                  <p className="mt-1 text-sm font-medium">EarthCam Sample Feed</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Use this sample to preview how an EarthCam feed renders in RailCommand.
+                  </p>
+                </div>
+                <div className="flex gap-2 sm:shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={applySampleFeed}
+                    className="flex-1 sm:flex-none"
+                  >
+                    Use Sample
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={copySampleUrl}
+                    aria-label="Copy sample EarthCam URL"
+                  >
+                    {copiedSample ? <Check className="size-4" /> : <Copy className="size-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground">Share URL</p>
+                  <code className="mt-1 block max-h-24 overflow-y-auto break-all rounded-md bg-background px-2 py-1.5 text-[11px] leading-5 text-foreground">
+                    {samplePlaceholder}
+                  </code>
+                </div>
+                <details>
+                  <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground">
+                    Script embed
+                  </summary>
+                  <code className="mt-1 block max-h-28 overflow-y-auto break-all rounded-md bg-background px-2 py-1.5 text-[11px] leading-5 text-foreground">
+                    {sampleScriptEmbed}
+                  </code>
+                </details>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="w-full bg-rc-orange text-white hover:bg-rc-orange-dark sm:w-auto"
+              >
                 {saving ? <Loader2 className="size-4 animate-spin" /> : <Video className="size-4" />}
                 Save Feed
               </Button>
