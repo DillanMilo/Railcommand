@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.5.1-earthcam-live-sample-feed',
+    version: '2.5.1',
+    title: 'EarthCam Live With Sample Feed',
+    description: 'EarthCam is now live in the Cameras tab with a sample feed for testing. RailCommand stores only the EarthCam embed link; video streams directly from EarthCam.',
+    date: '2026-06-24',
+  },
+  {
     id: 'v2.5.0-earthcam-field-testing',
     version: '2.5.0',
     title: 'EarthCam Field Testing',

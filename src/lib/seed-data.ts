@@ -1,4 +1,4 @@
-import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment, SafetyIncident, EarthCamConnection, EarthCamCamera, EarthCamEvidence } from './types';
+import { Organization, Profile, Project, ProjectMember, Submittal, RFI, RFIResponse, DailyLog, PunchListItem, Milestone, ActivityLogEntry, ChangeOrder, WeeklyReport, Modification, QCQAReport, ProjectDocument, Attachment, SafetyIncident, EarthCamConnection, EarthCamCamera, EarthCamEvidence, EarthCamEmbed } from './types';
 
 // ============================================================
 // ORGANIZATIONS
@@ -158,6 +158,16 @@ export const seedEarthCamEvidence: EarthCamEvidence[] = [
     thumbnail_url: '',
     created_by: 'prof-006',
     created_at: '2026-06-14T15:40:00Z',
+  },
+];
+
+export const seedEarthCamEmbeds: EarthCamEmbed[] = [
+  {
+    id: 'ec-embed-001',
+    project_id: 'proj-001',
+    label: 'EarthCam Sample Feed',
+    url: 'https://share.earthcam.net/tJ90CoLmq7TzrY396Yd88CKvRQt1vEA9ny7MYZgQXUg',
+    created_at: '2026-06-23T12:00:00Z',
   },
 ];
 
@@ -1478,6 +1488,7 @@ export const seedData = {
   earthCamConnection: seedEarthCamConnection,
   earthCamCameras: seedEarthCamCameras,
   earthCamEvidence: seedEarthCamEvidence,
+  earthCamEmbeds: seedEarthCamEmbeds,
   activityLog: seedActivityLog,
   photoAttachments: seedPhotoAttachments,
   safetyIncidents: seedSafetyIncidents,

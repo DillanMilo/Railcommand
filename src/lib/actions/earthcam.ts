@@ -9,6 +9,7 @@ import {
   encryptSecret,
   signEarthCamTargetUrl,
 } from '@/lib/earthcam/security';
+import { extractEarthCamEmbedUrl } from '@/lib/earthcam/embed';
 import { ACTIONS } from '@/lib/permissions';
 import {
   checkPermission,
@@ -20,6 +21,7 @@ import type {
   EarthCamCamera,
   EarthCamCameraStatus,
   EarthCamConnection,
+  EarthCamEmbed,
   EarthCamEvidence,
   EarthCamEvidenceType,
 } from '@/lib/types';
@@ -29,6 +31,12 @@ export interface EarthCamWorkspace {
   cameras: EarthCamCamera[];
   evidence: EarthCamEvidence[];
 }
+
+export type EarthCamEmbedInput = {
+  id?: string;
+  label: string;
+  embedInput: string;
+};
 
 export type EarthCamAccessLink = {
   url: string;
@@ -229,6 +237,131 @@ export async function getEarthCamWorkspace(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : 'Failed to load EarthCam workspace',
+    };
+  }
+}
+
+export async function getEarthCamEmbeds(projectId: string): Promise<ActionResult<EarthCamEmbed[]>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_VIEW);
+    if (!permission.allowed) return { error: permission.error };
+
+    const { data, error } = await supabase
+      .from('earthcam_embeds')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('label', { ascending: true });
+
+    if (error) return { error: error.message };
+    return { success: true, data: (data ?? []) as EarthCamEmbed[] };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to load EarthCam embeds',
+    };
+  }
+}
+
+export async function saveEarthCamEmbed(
+  projectId: string,
+  input: EarthCamEmbedInput
+): Promise<ActionResult<EarthCamEmbed>> {
+  try {
+    const supabase = await createClient();
+    const admin = createAdminClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_MANAGE);
+    if (!permission.allowed) return { error: permission.error };
+
+    const { url } = extractEarthCamEmbedUrl(input.embedInput);
+    const label = input.label.trim() || 'EarthCam Feed';
+
+    const query = input.id
+      ? admin
+          .from('earthcam_embeds')
+          .update({ label, url })
+          .eq('id', input.id)
+          .eq('project_id', projectId)
+          .select('*')
+          .single()
+      : admin
+          .from('earthcam_embeds')
+          .insert({ project_id: projectId, label, url })
+          .select('*')
+          .single();
+
+    const { data, error } = await query;
+    if (error || !data) return { error: error?.message ?? 'Failed to save EarthCam embed' };
+
+    await logEarthCamActivity(
+      supabase,
+      projectId,
+      'earthcam_camera',
+      data.id,
+      input.id ? 'updated' : 'created',
+      `${input.id ? 'updated' : 'created'} EarthCam embed ${label}`,
+      user.id
+    );
+
+    revalidatePath(`/projects/${projectId}/cameras`);
+    return { success: true, data: data as EarthCamEmbed };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to save EarthCam embed',
+    };
+  }
+}
+
+export async function deleteEarthCamEmbed(
+  projectId: string,
+  embedId: string
+): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+    const admin = createAdminClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_MANAGE);
+    if (!permission.allowed) return { error: permission.error };
+
+    const { data: embed } = await admin
+      .from('earthcam_embeds')
+      .select('id, label')
+      .eq('id', embedId)
+      .eq('project_id', projectId)
+      .maybeSingle();
+
+    const { error } = await admin
+      .from('earthcam_embeds')
+      .delete()
+      .eq('id', embedId)
+      .eq('project_id', projectId);
+
+    if (error) return { error: error.message };
+
+    if (embed?.id) {
+      await logEarthCamActivity(
+        supabase,
+        projectId,
+        'earthcam_camera',
+        embed.id,
+        'deleted',
+        `deleted EarthCam embed ${embed.label}`,
+        user.id
+      );
+    }
+
+    revalidatePath(`/projects/${projectId}/cameras`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to delete EarthCam embed',
     };
   }
 }

@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(self)' },
+          { key: 'Content-Security-Policy', value: "frame-src 'self' https://share.earthcam.net https://*.earthcam.net;" },
         ],
       },
     ];

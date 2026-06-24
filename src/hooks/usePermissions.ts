@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectMembers } from '@/hooks/useData';
+import { getMyProfile } from '@/lib/actions/profiles';
 import { canPerform, getAllowedActions, type Action } from '@/lib/permissions';
-import type { ProjectMember } from '@/lib/types';
+import type { Profile, ProjectMember } from '@/lib/types';
 
 interface UsePermissionsResult {
   can: (action: Action) => boolean;
@@ -14,15 +15,34 @@ interface UsePermissionsResult {
 }
 
 export function usePermissions(projectId: string): UsePermissionsResult {
-  const { currentUserId } = useProject();
+  const { currentUserId, isDemo } = useProject();
   const { data: members } = useProjectMembers(projectId);
+  const [orgRole, setOrgRole] = useState<Profile['role'] | null>(null);
+
+  useEffect(() => {
+    if (isDemo || !currentUserId) {
+      setOrgRole(null);
+      return;
+    }
+
+    let cancelled = false;
+    getMyProfile().then((result) => {
+      if (!cancelled) setOrgRole(result.data?.role ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, isDemo]);
 
   const membership = useMemo(
     () => members.find((m) => m.profile_id === currentUserId) ?? null,
     [members, currentUserId]
   );
 
-  const role = membership?.project_role ?? null;
+  const role = orgRole === 'admin'
+    ? 'manager'
+    : membership?.project_role ?? null;
 
   const allowedActions = useMemo(
     () => getAllowedActions(role),

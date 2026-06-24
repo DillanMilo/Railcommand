@@ -462,6 +462,14 @@ export interface EarthCamEvidence {
   created_at: string;
 }
 
+export interface EarthCamEmbed {
+  id: string;
+  project_id: string;
+  label: string;
+  url: string;
+  created_at: string;
+}
+
 // Geo-tag for jobs and work items
 export interface GeoTag {
   lat: number;

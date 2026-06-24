@@ -27,6 +27,7 @@ import {
   seedEarthCamConnection,
   seedEarthCamCameras,
   seedEarthCamEvidence,
+  seedEarthCamEmbeds,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
 import type {
@@ -72,6 +73,7 @@ import type {
   EarthCamCameraStatus,
   EarthCamEvidence,
   EarthCamEvidenceType,
+  EarthCamEmbed,
 } from './types';
 
 // Mutable copies of seed data
@@ -92,6 +94,7 @@ let safetyIncidents: SafetyIncident[] = [...seedSafetyIncidents];
 let earthCamConnection: EarthCamConnection | null = { ...seedEarthCamConnection };
 let earthCamCameras: EarthCamCamera[] = [...seedEarthCamCameras];
 let earthCamEvidence: EarthCamEvidence[] = [...seedEarthCamEvidence];
+let earthCamEmbeds: EarthCamEmbed[] = [...seedEarthCamEmbeds];
 
 // --- Demo / Fresh mode ---
 let demoMode = true;
@@ -118,6 +121,7 @@ export function initDemoData(): void {
   earthCamConnection = { ...seedEarthCamConnection };
   earthCamCameras = [...seedEarthCamCameras];
   earthCamEvidence = [...seedEarthCamEvidence];
+  earthCamEmbeds = [...seedEarthCamEmbeds];
   profiles = [...seedProfiles];
   organizations = [...seedOrganizations];
   attachments = [];
@@ -140,6 +144,7 @@ export function initDemoData(): void {
   safetyIncidentCounter = safetyIncidents.length;
   earthCamCameraCounter = earthCamCameras.length;
   earthCamEvidenceCounter = earthCamEvidence.length;
+  earthCamEmbedCounter = earthCamEmbeds.length;
   responseCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
@@ -165,6 +170,7 @@ export function initFreshData(name: string, email: string): string {
   earthCamConnection = null;
   earthCamCameras = [];
   earthCamEvidence = [];
+  earthCamEmbeds = [];
   attachments = [];
   invitations = [];
 
@@ -201,6 +207,7 @@ export function initFreshData(name: string, email: string): string {
   safetyIncidentCounter = 0;
   earthCamCameraCounter = 0;
   earthCamEvidenceCounter = 0;
+  earthCamEmbedCounter = 0;
   attachmentCounter = 0;
   invitationCounter = 0;
 
@@ -225,6 +232,7 @@ let memberCounter = projectMembers.length;
 let activityCounter = activityLog.length;
 let earthCamCameraCounter = earthCamCameras.length;
 let earthCamEvidenceCounter = earthCamEvidence.length;
+let earthCamEmbedCounter = earthCamEmbeds.length;
 
 // --- Project operations ---
 export function getProjects(): Project[] { return projects; }
@@ -412,6 +420,48 @@ export function updateEarthCamCamera(
 export function deleteEarthCamCamera(cameraId: string): void {
   earthCamCameras = earthCamCameras.filter((camera) => camera.id !== cameraId);
   earthCamEvidence = earthCamEvidence.filter((item) => item.camera_id !== cameraId);
+}
+
+export function getEarthCamEmbeds(projectId: string): EarthCamEmbed[] {
+  return earthCamEmbeds
+    .filter((embed) => embed.project_id === projectId)
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export function addEarthCamEmbed(projectId: string, data: { label: string; url: string }): EarthCamEmbed {
+  earthCamEmbedCounter++;
+  const now = new Date().toISOString();
+  const embed: EarthCamEmbed = {
+    id: `ec-embed-${String(earthCamEmbedCounter).padStart(3, '0')}`,
+    project_id: projectId,
+    label: data.label.trim() || 'EarthCam Feed',
+    url: data.url.trim(),
+    created_at: now,
+  };
+  earthCamEmbeds = [...earthCamEmbeds, embed];
+  return embed;
+}
+
+export function updateEarthCamEmbed(
+  embedId: string,
+  data: Partial<Pick<EarthCamEmbed, 'label' | 'url'>>
+): EarthCamEmbed | null {
+  let updated: EarthCamEmbed | null = null;
+  earthCamEmbeds = earthCamEmbeds.map((embed) => {
+    if (embed.id !== embedId) return embed;
+    const next = {
+      ...embed,
+      label: data.label?.trim() || embed.label,
+      url: data.url?.trim() || embed.url,
+    };
+    updated = next;
+    return next;
+  });
+  return updated;
+}
+
+export function deleteEarthCamEmbed(embedId: string): void {
+  earthCamEmbeds = earthCamEmbeds.filter((embed) => embed.id !== embedId);
 }
 
 export function getEarthCamEvidence(projectId: string): EarthCamEvidence[] {
