@@ -60,6 +60,10 @@ const signUpSchema = z.object({
 });
 
 const projectSizeValues = ['0-1m', '1m-10m', '10m-50m', '50m-100m', '100m-plus'] as const;
+const buyerTypeValues = ['individual', 'small-group', 'project-team', 'enterprise'] as const;
+const billingPreferenceValues = ['monthly', 'yearly', 'enterprise-call'] as const;
+const teamSizeValues = ['1', '2-5', '6-20', '21-plus'] as const;
+const companyTypeValues = ['contractor', 'owner', 'engineer', 'inspector', 'other'] as const;
 
 const pricingProposal = [
   { value: '0-1m', projectSize: '$0-$1M', annualPercent: '1%', maxAnnualCost: '$10,000' },
@@ -69,10 +73,60 @@ const pricingProposal = [
   { value: '100m-plus', projectSize: '$100M+', annualPercent: '0.15%', maxAnnualCost: 'Varies' },
 ] as const;
 
+const pricingPaths = [
+  {
+    title: 'Individual',
+    billing: 'Monthly or yearly',
+    description: 'One user evaluating RailCommand for personal project tracking.',
+  },
+  {
+    title: 'Small group',
+    billing: 'Monthly or yearly',
+    description: 'A small crew or office team that needs shared project workflows.',
+  },
+  {
+    title: 'Enterprise',
+    billing: 'Call for enterprise',
+    description: 'Project-wide or multi-team deployments qualified by scope.',
+  },
+] as const;
+
+const buyerTypeOptions = [
+  { value: 'individual', label: 'Individual user' },
+  { value: 'small-group', label: 'Small group' },
+  { value: 'project-team', label: 'Project team' },
+  { value: 'enterprise', label: 'Enterprise / owner account' },
+] as const;
+
+const billingPreferenceOptions = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+  { value: 'enterprise-call', label: 'Call for enterprise' },
+] as const;
+
+const teamSizeOptions = [
+  { value: '1', label: '1 user' },
+  { value: '2-5', label: '2-5 users' },
+  { value: '6-20', label: '6-20 users' },
+  { value: '21-plus', label: '21+ users' },
+] as const;
+
+const companyTypeOptions = [
+  { value: 'contractor', label: 'Contractor' },
+  { value: 'owner', label: 'Owner / developer' },
+  { value: 'engineer', label: 'Engineer' },
+  { value: 'inspector', label: 'Inspector / field team' },
+  { value: 'other', label: 'Other' },
+] as const;
+
 const accessRequestSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
   companyName: z.string().min(2, 'Company name is required'),
+  companyType: z.enum(companyTypeValues),
+  buyerType: z.enum(buyerTypeValues),
+  teamSize: z.enum(teamSizeValues),
+  billingPreference: z.enum(billingPreferenceValues),
   projectSize: z.enum(projectSizeValues),
   note: z.string().max(1000, 'Keep notes under 1,000 characters').optional(),
 });
@@ -317,39 +371,58 @@ function EmailConfirmation({
 
 function PricingProposalTable() {
   return (
-    <div className="rounded-lg border border-rc-border bg-muted/30 dark:bg-white/5 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-rc-border">
-        <DollarSign className="size-4 text-rc-orange" />
-        <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
-          Per-project pricing proposal
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {pricingPaths.map((path) => (
+          <div
+            key={path.title}
+            className="rounded-lg border border-rc-border bg-background/70 p-3 dark:bg-white/5"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-foreground">{path.title}</p>
+              <span className="rounded-md bg-rc-orange/10 px-2 py-1 text-[11px] font-semibold text-rc-orange">
+                {path.billing}
+              </span>
+            </div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">{path.description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-lg border border-rc-border bg-muted/30 dark:bg-white/5 overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-rc-border">
+          <DollarSign className="size-4 text-rc-orange" />
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            Enterprise project guide
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-rc-navy text-white">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Project Size</th>
+                <th className="px-3 py-2 font-semibold">Annual %</th>
+                <th className="px-3 py-2 font-semibold">Max Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pricingProposal.map((row, index) => (
+                <tr
+                  key={row.value}
+                  className={index % 2 === 0 ? 'bg-muted/50' : 'bg-background/70'}
+                >
+                  <td className="px-3 py-2 font-medium text-foreground">{row.projectSize}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{row.annualPercent}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{row.maxAnnualCost}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="px-3 py-2 text-[11px] leading-5 text-muted-foreground border-t border-rc-border">
+          Individual and small-group requests can be priced monthly or yearly. Enterprise terms are confirmed after scope review.
         </p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-rc-navy text-white">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Project Size</th>
-              <th className="px-3 py-2 font-semibold">Annual %</th>
-              <th className="px-3 py-2 font-semibold">Max Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pricingProposal.map((row, index) => (
-              <tr
-                key={row.value}
-                className={index % 2 === 0 ? 'bg-muted/50' : 'bg-background/70'}
-              >
-                <td className="px-3 py-2 font-medium text-foreground">{row.projectSize}</td>
-                <td className="px-3 py-2 text-muted-foreground">{row.annualPercent}</td>
-                <td className="px-3 py-2 text-muted-foreground">{row.maxAnnualCost}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="px-3 py-2 text-[11px] leading-5 text-muted-foreground border-t border-rc-border">
-        Final commercial terms are confirmed during enterprise onboarding.
-      </p>
     </div>
   );
 }
@@ -369,14 +442,14 @@ function AccessRequestConfirmation({
           Request sent
         </h3>
         <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
-          Your access request was sent to the RailCommand team. We&apos;ll review
-          the project details and follow up directly.
+          Your pricing request was sent to the RailCommand team. We&apos;ll review
+          the team size, billing path, and project details before following up.
         </p>
       </div>
 
       <div className="rounded-lg border border-rc-border bg-muted/40 dark:bg-white/5 p-4 text-sm leading-6 text-muted-foreground">
-        RailCommand is currently provisioned for enterprise project teams through
-        demos, project invitations, and approved onboarding.
+        Existing project teams can still join through invitation links. New
+        self-service workspaces are provisioned after review.
       </div>
 
       <Button
@@ -461,6 +534,10 @@ function LoginPageInner() {
       fullName: '',
       email: initialEmail,
       companyName: '',
+      companyType: 'contractor',
+      buyerType: 'project-team',
+      teamSize: '6-20',
+      billingPreference: 'enterprise-call',
       projectSize: '1m-10m',
       note: '',
     },
@@ -509,6 +586,7 @@ function LoginPageInner() {
           document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
         }
         try {
+          await fetch('/api/demo/local-session', { method: 'DELETE' });
           localStorage.removeItem('rc-mode');
           document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
         } catch { /* noop */ }
@@ -547,6 +625,7 @@ function LoginPageInner() {
           document.cookie = 'rc-remember=true; path=/; max-age=604800; SameSite=Lax';
           initFreshData(data.fullName, data.email);
           try {
+            await fetch('/api/demo/local-session', { method: 'DELETE' });
             localStorage.removeItem('rc-mode');
             document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
           } catch { /* noop */ }
@@ -590,6 +669,10 @@ function LoginPageInner() {
           fullName: '',
           email: data.email,
           companyName: '',
+          companyType: data.companyType,
+          buyerType: data.buyerType,
+          teamSize: data.teamSize,
+          billingPreference: data.billingPreference,
           projectSize: data.projectSize,
           note: '',
         });
@@ -636,6 +719,7 @@ function LoginPageInner() {
     }
     try {
       localStorage.removeItem('rc-mode');
+      await fetch('/api/demo/local-session', { method: 'DELETE' });
       document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
     } catch { /* noop */ }
     try {
@@ -660,11 +744,21 @@ function LoginPageInner() {
   const handleTryDemo = useCallback(async () => {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 400));
-    initDemoData();
     try {
+      const session = await fetch('/api/demo/local-session', { method: 'POST' });
+      if (!session.ok) {
+        setAuthError('Demo is temporarily unavailable. Please try again in a moment.');
+        setIsLoading(false);
+        return;
+      }
+      initDemoData();
       localStorage.setItem('rc-mode', 'demo');
       document.cookie = 'rc-mode=demo; path=/; max-age=604800; SameSite=Lax';
-    } catch { /* noop */ }
+    } catch {
+      setAuthError('Demo is temporarily unavailable. Please try again in a moment.');
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(false);
     router.push('/dashboard');
   }, [router]);
@@ -679,7 +773,7 @@ function LoginPageInner() {
       if (email) {
         const supabase = createClient();
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/settings?recovery=1')}`,
         });
         if (error) {
           setAuthError(getSupabaseAuthErrorMessage(error));
@@ -708,6 +802,10 @@ function LoginPageInner() {
       fullName: '',
       email: initialEmail,
       companyName: '',
+      companyType: 'contractor',
+      buyerType: 'project-team',
+      teamSize: '6-20',
+      billingPreference: 'enterprise-call',
       projectSize: '1m-10m',
       note: '',
     });
@@ -918,14 +1016,14 @@ function LoginPageInner() {
                   {mode === 'signin'
                     ? 'Welcome back'
                     : isRequestAccessMode
-                      ? 'Request enterprise access'
+                      ? 'See RailCommand pricing'
                       : 'Create your account'}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {mode === 'signin'
                     ? 'Sign in to continue to your projects'
                     : isRequestAccessMode
-                      ? 'Tell us about the project and we will follow up'
+                      ? 'Monthly/yearly for individuals and small groups, or qualify an enterprise rollout'
                       : 'Create an account to accept your project invitation'}
                 </p>
 
@@ -956,7 +1054,7 @@ function LoginPageInner() {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {isInviteFlow ? 'Create Account' : 'Request Access'}
+                  {isInviteFlow ? 'Create Account' : 'See Pricing'}
                 </button>
               </div>
 
@@ -1009,7 +1107,7 @@ function LoginPageInner() {
                       ? 'or sign in to your account'
                       : isInviteSignup
                         ? 'or create your account'
-                        : 'or request project access'}
+                        : 'or request pricing'}
                   </span>
                 </div>
               </div>
@@ -1370,6 +1468,108 @@ function LoginPageInner() {
                   </div>
 
                   <div className="space-y-2">
+                    <label htmlFor="request-company-type" className="text-sm font-medium text-foreground">
+                      Company type
+                    </label>
+                    <select
+                      id="request-company-type"
+                      className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                        accessRequestForm.formState.errors.companyType ? 'border-destructive' : ''
+                      }`}
+                      aria-invalid={!!accessRequestForm.formState.errors.companyType}
+                      {...accessRequestForm.register('companyType')}
+                    >
+                      {companyTypeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    {accessRequestForm.formState.errors.companyType && (
+                      <p className="text-xs text-destructive" role="alert">
+                        Select a company type
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="request-buyer-type" className="text-sm font-medium text-foreground">
+                      Best fit
+                    </label>
+                    <select
+                      id="request-buyer-type"
+                      className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                        accessRequestForm.formState.errors.buyerType ? 'border-destructive' : ''
+                      }`}
+                      aria-invalid={!!accessRequestForm.formState.errors.buyerType}
+                      {...accessRequestForm.register('buyerType')}
+                    >
+                      {buyerTypeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    {accessRequestForm.formState.errors.buyerType && (
+                      <p className="text-xs text-destructive" role="alert">
+                        Select the closest fit
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="request-team-size" className="text-sm font-medium text-foreground">
+                        Expected users
+                      </label>
+                      <select
+                        id="request-team-size"
+                        className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                          accessRequestForm.formState.errors.teamSize ? 'border-destructive' : ''
+                        }`}
+                        aria-invalid={!!accessRequestForm.formState.errors.teamSize}
+                        {...accessRequestForm.register('teamSize')}
+                      >
+                        {teamSizeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {accessRequestForm.formState.errors.teamSize && (
+                        <p className="text-xs text-destructive" role="alert">
+                          Select a team size
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="request-billing-preference" className="text-sm font-medium text-foreground">
+                        Billing
+                      </label>
+                      <select
+                        id="request-billing-preference"
+                        className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                          accessRequestForm.formState.errors.billingPreference ? 'border-destructive' : ''
+                        }`}
+                        aria-invalid={!!accessRequestForm.formState.errors.billingPreference}
+                        {...accessRequestForm.register('billingPreference')}
+                      >
+                        {billingPreferenceOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {accessRequestForm.formState.errors.billingPreference && (
+                        <p className="text-xs text-destructive" role="alert">
+                          Select a billing path
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
                     <label htmlFor="request-project-size" className="text-sm font-medium text-foreground">
                       Expected project size
                     </label>
@@ -1401,7 +1601,7 @@ function LoginPageInner() {
                     <textarea
                       id="request-note"
                       rows={3}
-                      placeholder="Project, client, timeline, or number of expected users"
+                      placeholder="Project scope, timeline, role count, or procurement notes"
                       className={`min-h-[92px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
                         accessRequestForm.formState.errors.note ? 'border-destructive' : ''
                       }`}
@@ -1429,7 +1629,7 @@ function LoginPageInner() {
                       </span>
                     ) : (
                       <>
-                        Request Access
+                        Submit Pricing Request
                         <Send className="size-4" />
                       </>
                     )}
@@ -1456,7 +1656,7 @@ function LoginPageInner() {
                 {mode === 'signin'
                   ? isInviteFlow
                     ? 'Create account'
-                    : 'Request access'
+                    : 'See pricing'
                   : 'Sign in'}
               </button>
             </p>

@@ -285,7 +285,7 @@ export default function ProfilePage() {
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/settings?recovery=1')}`,
       });
       if (error) {
         setResetError(error.message);

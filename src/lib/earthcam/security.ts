@@ -15,12 +15,11 @@ export type EarthCamAccessPayload = {
 };
 
 function getSecretMaterial(): string {
-  return (
-    process.env.EARTHCAM_ENCRYPTION_KEY ||
-    process.env.EARTHCAM_SIGNING_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    ''
-  );
+  return process.env.EARTHCAM_ENCRYPTION_KEY || process.env.EARTHCAM_SIGNING_SECRET || '';
+}
+
+function getLegacySecretMaterial(): string {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 }
 
 function getKey(): Buffer {
@@ -29,6 +28,16 @@ function getKey(): Buffer {
     throw new Error('EARTHCAM_ENCRYPTION_KEY is required before storing or signing EarthCam credentials');
   }
   return crypto.createHash('sha256').update(secret).digest();
+}
+
+function getConfiguredKey(): Buffer | null {
+  const secret = getSecretMaterial();
+  return secret ? crypto.createHash('sha256').update(secret).digest() : null;
+}
+
+function getLegacyKey(): Buffer | null {
+  const secret = getLegacySecretMaterial();
+  return secret ? crypto.createHash('sha256').update(secret).digest() : null;
 }
 
 function toBase64Url(buffer: Buffer): string {
@@ -59,13 +68,23 @@ export function decryptSecret(parts: {
 }): string | null {
   if (!parts.ciphertext || !parts.iv || !parts.tag) return null;
 
-  const decipher = crypto.createDecipheriv('aes-256-gcm', getKey(), fromBase64Url(parts.iv));
-  decipher.setAuthTag(fromBase64Url(parts.tag));
+  const keys = [getConfiguredKey(), getLegacyKey()].filter((key): key is Buffer => Boolean(key));
 
-  return Buffer.concat([
-    decipher.update(fromBase64Url(parts.ciphertext)),
-    decipher.final(),
-  ]).toString('utf8');
+  for (const key of keys) {
+    try {
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, fromBase64Url(parts.iv));
+      decipher.setAuthTag(fromBase64Url(parts.tag));
+
+      return Buffer.concat([
+        decipher.update(fromBase64Url(parts.ciphertext)),
+        decipher.final(),
+      ]).toString('utf8');
+    } catch {
+      // Try the legacy key during rotation from service-role-derived encryption.
+    }
+  }
+
+  return null;
 }
 
 export function createEarthCamAccessToken(payload: EarthCamAccessPayload): string {

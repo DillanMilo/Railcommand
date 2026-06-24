@@ -19,9 +19,10 @@
 
 -- Ensure bucket exists (no-op if already created manually in Dashboard)
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('project-documents', 'project-documents', true, 104857600)  -- 100 MB
+values ('project-documents', 'project-documents', false, 104857600)  -- 100 MB
 on conflict (id) do update
-  set file_size_limit = excluded.file_size_limit;
+  set public = false,
+      file_size_limit = excluded.file_size_limit;
 
 -- Reload PostgREST schema cache
 notify pgrst, 'reload schema';

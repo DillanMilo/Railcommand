@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
 import { fetchWithTimeout } from '@/lib/supabase/connectivity';
+import { DEMO_SESSION_COOKIE, readDemoSessionToken } from '@/lib/demo/session-cookie';
 
 const GEO_RESTRICTED_PAGE = '/geo-restricted';
 
@@ -20,6 +21,7 @@ const GEO_RESTRICTED_PREFIXES = [
   '/api/access-request',
   '/api/admin/demo',
   '/api/chat',
+  '/api/demo',
   '/api/email/send',
   '/api/notifications',
 ];
@@ -227,11 +229,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Allow demo-mode users through (cookie set by the "Explore Demo" button)
-  const hasDemoModeCookie =
-    request.cookies.get('rc-mode')?.value === 'demo' ||
-    request.cookies.get('rc-mode')?.value === 'fresh';
-  const isDemoMode = !user && hasDemoModeCookie;
+  // Allow unauthenticated local demo users only with a server-signed demo cookie.
+  const demoSession = !user
+    ? await readDemoSessionToken(request.cookies.get(DEMO_SESSION_COOKIE)?.value)
+    : null;
+  const isDemoMode = !user && !!demoSession;
 
   // Public routes that never require auth
   const isPublicRoute =
@@ -246,6 +248,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/api/admin/demo/lookup' ||
     pathname === '/api/admin/demo/session' ||
     pathname === '/api/admin/demo/track' ||
+    pathname === '/api/demo/local-session' ||
     pathname === '/api/chat/transcribe' ||
     pathname === '/api/email/send' ||
     pathname === '/api/notifications' ||

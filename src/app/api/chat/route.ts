@@ -6,6 +6,7 @@ import { buildSystemPrompt } from '@/lib/railbot/system-prompt';
 import { RAILBOT_TOOLS } from '@/lib/railbot/tools';
 import { executeTool, executeDemoTool } from '@/lib/railbot/tool-executor';
 import { selectModel } from '@/lib/railbot/model-selector';
+import { DEMO_SESSION_COOKIE, readDemoSessionToken } from '@/lib/demo/session-cookie';
 import {
   getProfileWithOrg as getSeedProfileWithOrg,
   seedProjectMembers,
@@ -24,7 +25,31 @@ export const maxDuration = 300;
 
 // Maximum number of tool-call round-trips to prevent infinite loops
 const MAX_TOOL_ROUNDS = 5;
+const RATE_WINDOW_MS = 60 * 60 * 1000;
+const AUTH_CHAT_RATE_LIMIT = 120;
+const DEMO_CHAT_RATE_LIMIT = 20;
+const chatRateLimitMap = new Map<string, { count: number; resetAt: number }>();
 type ProfileWithOrganization = Profile & { organization?: Organization | null };
+
+function getRequestIp(request: NextRequest): string {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+function checkRateLimit(key: string, limit: number): boolean {
+  const now = Date.now();
+  const entry = chatRateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    chatRateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= limit) return false;
+  entry.count++;
+  return true;
+}
 
 /**
  * Filter the tools array based on the user's project role so OpenAI only sees
@@ -125,11 +150,10 @@ export async function POST(request: NextRequest) {
   try {
     // ── 1. Parse request body ─────────────────────────────────────────
     const body = await request.json();
-    const { messages, projectId, isDemo, demoUserId, conversationId: incomingConversationId } = body as {
+    const { messages, projectId, isDemo, conversationId: incomingConversationId } = body as {
       messages: ChatMessage[];
       projectId: string;
       isDemo?: boolean;
-      demoUserId?: string;
       conversationId?: string;
     };
 
@@ -186,11 +210,40 @@ export async function POST(request: NextRequest) {
     let membership: ProjectMember;
     let userId: string;
     let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
-    const isDemoMode = isDemo === true && !!demoUserId;
+    const requestedDemoMode = isDemo === true;
+    const demoSession = requestedDemoMode
+      ? await readDemoSessionToken(request.cookies.get(DEMO_SESSION_COOKIE)?.value)
+      : null;
+    const isDemoMode = requestedDemoMode && !!demoSession;
+
+    if (requestedDemoMode && !demoSession) {
+      return new Response(JSON.stringify({ error: 'Demo session expired. Please restart the demo.' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (demoSession && demoSession.projectId !== projectId) {
+      return new Response(JSON.stringify({ error: 'Demo session does not match this project.' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const ip = getRequestIp(request);
+    const rateKey = isDemoMode ? `demo:${ip}` : `auth:${ip}`;
+    const rateLimit = isDemoMode ? DEMO_CHAT_RATE_LIMIT : AUTH_CHAT_RATE_LIMIT;
+    if (!checkRateLimit(rateKey, rateLimit)) {
+      return new Response(JSON.stringify({ error: 'Too many messages. Please wait and try again.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     if (isDemoMode) {
       // Demo mode: load profile and membership from seed data
-      const demoProfile = getSeedProfileWithOrg(demoUserId!);
+      const sessionProfileId = demoSession.profileId;
+      const demoProfile = getSeedProfileWithOrg(sessionProfileId);
       if (!demoProfile) {
         return new Response(JSON.stringify({ error: 'Demo profile not found' }), {
           status: 404,
@@ -199,19 +252,19 @@ export async function POST(request: NextRequest) {
       }
 
       const demoMembership = seedProjectMembers.find(
-        (m) => m.project_id === projectId && m.profile_id === demoUserId,
+        (m) => m.project_id === projectId && m.profile_id === sessionProfileId,
       );
 
       profile = { ...demoProfile };
       membership = demoMembership ?? {
         id: 'demo-admin',
         project_id: projectId,
-        profile_id: demoUserId!,
+        profile_id: sessionProfileId,
         project_role: 'manager' as const,
         can_edit: true,
         added_at: new Date().toISOString(),
       };
-      userId = demoUserId!;
+      userId = sessionProfileId;
     } else {
       // Real auth: use Supabase session
       supabase = await createClient();

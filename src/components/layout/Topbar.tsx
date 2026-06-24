@@ -287,6 +287,7 @@ export default function Topbar({ children }: TopbarProps) {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    await fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
     // Clear demo mode state
     try {
       localStorage.removeItem('rc-mode');
@@ -294,6 +295,7 @@ export default function Topbar({ children }: TopbarProps) {
       localStorage.removeItem('rc-user-email');
       localStorage.removeItem('rc-current-project');
       document.cookie = 'rc-mode=; path=/; max-age=0';
+      document.cookie = 'rc-demo-session=; path=/; max-age=0';
       document.cookie = 'rc-remember=; path=/; max-age=0';
     } catch { /* noop */ }
     router.push('/login');
