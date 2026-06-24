@@ -28,6 +28,9 @@ import {
   RefreshCw,
   ShieldCheck,
   MapPin,
+  Building2,
+  Send,
+  DollarSign,
 } from 'lucide-react';
 import { initDemoData, initFreshData } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
@@ -56,8 +59,27 @@ const signUpSchema = z.object({
   path: ['confirmPassword'],
 });
 
+const projectSizeValues = ['0-1m', '1m-10m', '10m-50m', '50m-100m', '100m-plus'] as const;
+
+const pricingProposal = [
+  { value: '0-1m', projectSize: '$0-$1M', annualPercent: '1%', maxAnnualCost: '$10,000' },
+  { value: '1m-10m', projectSize: '$1M-$10M', annualPercent: '0.75%', maxAnnualCost: '$75,000' },
+  { value: '10m-50m', projectSize: '$10M-$50M', annualPercent: '0.5%', maxAnnualCost: '$250,000' },
+  { value: '50m-100m', projectSize: '$50M-$100M', annualPercent: '0.25%', maxAnnualCost: '$250,000' },
+  { value: '100m-plus', projectSize: '$100M+', annualPercent: '0.15%', maxAnnualCost: 'Varies' },
+] as const;
+
+const accessRequestSchema = z.object({
+  fullName: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+  companyName: z.string().min(2, 'Company name is required'),
+  projectSize: z.enum(projectSizeValues),
+  note: z.string().max(1000, 'Keep notes under 1,000 characters').optional(),
+});
+
 type SignInData = z.infer<typeof signInSchema>;
 type SignUpData = z.infer<typeof signUpSchema>;
+type AccessRequestData = z.infer<typeof accessRequestSchema>;
 
 /* ------------------------------------------------------------------ */
 /*  Password strength helper                                           */
@@ -290,6 +312,85 @@ function EmailConfirmation({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Access Request                                                     */
+/* ------------------------------------------------------------------ */
+
+function PricingProposalTable() {
+  return (
+    <div className="rounded-lg border border-rc-border bg-muted/30 dark:bg-white/5 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-rc-border">
+        <DollarSign className="size-4 text-rc-orange" />
+        <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+          Per-project pricing proposal
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-rc-navy text-white">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Project Size</th>
+              <th className="px-3 py-2 font-semibold">Annual %</th>
+              <th className="px-3 py-2 font-semibold">Max Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pricingProposal.map((row, index) => (
+              <tr
+                key={row.value}
+                className={index % 2 === 0 ? 'bg-muted/50' : 'bg-background/70'}
+              >
+                <td className="px-3 py-2 font-medium text-foreground">{row.projectSize}</td>
+                <td className="px-3 py-2 text-muted-foreground">{row.annualPercent}</td>
+                <td className="px-3 py-2 text-muted-foreground">{row.maxAnnualCost}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="px-3 py-2 text-[11px] leading-5 text-muted-foreground border-t border-rc-border">
+        Final commercial terms are confirmed during enterprise onboarding.
+      </p>
+    </div>
+  );
+}
+
+function AccessRequestConfirmation({
+  onBack,
+}: {
+  onBack: () => void;
+}) {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-rc-emerald/10 dark:bg-rc-emerald/20 mb-3">
+          <Check className="size-7 text-rc-emerald" />
+        </div>
+        <h3 className="font-heading text-xl font-bold text-foreground">
+          Request sent
+        </h3>
+        <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+          Your access request was sent to the RailCommand team. We&apos;ll review
+          the project details and follow up directly.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-rc-border bg-muted/40 dark:bg-white/5 p-4 text-sm leading-6 text-muted-foreground">
+        RailCommand is currently provisioned for enterprise project teams through
+        demos, project invitations, and approved onboarding.
+      </div>
+
+      <Button
+        onClick={onBack}
+        variant="outline"
+        className="mt-6 w-full h-11 font-semibold"
+      >
+        Back to sign in
+      </Button>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main Page                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -320,12 +421,16 @@ function LoginPageInner() {
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [accessRequestSent, setAccessRequestSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const nextParam = searchParams.get('next');
   const redirectPath =
     nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
       ? nextParam
       : '/dashboard';
+  const isInviteFlow = redirectPath.startsWith('/invite/');
+  const isInviteSignup = mode === 'signup' && isInviteFlow;
+  const isRequestAccessMode = mode === 'signup' && !isInviteSignup;
 
   // Show errors from auth callback redirects (e.g. ?error=auth_callback_error)
   useEffect(() => {
@@ -350,6 +455,17 @@ function LoginPageInner() {
     },
   });
 
+  const accessRequestForm = useForm<AccessRequestData>({
+    resolver: zodResolver(accessRequestSchema),
+    defaultValues: {
+      fullName: '',
+      email: initialEmail,
+      companyName: '',
+      projectSize: '1m-10m',
+      note: '',
+    },
+  });
+
   useEffect(() => {
     if (modeParam === 'signup' || modeParam === 'signin') {
       setMode(modeParam);
@@ -358,6 +474,7 @@ function LoginPageInner() {
       setShowEmailConfirmation(false);
       setShowInstall(false);
       setAuthError(null);
+      setAccessRequestSent(false);
     }
   }, [modeParam]);
 
@@ -365,7 +482,8 @@ function LoginPageInner() {
     if (!initialEmail) return;
     signInForm.setValue('email', initialEmail);
     signUpForm.setValue('email', initialEmail);
-  }, [initialEmail, signInForm, signUpForm]);
+    accessRequestForm.setValue('email', initialEmail);
+  }, [accessRequestForm, initialEmail, signInForm, signUpForm]);
 
   const watchPassword = signUpForm.watch('password');
   const strength = getPasswordStrength(watchPassword || '');
@@ -446,6 +564,42 @@ function LoginPageInner() {
       }
     },
     [redirectPath, router]
+  );
+
+  const handleAccessRequest = useCallback(
+    async (data: AccessRequestData) => {
+      setIsLoading(true);
+      setAuthError(null);
+      try {
+        const response = await fetch('/api/access-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const result = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+
+        if (!response.ok) {
+          setAuthError(result?.error ?? 'Could not send your request. Please try again.');
+          return;
+        }
+
+        setAccessRequestSent(true);
+        accessRequestForm.reset({
+          fullName: '',
+          email: data.email,
+          companyName: '',
+          projectSize: data.projectSize,
+          note: '',
+        });
+      } catch {
+        setAuthError('Could not send your request. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [accessRequestForm]
   );
 
   const handleResendConfirmation = useCallback(async () => {
@@ -547,9 +701,17 @@ function LoginPageInner() {
     setShowEmailConfirmation(false);
     setShowInstall(false);
     setAuthError(null);
+    setAccessRequestSent(false);
     signInForm.reset();
     signUpForm.reset();
-  }, [signInForm, signUpForm]);
+    accessRequestForm.reset({
+      fullName: '',
+      email: initialEmail,
+      companyName: '',
+      projectSize: '1m-10m',
+      note: '',
+    });
+  }, [accessRequestForm, initialEmail, signInForm, signUpForm]);
 
   return (
     <div className="flex min-h-screen bg-rc-bg dark:bg-rc-bg">
@@ -753,12 +915,18 @@ function LoginPageInner() {
               {/* Header */}
               <div className="mb-6">
                 <h2 className="font-heading text-2xl font-bold text-foreground">
-                  {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+                  {mode === 'signin'
+                    ? 'Welcome back'
+                    : isRequestAccessMode
+                      ? 'Request enterprise access'
+                      : 'Create your account'}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {mode === 'signin'
                     ? 'Sign in to continue to your projects'
-                    : 'Get started with RailCommand for free'}
+                    : isRequestAccessMode
+                      ? 'Tell us about the project and we will follow up'
+                      : 'Create an account to accept your project invitation'}
                 </p>
 
               {authError && (
@@ -788,7 +956,7 @@ function LoginPageInner() {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Sign Up
+                  {isInviteFlow ? 'Create Account' : 'Request Access'}
                 </button>
               </div>
 
@@ -837,35 +1005,43 @@ function LoginPageInner() {
                 </div>
                 <div className="relative flex justify-center text-xs">
                   <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
-                    {mode === 'signin' ? 'or sign in to your account' : 'or create your account'}
+                    {mode === 'signin'
+                      ? 'or sign in to your account'
+                      : isInviteSignup
+                        ? 'or create your account'
+                        : 'or request project access'}
                   </span>
                 </div>
               </div>
 
               {/* Google Sign In */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-                className="w-full h-12 gap-3 text-sm font-medium mb-4"
-                aria-label="Continue with Google"
-              >
-                <GoogleIcon className="size-5" />
-                Continue with Google
-              </Button>
+              {(mode === 'signin' || isInviteSignup) && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                    className="w-full h-12 gap-3 text-sm font-medium mb-4"
+                    aria-label="Continue with Google"
+                  >
+                    <GoogleIcon className="size-5" />
+                    Continue with Google
+                  </Button>
 
-              {/* Divider */}
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-rc-border dark:border-rc-border" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
-                    or continue with email
-                  </span>
-                </div>
-              </div>
+                  {/* Divider */}
+                  <div className="relative my-5">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-rc-border dark:border-rc-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
+                        or continue with email
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {mode === 'signin' ? (
                 /* ---------- Sign In Form ---------- */
@@ -964,7 +1140,7 @@ function LoginPageInner() {
                     )}
                   </Button>
                 </form>
-              ) : (
+              ) : isInviteSignup ? (
                 /* ---------- Sign Up Form ---------- */
                 <form
                   onSubmit={signUpForm.handleSubmit(handleSignUp)}
@@ -1113,9 +1289,154 @@ function LoginPageInner() {
 
                   <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
                     By signing up you agree to our{' '}
-                    <button type="button" className="text-rc-orange hover:underline">Terms of Service</button>{' '}
+                    <a href="/terms" className="text-rc-orange hover:underline">Terms of Service</a>{' '}
                     and{' '}
-                    <button type="button" className="text-rc-orange hover:underline">Privacy Policy</button>
+                    <a href="/privacy" className="text-rc-orange hover:underline">Privacy Policy</a>
+                  </p>
+                </form>
+              ) : accessRequestSent ? (
+                <AccessRequestConfirmation onBack={() => switchMode('signin')} />
+              ) : (
+                /* ---------- Access Request Form ---------- */
+                <form
+                  onSubmit={accessRequestForm.handleSubmit(handleAccessRequest)}
+                  className="space-y-4"
+                  noValidate
+                >
+                  <div className="space-y-2">
+                    <label htmlFor="request-name" className="text-sm font-medium text-foreground">
+                      Full name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input
+                        id="request-name"
+                        type="text"
+                        placeholder="Jane Doe"
+                        className={`h-12 pl-10 ${accessRequestForm.formState.errors.fullName ? 'border-destructive' : ''}`}
+                        aria-invalid={!!accessRequestForm.formState.errors.fullName}
+                        {...accessRequestForm.register('fullName')}
+                      />
+                    </div>
+                    {accessRequestForm.formState.errors.fullName && (
+                      <p className="text-xs text-destructive" role="alert">
+                        {accessRequestForm.formState.errors.fullName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="request-email" className="text-sm font-medium text-foreground">
+                      Work email
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input
+                        id="request-email"
+                        type="email"
+                        placeholder="you@company.com"
+                        className={`h-12 pl-10 ${accessRequestForm.formState.errors.email ? 'border-destructive' : ''}`}
+                        aria-invalid={!!accessRequestForm.formState.errors.email}
+                        {...accessRequestForm.register('email')}
+                      />
+                    </div>
+                    {accessRequestForm.formState.errors.email && (
+                      <p className="text-xs text-destructive" role="alert">
+                        {accessRequestForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="request-company" className="text-sm font-medium text-foreground">
+                      Company
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input
+                        id="request-company"
+                        type="text"
+                        placeholder="Acme Rail Construction"
+                        className={`h-12 pl-10 ${accessRequestForm.formState.errors.companyName ? 'border-destructive' : ''}`}
+                        aria-invalid={!!accessRequestForm.formState.errors.companyName}
+                        {...accessRequestForm.register('companyName')}
+                      />
+                    </div>
+                    {accessRequestForm.formState.errors.companyName && (
+                      <p className="text-xs text-destructive" role="alert">
+                        {accessRequestForm.formState.errors.companyName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="request-project-size" className="text-sm font-medium text-foreground">
+                      Expected project size
+                    </label>
+                    <select
+                      id="request-project-size"
+                      className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                        accessRequestForm.formState.errors.projectSize ? 'border-destructive' : ''
+                      }`}
+                      aria-invalid={!!accessRequestForm.formState.errors.projectSize}
+                      {...accessRequestForm.register('projectSize')}
+                    >
+                      {pricingProposal.map((row) => (
+                        <option key={row.value} value={row.value}>
+                          {row.projectSize} project
+                        </option>
+                      ))}
+                    </select>
+                    {accessRequestForm.formState.errors.projectSize && (
+                      <p className="text-xs text-destructive" role="alert">
+                        Select a project size
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="request-note" className="text-sm font-medium text-foreground">
+                      Notes <span className="font-normal text-muted-foreground">(optional)</span>
+                    </label>
+                    <textarea
+                      id="request-note"
+                      rows={3}
+                      placeholder="Project, client, timeline, or number of expected users"
+                      className={`min-h-[92px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                        accessRequestForm.formState.errors.note ? 'border-destructive' : ''
+                      }`}
+                      aria-invalid={!!accessRequestForm.formState.errors.note}
+                      {...accessRequestForm.register('note')}
+                    />
+                    {accessRequestForm.formState.errors.note && (
+                      <p className="text-xs text-destructive" role="alert">
+                        {accessRequestForm.formState.errors.note.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <PricingProposalTable />
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Sending request...
+                      </span>
+                    ) : (
+                      <>
+                        Request Access
+                        <Send className="size-4" />
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                    Existing project teams should use their invitation link or sign in above.
                   </p>
                 </form>
               )}
@@ -1125,12 +1446,18 @@ function LoginPageInner() {
           {/* Footer */}
           {!showInstall && !showEmailConfirmation && !forgotMode && (
             <p className="text-center text-xs text-muted-foreground mt-8">
-              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              {mode === 'signin'
+                ? "Don't have an account? "
+                : 'Already have an account? '}
               <button
                 onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
                 className="text-rc-orange hover:text-rc-orange-dark font-medium transition-colors"
               >
-                {mode === 'signin' ? 'Sign up for free' : 'Sign in'}
+                {mode === 'signin'
+                  ? isInviteFlow
+                    ? 'Create account'
+                    : 'Request access'
+                  : 'Sign in'}
               </button>
             </p>
           )}

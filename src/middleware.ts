@@ -17,6 +17,7 @@ const GEO_RESTRICTED_PREFIXES = [
   '/projects',
   '/search',
   '/settings',
+  '/api/access-request',
   '/api/admin/demo',
   '/api/chat',
   '/api/email/send',
@@ -235,10 +236,13 @@ export async function middleware(request: NextRequest) {
   // Public routes that never require auth
   const isPublicRoute =
     pathname === '/login' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
     pathname === GEO_RESTRICTED_PAGE ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/demo/') ||
     pathname === '/api/health/supabase' ||
+    pathname === '/api/access-request' ||
     pathname === '/api/admin/demo/lookup' ||
     pathname === '/api/admin/demo/session' ||
     pathname === '/api/admin/demo/track' ||
@@ -291,7 +295,9 @@ export async function middleware(request: NextRequest) {
       pathname === '/onboarding' ||
       pathname.startsWith('/invite/') ||
       pathname.startsWith('/auth/') ||
-      pathname === '/login';
+      pathname === '/login' ||
+      pathname === '/privacy' ||
+      pathname === '/terms';
 
     if (!hasOnboardedCookie && !isOnboardingExempt) {
       // Check if user has completed onboarding (has an organization)
