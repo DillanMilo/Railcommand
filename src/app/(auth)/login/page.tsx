@@ -62,8 +62,6 @@ const signUpSchema = z.object({
 const projectSizeValues = ['0-1m', '1m-10m', '10m-50m', '50m-100m', '100m-plus'] as const;
 const buyerTypeValues = ['individual', 'small-group', 'project-team', 'enterprise'] as const;
 const billingPreferenceValues = ['monthly', 'yearly', 'enterprise-call'] as const;
-const teamSizeValues = ['1', '2-5', '6-20', '21-plus'] as const;
-const companyTypeValues = ['contractor', 'owner', 'engineer', 'inspector', 'other'] as const;
 
 const pricingProposal = [
   { value: '0-1m', projectSize: '$0-$1M', annualPercent: '1%', maxAnnualCost: '$10,000' },
@@ -104,28 +102,11 @@ const billingPreferenceOptions = [
   { value: 'enterprise-call', label: 'Call for enterprise' },
 ] as const;
 
-const teamSizeOptions = [
-  { value: '1', label: '1 user' },
-  { value: '2-5', label: '2-5 users' },
-  { value: '6-20', label: '6-20 users' },
-  { value: '21-plus', label: '21+ users' },
-] as const;
-
-const companyTypeOptions = [
-  { value: 'contractor', label: 'Contractor' },
-  { value: 'owner', label: 'Owner / developer' },
-  { value: 'engineer', label: 'Engineer' },
-  { value: 'inspector', label: 'Inspector / field team' },
-  { value: 'other', label: 'Other' },
-] as const;
-
 const accessRequestSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
   companyName: z.string().min(2, 'Company name is required'),
-  companyType: z.enum(companyTypeValues),
   buyerType: z.enum(buyerTypeValues),
-  teamSize: z.enum(teamSizeValues),
   billingPreference: z.enum(billingPreferenceValues),
   projectSize: z.enum(projectSizeValues),
   note: z.string().max(1000, 'Keep notes under 1,000 characters').optional(),
@@ -443,7 +424,7 @@ function AccessRequestConfirmation({
         </h3>
         <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
           Your pricing request was sent to the RailCommand team. We&apos;ll review
-          the team size, billing path, and project details before following up.
+          the billing path and project details before following up.
         </p>
       </div>
 
@@ -534,9 +515,7 @@ function LoginPageInner() {
       fullName: '',
       email: initialEmail,
       companyName: '',
-      companyType: 'contractor',
       buyerType: 'project-team',
-      teamSize: '6-20',
       billingPreference: 'enterprise-call',
       projectSize: '1m-10m',
       note: '',
@@ -669,9 +648,7 @@ function LoginPageInner() {
           fullName: '',
           email: data.email,
           companyName: '',
-          companyType: data.companyType,
           buyerType: data.buyerType,
-          teamSize: data.teamSize,
           billingPreference: data.billingPreference,
           projectSize: data.projectSize,
           note: '',
@@ -802,9 +779,7 @@ function LoginPageInner() {
       fullName: '',
       email: initialEmail,
       companyName: '',
-      companyType: 'contractor',
       buyerType: 'project-team',
-      teamSize: '6-20',
       billingPreference: 'enterprise-call',
       projectSize: '1m-10m',
       note: '',
@@ -1467,78 +1442,28 @@ function LoginPageInner() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="request-company-type" className="text-sm font-medium text-foreground">
-                      Company type
-                    </label>
-                    <select
-                      id="request-company-type"
-                      className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
-                        accessRequestForm.formState.errors.companyType ? 'border-destructive' : ''
-                      }`}
-                      aria-invalid={!!accessRequestForm.formState.errors.companyType}
-                      {...accessRequestForm.register('companyType')}
-                    >
-                      {companyTypeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {accessRequestForm.formState.errors.companyType && (
-                      <p className="text-xs text-destructive" role="alert">
-                        Select a company type
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="request-buyer-type" className="text-sm font-medium text-foreground">
-                      Best fit
-                    </label>
-                    <select
-                      id="request-buyer-type"
-                      className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
-                        accessRequestForm.formState.errors.buyerType ? 'border-destructive' : ''
-                      }`}
-                      aria-invalid={!!accessRequestForm.formState.errors.buyerType}
-                      {...accessRequestForm.register('buyerType')}
-                    >
-                      {buyerTypeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {accessRequestForm.formState.errors.buyerType && (
-                      <p className="text-xs text-destructive" role="alert">
-                        Select the closest fit
-                      </p>
-                    )}
-                  </div>
-
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <label htmlFor="request-team-size" className="text-sm font-medium text-foreground">
-                        Expected users
+                      <label htmlFor="request-buyer-type" className="text-sm font-medium text-foreground">
+                        Best fit
                       </label>
                       <select
-                        id="request-team-size"
+                        id="request-buyer-type"
                         className={`h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
-                          accessRequestForm.formState.errors.teamSize ? 'border-destructive' : ''
+                          accessRequestForm.formState.errors.buyerType ? 'border-destructive' : ''
                         }`}
-                        aria-invalid={!!accessRequestForm.formState.errors.teamSize}
-                        {...accessRequestForm.register('teamSize')}
+                        aria-invalid={!!accessRequestForm.formState.errors.buyerType}
+                        {...accessRequestForm.register('buyerType')}
                       >
-                        {teamSizeOptions.map((option) => (
+                        {buyerTypeOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
                         ))}
                       </select>
-                      {accessRequestForm.formState.errors.teamSize && (
+                      {accessRequestForm.formState.errors.buyerType && (
                         <p className="text-xs text-destructive" role="alert">
-                          Select a team size
+                          Select the closest fit
                         </p>
                       )}
                     </div>

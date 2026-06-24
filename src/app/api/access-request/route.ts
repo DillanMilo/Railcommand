@@ -16,6 +16,8 @@ const projectSizeValues = [
   '50m-100m',
   '100m-plus',
 ] as const;
+const buyerTypeValues = ['individual', 'small-group', 'project-team', 'enterprise'] as const;
+const billingPreferenceValues = ['monthly', 'yearly', 'enterprise-call'] as const;
 
 const PROJECT_SIZE_LABELS: Record<
   (typeof projectSizeValues)[number],
@@ -48,10 +50,25 @@ const PROJECT_SIZE_LABELS: Record<
   },
 };
 
+const BUYER_TYPE_LABELS: Record<(typeof buyerTypeValues)[number], string> = {
+  individual: 'Individual user',
+  'small-group': 'Small group',
+  'project-team': 'Project team',
+  enterprise: 'Enterprise / owner account',
+};
+
+const BILLING_PREFERENCE_LABELS: Record<(typeof billingPreferenceValues)[number], string> = {
+  monthly: 'Monthly',
+  yearly: 'Yearly',
+  'enterprise-call': 'Call for enterprise',
+};
+
 const accessRequestSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(320),
   companyName: z.string().trim().min(2).max(160),
+  buyerType: z.enum(buyerTypeValues).default('project-team'),
+  billingPreference: z.enum(billingPreferenceValues).default('enterprise-call'),
   projectSize: z.enum(projectSizeValues),
   note: z.string().trim().max(1000).optional(),
 });
@@ -105,14 +122,18 @@ function getRecipients(): string[] {
 
 function buildEmailText(input: AccessRequest, requestIp: string): string {
   const pricing = PROJECT_SIZE_LABELS[input.projectSize];
+  const buyerType = BUYER_TYPE_LABELS[input.buyerType];
+  const billingPreference = BILLING_PREFERENCE_LABELS[input.billingPreference];
   const note = input.note?.trim() || 'None provided';
 
   return [
-    'New RailCommand access request',
+    'New RailCommand pricing request',
     '',
     `Name: ${input.fullName}`,
     `Email: ${input.email}`,
     `Company: ${input.companyName}`,
+    `Best fit: ${buyerType}`,
+    `Billing preference: ${billingPreference}`,
     `Project size: ${pricing.label}`,
     `Pricing band: ${pricing.annualPercent} annually, max ${pricing.maxAnnualCost}`,
     '',
@@ -126,6 +147,8 @@ function buildEmailText(input: AccessRequest, requestIp: string): string {
 
 function buildEmailHtml(input: AccessRequest, requestIp: string): string {
   const pricing = PROJECT_SIZE_LABELS[input.projectSize];
+  const buyerType = BUYER_TYPE_LABELS[input.buyerType];
+  const billingPreference = BILLING_PREFERENCE_LABELS[input.billingPreference];
   const note = input.note?.trim() || 'None provided';
   const submittedAt = new Date().toLocaleString('en-US', {
     dateStyle: 'medium',
@@ -137,6 +160,8 @@ function buildEmailHtml(input: AccessRequest, requestIp: string): string {
     ['Name', input.fullName],
     ['Email', input.email],
     ['Company', input.companyName],
+    ['Best fit', buyerType],
+    ['Billing preference', billingPreference],
     ['Project size', pricing.label],
     ['Pricing band', `${pricing.annualPercent} annually, max ${pricing.maxAnnualCost}`],
     ['Submitted', `${submittedAt} CT`],
@@ -149,7 +174,7 @@ function buildEmailHtml(input: AccessRequest, requestIp: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New RailCommand Access Request</title>
+  <title>New RailCommand Pricing Request</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:32px 12px;">
@@ -159,14 +184,14 @@ function buildEmailHtml(input: AccessRequest, requestIp: string): string {
           <tr>
             <td style="background-color:#0f172a;padding:28px 32px 22px;border-bottom:8px solid #f97316;">
               <p style="margin:0;color:#ffffff;font-size:22px;line-height:1.2;font-weight:800;">RailCommand</p>
-              <p style="margin:6px 0 0;color:#fed7aa;font-size:12px;line-height:1.4;font-weight:800;text-transform:uppercase;">New access request</p>
+              <p style="margin:6px 0 0;color:#fed7aa;font-size:12px;line-height:1.4;font-weight:800;text-transform:uppercase;">New pricing request</p>
             </td>
           </tr>
           <tr>
             <td style="padding:32px;">
-              <h1 style="margin:0;color:#0f172a;font-size:26px;line-height:1.2;font-weight:800;">${escapeHtml(input.companyName)} requested RailCommand access</h1>
+              <h1 style="margin:0;color:#0f172a;font-size:26px;line-height:1.2;font-weight:800;">${escapeHtml(input.companyName)} requested RailCommand pricing</h1>
               <p style="margin:14px 0 0;color:#475569;font-size:15px;line-height:1.65;">
-                A prospective enterprise client submitted the public access request form.
+                A prospect submitted the public pricing qualifier.
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
@@ -243,13 +268,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pricing = PROJECT_SIZE_LABELS[accessRequest.projectSize];
+    const buyerType = BUYER_TYPE_LABELS[accessRequest.buyerType];
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: recipients,
       replyTo: accessRequest.email,
-      subject: `RailCommand access request: ${accessRequest.companyName} (${pricing.label})`,
+      subject: `RailCommand pricing request: ${accessRequest.companyName} (${buyerType})`,
       html: buildEmailHtml(accessRequest, requestIp),
       text: buildEmailText(accessRequest, requestIp),
       tags: [{ name: 'type', value: 'access_request' }],
