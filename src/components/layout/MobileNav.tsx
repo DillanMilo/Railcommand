@@ -19,6 +19,7 @@ import {
   FolderOpen,
   Camera,
   FileBarChart,
+  Video,
 } from 'lucide-react';
 import {
   Sheet,
@@ -48,6 +49,7 @@ export default function MobileNav() {
     { label: 'Safety', href: hasProject ? `/projects/${currentProjectId}/safety` : '#', Icon: ShieldAlert, requiresProject: true },
     { label: 'QC/QA', href: hasProject ? `/projects/${currentProjectId}/qcqa` : '#', Icon: ClipboardPenLine, requiresProject: true },
     { label: 'Documents', href: hasProject ? `/projects/${currentProjectId}/documents` : '#', Icon: FolderOpen, requiresProject: true },
+    { label: 'Cameras', href: hasProject ? `/projects/${currentProjectId}/cameras` : '#', Icon: Video, requiresProject: true, badge: 'Beta' },
     { label: 'Photos', href: hasProject ? `/projects/${currentProjectId}/photos` : '#', Icon: Camera, requiresProject: true },
     { label: 'Reports', href: hasProject ? `/projects/${currentProjectId}/weekly-reports` : '#', Icon: FileBarChart, requiresProject: true },
     { label: 'Schedule', href: hasProject ? `/projects/${currentProjectId}/schedule` : '#', Icon: GanttChart, requiresProject: true },
@@ -92,7 +94,14 @@ export default function MobileNav() {
                             className="flex flex-col items-center gap-2 rounded-lg p-4 text-muted-foreground/40 cursor-not-allowed"
                           >
                             <item.Icon className="size-6" />
-                            <span className="text-xs font-medium">{item.label}</span>
+                            <span className="text-center text-xs font-medium leading-tight">
+                              <span className="block">{item.label}</span>
+                              {'badge' in item && item.badge && (
+                                <span className="block text-[10px] font-semibold text-muted-foreground/50">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </span>
                           </span>
                         );
                       }
@@ -108,7 +117,14 @@ export default function MobileNav() {
                           )}
                         >
                           <item.Icon className="size-6" />
-                          <span className="text-xs font-medium">{item.label}</span>
+                          <span className="text-center text-xs font-medium leading-tight">
+                            <span className="block">{item.label}</span>
+                            {'badge' in item && item.badge && (
+                              <span className="block text-[10px] font-semibold text-rc-orange">
+                                {item.badge}
+                              </span>
+                            )}
+                          </span>
                         </Link>
                       );
                     })}
