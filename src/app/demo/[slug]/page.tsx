@@ -23,6 +23,17 @@ interface DemoData {
   team_logins: TeamLogin[];
 }
 
+const DEMO_DISPLAY_NAMES: Record<string, string> = {
+  'mark.allen@a5rail.com': 'Mark Allen',
+  'caleb@lenaserv.com': 'Caleb Douglas',
+  'dillan@creativecurrents.io': 'Dillan Milosevich',
+  'kayleigh-demo@railcommand.io': 'Kaylee Erlbacher',
+};
+
+function getDemoDisplayName(email: string, fallback: string) {
+  return DEMO_DISPLAY_NAMES[email.toLowerCase()] ?? fallback;
+}
+
 export default function DemoEntryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const router = useRouter();
@@ -136,11 +147,17 @@ export default function DemoEntryPage({ params }: { params: Promise<{ slug: stri
   // Team demo: show role picker
   const allLogins = [
     {
-      display_name: demoData.demo_user_email.split('@')[0].replace('-demo', '').replace(/^\w/, (c: string) => c.toUpperCase()),
+      display_name: getDemoDisplayName(
+        demoData.demo_user_email,
+        demoData.demo_user_email.split('@')[0].replace('-demo', '').replace(/^\w/, (c: string) => c.toUpperCase())
+      ),
       email: demoData.demo_user_email,
       project_role: 'manager',
     },
-    ...demoData.team_logins,
+    ...demoData.team_logins.map((login) => ({
+      ...login,
+      display_name: getDemoDisplayName(login.email, login.display_name),
+    })),
   ];
 
   return (
