@@ -24,6 +24,7 @@ export const ACTIONS = {
   EARTHCAM_VIEW: 'earthcam:view',
   EARTHCAM_ADMIN: 'earthcam:admin',
   EARTHCAM_MANAGE: 'earthcam:manage',
+  EARTHCAM_EMBED_MANAGE: 'earthcam_embed:manage',
   EARTHCAM_CAPTURE: 'earthcam:capture',
 } as const;
 
@@ -32,6 +33,9 @@ export type Action = (typeof ACTIONS)[keyof typeof ACTIONS];
 type ProjectRole = ProjectMember['project_role'];
 
 const ALL_ACTIONS = Object.values(ACTIONS);
+const CAN_EDIT_ACTIONS: readonly Action[] = [
+  ACTIONS.EARTHCAM_EMBED_MANAGE,
+];
 
 export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
   manager: ALL_ACTIONS,
@@ -56,6 +60,7 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.DOCUMENT_MANAGE,
     ACTIONS.EARTHCAM_VIEW,
     ACTIONS.EARTHCAM_MANAGE,
+    ACTIONS.EARTHCAM_EMBED_MANAGE,
     ACTIONS.EARTHCAM_CAPTURE,
   ],
   foreman: [
@@ -83,6 +88,7 @@ export const PERMISSION_MATRIX: Record<ProjectRole, readonly Action[]> = {
     ACTIONS.DOCUMENT_MANAGE,
     ACTIONS.EARTHCAM_VIEW,
     ACTIONS.EARTHCAM_MANAGE,
+    ACTIONS.EARTHCAM_EMBED_MANAGE,
     ACTIONS.EARTHCAM_CAPTURE,
   ],
   contractor: [
@@ -117,7 +123,26 @@ export function canPerform(projectRole: ProjectRole | null, action: Action): boo
   return allowed ? allowed.includes(action) : false;
 }
 
+export function canPerformWithProjectEdit(
+  projectRole: ProjectRole | null,
+  canEdit: boolean,
+  action: Action
+): boolean {
+  return canPerform(projectRole, action) || (canEdit && CAN_EDIT_ACTIONS.includes(action));
+}
+
 export function getAllowedActions(projectRole: ProjectRole | null): Action[] {
   if (!projectRole) return [];
   return [...(PERMISSION_MATRIX[projectRole] ?? [])];
+}
+
+export function getAllowedActionsWithProjectEdit(
+  projectRole: ProjectRole | null,
+  canEdit: boolean
+): Action[] {
+  const allowed = new Set(getAllowedActions(projectRole));
+  if (canEdit) {
+    CAN_EDIT_ACTIONS.forEach((action) => allowed.add(action));
+  }
+  return [...allowed];
 }

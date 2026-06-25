@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectMembers } from '@/hooks/useData';
 import { getMyProfile } from '@/lib/actions/profiles';
-import { canPerform, getAllowedActions, type Action } from '@/lib/permissions';
+import {
+  canPerformWithProjectEdit,
+  getAllowedActionsWithProjectEdit,
+  type Action,
+} from '@/lib/permissions';
 import type { Profile, ProjectMember } from '@/lib/types';
 
 interface UsePermissionsResult {
@@ -44,14 +48,16 @@ export function usePermissions(projectId: string): UsePermissionsResult {
     ? 'manager'
     : membership?.project_role ?? null;
 
+  const canEdit = membership?.can_edit ?? false;
+
   const allowedActions = useMemo(
-    () => getAllowedActions(role),
-    [role]
+    () => getAllowedActionsWithProjectEdit(role, canEdit),
+    [role, canEdit]
   );
 
   const can = useMemo(
-    () => (action: Action) => canPerform(role, action),
-    [role]
+    () => (action: Action) => canPerformWithProjectEdit(role, canEdit, action),
+    [role, canEdit]
   );
 
   return { can, role, membership, allowedActions };

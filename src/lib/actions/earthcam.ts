@@ -275,7 +275,7 @@ export async function saveEarthCamEmbed(
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
 
-    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_MANAGE);
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_EMBED_MANAGE);
     if (!permission.allowed) return { error: permission.error };
 
     const { url } = extractEarthCamEmbedUrl(input.embedInput);
@@ -327,7 +327,7 @@ export async function deleteEarthCamEmbed(
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
 
-    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_MANAGE);
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.EARTHCAM_EMBED_MANAGE);
     if (!permission.allowed) return { error: permission.error };
 
     const { data: embed } = await admin

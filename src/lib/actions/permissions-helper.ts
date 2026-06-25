@@ -2,7 +2,7 @@
 'use server';
 
 import { type SupabaseClient } from '@supabase/supabase-js';
-import { canPerform, type Action } from '@/lib/permissions';
+import { canPerformWithProjectEdit, type Action } from '@/lib/permissions';
 import type { ProjectMember, Profile } from '@/lib/types';
 
 export type ActionResult<T = undefined> =
@@ -37,12 +37,13 @@ export async function checkPermission(
   projectId: string,
   action: Action
 ): Promise<
-  | { allowed: false; error: string; orgRole?: never; projectRole?: never }
+  | { allowed: false; error: string; orgRole?: never; projectRole?: never; canEdit?: never }
   | {
       allowed: true;
       error?: never;
       orgRole: Profile['role'];
       projectRole: ProjectMember['project_role'] | null;
+      canEdit: boolean;
     }
 > {
   // Get the user's org-level role
@@ -59,24 +60,25 @@ export async function checkPermission(
   // Get the user's project-level membership
   const { data: membership } = await supabase
     .from('project_members')
-    .select('project_role')
+    .select('project_role, can_edit')
     .eq('project_id', projectId)
     .eq('profile_id', userId)
     .single();
 
   const orgRole = (profile.role ?? 'viewer') as Profile['role'];
   const projectRole = (membership?.project_role ?? null) as ProjectMember['project_role'] | null;
+  const canEdit = membership?.can_edit ?? false;
 
   // Admins bypass project-level permission checks
   if (orgRole === 'admin') {
-    return { allowed: true, orgRole, projectRole };
+    return { allowed: true, orgRole, projectRole, canEdit };
   }
 
-  if (!canPerform(projectRole, action)) {
+  if (!canPerformWithProjectEdit(projectRole, canEdit, action)) {
     return { allowed: false, error: 'Permission denied' };
   }
 
-  return { allowed: true, orgRole, projectRole };
+  return { allowed: true, orgRole, projectRole, canEdit };
 }
 
 /**
