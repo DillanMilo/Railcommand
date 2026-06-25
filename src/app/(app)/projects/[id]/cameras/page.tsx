@@ -81,7 +81,7 @@ export default function CamerasPage({
   const { data: embeds, loading, error, refetch } = useEarthCamEmbeds(projectId);
 
   const canView = can(ACTIONS.EARTHCAM_VIEW);
-  const canManage = can(ACTIONS.EARTHCAM_EMBED_MANAGE);
+  const canManage = isDemo || can(ACTIONS.EARTHCAM_EMBED_MANAGE);
 
   const [saving, setSaving] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
