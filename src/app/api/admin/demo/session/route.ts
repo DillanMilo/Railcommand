@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { DEMO_SESSION_COOKIE } from '@/lib/demo/session-cookie';
+import { DEMO_SESSION_COOKIE, DEMO_SLUG_COOKIE } from '@/lib/demo/session-cookie';
 
 const DEMO_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 const ONBOARDED_COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       maxAge: ONBOARDED_COOKIE_MAX_AGE,
       sameSite: 'lax',
     });
-    response.cookies.set('rc-demo-slug', slug, {
+    response.cookies.set(DEMO_SLUG_COOKIE, slug, {
       path: '/',
       maxAge: DEMO_COOKIE_MAX_AGE,
       sameSite: 'lax',

@@ -1,24 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, FlaskConical } from 'lucide-react';
 
 /**
- * Subtle banner shown when the user is in an enterprise demo session.
- * Reads the rc-demo-slug cookie to determine if active.
+ * Subtle banner shown only for the internal team demo session.
  */
-export default function DemoBanner() {
-  const [slug, setSlug] = useState<string | null>(null);
+export default function DemoBanner({ demoSlug }: { demoSlug: string | null }) {
   const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    const match = document.cookie.match(/rc-demo-slug=([^;]+)/);
-    if (match) {
-      setSlug(match[1]);
-    }
-  }, []);
-
-  if (!slug || dismissed) return null;
+  if (demoSlug !== 'team' || dismissed) return null;
 
   return (
     <div className="bg-rc-orange/10 border-b border-rc-orange/20 px-4 py-1.5 flex items-center justify-center gap-2 text-sm">

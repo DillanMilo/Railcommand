@@ -568,6 +568,7 @@ function LoginPageInner() {
           await fetch('/api/demo/local-session', { method: 'DELETE' });
           localStorage.removeItem('rc-mode');
           document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+          document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
         } catch { /* noop */ }
         router.push(redirectPath);
       } catch (error) {
@@ -607,6 +608,7 @@ function LoginPageInner() {
             await fetch('/api/demo/local-session', { method: 'DELETE' });
             localStorage.removeItem('rc-mode');
             document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+            document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
           } catch { /* noop */ }
           router.push(redirectPath);
           return;
@@ -698,6 +700,7 @@ function LoginPageInner() {
       localStorage.removeItem('rc-mode');
       await fetch('/api/demo/local-session', { method: 'DELETE' });
       document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
     } catch { /* noop */ }
     try {
       const supabase = createClient();

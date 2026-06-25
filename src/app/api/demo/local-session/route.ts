@@ -3,6 +3,7 @@ import {
   createDemoSessionToken,
   DEMO_SESSION_COOKIE,
   DEMO_SESSION_MAX_AGE_SECONDS,
+  DEMO_SLUG_COOKIE,
   getDemoSessionCookieOptions,
 } from '@/lib/demo/session-cookie';
 
@@ -70,6 +71,12 @@ export async function DELETE() {
   const response = NextResponse.json({ ok: true });
   response.cookies.set(DEMO_SESSION_COOKIE, '', getDemoSessionCookieOptions(0));
   response.cookies.set('rc-mode', '', {
+    maxAge: 0,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+  response.cookies.set(DEMO_SLUG_COOKIE, '', {
     maxAge: 0,
     path: '/',
     sameSite: 'lax',

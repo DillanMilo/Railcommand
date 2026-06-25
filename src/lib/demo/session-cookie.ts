@@ -1,4 +1,5 @@
 export const DEMO_SESSION_COOKIE = 'rc-demo-session';
+export const DEMO_SLUG_COOKIE = 'rc-demo-slug';
 export const DEMO_SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export type DemoSession = {

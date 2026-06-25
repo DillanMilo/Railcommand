@@ -5,12 +5,15 @@ import DemoBanner from '@/components/layout/DemoBanner';
 import PageTransition from '@/components/shared/PageTransition';
 import ProjectProvider from '@/components/providers/ProjectProvider';
 import RailBotTrigger from '@/components/railbot/RailBotTrigger';
+import { isCurrentUserDemo } from '@/lib/demo/auth';
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { demoSlug } = await isCurrentUserDemo();
+
   return (
     <ProjectProvider>
       <div className="flex h-screen overflow-hidden bg-rc-bg">
@@ -20,7 +23,7 @@ export default function AppLayout({
         {/* Main content area */}
         <div className="flex flex-col flex-1 min-w-0">
           <Topbar />
-          <DemoBanner />
+          <DemoBanner demoSlug={demoSlug ?? null} />
 
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-6 lg:pb-8">
             <div className="mx-auto max-w-screen-2xl">

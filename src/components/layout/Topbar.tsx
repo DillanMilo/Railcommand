@@ -296,6 +296,7 @@ export default function Topbar({ children }: TopbarProps) {
       localStorage.removeItem('rc-current-project');
       document.cookie = 'rc-mode=; path=/; max-age=0';
       document.cookie = 'rc-demo-session=; path=/; max-age=0';
+      document.cookie = 'rc-demo-slug=; path=/; max-age=0';
       document.cookie = 'rc-remember=; path=/; max-age=0';
     } catch { /* noop */ }
     router.push('/login');

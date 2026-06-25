@@ -1,13 +1,22 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
-import { DEMO_SESSION_COOKIE } from '@/lib/demo/session-cookie';
+import { DEMO_SESSION_COOKIE, DEMO_SLUG_COOKIE } from '@/lib/demo/session-cookie';
 
 function getSafeRedirectPath(value: string | null): string | null {
   if (!value || !value.startsWith('/') || value.startsWith('//')) {
     return null;
   }
   return value;
+}
+
+function clearDemoSlugCookie(response: NextResponse): void {
+  response.cookies.set(DEMO_SLUG_COOKIE, '', {
+    maxAge: 0,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
 }
 
 export async function GET(request: Request) {
@@ -36,6 +45,7 @@ export async function GET(request: Request) {
       });
       response.cookies.delete('rc-mode');
       response.cookies.delete(DEMO_SESSION_COOKIE);
+      clearDemoSlugCookie(response);
       return response;
     }
   }
@@ -55,6 +65,7 @@ export async function GET(request: Request) {
       });
       response.cookies.delete('rc-mode');
       response.cookies.delete(DEMO_SESSION_COOKIE);
+      clearDemoSlugCookie(response);
       return response;
     }
   }

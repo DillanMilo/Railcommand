@@ -128,6 +128,7 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
         try {
           localStorage.removeItem(MODE_KEY);
           document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+          document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
           fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
         } catch { /* noop */ }
         setIsDemo(false);
