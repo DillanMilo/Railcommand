@@ -27,7 +27,7 @@ const DEMO_DISPLAY_NAMES: Record<string, string> = {
   'mark.allen@a5rail.com': 'Mark Allen',
   'caleb@lenaserv.com': 'Caleb Douglas',
   'dillan@creativecurrents.io': 'Dillan Milosevich',
-  'kayleigh-demo@railcommand.io': 'Union Pacific',
+  'kayleigh-demo@railcommand.io': 'Union Pacific Demo',
 };
 
 function getDemoDisplayName(email: string, fallback: string) {
