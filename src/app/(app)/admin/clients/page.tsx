@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
@@ -352,6 +352,23 @@ function StatCard({
   );
 }
 
+function MobileField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="mt-1 break-words text-sm text-foreground">{children}</div>
+    </div>
+  );
+}
+
+function MobileEmptyState({ message }: { message: string }) {
+  return (
+    <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+      {message}
+    </div>
+  );
+}
+
 function PasswordGate({ error }: { error?: string }) {
   const passwordConfigured = Boolean(getDashboardPassword());
 
@@ -521,7 +538,7 @@ export default async function AdminClientsPage({
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Building2 className="size-6 text-rc-orange" />
             <h1 className="font-heading text-2xl font-bold">Client Dashboard</h1>
             <Badge variant="secondary" className="text-xs">
@@ -584,7 +601,36 @@ export default async function AdminClientsPage({
           <CardDescription>Organizations, member counts, project counts, and last sign-in activity.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 p-4 md:hidden">
+            {clientRows.map((row) => (
+              <div key={row.org.id} className="rounded-lg border bg-background p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="break-words font-medium">{row.org.name}</h3>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>{formatRole(row.org.type)}</span>
+                      {row.isDemo && <Badge variant="outline" className="text-[10px]">Demo</Badge>}
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">
+                    {row.org.tier ?? 'free'}
+                  </Badge>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MobileField label="Projects">{row.projectCount}</MobileField>
+                  <MobileField label="Users">{row.userCount}</MobileField>
+                  <MobileField label="Admins">{row.adminCount}</MobileField>
+                  <MobileField label="Project Value">{formatMoney(row.budgetTotal)}</MobileField>
+                </div>
+                <div className="mt-3 border-t pt-3">
+                  <MobileField label="Last Sign-In">{formatDateTime(row.latestSignIn)}</MobileField>
+                </div>
+              </div>
+            ))}
+            {clientRows.length === 0 && <MobileEmptyState message="No organizations found." />}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-rc-card">
@@ -638,7 +684,58 @@ export default async function AdminClientsPage({
           <CardDescription>Latest 25 profile records with organization role, project role, and usage status.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 p-4 md:hidden">
+            {userRows.map((row) => (
+              <div key={row.user.id} className="rounded-lg border bg-background p-4">
+                <div className="min-w-0">
+                  <h3 className="break-words font-medium">{row.user.full_name ?? 'Unnamed user'}</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="break-all">{row.user.email}</span>
+                    {row.isDemo && <Badge variant="outline" className="text-[10px]">Demo</Badge>}
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3">
+                  <MobileField label="Organization">
+                    {row.organization?.name ?? 'Project-only / unassigned'}
+                  </MobileField>
+                  <MobileField label="Org Role">
+                    <Badge variant="outline" className={roleBadgeClass(row.user.role)}>
+                      {formatRole(row.user.role)}
+                    </Badge>
+                  </MobileField>
+                  <MobileField label="Project Roles">
+                    <div className="flex flex-wrap gap-1.5">
+                      {row.roles.slice(0, 3).map((role) => (
+                        <Badge
+                          key={`${row.user.id}-mobile-${role.project}-${role.role}`}
+                          variant="outline"
+                          className={roleBadgeClass(role.role)}
+                          title={role.project}
+                        >
+                          {formatRole(role.role)}
+                        </Badge>
+                      ))}
+                      {row.roles.length > 3 && (
+                        <Badge variant="secondary">+{row.roles.length - 3}</Badge>
+                      )}
+                      {row.roles.length === 0 && (
+                        <span className="text-sm text-muted-foreground">No project role</span>
+                      )}
+                    </div>
+                  </MobileField>
+                  <div className="grid grid-cols-2 gap-3 border-t pt-3">
+                    <MobileField label="Last Sign-In">
+                      {formatDateTime(row.authUser?.last_sign_in_at)}
+                    </MobileField>
+                    <MobileField label="Created">{formatDate(row.user.created_at)}</MobileField>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {userRows.length === 0 && <MobileEmptyState message="No users found." />}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-rc-card">
@@ -713,7 +810,36 @@ export default async function AdminClientsPage({
           <CardDescription>Prospect demo environments and engagement.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 p-4 md:hidden">
+            {data.demoAccounts.map((demo) => (
+              <div key={demo.id} className="rounded-lg border bg-background p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="break-words font-medium">{demo.company_name}</h3>
+                    <code className="mt-1 block break-all text-xs text-muted-foreground">
+                      /demo/{demo.slug}
+                    </code>
+                  </div>
+                  <Badge variant="secondary" className={demo.is_active ? 'bg-rc-emerald/10 text-rc-emerald' : 'bg-muted text-muted-foreground'}>
+                    {demo.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MobileField label="Type">
+                    {demo.is_team_demo ? 'Team demo' : 'Prospect demo'}
+                  </MobileField>
+                  <MobileField label="Access Count">{demo.access_count ?? 0}</MobileField>
+                  <MobileField label="Last Accessed">
+                    {formatDateTime(demo.last_accessed_at)}
+                  </MobileField>
+                  <MobileField label="Created">{formatDate(demo.created_at)}</MobileField>
+                </div>
+              </div>
+            ))}
+            {data.demoAccounts.length === 0 && <MobileEmptyState message="No demo accounts found." />}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-rc-card">
