@@ -30,6 +30,7 @@ import {
   seedEarthCamEmbeds,
 } from './seed-data';
 import { getLocalDateString, getLocalDateStringOffset } from './date-utils';
+import { projectRoleCanEdit } from './project-roles';
 import type {
   Organization,
   Profile,
@@ -1162,7 +1163,7 @@ export function addProjectMember(projectId: string, profileId: string, role: str
     project_id: projectId,
     profile_id: profileId,
     project_role: role as ProjectMember['project_role'],
-    can_edit: true,
+    can_edit: projectRoleCanEdit(role),
     added_at: new Date().toISOString(),
   };
   projectMembers = [...projectMembers, newMember];
@@ -1176,7 +1177,7 @@ export function removeProjectMember(id: string): void {
 export function updateMemberRole(id: string, role: ProjectMember['project_role']): void {
   projectMembers = projectMembers.map((m) =>
     m.id === id
-      ? { ...m, project_role: role, can_edit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(role) }
+      ? { ...m, project_role: role, can_edit: projectRoleCanEdit(role) }
       : m
   );
 }

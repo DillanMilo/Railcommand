@@ -17,6 +17,7 @@ interface ProjectContextValue {
   currentUserId: string;
   setCurrentUser: (profileId: string) => void;
   isDemo: boolean;
+  demoSlug: string | null;
 }
 
 const ProjectContext = createContext<ProjectContextValue>({
@@ -28,6 +29,7 @@ const ProjectContext = createContext<ProjectContextValue>({
   currentUserId: 'prof-001',
   setCurrentUser: () => {},
   isDemo: true,
+  demoSlug: null,
 });
 
 export const useProject = () => useContext(ProjectContext);
@@ -69,7 +71,13 @@ function getStoredProjectId(isDemoMode: boolean): string {
 
 let modeRehydrated = false;
 
-export default function ProjectProvider({ children }: { children: React.ReactNode }) {
+export default function ProjectProvider({
+  children,
+  demoSlug = null,
+}: {
+  children: React.ReactNode;
+  demoSlug?: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const urlProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1];
@@ -208,6 +216,7 @@ export default function ProjectProvider({ children }: { children: React.ReactNod
       currentUserId,
       setCurrentUser,
       isDemo,
+      demoSlug,
     }}>
       {children}
     </ProjectContext.Provider>

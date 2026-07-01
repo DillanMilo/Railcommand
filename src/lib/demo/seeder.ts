@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { projectRoleCanEdit } from '@/lib/project-roles';
 import type { DemoPreset } from './types';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -296,7 +297,7 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
       allMembers.push({
         profileId: u.authId,
         projectRole: u.projectRole,
-        canEdit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(u.projectRole),
+        canEdit: projectRoleCanEdit(u.projectRole),
       });
     }
 
@@ -307,7 +308,7 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
         allMembers.push({
           profileId: npcMembers[i].resolvedId!,
           projectRole: npcRoles[i],
-          canEdit: ['foreman', 'engineer'].includes(npcRoles[i]),
+          canEdit: projectRoleCanEdit(npcRoles[i]),
         });
       }
     }

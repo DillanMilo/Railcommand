@@ -15,7 +15,7 @@ export default async function AppLayout({
   const { demoSlug } = await isCurrentUserDemo();
 
   return (
-    <ProjectProvider>
+    <ProjectProvider demoSlug={demoSlug ?? null}>
       <div className="flex h-screen overflow-hidden bg-rc-bg">
         {/* Sidebar - desktop only */}
         <Sidebar />

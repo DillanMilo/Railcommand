@@ -129,6 +129,37 @@ export async function getProjectPlanInfo(
 }
 
 // ---------------------------------------------------------------------------
+// getProjectDemoInfo -- whether this project belongs to an active demo account
+// ---------------------------------------------------------------------------
+export async function getProjectDemoInfo(
+  projectId: string
+): Promise<ActionResult<{ isDemoProject: boolean }>> {
+  try {
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const access = await checkProjectMembership(supabase, user.id, projectId);
+    if (!access.isMember) return { error: access.error };
+
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('demo_accounts')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error: error.message };
+
+    return { success: true, data: { isDemoProject: Boolean(data) } };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to fetch project demo info' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // createProject -- any authenticated user can create a project
 // ---------------------------------------------------------------------------
 export async function createProject(data: {

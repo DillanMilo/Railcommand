@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ACTIONS } from '@/lib/permissions';
+import { canAssignProjectRole, isProjectRole, projectRoleCanEdit } from '@/lib/project-roles';
 import { TIER_LIMITS } from '@/lib/types';
 import type { ProjectInvitation, ProjectMember, Tier } from '@/lib/types';
 import {
@@ -18,6 +19,7 @@ import {
 
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type AdminClient = ReturnType<typeof createAdminClient>;
 
 let resendClient: Resend | null = null;
 
@@ -50,6 +52,26 @@ function formatRole(role: string): string {
   return role
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+async function isDemoProject(adminClient: AdminClient, projectId: string): Promise<boolean> {
+  const { data } = await adminClient
+    .from('demo_accounts')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
+function getRoleAssignmentError(role: string, isDemo: boolean): string | null {
+  if (!isProjectRole(role)) return 'Invalid project role';
+  if (!canAssignProjectRole(role, isDemo)) {
+    return 'Owner role is only available for demo projects.';
+  }
+  return null;
 }
 
 function buildInvitationEmailHtml(input: {
@@ -280,6 +302,9 @@ export async function createInvitation(
     if (!project.organization_id) {
       return { error: 'This project is not linked to an organization. Please contact support.' };
     }
+
+    const roleError = getRoleAssignmentError(projectRole, await isDemoProject(adminClient, projectId));
+    if (roleError) return { error: roleError };
 
     // Use the admin client after authorization so RLS on organizations cannot
     // silently hide the tier and downgrade an eligible org to the free limit.
@@ -528,6 +553,13 @@ export async function acceptInvitation(
       return { error: 'Invitation not found, expired, or already used.' };
     }
 
+    const adminClient = createAdminClient();
+    const roleError = getRoleAssignmentError(
+      invitation.project_role,
+      await isDemoProject(adminClient, invitation.project_id)
+    );
+    if (roleError) return { error: roleError };
+
     // Add user as a project member FIRST (while invitation is still pending —
     // required by the RLS policy on project_members INSERT which checks for
     // a pending invitation as proof of authorization)
@@ -537,9 +569,7 @@ export async function acceptInvitation(
         project_id: invitation.project_id,
         profile_id: user.id,
         project_role: invitation.project_role,
-        can_edit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(
-          invitation.project_role
-        ),
+        can_edit: projectRoleCanEdit(invitation.project_role),
       });
 
     if (memberError) return { error: memberError.message };

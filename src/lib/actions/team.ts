@@ -3,7 +3,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ACTIONS } from '@/lib/permissions';
+import { canAssignProjectRole, isProjectRole, projectRoleCanEdit } from '@/lib/project-roles';
 import type { ProjectMember } from '@/lib/types';
 import {
   type ActionResult,
@@ -14,6 +16,28 @@ import {
 } from './permissions-helper';
 import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
 import type { TeamUpdatePayload } from '@/lib/notifications';
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+async function isDemoProject(adminClient: AdminClient, projectId: string): Promise<boolean> {
+  const { data } = await adminClient
+    .from('demo_accounts')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
+function getRoleAssignmentError(role: string, isDemo: boolean): string | null {
+  if (!isProjectRole(role)) return 'Invalid project role';
+  if (!canAssignProjectRole(role, isDemo)) {
+    return 'Owner role is only available for demo projects.';
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // getProjectMembers -- all members of a project, with profiles and orgs
@@ -109,6 +133,10 @@ export async function addProjectMember(
     const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.TEAM_MANAGE);
     if (!perm.allowed) return { error: perm.error };
 
+    const adminClient = createAdminClient();
+    const roleError = getRoleAssignmentError(role, await isDemoProject(adminClient, projectId));
+    if (roleError) return { error: roleError };
+
     // Check if the member already exists on the project
     const { data: existing } = await supabase
       .from('project_members')
@@ -138,7 +166,7 @@ export async function addProjectMember(
         project_id: projectId,
         profile_id: profileId,
         project_role: role,
-        can_edit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(role),
+        can_edit: projectRoleCanEdit(role),
       })
       .select()
       .single();
@@ -409,11 +437,15 @@ export async function updateMemberRole(
     const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.TEAM_MANAGE);
     if (!perm.allowed) return { error: perm.error };
 
+    const adminClient = createAdminClient();
+    const roleError = getRoleAssignmentError(role, await isDemoProject(adminClient, projectId));
+    if (roleError) return { error: roleError };
+
     const { data: member, error } = await supabase
       .from('project_members')
       .update({
         project_role: role,
-        can_edit: ['manager', 'superintendent', 'foreman', 'engineer'].includes(role),
+        can_edit: projectRoleCanEdit(role),
       })
       .eq('id', memberId)
       .eq('project_id', projectId)

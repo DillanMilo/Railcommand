@@ -45,9 +45,10 @@ import {
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS, PERMISSION_MATRIX } from '@/lib/permissions';
+import { getAssignableProjectRoles } from '@/lib/project-roles';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { getProjectPlanInfo } from '@/lib/actions/projects';
+import { getProjectDemoInfo, getProjectPlanInfo } from '@/lib/actions/projects';
 import { addProjectMember as serverAddProjectMember, removeProjectMember as serverRemoveProjectMember, updateMemberRole as serverUpdateMemberRole, leaveProject as serverLeaveProject } from '@/lib/actions/team';
 import { createInvitation, getProjectInvitations as serverGetProjectInvitations, cancelInvitation as serverCancelInvitation, resendInvitation as serverResendInvitation } from '@/lib/actions/invitations';
 import {
@@ -80,7 +81,6 @@ const AVATAR_COLORS = [
   'bg-teal-600 text-white',
 ];
 
-const PROJECT_ROLES = ['manager', 'engineer', 'contractor', 'inspector', 'foreman', 'superintendent'];
 const ORG_TYPES = ['contractor', 'engineer', 'owner', 'inspector'] as const;
 
 function getInitials(name: string) {
@@ -101,7 +101,7 @@ function formatRole(role: string) {
 export default function TeamPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const { isDemo, currentUserId } = useProject();
+  const { isDemo, currentUserId, demoSlug } = useProject();
   const { can } = usePermissions(projectId);
   const { data: projectMembers, loading, refetch } = useProjectMembers(projectId);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -126,6 +126,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   const [inviteError, setInviteError] = useState('');
   const [projectInvitations, setProjectInvitations] = useState<ProjectInvitation[]>([]);
   const [serverTierInfo, setServerTierInfo] = useState<{ tier: Tier; limit: number } | null>(null);
+  const [serverDemoProject, setServerDemoProject] = useState(false);
   const [resendingInvitationId, setResendingInvitationId] = useState<string | null>(null);
   const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
 
@@ -146,14 +147,19 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   useEffect(() => {
     if (isDemo) {
       setServerTierInfo(null);
+      setServerDemoProject(false);
       return;
     }
 
     let cancelled = false;
-    getProjectPlanInfo(projectId).then((result) => {
-      if (!cancelled && result.data) {
-        setServerTierInfo(result.data);
-      }
+    setServerDemoProject(false);
+    Promise.all([
+      getProjectPlanInfo(projectId),
+      getProjectDemoInfo(projectId),
+    ]).then(([planResult, demoResult]) => {
+      if (cancelled) return;
+      if (planResult.data) setServerTierInfo(planResult.data);
+      setServerDemoProject(demoResult.data?.isDemoProject ?? false);
     });
     return () => { cancelled = true; };
   }, [isDemo, projectId]);
@@ -191,6 +197,10 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
 
   const totalCount = members.length + pendingInvitations.length;
   const atLimit = tierInfo ? totalCount >= tierInfo.limit : false;
+  const projectRoleOptions = useMemo(
+    () => getAssignableProjectRoles(isDemo || Boolean(demoSlug) || serverDemoProject),
+    [demoSlug, isDemo, serverDemoProject]
+  );
 
   // The in-memory store is seeded with placeholder profiles for the demo. Real
   // accounts have no such roster in memory, so showing those names on a fresh
@@ -533,7 +543,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                     <Select value={selectedRole} onValueChange={setSelectedRole}>
                       <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                       <SelectContent>
-                        {PROJECT_ROLES.map((r) => (
+                        {projectRoleOptions.map((r) => (
                           <SelectItem key={r} value={r}>{formatRole(r)}</SelectItem>
                         ))}
                       </SelectContent>
@@ -573,7 +583,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                     <Select value={inviteRole} onValueChange={(v) => { setInviteRole(v); setInviteError(''); }}>
                       <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                       <SelectContent>
-                        {PROJECT_ROLES.map((r) => (
+                        {projectRoleOptions.map((r) => (
                           <SelectItem key={r} value={r}>{formatRole(r)}</SelectItem>
                         ))}
                       </SelectContent>
@@ -673,7 +683,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="min-w-[160px]">
-                          {PROJECT_ROLES.map((r) => (
+                          {projectRoleOptions.map((r) => (
                             <DropdownMenuItem
                               key={r}
                               onClick={() => handleRoleChange(member.id, r as ProjectMember['project_role'])}
