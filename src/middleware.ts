@@ -3,6 +3,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
 import { fetchWithTimeout } from '@/lib/supabase/connectivity';
 import { DEMO_SESSION_COOKIE, readDemoSessionToken } from '@/lib/demo/session-cookie';
+import {
+  evaluateIpReputationAccess,
+  getIpReputationConfig,
+  getIpReputationCookieName,
+} from '@/lib/ip-reputation';
 
 const GEO_RESTRICTED_PAGE = '/geo-restricted';
 
@@ -37,6 +42,12 @@ type GeoAccessDecision = {
   country: string | null;
   reason: string;
   allowedCountries: Set<string>;
+};
+
+type PendingCookie = {
+  name: string;
+  value: string;
+  maxAge: number;
 };
 
 function getSafeRedirectPath(value: string | null): string | null {
@@ -88,6 +99,17 @@ function getRequestCountry(request: NextRequest): string | null {
   if (!normalizedCountry || normalizedCountry === 'UNKNOWN') return null;
 
   return normalizedCountry;
+}
+
+function getRequestIp(request: NextRequest): string | null {
+  const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const ip =
+    forwardedFor ||
+    request.headers.get('x-real-ip')?.trim() ||
+    request.headers.get('cf-connecting-ip')?.trim() ||
+    request.headers.get('true-client-ip')?.trim();
+
+  return ip || null;
 }
 
 function isGeoRestrictionEnabled(request: NextRequest): boolean {
@@ -176,6 +198,39 @@ function getGeoBlockedResponse(
   return NextResponse.redirect(url);
 }
 
+function getIpReputationBlockedResponse(request: NextRequest, pathname: string) {
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json(
+      {
+        error: 'Access is restricted because this network appears to use a VPN, proxy, Tor, or blocked hosting provider.',
+      },
+      { status: 403 }
+    );
+  }
+
+  const url = request.nextUrl.clone();
+  url.pathname = GEO_RESTRICTED_PAGE;
+  url.search = '';
+  url.searchParams.set('reason', 'ip_reputation');
+  url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+
+  return NextResponse.redirect(url);
+}
+
+function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
+  for (const cookie of cookies) {
+    response.cookies.set(cookie.name, cookie.value, {
+      httpOnly: true,
+      maxAge: cookie.maxAge,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const geoBlock = shouldBlockForGeo(request, pathname);
@@ -196,7 +251,44 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  const pendingCookies: PendingCookie[] = [];
+  const ipReputationConfig = getIpReputationConfig({
+    IP_REPUTATION_ENABLED: process.env.IP_REPUTATION_ENABLED,
+    IP_REPUTATION_MODE: process.env.IP_REPUTATION_MODE,
+    IP_REPUTATION_PROVIDER: process.env.IP_REPUTATION_PROVIDER,
+    IP_REPUTATION_API_KEY: process.env.IP_REPUTATION_API_KEY,
+    IP_REPUTATION_TIMEOUT_MS: process.env.IP_REPUTATION_TIMEOUT_MS,
+    IP_REPUTATION_CACHE_TTL_SECONDS: process.env.IP_REPUTATION_CACHE_TTL_SECONDS,
+    IP_REPUTATION_COOKIE_SECRET: process.env.IP_REPUTATION_COOKIE_SECRET,
+    IP_REPUTATION_BLOCK_PROXY: process.env.IP_REPUTATION_BLOCK_PROXY,
+    IP_REPUTATION_BLOCK_VPN: process.env.IP_REPUTATION_BLOCK_VPN,
+    IP_REPUTATION_BLOCK_TOR: process.env.IP_REPUTATION_BLOCK_TOR,
+    IP_REPUTATION_BLOCK_HOSTING: process.env.IP_REPUTATION_BLOCK_HOSTING,
+  });
+
+  if (ipReputationConfig.enabled && isGeoRestrictedPath(pathname)) {
+    const ipReputationDecision = await evaluateIpReputationAccess({
+      isProtectedPath: true,
+      ip: getRequestIp(request),
+      userAgent: request.headers.get('user-agent'),
+      cacheCookieValue: request.cookies.get(getIpReputationCookieName())?.value,
+      config: ipReputationConfig,
+    });
+
+    if (ipReputationDecision.cacheCookie) {
+      pendingCookies.push(ipReputationDecision.cacheCookie);
+    }
+
+    if (ipReputationDecision.blocked) {
+      return applyPendingCookies(
+        getIpReputationBlockedResponse(request, pathname),
+        pendingCookies
+      );
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request });
+  applyPendingCookies(supabaseResponse, pendingCookies);
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -214,6 +306,7 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
+          applyPendingCookies(supabaseResponse, pendingCookies);
         },
       },
       global: {
@@ -260,7 +353,7 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/login';
     url.search = '';
     url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(url);
+    return applyPendingCookies(NextResponse.redirect(url), pendingCookies);
   }
 
   // If authenticated but "Remember me" was not checked (session cookie expired
@@ -273,6 +366,7 @@ export async function middleware(request: NextRequest) {
     url.search = '';
     url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
     const response = NextResponse.redirect(url);
+    applyPendingCookies(response, pendingCookies);
     // Clear Supabase auth cookies
     request.cookies.getAll().forEach(({ name }) => {
       if (name.startsWith('sb-')) {
@@ -286,7 +380,7 @@ export async function middleware(request: NextRequest) {
   if (user && hasRememberCookie && pathname === '/login') {
     const safeNext = getSafeRedirectPath(request.nextUrl.searchParams.get('next'));
     const url = new URL(safeNext ?? '/dashboard', request.nextUrl.origin);
-    return NextResponse.redirect(url);
+    return applyPendingCookies(NextResponse.redirect(url), pendingCookies);
   }
 
   // Onboarding check: redirect users without an organization to /onboarding
@@ -331,7 +425,7 @@ export async function middleware(request: NextRequest) {
         if (pathname !== '/dashboard' && pathname !== '/') {
           url.searchParams.set('next', pathname);
         }
-        return NextResponse.redirect(url);
+        return applyPendingCookies(NextResponse.redirect(url), pendingCookies);
       } else {
         // User has org - set cookie so we skip the DB check next time
         supabaseResponse.cookies.set('rc-onboarded', 'true', {
