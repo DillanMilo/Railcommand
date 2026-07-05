@@ -14,6 +14,18 @@
 
 begin;
 
+-- 0. Widen the entity_type check constraint (was limited to the original
+--    three types) before seeding the six new ones.
+alter table public.entity_number_sequences
+  drop constraint if exists entity_number_sequences_entity_type_check;
+alter table public.entity_number_sequences
+  add constraint entity_number_sequences_entity_type_check
+  check (entity_type = any (array[
+    'submittal', 'rfi', 'punch_list',
+    'document', 'qcqa', 'safety',
+    'change_order', 'modification', 'weekly_report'
+  ]::text[]));
+
 -- 1. Seed sequences from existing per-project max numbers so trigger-assigned
 --    numbers continue after existing data instead of colliding with it.
 --    regexp_replace strips the prefix: 'DOC-012' -> 12.
