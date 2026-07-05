@@ -301,12 +301,13 @@
 - [x] Migration staged: atomic entity numbering extended to DOC/QC/SAF/CO/MOD/WR tables + unique indexes
 - [x] Migration staged: `organizations.is_demo` flag
 - [x] Demo wipe guardrail — reset/delete refuses to touch any org not flagged `is_demo` (fail-closed)
-- [x] Demo invite email suppression — demo-org users can no longer send real invitation emails (admins exempt)
-- [ ] Upgrade Supabase to Pro (backups/PITR) — required before applying staged migrations
-- [ ] Apply staged migrations (`supabase db push`)
+- [x] ~~Demo invite email suppression~~ — REVERTED 2026-07-05: trial users on demos need to invite team members (business decision)
+- [x] Pilot backup strategy: Supabase Pro deferred; full local dumps (schema + data + auth) taken to gitignored `backups/` before any schema change
+- [ ] Apply staged migrations (`supabase db push` — awaiting explicit approval)
 - [ ] Rotate Supabase service-role / OpenAI / Resend keys
-- [ ] Re-seed the team demo (currently empty)
-- [ ] Clean up 242 orphaned rows from deleted project (after backups)
+- [ ] Re-seed the team demo — ON HOLD: active trial users; reset would wipe anything they've added
+- [ ] Clean up 242 orphaned rows from deleted project
+- [ ] Upgrade Supabase to Pro before real launch (automatic backups + image transforms)
 
 ---
 
