@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import QueryError from '@/components/shared/QueryError';
 import { useSubmittals } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -45,7 +46,7 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
   const { isDemo, currentProject } = useProject();
   const { can } = usePermissions(projectId);
   const currentProfile = getProfileWithOrg(getCurrentUserId());
-  const { data: submittals, loading } = useSubmittals(projectId);
+  const { data: submittals, loading, error, refetch } = useSubmittals(projectId);
   const urlSearchParams = useSearchParams();
   const ALLOWED_STATUSES = ['all', 'draft', 'submitted', 'under_review', 'approved', 'conditional', 'rejected'];
   const rawStatus = urlSearchParams.get('status') ?? 'all';
@@ -73,6 +74,17 @@ export default function SubmittalsListPage({ params, searchParams }: { params: P
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rc-orange" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Submittals' }]} />
+        <div className="mt-6">
+          <QueryError message="Couldn't load submittals" onRetry={refetch} />
+        </div>
       </div>
     );
   }

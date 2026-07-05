@@ -205,6 +205,7 @@ export async function seedDemo(preset: DemoPreset): Promise<{ id: string; error?
           name: `${preset.companyName} (Demo)`,
           type: 'contractor',
           tier: 'enterprise',
+          is_demo: true,
         })
         .select()
         .single()

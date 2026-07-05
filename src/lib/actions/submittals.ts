@@ -34,7 +34,8 @@ export async function getSubmittals(projectId: string): Promise<ActionResult<Sub
         reviewed_by_profile:profiles!submittals_reviewed_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS, PERMISSION_MATRIX } from '@/lib/permissions';
 import { getAssignableProjectRoles } from '@/lib/project-roles';
+import QueryError from '@/components/shared/QueryError';
 import { useProjectMembers } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { getProjectDemoInfo, getProjectPlanInfo } from '@/lib/actions/projects';
@@ -103,7 +104,7 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
   use(searchParams);
   const { isDemo, currentUserId, demoSlug } = useProject();
   const { can } = usePermissions(projectId);
-  const { data: projectMembers, loading, refetch } = useProjectMembers(projectId);
+  const { data: projectMembers, loading, error, refetch } = useProjectMembers(projectId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
@@ -461,6 +462,22 @@ export default function TeamPage({ params, searchParams }: { params: Promise<{ i
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <Breadcrumbs
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Team' },
+          ]}
+        />
+        <div className="mt-6">
+          <QueryError message="Couldn't load team members" onRetry={refetch} />
+        </div>
       </div>
     );
   }

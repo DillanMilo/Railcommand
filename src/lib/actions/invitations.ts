@@ -66,6 +66,31 @@ async function isDemoProject(adminClient: AdminClient, projectId: string): Promi
   return Boolean(data);
 }
 
+// Demo sessions are real Supabase auth sessions, so without this check any
+// anonymous visitor holding a demo slug could make RailCommand send real
+// invitation emails to arbitrary addresses. Invitation records are still
+// created (the in-app flow keeps working for demos); only the outbound email
+// is suppressed. Platform admins are exempt. Fails open so behavior is
+// unchanged until the organizations.is_demo migration is applied.
+async function shouldSuppressInviteEmail(
+  adminClient: AdminClient,
+  userId: string
+): Promise<boolean> {
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', userId)
+    .maybeSingle();
+  if (!profile || profile.role === 'admin' || !profile.organization_id) return false;
+
+  const { data: org } = await adminClient
+    .from('organizations')
+    .select('is_demo')
+    .eq('id', profile.organization_id)
+    .maybeSingle();
+  return (org as { is_demo?: boolean } | null)?.is_demo === true;
+}
+
 function getRoleAssignmentError(role: string, isDemo: boolean): string | null {
   if (!isProjectRole(role)) return 'Invalid project role';
   if (!canAssignProjectRole(role, isDemo)) {
@@ -290,6 +315,7 @@ export async function createInvitation(
     const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.TEAM_MANAGE);
     if (!perm.allowed) return { error: perm.error };
     const adminClient = createAdminClient();
+    const suppressInviteEmail = await shouldSuppressInviteEmail(adminClient, user.id);
 
     // Get project + org for tier check
     const { data: project, error: projError } = await supabase
@@ -375,13 +401,15 @@ export async function createInvitation(
         return { error: refreshError?.message ?? 'Failed to refresh invitation' };
       }
 
-      const emailError = await sendInvitationEmail({
-        email: inviteEmail,
-        token: refreshedInvite.token,
-        projectName: project.name,
-        projectRole,
-        invitedByName,
-      });
+      const emailError = suppressInviteEmail
+        ? null
+        : await sendInvitationEmail({
+            email: inviteEmail,
+            token: refreshedInvite.token,
+            projectName: project.name,
+            projectRole,
+            invitedByName,
+          });
 
       if (emailError) {
         return {
@@ -440,13 +468,15 @@ export async function createInvitation(
       return { error: insertError?.message ?? 'Failed to create invitation' };
     }
 
-    const emailError = await sendInvitationEmail({
-      email: inviteEmail,
-      token: invitation.token,
-      projectName: project.name,
-      projectRole,
-      invitedByName,
-    });
+    const emailError = suppressInviteEmail
+      ? null
+      : await sendInvitationEmail({
+          email: inviteEmail,
+          token: invitation.token,
+          projectName: project.name,
+          projectRole,
+          invitedByName,
+        });
 
     if (emailError) {
       await adminClient
@@ -772,13 +802,15 @@ export async function resendInvitation(
       return { error: refreshError?.message ?? 'Failed to refresh invitation' };
     }
 
-    const emailError = await sendInvitationEmail({
-      email: refreshedInvite.email,
-      token: refreshedInvite.token,
-      projectName,
-      projectRole: refreshedInvite.project_role,
-      invitedByName,
-    });
+    const emailError = (await shouldSuppressInviteEmail(adminClient, user.id))
+      ? null
+      : await sendInvitationEmail({
+          email: refreshedInvite.email,
+          token: refreshedInvite.token,
+          projectName,
+          projectRole: refreshedInvite.project_role,
+          invitedByName,
+        });
 
     if (emailError) {
       return {

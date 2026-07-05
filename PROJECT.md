@@ -287,8 +287,29 @@
 - [ ] Seed first demos (team + UP + TVA)
 - [ ] End-to-end testing with real Supabase auth
 
+### Phase 14: Production Hardening (July 2026)
+- [x] Full architecture / security / product / ops review (4-agent audit, 2026-07-05)
+- [x] Live Supabase verification — all migrations applied, RLS on all tables, chat RLS correct
+- [x] Prod schema snapshot captured into repo (`supabase/schema_snapshot.sql`)
+- [x] Removed stale `FULL_MIGRATION_ALL.sql` (would have re-exposed demo credentials if re-run)
+- [x] Fixed overdue-reminders cron (wrong column names + phantom statuses; was silently dead)
+- [x] Both crons now fail loud (500) on query errors instead of reporting false success
+- [x] Truthful overdue: dashboard + RFI list compute overdue from `due_date` at read time
+- [x] Shared `QueryError` component wired into 9 module list pages (failed fetch no longer looks like an empty project)
+- [x] Daily Logs list view empty state
+- [x] Query limits: all module list actions capped at 500 rows; dashboard capped at 1,000
+- [x] Migration staged: atomic entity numbering extended to DOC/QC/SAF/CO/MOD/WR tables + unique indexes
+- [x] Migration staged: `organizations.is_demo` flag
+- [x] Demo wipe guardrail — reset/delete refuses to touch any org not flagged `is_demo` (fail-closed)
+- [x] Demo invite email suppression — demo-org users can no longer send real invitation emails (admins exempt)
+- [ ] Upgrade Supabase to Pro (backups/PITR) — required before applying staged migrations
+- [ ] Apply staged migrations (`supabase db push`)
+- [ ] Rotate Supabase service-role / OpenAI / Resend keys
+- [ ] Re-seed the team demo (currently empty)
+- [ ] Clean up 242 orphaned rows from deleted project (after backups)
+
 ---
 
-*Last updated: April 15, 2026 — Phase 13: Enterprise Demo Account System built*
+*Last updated: July 5, 2026 — Phase 14: Production Hardening*
 *Product: RailCommand — by A5 Rail*
 *Developer: Dillan Milosevich, CTO — Creative Currents LLC*

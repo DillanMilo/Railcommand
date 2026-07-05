@@ -33,7 +33,8 @@ export async function getProjectDocuments(
         reviewed_by_profile:profiles!project_documents_reviewed_by_fkey(id, full_name)
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

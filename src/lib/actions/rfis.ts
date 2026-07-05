@@ -34,7 +34,8 @@ export async function getRFIs(projectId: string): Promise<ActionResult<RFI[]>> {
         assigned_to_profile:profiles!rfis_assigned_to_fkey(id, full_name, email, avatar_url)
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

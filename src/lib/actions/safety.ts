@@ -32,7 +32,8 @@ export async function getSafetyIncidents(
         reported_by_profile:profiles!safety_incidents_reported_by_fkey(id, full_name)
       `)
       .eq('project_id', projectId)
-      .order('incident_date', { ascending: false });
+      .order('incident_date', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

@@ -33,7 +33,14 @@ export async function getDashboardData(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
-    // Run all 6 queries in parallel — single auth check above
+    // Run all 6 queries in parallel — single auth check above.
+    //
+    // NOTE: the dashboard page aggregates KPI stats client-side from these raw
+    // arrays (lengths, status filters, EV/CO amount reductions), so the return
+    // shape must remain full row arrays — head-true count queries cannot be
+    // substituted without changing the consumer. Each query carries a
+    // defensive .limit(1000) (ordered newest-first) to bound the payload.
+    const DASHBOARD_ROW_CAP = 1000;
     const [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes, changeOrdersRes] = await Promise.all([
       supabase
         .from('submittals')
@@ -43,7 +50,8 @@ export async function getDashboardData(
           reviewed_by_profile:profiles!submittals_reviewed_by_fkey(id, full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .limit(DASHBOARD_ROW_CAP),
 
       supabase
         .from('rfis')
@@ -53,7 +61,8 @@ export async function getDashboardData(
           assigned_to_profile:profiles!rfis_assigned_to_fkey(id, full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .limit(DASHBOARD_ROW_CAP),
 
       supabase
         .from('punch_list_items')
@@ -63,7 +72,8 @@ export async function getDashboardData(
           created_by_profile:profiles!punch_list_items_created_by_fkey(id, full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .limit(DASHBOARD_ROW_CAP),
 
       supabase
         .from('daily_logs')
@@ -72,13 +82,15 @@ export async function getDashboardData(
           created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
-        .order('log_date', { ascending: false }),
+        .order('log_date', { ascending: false })
+        .limit(DASHBOARD_ROW_CAP),
 
       supabase
         .from('milestones')
         .select('*')
         .eq('project_id', projectId)
-        .order('sort_order', { ascending: true }),
+        .order('sort_order', { ascending: true })
+        .limit(DASHBOARD_ROW_CAP),
 
       supabase
         .from('change_orders')
@@ -88,7 +100,8 @@ export async function getDashboardData(
           approved_by_profile:profiles!change_orders_approved_by_fkey(id, full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .limit(DASHBOARD_ROW_CAP),
     ]);
 
     // Return first error if any query failed

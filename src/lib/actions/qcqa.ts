@@ -32,7 +32,8 @@ export async function getQCQAReports(
         inspector_profile:profiles!qcqa_reports_inspector_fkey(id, full_name)
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

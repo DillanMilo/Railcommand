@@ -4,7 +4,7 @@ import { useState, useMemo, use } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { differenceInCalendarDays } from 'date-fns';
-import { formatDateSafe, parseDateSafe } from '@/lib/date-utils';
+import { formatDateSafe, parseDateSafe, isRfiOverdue } from '@/lib/date-utils';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import PriorityBadge from '@/components/shared/PriorityBadge';
 import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import QueryError from '@/components/shared/QueryError';
 import { useRFIs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -67,11 +68,15 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
   const [tab, setTab] = useState<RFIStatus | 'all'>(validatedInitial);
   const [search, setSearch] = useState('');
 
-  const { data: rfis, loading } = useRFIs(projectId);
+  const { data: rfis, loading, error, refetch } = useRFIs(projectId);
 
   const filtered = useMemo(() => {
     return rfis.filter((r) => {
-      if (tab !== 'all' && r.status !== tab) return false;
+      if (tab === 'overdue') {
+        if (!isRfiOverdue(r)) return false;
+      } else if (tab !== 'all' && r.status !== tab) {
+        return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         const submitterName = getSubmittedByName(r, isDemo);
@@ -91,6 +96,15 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'RFIs' }]} />
+        <QueryError message="Couldn't load RFIs" onRetry={refetch} />
       </div>
     );
   }
@@ -161,7 +175,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
           </TableHeader>
           <TableBody>
             {filtered.map((rfi) => {
-              const isOverdue = rfi.status === 'overdue';
+              const isOverdue = isRfiOverdue(rfi);
               const days = daysOpen(rfi);
               return (
                 <TableRow key={rfi.id} className={isOverdue ? 'bg-red-50/60 dark:bg-red-950/20' : undefined}>
@@ -190,7 +204,7 @@ export default function RFIsPage({ params, searchParams }: { params: Promise<{ i
       {/* Mobile cards */}
       <div className="lg:hidden space-y-3">
         {filtered.map((rfi) => {
-          const isOverdue = rfi.status === 'overdue';
+          const isOverdue = isRfiOverdue(rfi);
           const days = daysOpen(rfi);
           return (
             <Link key={rfi.id} href={`${basePath}/${rfi.id}`}>

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import QueryError from '@/components/shared/QueryError';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useQCQAReports } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -65,7 +66,7 @@ export default function QCQAListPage({ params, searchParams }: { params: Promise
   const [typeFilter, setTypeFilter] = useState<QCQAReportType | 'all'>('all');
   const [search, setSearch] = useState('');
 
-  const { data: reports, loading } = useQCQAReports(projectId);
+  const { data: reports, loading, error, refetch } = useQCQAReports(projectId);
 
   const canCreate = can(ACTIONS.QCQA_CREATE);
 
@@ -98,6 +99,15 @@ export default function QCQAListPage({ params, searchParams }: { params: Promise
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'QC/QA' }]} />
+        <QueryError message="Couldn't load QC/QA reports" onRetry={refetch} />
       </div>
     );
   }

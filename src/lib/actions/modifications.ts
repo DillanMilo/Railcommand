@@ -33,7 +33,8 @@ export async function getModifications(projectId: string): Promise<ActionResult<
       .from('modifications')
       .select(PROFILE_JOINS)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

@@ -30,7 +30,8 @@ export async function getWeeklyReports(projectId: string): Promise<ActionResult<
       .from('weekly_reports')
       .select('*, submitted_by_profile:profiles!weekly_reports_submitted_by_fkey(*), approved_by_profile:profiles!weekly_reports_approved_by_fkey(*)')
       .eq('project_id', projectId)
-      .order('week_start_date', { ascending: false });
+      .order('week_start_date', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

@@ -30,7 +30,8 @@ export async function getChangeOrders(projectId: string): Promise<ActionResult<C
       .from('change_orders')
       .select('*, submitted_by_profile:profiles!change_orders_submitted_by_fkey(*), approved_by_profile:profiles!change_orders_approved_by_fkey(*)')
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

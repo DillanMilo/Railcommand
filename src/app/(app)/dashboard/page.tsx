@@ -18,6 +18,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import { useDashboardData } from '@/hooks/useData';
 import { format, parseISO } from 'date-fns';
+import { isRfiOverdue } from '@/lib/date-utils';
 import {
   DollarSign,
   Calendar,
@@ -156,7 +157,7 @@ export default function DashboardPage() {
   const openRFIs = allRFIs.filter(
     (r) => r.status === 'open' || r.status === 'overdue'
   ).length;
-  const overdueRFIs = allRFIs.filter((r) => r.status === 'overdue').length;
+  const overdueRFIs = allRFIs.filter(isRfiOverdue).length;
 
   const openPunch = allPunch.filter(
     (p) => p.status === 'open' || p.status === 'in_progress'

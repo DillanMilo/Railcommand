@@ -36,7 +36,8 @@ export async function getPunchListItems(
         created_by_profile:profiles!punch_list_items_created_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { error: error.message };
 

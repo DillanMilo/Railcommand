@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import QueryError from '@/components/shared/QueryError';
 import { useDailyLogs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -22,7 +23,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date());
   const basePath = `/projects/${projectId}/daily-logs`;
 
-  const { data: rawLogs, loading, hasMore, loadingMore, loadMore } = useDailyLogs(projectId);
+  const { data: rawLogs, loading, error, refetch, hasMore, loadingMore, loadMore } = useDailyLogs(projectId);
 
   const logs = useMemo(
     () => [...rawLogs].sort((a, b) => b.log_date.localeCompare(a.log_date)),
@@ -47,6 +48,15 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
       <div className="space-y-6">
         <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs' }]} />
         <p className="text-muted-foreground">Loading daily logs…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs' }]} />
+        <QueryError message="Couldn't load daily logs" onRetry={refetch} />
       </div>
     );
   }
@@ -157,6 +167,13 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
       {/* List View */}
       {view === 'list' && (
         <div className="space-y-3">
+          {logs.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground">
+              <ClipboardList className="size-10 text-muted-foreground/40" />
+              <p>No daily logs yet</p>
+              <p className="text-xs">Create your first daily log to get started.</p>
+            </div>
+          )}
           {logs.map((log) => {
             const headcount = totalHeadcount(log.personnel);
             return (

@@ -4,6 +4,37 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { seedDemo } from './seeder';
 import { DEMO_PRESETS } from './types';
 import type { DemoAccount } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * Hard guardrail for destructive demo operations. These run on the
+ * service-role client (RLS bypassed) and delete an entire organization
+ * including its auth users — so we refuse to proceed unless the target
+ * organization is explicitly flagged is_demo. Fails closed: a missing
+ * org, a missing is_demo column (migration not applied), or a query
+ * error all block the wipe.
+ */
+async function verifyDemoOrg(
+  admin: SupabaseClient,
+  organizationId: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  if (!organizationId) {
+    return { ok: false, error: 'Demo account has no organization_id — refusing to wipe' };
+  }
+  const { data: org, error } = await admin
+    .from('organizations')
+    .select('is_demo')
+    .eq('id', organizationId)
+    .single();
+
+  if (error) {
+    return { ok: false, error: `Could not verify demo org (is_demo check failed: ${error.message}) — refusing to wipe` };
+  }
+  if (org?.is_demo !== true) {
+    return { ok: false, error: 'Target organization is not flagged is_demo — refusing to wipe' };
+  }
+  return { ok: true };
+}
 
 /**
  * Completely reset a demo account: wipe all data, re-seed from scratch.
@@ -24,6 +55,12 @@ export async function resetDemo(slug: string): Promise<{ success: boolean; error
   }
 
   const demoAccount = demo as DemoAccount;
+
+  // Guardrail: never wipe anything unless the target org is a verified demo org.
+  const guard = await verifyDemoOrg(admin, demoAccount.organization_id);
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
 
   // 2. Delete all project data (cascade handles most of it)
   if (demoAccount.project_id) {
@@ -123,6 +160,12 @@ export async function deleteDemo(slug: string): Promise<{ success: boolean; erro
   if (!demo) return { success: false, error: `Demo "${slug}" not found` };
 
   const demoAccount = demo as DemoAccount;
+
+  // Guardrail: never wipe anything unless the target org is a verified demo org.
+  const guard = await verifyDemoOrg(admin, demoAccount.organization_id);
+  if (!guard.ok) {
+    return { success: false, error: guard.error };
+  }
 
   // Delete team logins
   await admin.from('demo_team_logins').delete().eq('demo_account_id', demoAccount.id);

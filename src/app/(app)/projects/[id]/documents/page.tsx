@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import QueryError from '@/components/shared/QueryError';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectDocuments } from '@/hooks/useData';
@@ -64,7 +65,7 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | 'all'>(initialStatus);
   const [search, setSearch] = useState('');
 
-  const { data: documents, loading } = useProjectDocuments(projectId);
+  const { data: documents, loading, error, refetch } = useProjectDocuments(projectId);
 
   const counts = useMemo(() => ({
     draft: documents.filter((d) => d.status === 'draft').length,
@@ -96,6 +97,15 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Documents' }]} />
+        <QueryError message="Couldn't load documents" onRetry={refetch} />
       </div>
     );
   }

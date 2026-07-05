@@ -14,6 +14,7 @@ import PriorityBadge from '@/components/shared/PriorityBadge';
 import { getProfiles, getCurrentUserId, getProfileWithOrg } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import ExportPDFButton from '@/components/shared/ExportPDFButton';
+import QueryError from '@/components/shared/QueryError';
 import { usePunchListItems } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
@@ -70,7 +71,7 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
   const [statusFilter, setStatusFilter] = useState<PunchListStatus | 'all'>(initialStatus);
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>(initialPriority);
 
-  const { data: items, loading } = usePunchListItems(projectId);
+  const { data: items, loading, error, refetch } = usePunchListItems(projectId);
   const counts = useMemo(() => ({
     open: items.filter((i) => i.status === 'open').length,
     in_progress: items.filter((i) => i.status === 'in_progress').length,
@@ -92,6 +93,15 @@ export default function PunchListPage({ params, searchParams }: { params: Promis
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Punch List' }]} />
+        <QueryError message="Couldn't load punch list items" onRetry={refetch} />
       </div>
     );
   }

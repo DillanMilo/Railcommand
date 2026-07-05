@@ -40,10 +40,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Get all active projects
-    const { data: projects } = await supabase
+    const { data: projects, error: projectsError } = await supabase
       .from('projects')
       .select('id, name')
       .eq('status', 'active');
+    if (projectsError) {
+      console.error('[cron/daily-log-reminders] Projects query failed:', projectsError);
+      return NextResponse.json({ error: 'Projects query failed' }, { status: 500 });
+    }
 
     if (!projects?.length) {
       return NextResponse.json({ success: true, emailsSent: 0 });
@@ -93,12 +97,16 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = Array.from(new Set(reminders.map((entry) => entry.userId)));
-    const { data: profiles } = userIds.length
+    const { data: profiles, error: profilesError } = userIds.length
       ? await supabase
           .from('profiles')
           .select('id, email, full_name')
           .in('id', userIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (profilesError) {
+      console.error('[cron/daily-log-reminders] Profiles query failed:', profilesError);
+      return NextResponse.json({ error: 'Profiles query failed' }, { status: 500 });
+    }
 
     const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
     let suppressedRecipients = 0;

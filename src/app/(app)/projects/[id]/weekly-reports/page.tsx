@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import QueryError from '@/components/shared/QueryError';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useWeeklyReports } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -43,7 +44,7 @@ export default function WeeklyReportsListPage({ params, searchParams }: { params
   const [statusFilter, setStatusFilter] = useState<WeeklyReportStatus | 'all'>('all');
   const [search, setSearch] = useState('');
 
-  const { data: reports, loading } = useWeeklyReports(projectId);
+  const { data: reports, loading, error, refetch } = useWeeklyReports(projectId);
 
   const filtered = useMemo(() => {
     return reports.filter((r) => {
@@ -63,6 +64,15 @@ export default function WeeklyReportsListPage({ params, searchParams }: { params
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Reports' }]} />
+        <QueryError message="Couldn't load weekly reports" onRetry={refetch} />
       </div>
     );
   }

@@ -54,3 +54,17 @@ export function parseDateSafe(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date();
   return parseISO(dateStr);
 }
+
+/**
+ * An RFI is overdue when it still needs an answer and its due date has
+ * passed. Computed from due_date at read time — nothing in the system
+ * ever writes status='overdue', so status alone must not be trusted.
+ */
+export function isRfiOverdue(rfi: { status: string; due_date: string | null }): boolean {
+  if (rfi.status === 'answered' || rfi.status === 'closed') return false;
+  if (rfi.status === 'overdue') return true;
+  if (!rfi.due_date) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return parseDateSafe(rfi.due_date).getTime() < today.getTime();
+}

@@ -34,21 +34,29 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const today = new Date().toISOString().split('T')[0];
 
-    // Find overdue RFIs (open/in_progress with due_date < today)
-    const { data: overdueRfis } = await supabase
+    // Find overdue RFIs (open/overdue with due_date < today)
+    const { data: overdueRfis, error: rfiError } = await supabase
       .from('rfis')
-      .select('id, rfi_number, subject, due_date, assigned_to, project_id, projects(name)')
-      .in('status', ['open', 'in_progress'])
+      .select('id, number, subject, due_date, assigned_to, project_id, projects(name)')
+      .in('status', ['open', 'overdue'])
       .lt('due_date', today)
       .not('assigned_to', 'is', null);
+    if (rfiError) {
+      console.error('[cron/overdue-reminders] RFI query failed:', rfiError);
+      return NextResponse.json({ error: 'RFI query failed' }, { status: 500 });
+    }
 
-    // Find overdue submittals (pending/under_review with due_date < today)
-    const { data: overdueSubmittals } = await supabase
+    // Find overdue submittals (submitted/under_review with due_date < today)
+    const { data: overdueSubmittals, error: submittalError } = await supabase
       .from('submittals')
-      .select('id, submittal_number, title, due_date, submitted_by, project_id, projects(name)')
-      .in('status', ['pending', 'under_review'])
+      .select('id, number, title, due_date, submitted_by, project_id, projects(name)')
+      .in('status', ['submitted', 'under_review'])
       .lt('due_date', today)
       .not('submitted_by', 'is', null);
+    if (submittalError) {
+      console.error('[cron/overdue-reminders] Submittal query failed:', submittalError);
+      return NextResponse.json({ error: 'Submittal query failed' }, { status: 500 });
+    }
 
     // Group overdue items by user+project
     const userProjectMap = new Map<string, {
@@ -83,7 +91,7 @@ export async function GET(request: NextRequest) {
       }
       userProjectMap.get(key)!.items.push({
         kind: 'rfi',
-        number: rfi.rfi_number,
+        number: rfi.number,
         title: rfi.subject,
         dueDate: rfi.due_date,
         daysOverdue,
@@ -107,7 +115,7 @@ export async function GET(request: NextRequest) {
       }
       userProjectMap.get(key)!.items.push({
         kind: 'submittal',
-        number: sub.submittal_number,
+        number: sub.number,
         title: sub.title,
         dueDate: sub.due_date,
         daysOverdue,
@@ -117,12 +125,16 @@ export async function GET(request: NextRequest) {
 
     const entries = Array.from(userProjectMap.values());
     const userIds = Array.from(new Set(entries.map((entry) => entry.userId)));
-    const { data: profiles } = userIds.length
+    const { data: profiles, error: profileError } = userIds.length
       ? await supabase
           .from('profiles')
           .select('id, email, full_name')
           .in('id', userIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (profileError) {
+      console.error('[cron/overdue-reminders] Profile query failed:', profileError);
+      return NextResponse.json({ error: 'Profile query failed' }, { status: 500 });
+    }
 
     const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
 

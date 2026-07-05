@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import StatusBadge from '@/components/shared/StatusBadge';
+import QueryError from '@/components/shared/QueryError';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useSafetyIncidents } from '@/hooks/useData';
 import { SEVERITY_COLORS, INCIDENT_TYPE_LABELS, SAFETY_STATUS_COLORS } from '@/lib/constants';
@@ -49,7 +50,7 @@ export default function SafetyListPage({ params, searchParams }: { params: Promi
   const [statusFilter, setStatusFilter] = useState<IncidentStatus | 'all'>(initialStatus);
   const [search, setSearch] = useState('');
 
-  const { data: incidents, loading } = useSafetyIncidents(projectId);
+  const { data: incidents, loading, error, refetch } = useSafetyIncidents(projectId);
 
   const counts = useMemo(() => ({
     open: incidents.filter((i) => i.status === 'open').length,
@@ -72,6 +73,15 @@ export default function SafetyListPage({ params, searchParams }: { params: Promi
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Safety' }]} />
+        <QueryError message="Couldn't load safety incidents" onRetry={refetch} />
       </div>
     );
   }
