@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { recordEmailEvent } from '@/lib/email-events';
 import { ACTIONS } from '@/lib/permissions';
 import { canAssignProjectRole, isProjectRole, projectRoleCanEdit } from '@/lib/project-roles';
 import { TIER_LIMITS } from '@/lib/types';
@@ -239,16 +240,24 @@ async function sendInvitationEmail(input: {
 }): Promise<string | null> {
   const resend = getResendClient();
   if (!resend) {
+    await recordEmailEvent({
+      type: 'project_invitation',
+      recipientEmail: input.email,
+      status: 'skipped',
+      errorMessage: 'RESEND_API_KEY is not configured',
+      metadata: { projectRole: input.projectRole },
+    });
     return 'RESEND_API_KEY is not configured';
   }
 
   const inviteUrl = `${getSiteUrl()}/invite/${encodeURIComponent(input.token)}`;
   const safeProjectName = input.projectName.replace(/[\r\n]+/g, ' ');
+  const subject = `You're invited to ${safeProjectName} on RailCommand`;
   try {
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: input.email,
-      subject: `You're invited to ${safeProjectName} on RailCommand`,
+      subject,
       html: buildInvitationEmailHtml({
         inviteUrl,
         projectName: input.projectName,
@@ -264,9 +273,39 @@ async function sendInvitationEmail(input: {
       tags: [{ name: 'type', value: 'project_invitation' }],
     });
 
-    return error?.message ?? null;
+    if (error) {
+      await recordEmailEvent({
+        type: 'project_invitation',
+        recipientEmail: input.email,
+        subject,
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: { projectRole: input.projectRole },
+      });
+      return error.message;
+    }
+
+    await recordEmailEvent({
+      type: 'project_invitation',
+      recipientEmail: input.email,
+      subject,
+      providerMessageId: data?.id,
+      status: 'sent',
+      metadata: { projectRole: input.projectRole },
+    });
+
+    return null;
   } catch (err) {
-    return err instanceof Error ? err.message : 'Unknown email provider error';
+    const message = err instanceof Error ? err.message : 'Unknown email provider error';
+    await recordEmailEvent({
+      type: 'project_invitation',
+      recipientEmail: input.email,
+      subject,
+      status: 'failed',
+      errorMessage: message,
+      metadata: { projectRole: input.projectRole },
+    });
+    return message;
   }
 }
 

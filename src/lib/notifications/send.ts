@@ -9,6 +9,7 @@ import { shouldSuppressNotificationEmail } from './filters';
 import type { NotificationPayload, NotificationType, NotificationPreferences } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 import { createClient } from '@/lib/supabase/server';
+import { recordEmailEvent } from '@/lib/email-events';
 
 // Lazily initialised so missing env var doesn't crash at import time
 let _resend: Resend | null = null;
@@ -107,18 +108,33 @@ export async function sendNotification(
 
     if (shouldSuppressNotificationEmail(payload.recipientEmail)) {
       console.warn(`[notifications] Suppressed ${payload.type} to non-deliverable address: ${payload.recipientEmail}`);
+      await recordEmailEvent({
+        type: payload.type,
+        recipientEmail: payload.recipientEmail,
+        status: 'suppressed',
+        metadata: { recipientUserId },
+      });
       return;
     }
 
     // 2. Get Resend client
     const resend = getResendClient();
-    if (!resend) return;
+    if (!resend) {
+      await recordEmailEvent({
+        type: payload.type,
+        recipientEmail: payload.recipientEmail,
+        status: 'skipped',
+        errorMessage: 'RESEND_API_KEY is not configured',
+        metadata: { recipientUserId },
+      });
+      return;
+    }
 
     // 3. Render the email
     const { subject, html } = renderNotificationEmail(payload);
 
     // 4. Send
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: payload.recipientEmail,
       subject,
@@ -127,10 +143,35 @@ export async function sendNotification(
 
     if (error) {
       console.error(`[notifications] Failed to send ${payload.type} to ${payload.recipientEmail}:`, error);
+      await recordEmailEvent({
+        type: payload.type,
+        recipientEmail: payload.recipientEmail,
+        subject,
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: { recipientUserId },
+      });
+      return;
     }
+
+    await recordEmailEvent({
+      type: payload.type,
+      recipientEmail: payload.recipientEmail,
+      subject,
+      providerMessageId: data?.id,
+      status: 'sent',
+      metadata: { recipientUserId },
+    });
   } catch (err) {
     // NEVER let email failures bubble up
     console.error('[notifications] Unexpected error sending notification:', err);
+    await recordEmailEvent({
+      type: payload.type,
+      recipientEmail: payload.recipientEmail,
+      status: 'failed',
+      errorMessage: err instanceof Error ? err.message : 'Unexpected notification email error',
+      metadata: { recipientUserId },
+    });
   }
 }
 

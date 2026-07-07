@@ -16,6 +16,7 @@ const GEO_RESTRICTED_EXACT_PATHS = new Set(['/login']);
 const GEO_RESTRICTED_PREFIXES = [
   '/admin',
   '/auth',
+  '/client',
   '/dashboard',
   '/demo',
   '/invite',
@@ -251,6 +252,13 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  if (pathname === '/admin/clients') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/client';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+
   const pendingCookies: PendingCookie[] = [];
   const ipReputationConfig = getIpReputationConfig({
     IP_REPUTATION_ENABLED: process.env.IP_REPUTATION_ENABLED,
@@ -331,6 +339,8 @@ export async function middleware(request: NextRequest) {
   // Public routes that never require auth
   const isPublicRoute =
     pathname === '/login' ||
+    pathname === '/client' ||
+    pathname === '/admin/clients' ||
     pathname === '/privacy' ||
     pathname === '/terms' ||
     pathname === GEO_RESTRICTED_PAGE ||

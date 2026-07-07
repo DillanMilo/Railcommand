@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { recordEmailEvent } from '@/lib/email-events';
 
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
 
@@ -66,6 +67,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.RESEND_API_KEY) {
+      await recordEmailEvent({
+        type: type ?? 'api_email',
+        recipientEmail: to,
+        subject,
+        status: 'skipped',
+        errorMessage: 'RESEND_API_KEY not configured',
+      });
       return NextResponse.json(
         { error: 'RESEND_API_KEY not configured' },
         { status: 500 },
@@ -83,8 +91,23 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[api/email/send] Resend error:', error);
+      await recordEmailEvent({
+        type: type ?? 'api_email',
+        recipientEmail: to,
+        subject,
+        status: 'failed',
+        errorMessage: error.message,
+      });
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
+
+    await recordEmailEvent({
+      type: type ?? 'api_email',
+      recipientEmail: to,
+      subject,
+      providerMessageId: data?.id,
+      status: 'sent',
+    });
 
     return NextResponse.json({ success: true, id: data?.id });
   } catch (err) {

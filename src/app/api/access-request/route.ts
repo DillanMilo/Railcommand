@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { z } from 'zod';
+import { recordEmailEvent } from '@/lib/email-events';
 
 const FROM_ADDRESS =
   process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
@@ -270,11 +271,12 @@ export async function POST(request: NextRequest) {
 
     const buyerType = BUYER_TYPE_LABELS[accessRequest.buyerType];
     const resend = new Resend(process.env.RESEND_API_KEY);
+    const subject = `RailCommand pricing request: ${accessRequest.companyName} (${buyerType})`;
     const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: recipients,
       replyTo: accessRequest.email,
-      subject: `RailCommand pricing request: ${accessRequest.companyName} (${buyerType})`,
+      subject,
       html: buildEmailHtml(accessRequest, requestIp),
       text: buildEmailText(accessRequest, requestIp),
       tags: [{ name: 'type', value: 'access_request' }],
@@ -282,11 +284,38 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[api/access-request] Resend error:', error);
+      await recordEmailEvent({
+        type: 'access_request',
+        recipientEmail: recipients.join(', '),
+        recipientCount: recipients.length,
+        subject,
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: {
+          requesterEmail: accessRequest.email,
+          companyName: accessRequest.companyName,
+          buyerType: accessRequest.buyerType,
+        },
+      });
       return NextResponse.json(
         { error: 'Could not send the access request.' },
         { status: 500 },
       );
     }
+
+    await recordEmailEvent({
+      type: 'access_request',
+      recipientEmail: recipients.join(', '),
+      recipientCount: recipients.length,
+      subject,
+      providerMessageId: data?.id,
+      status: 'sent',
+      metadata: {
+        requesterEmail: accessRequest.email,
+        companyName: accessRequest.companyName,
+        buyerType: accessRequest.buyerType,
+      },
+    });
 
     return NextResponse.json({ success: true, id: data?.id });
   } catch (err) {
