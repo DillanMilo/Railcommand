@@ -151,7 +151,7 @@ export const PATCH_NOTES: PatchNote[] = [
     id: 'v1.1.0',
     version: '1.1.0',
     title: 'Email Notifications',
-    description: '8 notification types via Resend: assignments, status changes, overdue digests, daily log reminders, and team updates.',
+    description: 'Email notifications via Resend: assignments, status changes, overdue digests, and team updates.',
     date: '2026-04-06',
   },
 ];

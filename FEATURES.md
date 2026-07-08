@@ -647,10 +647,9 @@ These capabilities span the entire application and are available across all modu
 
 - **In-App Notification Panel** -- Bell icon opens a slide-over panel organized into two collapsible categories: **Updates** (product patch notes with version badges) and **Activity** (project submittals, RFIs, daily logs, punch items, milestones). Each category has its own unread count badge, collapses/expands on tap, and auto-opens when it has unread items. Individual notifications support mark-as-read and dismiss actions. Global "Mark all as read" in the header. Read and dismiss state persisted via localStorage. Fully responsive on mobile with 44px touch targets. *(complete)*
 - **Role-Filtered Activity** -- Activity feed shows items relevant to the user's role and assignments *(complete)*
-- **Per-Module Toggles** -- Users can enable or disable notifications for each module independently (8 categories) *(complete)*
-- **Email Notifications** -- Automated email alerts via Resend for 8 notification types: submittal status changes, RFI assignments, RFI responses, punch list assignments, punch list status changes, overdue reminders (daily digest), daily log filing reminders, and team updates (member added/removed). Sent from `noreply@railcommand.io` *(complete)*
+- **Per-Module Toggles** -- Users can enable or disable notifications for each module independently (7 categories) *(complete)*
+- **Email Notifications** -- Automated email alerts via Resend for 7 notification types: submittal status changes, RFI assignments, RFI responses, punch list assignments, punch list status changes, overdue reminders (daily digest), and team updates (member added/removed). Sent from `noreply@railcommand.io` *(complete)*
 - **Overdue Digest Emails** -- Cron-driven daily digest of overdue RFIs and submittals, grouped per user per project *(complete)*
-- **Daily Log Reminders** -- Cron-driven afternoon reminder for project members who haven't filed a daily log *(complete)*
 - **Supabase Auth SMTP** -- Custom SMTP via Resend replaces Supabase's built-in 3/hour throttle for all auth emails (sign-up, password reset, magic link, email change) *(configured)*
 - **Push Notifications** -- Real-time browser push notifications *(coming soon)*
 
@@ -819,7 +818,7 @@ RailCommand has reached **Beta readiness** as of March 2026. All eight core modu
 | **PWA Manifest & App Icons** | Complete | Web app manifest, service worker, installable to home screen |
 | **Cross-Module Global Search** | Complete | Cmd+K command palette searches across all modules |
 | **File & Document Storage** | Complete | Supabase Storage integration with drag & drop FileUpload component |
-| **Email Notifications** | Complete | Resend integration with 8 notification types (assignments, status changes, overdue digests, daily log reminders, team updates), Vercel Cron for scheduled emails, custom SMTP for Supabase Auth, user preferences wired to Supabase |
+| **Email Notifications** | Complete | Resend integration with 7 notification types (assignments, status changes, overdue digests, team updates), Vercel Cron for scheduled overdue emails, custom SMTP for Supabase Auth, user preferences wired to Supabase |
 | **AI Assistant (RailBot)** | In Progress | GPT-4.1-mini with SSE streaming, 13 function tools, triple-layer RBAC, demo mode support; frontend, voice dictation & persistence complete |
 
 ### What's Coming Next
@@ -836,7 +835,7 @@ The following features are actively planned for upcoming releases, ordered by pr
 | 6 | **Custom Reporting & Export** | PDF export is now available for all modules (Submittals, RFIs, Daily Logs, Punch List, Schedule). CSV export and custom date range/status/role filtering coming next. | Phase 1 Complete |
 | 7 | **Multi-Project Portfolio View** | A portfolio dashboard for leadership to monitor all active projects, compare KPIs, and allocate resources across projects. | Post-Beta |
 | 8 | **Offline Mode** | Full offline capability for field use -- create daily logs, punch items, and RFIs without connectivity, with automatic sync when back online. | Post-Beta |
-| 9 | ~~**Email Digests**~~ | ~~Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones.~~ Overdue digest and daily log reminders now live via Vercel Cron. Weekly project summary digest remaining. | **Partially Complete** |
+| 9 | ~~**Email Digests**~~ | ~~Configurable daily or weekly email summaries of project activity, overdue items, and upcoming milestones.~~ Overdue digest now lives via Vercel Cron. Weekly project summary digest remaining. | **Partially Complete** |
 | 10 | **Dashboard Interactivity** | Clickable KPI boxes, drillable activity feed, CPI/SPI metrics | Clickable KPI boxes Complete (Apr 8); drillable activity feed and CPI/SPI metrics still pending |
 | 11 | **Project Documents Module** | New module with revision tracking, PDF requirements, CAD folder structure | Sprint Week 1 (Apr 13-17) |
 | 12 | **Safety Module** | Dedicated safety tracking with incident reporting | Sprint Week 2 (Apr 20-24) |

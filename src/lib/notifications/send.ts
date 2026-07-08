@@ -7,7 +7,7 @@ import { Resend } from 'resend';
 import { renderNotificationEmail } from './templates';
 import { shouldSuppressNotificationEmail } from './filters';
 import type { NotificationPayload, NotificationType, NotificationPreferences } from './types';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
+import { normalizeNotificationPreferences } from './types';
 import { createClient } from '@/lib/supabase/server';
 import { recordEmailEvent } from '@/lib/email-events';
 
@@ -40,15 +40,14 @@ async function getUserNotificationPreferences(userId: string): Promise<Notificat
       .single();
 
     if (data?.notification_preferences) {
-      return {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...(data.notification_preferences as Partial<NotificationPreferences>),
-      };
+      return normalizeNotificationPreferences(
+        data.notification_preferences as Partial<NotificationPreferences>
+      );
     }
   } catch {
     // Fall through to defaults
   }
-  return { ...DEFAULT_NOTIFICATION_PREFERENCES };
+  return normalizeNotificationPreferences();
 }
 
 function isNotificationEnabled(

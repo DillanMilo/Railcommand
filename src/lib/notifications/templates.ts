@@ -8,7 +8,6 @@ import type {
   PunchListAssignedPayload,
   PunchListStatusChangedPayload,
   OverdueReminderPayload,
-  DailyLogReminderPayload,
   TeamUpdatePayload,
 } from './types';
 
@@ -344,32 +343,6 @@ function overdueReminder(payload: OverdueReminderPayload): { subject: string; ht
 }
 
 // ---------------------------------------------------------------------------
-// Template: Daily Log Reminder
-// ---------------------------------------------------------------------------
-function dailyLogReminder(payload: DailyLogReminderPayload): { subject: string; html: string } {
-  const subject = `Daily log reminder - ${payload.projectName}`;
-  const html = emailLayout(`
-    <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">Daily Log Reminder</h2>
-    <p style="margin:0 0 24px;color:#64748b;font-size:14px;">
-      Don't forget to file your daily log for <strong>${payload.projectName}</strong> today (${payload.date}).
-    </p>
-
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fef9c3;border-radius:6px;padding:16px;margin-bottom:24px;">
-      <tr>
-        <td style="padding:8px 16px;">
-          <p style="margin:0;color:#854d0e;font-size:14px;">
-            Keeping daily logs up to date helps your team stay aligned and creates an audit trail for the project.
-          </p>
-        </td>
-      </tr>
-    </table>
-
-    ${ctaButton(`${APP_URL}/projects/${payload.projectId}/daily-logs`, 'File Daily Log')}
-  `);
-  return { subject, html };
-}
-
-// ---------------------------------------------------------------------------
 // Template: Team Update
 // ---------------------------------------------------------------------------
 function teamUpdate(payload: TeamUpdatePayload): { subject: string; html: string } {
@@ -421,8 +394,6 @@ export function renderNotificationEmail(payload: NotificationPayload): { subject
       return punchListStatusChanged(payload);
     case 'overdue_reminder':
       return overdueReminder(payload);
-    case 'daily_log_reminder':
-      return dailyLogReminder(payload);
     case 'team_update':
       return teamUpdate(payload);
     default:

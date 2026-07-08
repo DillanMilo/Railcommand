@@ -14,6 +14,7 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 100; // max emails per window
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DMARC_PATTERN = /\bdmarc\b/i;
 
 function checkRateLimit(key: string): boolean {
   const now = Date.now();
@@ -25,6 +26,12 @@ function checkRateLimit(key: string): boolean {
   if (entry.count >= RATE_LIMIT) return false;
   entry.count++;
   return true;
+}
+
+function isDmarcEmail(input: { subject: string; html: string; type?: string }): boolean {
+  return [input.type, input.subject, input.html].some(
+    (value) => typeof value === 'string' && DMARC_PATTERN.test(value)
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -56,6 +63,17 @@ export async function POST(request: NextRequest) {
 
     if (!EMAIL_REGEX.test(to)) {
       return NextResponse.json({ error: 'Invalid recipient email' }, { status: 400 });
+    }
+
+    if (isDmarcEmail({ subject, html, type })) {
+      await recordEmailEvent({
+        type: type ?? 'api_email',
+        recipientEmail: to,
+        subject,
+        status: 'suppressed',
+        errorMessage: 'DMARC-related emails are not sent to users',
+      });
+      return NextResponse.json({ success: true, suppressed: true });
     }
 
     // Rate limit by recipient

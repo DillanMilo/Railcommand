@@ -7,7 +7,6 @@ export type NotificationType =
   | 'punch_list_assigned'
   | 'punch_list_status_changed'
   | 'overdue_reminder'
-  | 'daily_log_reminder'
   | 'team_update';
 
 export interface NotificationPreferences {
@@ -17,7 +16,6 @@ export interface NotificationPreferences {
   punch_list_assigned: boolean;
   punch_list_status_changed: boolean;
   overdue_reminder: boolean;
-  daily_log_reminder: boolean;
   team_update: boolean;
 }
 
@@ -28,9 +26,28 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   punch_list_assigned: true,
   punch_list_status_changed: true,
   overdue_reminder: true,
-  daily_log_reminder: true,
   team_update: true,
 };
+
+export const NOTIFICATION_PREFERENCE_KEYS = [
+  'submittal_status_changed',
+  'rfi_assigned',
+  'rfi_response_received',
+  'punch_list_assigned',
+  'punch_list_status_changed',
+  'overdue_reminder',
+  'team_update',
+] as const satisfies readonly (keyof NotificationPreferences)[];
+
+export function normalizeNotificationPreferences(
+  preferences?: Partial<NotificationPreferences> | null
+): NotificationPreferences {
+  const normalized: NotificationPreferences = { ...DEFAULT_NOTIFICATION_PREFERENCES };
+  for (const key of NOTIFICATION_PREFERENCE_KEYS) {
+    normalized[key] = preferences?.[key] ?? DEFAULT_NOTIFICATION_PREFERENCES[key];
+  }
+  return normalized;
+}
 
 // Payload types for each notification
 export interface SubmittalStatusChangedPayload {
@@ -122,15 +139,6 @@ export interface OverdueReminderPayload {
   projectId: string;
 }
 
-export interface DailyLogReminderPayload {
-  type: 'daily_log_reminder';
-  recipientEmail: string;
-  recipientName: string;
-  date: string;
-  projectName: string;
-  projectId: string;
-}
-
 export interface TeamUpdatePayload {
   type: 'team_update';
   recipientEmail: string;
@@ -150,5 +158,4 @@ export type NotificationPayload =
   | PunchListAssignedPayload
   | PunchListStatusChangedPayload
   | OverdueReminderPayload
-  | DailyLogReminderPayload
   | TeamUpdatePayload;

@@ -14,7 +14,10 @@ export type {
   PunchListAssignedPayload,
   PunchListStatusChangedPayload,
   OverdueReminderPayload,
-  DailyLogReminderPayload,
   TeamUpdatePayload,
 } from './types';
-export { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
+export {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  NOTIFICATION_PREFERENCE_KEYS,
+  normalizeNotificationPreferences,
+} from './types';

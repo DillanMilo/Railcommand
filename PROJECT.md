@@ -95,7 +95,7 @@
 - [x] PWA Manifest & App Icons (manifest.json, service worker, installable app)
 - [x] Cross-Module Global Search (Cmd+K command palette, searches all modules)
 - [x] File & Document Storage (Supabase Storage integration, drag & drop FileUpload component)
-- [x] Email Notifications (Resend integration, 8 notification types, Vercel Cron for overdue digests + daily log reminders, team update triggers, custom SMTP for Supabase Auth, preferences UI with 8 toggles)
+- [x] Email Notifications (Resend integration, 7 notification types, Vercel Cron for overdue digests, team update triggers, custom SMTP for Supabase Auth, preferences UI with 7 toggles)
 
 ### Phase 11: AI Assistant (RailBot) 🤖
 **Architecture & Design** *(Week 3)*

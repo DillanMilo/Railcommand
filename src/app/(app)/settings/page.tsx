@@ -141,12 +141,6 @@ const notificationSettings: NotificationSetting[] = [
     defaultOn: true,
   },
   {
-    key: 'daily_log_reminder',
-    label: 'Daily log reminders',
-    description: 'Reminder to file your daily log each day',
-    defaultOn: true,
-  },
-  {
     key: 'team_update',
     label: 'Team updates',
     description: 'When members are added or removed from your project',

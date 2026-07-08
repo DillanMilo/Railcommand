@@ -17,7 +17,6 @@ N/A — no `/supabase/functions/` directory exists. No edge functions are deploy
 | `RESEND_FROM_EMAIL` | `src/lib/notifications/send.ts` | Server-only utility (unused) | SAFE |
 | `OPENAI_API_KEY` | `src/app/api/chat/route.ts` | API route | SAFE |
 | `OPENAI_API_KEY` | `src/app/api/chat/transcribe/route.ts` | API route | SAFE |
-| `CRON_SECRET` | `src/app/api/cron/daily-log-reminders/route.ts` | API route | SAFE |
 | `CRON_SECRET` | `src/app/api/cron/overdue-reminders/route.ts` | API route | SAFE |
 | `EMAIL_API_KEY` | `src/app/api/email/send/route.ts` | API route | SAFE |
 | `NOTIFICATIONS_API_KEY` | `src/app/api/email/send/route.ts` | API route | SAFE |

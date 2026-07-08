@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { type ActionResult, getAuthenticatedUser } from './permissions-helper';
 import type { NotificationPreferences } from '@/lib/notifications';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notifications';
+import { normalizeNotificationPreferences } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getNotificationPreferences -- returns the current user's preferences
@@ -23,10 +23,9 @@ export async function getNotificationPreferences(): Promise<ActionResult<Notific
 
     if (error) return { error: error.message };
 
-    const prefs: NotificationPreferences = {
-      ...DEFAULT_NOTIFICATION_PREFERENCES,
-      ...(data?.notification_preferences as Partial<NotificationPreferences> | null ?? {}),
-    };
+    const prefs = normalizeNotificationPreferences(
+      data?.notification_preferences as Partial<NotificationPreferences> | null
+    );
 
     return { success: true, data: prefs };
   } catch (err) {
@@ -52,11 +51,12 @@ export async function updateNotificationPreferences(
       .eq('id', user.id)
       .single();
 
-    const merged: NotificationPreferences = {
-      ...DEFAULT_NOTIFICATION_PREFERENCES,
-      ...(current?.notification_preferences as Partial<NotificationPreferences> | null ?? {}),
+    const merged = normalizeNotificationPreferences({
+      ...normalizeNotificationPreferences(
+        current?.notification_preferences as Partial<NotificationPreferences> | null
+      ),
       ...preferences,
-    };
+    });
 
     const { error } = await supabase
       .from('profiles')
