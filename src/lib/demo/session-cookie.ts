@@ -1,6 +1,8 @@
+import { DEMO_SESSION_MAX_AGE_SECONDS } from './constants';
+
 export const DEMO_SESSION_COOKIE = 'rc-demo-session';
 export const DEMO_SLUG_COOKIE = 'rc-demo-slug';
-export const DEMO_SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+export { DEMO_SESSION_MAX_AGE_SECONDS } from './constants';
 
 export type DemoSession = {
   mode: 'demo';

@@ -33,6 +33,10 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { initDemoData, initFreshData } from '@/lib/store';
+import {
+  DEMO_SESSION_MAX_AGE_SECONDS,
+  PUBLIC_DEMO_ACCESS_DAYS,
+} from '@/lib/demo/constants';
 import { createClient } from '@/lib/supabase/client';
 import { getSupabaseAuthErrorMessage } from '@/lib/supabase/connectivity';
 
@@ -733,7 +737,7 @@ function LoginPageInner() {
       }
       initDemoData();
       localStorage.setItem('rc-mode', 'demo');
-      document.cookie = 'rc-mode=demo; path=/; max-age=604800; SameSite=Lax';
+      document.cookie = `rc-mode=demo; path=/; max-age=${DEMO_SESSION_MAX_AGE_SECONDS}; SameSite=Lax`;
     } catch {
       setAuthError('Demo is temporarily unavailable. Please try again in a moment.');
       setIsLoading(false);
@@ -1071,7 +1075,7 @@ function LoginPageInner() {
                 Explore Demo Project
               </Button>
               <p className="text-[11px] text-muted-foreground text-center mb-4">
-                See a fully populated railroad project — no sign-up required
+                Private browser sandbox — resets on refresh and expires after {PUBLIC_DEMO_ACCESS_DAYS} days
               </p>
 
               {/* Divider */}

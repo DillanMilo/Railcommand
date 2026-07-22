@@ -1,6 +1,6 @@
 # RailCommand Demo Accounts — Instructions
 
-*Last updated: 2026-04-16*
+*Last updated: 2026-07-22*
 
 This document covers everything you need to know about the enterprise demo account system. Update this file as the setup evolves.
 
@@ -10,6 +10,7 @@ This document covers everything you need to know about the enterprise demo accou
 
 | Purpose | Email | How you access |
 |---------|-------|----------------|
+| **Public website demo** | None | Click **Explore Demo Project** on `/login`; private browser-only data, three-day session |
 | **Your admin account** | `dillanxx@gmail.com` | Normal login at `/login`, manage demos at `/admin/demos` |
 | **Demo: Dillan (PM)** | `dillan@creativecurrents.io` | Visit `/demo/team` → click "Dillan Milosevich" |
 | **Demo: Caleb (PM)** | `caleb@lenaserv.com` | Visit `/demo/team` → click "Caleb Douglas" |
@@ -218,6 +219,8 @@ To add a brand new prospect (e.g., CSX, BNSF, CPKC):
 
 ## Security Notes
 
+- The public website demo is separate from every Supabase demo account. It uses in-memory browser data, never reads or writes the invited-client project, and resets on refresh.
+- Public website demo access expires after three days. Starting it again creates a fresh browser-only session with freshly seeded sample data.
 - Demo data is isolated by RLS policies on `project_members`
 - Attachments have `project_id` column with membership-scoped policies
 - Each demo has its own organization and project (no cross-demo leakage)
