@@ -372,12 +372,24 @@ async function main() {
     assert(!allowedSection.includes('budget:view'), 'Foreman allowed section should NOT include budget:view');
   });
 
-  await test('Inspector prompt lists only 3 allowed actions', () => {
+  await test('Inspector prompt lists the intended field quality and camera actions', () => {
     const perms = getAllowedActions('inspector');
-    assert(perms.length === 3, `Inspector should have 3 permissions, got ${perms.length}`);
-    assert(perms.includes('punch_list:create'), 'Inspector should have punch_list:create');
-    assert(perms.includes('punch_list:verify'), 'Inspector should have punch_list:verify');
-    assert(perms.includes('rfi:create'), 'Inspector should have rfi:create');
+    const expectedPermissions = [
+      'punch_list:create',
+      'punch_list:verify',
+      'rfi:create',
+      'qcqa:create',
+      'qcqa:close',
+      'earthcam:view',
+      'earthcam:capture',
+    ] as const;
+    assert(
+      perms.length === expectedPermissions.length,
+      `Inspector should have ${expectedPermissions.length} permissions, got ${perms.length}`
+    );
+    for (const permission of expectedPermissions) {
+      assert(perms.includes(permission), `Inspector should have ${permission}`);
+    }
   });
 
   await test('Owner prompt includes budget:view but not daily_log:create', () => {
