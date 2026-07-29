@@ -1,17 +1,21 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { ComponentType, ReactNode } from 'react';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   Activity,
   Building2,
+  ChevronRight,
   Clock3,
   FlaskConical,
+  FolderKanban,
   Lock,
   LogOut,
   Mail,
   MailCheck,
+  Search,
   ShieldCheck,
   UserPlus,
   Users,
@@ -427,6 +431,18 @@ function isDemoEmail(email: string | null | undefined): boolean {
   );
 }
 
+function isDemoOrganization(organization: OrganizationRow): boolean {
+  return Boolean(organization.is_demo) || /\bdemo\b/i.test(organization.name);
+}
+
+function projectSearchText(values: Array<string | null | undefined>): string {
+  return values
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .replace(/\bglobal ii\b/g, 'global ii global 2 g2');
+}
+
 function roleBadgeClass(role: string | null | undefined): string {
   if (role === 'admin' || role === 'owner' || role === 'manager') {
     return 'border-rc-orange/30 bg-rc-orange/10 text-rc-orange';
@@ -443,6 +459,17 @@ function emailStatusClass(status: EmailEventRow['status']): string {
   return 'border-muted-foreground/20 bg-muted text-muted-foreground';
 }
 
+function projectStatusClass(status: string | null | undefined): string {
+  if (status === 'active') return 'border-rc-emerald/30 bg-rc-emerald/10 text-rc-emerald';
+  if (status === 'completed') return 'border-blue-300/50 bg-blue-50 text-blue-700';
+  if (status === 'on_hold') return 'border-amber-300/50 bg-amber-50 text-amber-800';
+  return 'border-muted-foreground/20 bg-muted text-muted-foreground';
+}
+
+function singleSearchParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
 function StatCard({
   title,
   value,
@@ -455,15 +482,17 @@ function StatCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card className="border-border/80 shadow-sm">
-      <CardContent className="flex min-h-[132px] items-center justify-between gap-4 p-5">
+    <Card className="gap-0 overflow-hidden border-border/80 py-0 shadow-sm">
+      <CardContent className="flex min-h-[116px] items-start justify-between gap-2 p-3.5 sm:min-h-[132px] sm:items-center sm:gap-4 sm:p-5">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-muted-foreground">{title}</p>
-          <p className="mt-2 font-heading text-3xl font-bold text-foreground">{value}</p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p>
+          <p className="text-xs font-semibold leading-4 text-muted-foreground sm:text-sm">{title}</p>
+          <p className="mt-1.5 font-heading text-2xl font-bold text-foreground sm:mt-2 sm:text-3xl">{value}</p>
+          <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground sm:mt-2 sm:text-xs sm:leading-5">
+            {description}
+          </p>
         </div>
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-rc-orange/10 text-rc-orange">
-          <Icon className="size-5" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rc-orange/10 text-rc-orange sm:size-11">
+          <Icon className="size-4 sm:size-5" />
         </div>
       </CardContent>
     </Card>
@@ -570,12 +599,17 @@ function DashboardError({ message }: { message: string }) {
 export default async function ClientDashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{
+    error?: string | string[];
+    project?: string | string[];
+    project_query?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
+  const error = singleSearchParam(params?.error);
 
   if (!(await isUnlocked())) {
-    return <PasswordGate error={params?.error} />;
+    return <PasswordGate error={error} />;
   }
 
   let data: DashboardData;
@@ -596,12 +630,16 @@ export default async function ClientDashboardPage({
   const demoProfileIds = new Set(data.demoLogins.map((login) => login.profile_id).filter(Boolean));
   const demoOrgIds = new Set([
     ...data.demoAccounts.map((demo) => demo.organization_id).filter(Boolean),
-    ...data.organizations.filter((org) => org.is_demo).map((org) => org.id),
+    ...data.organizations.filter(isDemoOrganization).map((org) => org.id),
   ]);
   const demoProjectIds = new Set(data.demoAccounts.map((demo) => demo.project_id).filter(Boolean));
 
   const realOrganizations = data.organizations.filter((org) => !demoOrgIds.has(org.id));
-  const realProjects = data.projects.filter((project) => !demoProjectIds.has(project.id));
+  const realProjects = data.projects.filter(
+    (project) =>
+      !demoProjectIds.has(project.id) &&
+      (!project.organization_id || !demoOrgIds.has(project.organization_id)),
+  );
   const realProfiles = data.profiles.filter(
     (profile) => !demoProfileIds.has(profile.id) && !isDemoEmail(profile.email),
   );
@@ -614,8 +652,56 @@ export default async function ClientDashboardPage({
   const recentlyActiveUsers = realAuthUsers.filter((user) => isWithinDays(user.last_sign_in_at, 30));
   const activitiesToday = data.activity.filter((entry) => isWithinDays(entry.created_at, 1));
 
+  const memberCountByProject = new Map<string, number>();
+  for (const member of data.projectMembers) {
+    memberCountByProject.set(
+      member.project_id,
+      (memberCountByProject.get(member.project_id) ?? 0) + 1,
+    );
+  }
+
+  const pendingInviteCountByProject = new Map<string, number>();
+  for (const invitation of pendingInvites) {
+    pendingInviteCountByProject.set(
+      invitation.project_id,
+      (pendingInviteCountByProject.get(invitation.project_id) ?? 0) + 1,
+    );
+  }
+
+  const recentActivityByProject = new Map<string, ActivityRow>();
+  for (const entry of data.activity) {
+    if (!recentActivityByProject.has(entry.project_id)) {
+      recentActivityByProject.set(entry.project_id, entry);
+    }
+  }
+
+  const projectQuery = singleSearchParam(params?.project_query).trim();
+  const normalizedProjectQuery = projectQuery.toLowerCase();
+  const projectRows = realProjects
+    .map((project) => ({
+      project,
+      organizationName: project.organization_id
+        ? orgById.get(project.organization_id)?.name ?? 'Unknown organization'
+        : 'Unassigned',
+      memberCount: memberCountByProject.get(project.id) ?? 0,
+      pendingInviteCount: pendingInviteCountByProject.get(project.id) ?? 0,
+      recentActivity: recentActivityByProject.get(project.id),
+    }))
+    .filter((row) => {
+      if (!normalizedProjectQuery) return true;
+      return projectSearchText([
+        row.project.name,
+        row.project.client,
+        row.organizationName,
+        row.project.status,
+      ]).includes(normalizedProjectQuery);
+    });
+
+  const selectedProjectId = singleSearchParam(params?.project);
+  const selectedProject = projectRows.find((row) => row.project.id === selectedProjectId);
+
   const projectsByOrg = new Map<string, ProjectRow[]>();
-  for (const project of data.projects) {
+  for (const project of realProjects) {
     if (!project.organization_id) continue;
     projectsByOrg.set(project.organization_id, [
       ...(projectsByOrg.get(project.organization_id) ?? []),
@@ -680,36 +766,60 @@ export default async function ClientDashboardPage({
   });
 
   return (
-    <main className="min-h-screen bg-rc-bg px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-screen-2xl space-y-6">
-        <header className="flex flex-col gap-4 border-b border-border/80 pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-rc-orange text-sm font-bold text-white">
+    <main className="min-h-screen bg-rc-bg px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:px-10">
+      <div className="mx-auto max-w-[1800px] space-y-4 sm:space-y-6">
+        <header className="flex flex-col gap-4 border-b border-border/80 pb-4 sm:flex-row sm:items-center sm:justify-between sm:pb-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-rc-orange text-sm font-bold text-white sm:size-11">
                 RC
               </div>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-rc-orange">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-rc-orange sm:text-sm">
                   RailCommand
                 </p>
-                <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
+                <h1 className="truncate font-heading text-xl font-bold text-foreground sm:text-3xl">
                   Client Dashboard
                 </h1>
               </div>
             </div>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:text-sm">
               Operational view for signups, email delivery, client accounts, and product activity.
             </p>
           </div>
-          <form action={lockClientDashboard}>
-            <Button variant="outline" type="submit" className="gap-2">
+          <form action={lockClientDashboard} className="w-full sm:w-auto">
+            <Button variant="outline" type="submit" className="w-full gap-2 sm:w-auto">
               <LogOut className="size-4" />
               Lock
             </Button>
           </form>
         </header>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <nav
+          aria-label="Dashboard sections"
+          className="sticky top-0 z-20 -mx-3 border-y border-border/80 bg-rc-bg/95 px-3 py-2 shadow-sm backdrop-blur sm:static sm:mx-0 sm:rounded-xl sm:border sm:px-2 sm:shadow-none"
+        >
+          <div className="grid grid-cols-4 gap-1 sm:flex sm:flex-wrap">
+            {[
+              { href: '/client#overview', label: 'Overview' },
+              { href: '/client#projects', label: 'Projects' },
+              { href: '/client#activity', label: 'Activity' },
+              { href: '/client#accounts', label: 'Accounts' },
+            ].map((item) => (
+              <Button
+                key={item.href}
+                variant="ghost"
+                size="sm"
+                asChild
+                className="h-9 min-w-0 px-1.5 text-xs sm:px-3 sm:text-sm"
+              >
+                <Link href={item.href}>{item.label}</Link>
+              </Button>
+            ))}
+          </div>
+        </nav>
+
+        <section id="overview" className="grid scroll-mt-16 grid-cols-2 gap-3 sm:scroll-mt-6 sm:gap-4 xl:grid-cols-4">
           <StatCard
             title="Emails sent"
             value={data.emailMetrics.available ? data.emailMetrics.totalSent : 'Pending'}
@@ -770,16 +880,221 @@ export default async function ClientDashboardPage({
           </div>
         )}
 
-        <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="border-border/80 shadow-sm">
-            <CardHeader>
+        <section id="projects" className="scroll-mt-16 sm:scroll-mt-6">
+          <Card className="gap-0 border-border/80 py-0 shadow-sm">
+            <CardHeader className="gap-4 px-4 py-4 sm:px-6 sm:py-5 xl:flex xl:flex-row xl:items-end xl:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <FolderKanban className="size-5 text-rc-orange" />
+                  <CardTitle>Projects</CardTitle>
+                </div>
+                <CardDescription className="mt-2">
+                  Search and inspect non-demo project metadata across client organizations.
+                </CardDescription>
+              </div>
+              <form
+                action="/client#projects"
+                method="get"
+                className="grid w-full grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:max-w-xl"
+              >
+                <div className="relative col-span-2 min-w-0 sm:col-span-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    name="project_query"
+                    defaultValue={projectQuery}
+                    placeholder="Search project, client, or organization"
+                    aria-label="Search projects"
+                    className="pl-9"
+                  />
+                </div>
+                <Button type="submit" variant="outline" className={projectQuery ? '' : 'col-span-2 sm:col-span-1'}>
+                  Search
+                </Button>
+                {projectQuery && (
+                  <Button variant="ghost" asChild>
+                    <Link href="/client#projects">Clear</Link>
+                  </Button>
+                )}
+              </form>
+            </CardHeader>
+
+            {selectedProject && (
+              <CardContent className="border-t border-border/80 bg-rc-card/50 px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-heading text-lg font-bold leading-snug text-foreground sm:text-xl">
+                        {selectedProject.project.name}
+                      </h3>
+                      <Badge
+                        variant="outline"
+                        className={projectStatusClass(selectedProject.project.status)}
+                      >
+                        {formatLabel(selectedProject.project.status)}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Read-only operational summary. Project content remains inside the client workspace.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild className="w-full shrink-0 sm:w-auto">
+                    <Link
+                      href={
+                        projectQuery
+                          ? `/client?project_query=${encodeURIComponent(projectQuery)}#projects`
+                          : '/client#projects'
+                      }
+                    >
+                      Close details
+                    </Link>
+                  </Button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+                  {[
+                    { label: 'Organization', value: selectedProject.organizationName },
+                    { label: 'Client', value: selectedProject.project.client || 'Not specified' },
+                    { label: 'Created', value: formatDate(selectedProject.project.created_at) },
+                    { label: 'Assigned users', value: selectedProject.memberCount },
+                    { label: 'Pending invitations', value: selectedProject.pendingInviteCount },
+                    {
+                      label: 'Latest activity',
+                      value: selectedProject.recentActivity
+                        ? formatDateTime(selectedProject.recentActivity.created_at)
+                        : 'No recent event',
+                    },
+                  ].map((field) => (
+                    <div key={field.label} className="rounded-lg border border-border/70 bg-background p-3">
+                      <MobileField label={field.label}>{field.value}</MobileField>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+
+            <CardContent className="border-t border-border/80 p-0">
+              <div className="flex items-center justify-between gap-4 px-4 py-3 text-xs text-muted-foreground sm:text-sm">
+                <span>
+                  {projectRows.length} {projectRows.length === 1 ? 'project' : 'projects'}
+                  {projectQuery ? ` matching “${projectQuery}”` : ''}
+                </span>
+                <span className="hidden lg:inline">Select a project for details</span>
+              </div>
+              <div className="grid gap-3 border-t p-3 sm:p-4 md:grid-cols-2 lg:hidden">
+                {projectRows.map((row) => (
+                  <Link
+                    key={row.project.id}
+                    href={`/client?${new URLSearchParams({
+                      ...(projectQuery ? { project_query: projectQuery } : {}),
+                      project: row.project.id,
+                    }).toString()}#projects`}
+                    className={`block rounded-lg border p-3.5 transition-colors hover:border-rc-orange/40 hover:bg-rc-orange/5 sm:p-4 ${
+                      selectedProjectId === row.project.id ? 'border-rc-orange/50 bg-rc-orange/5' : 'bg-background'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words font-medium text-foreground">{row.project.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{row.organizationName}</p>
+                      </div>
+                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-3">
+                      <MobileField label="Client">{row.project.client || 'Not specified'}</MobileField>
+                      <MobileField label="Status">
+                        <Badge variant="outline" className={projectStatusClass(row.project.status)}>
+                          {formatLabel(row.project.status)}
+                        </Badge>
+                      </MobileField>
+                      <MobileField label="Users">{row.memberCount}</MobileField>
+                      <MobileField label="Created">{formatDate(row.project.created_at)}</MobileField>
+                    </div>
+                  </Link>
+                ))}
+                {projectRows.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    No projects match this search.
+                  </div>
+                )}
+              </div>
+              <div className="hidden overflow-x-auto border-t lg:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-rc-card">
+                      <TableHead>Project</TableHead>
+                      <TableHead>Organization</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Users</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="w-12">
+                        <span className="sr-only">View details</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projectRows.map((row) => {
+                      const projectHref = `/client?${new URLSearchParams({
+                        ...(projectQuery ? { project_query: projectQuery } : {}),
+                        project: row.project.id,
+                      }).toString()}#projects`;
+
+                      return (
+                        <TableRow
+                          key={row.project.id}
+                          className={selectedProjectId === row.project.id ? 'bg-rc-orange/5' : undefined}
+                        >
+                          <TableCell>
+                            <Link
+                              href={projectHref}
+                              className="font-medium text-foreground hover:text-rc-orange hover:underline"
+                            >
+                              {row.project.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{row.organizationName}</TableCell>
+                          <TableCell>{row.project.client || 'Not specified'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={projectStatusClass(row.project.status)}>
+                              {formatLabel(row.project.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{row.memberCount}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDate(row.project.created_at)}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon-sm" asChild>
+                              <Link href={projectHref} aria-label={`View ${row.project.name}`}>
+                                <ChevronRight className="size-4" />
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {projectRows.length === 0 && (
+                      <EmptyRow colSpan={7} message="No projects match this search." />
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section
+          id="activity"
+          className="grid scroll-mt-16 gap-4 sm:scroll-mt-6 sm:gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+        >
+          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
               <CardTitle>Latest Activity</CardTitle>
               <CardDescription>Most recent project events across RailCommand.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="space-y-3 p-4 md:hidden">
+              <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
                 {activityRows.map((entry) => (
-                  <div key={entry.id} className="rounded-lg border bg-background p-4">
+                  <div key={entry.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="break-words font-medium">{entry.description || formatLabel(entry.action)}</p>
@@ -801,7 +1116,7 @@ export default async function ClientDashboardPage({
                   </div>
                 )}
               </div>
-              <div className="hidden overflow-x-auto md:block">
+              <div className="hidden overflow-x-auto lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-rc-card">
@@ -839,13 +1154,47 @@ export default async function ClientDashboardPage({
             </CardContent>
           </Card>
 
-          <Card className="border-border/80 shadow-sm">
-            <CardHeader>
+          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
               <CardTitle>Email Activity</CardTitle>
               <CardDescription>Recent application email attempts logged by RailCommand.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
+                {data.emailMetrics.recent.map((event) => (
+                  <div key={event.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium">{formatLabel(event.type)}</p>
+                        {event.subject && (
+                          <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+                            {event.subject}
+                          </p>
+                        )}
+                      </div>
+                      <Badge variant="outline" className={emailStatusClass(event.status)}>
+                        {formatLabel(event.status)}
+                      </Badge>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-3">
+                      <MobileField label="Recipient">
+                        <span className="break-all">
+                          {event.recipient_email ?? `${event.recipient_count} recipients`}
+                        </span>
+                      </MobileField>
+                      <MobileField label="When">{formatDateTime(event.created_at)}</MobileField>
+                    </div>
+                  </div>
+                ))}
+                {data.emailMetrics.recent.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground md:col-span-2">
+                    {data.emailMetrics.available
+                      ? 'No email events logged yet.'
+                      : 'Email logging is not available yet.'}
+                  </div>
+                )}
+              </div>
+              <div className="hidden overflow-x-auto lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-rc-card">
@@ -890,14 +1239,42 @@ export default async function ClientDashboardPage({
           </Card>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-2">
-          <Card className="border-border/80 shadow-sm">
-            <CardHeader>
+        <section
+          id="accounts"
+          className="grid scroll-mt-16 gap-4 sm:scroll-mt-6 sm:gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+        >
+          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
               <CardTitle>Who Signed Up</CardTitle>
               <CardDescription>Latest non-demo Supabase auth users.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
+                {signupRows.map((row) => (
+                  <div key={row.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words font-medium">{row.name}</p>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">{row.email}</p>
+                      </div>
+                      <Badge variant="outline" className={roleBadgeClass(row.role)}>
+                        {formatLabel(row.role)}
+                      </Badge>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-3">
+                      <MobileField label="Organization">{row.organizationName}</MobileField>
+                      <MobileField label="Signed up">{formatDate(row.createdAt)}</MobileField>
+                      <MobileField label="Last sign-in">{formatDateTime(row.lastSignInAt)}</MobileField>
+                    </div>
+                  </div>
+                ))}
+                {signupRows.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground md:col-span-2">
+                    No signups found.
+                  </div>
+                )}
+              </div>
+              <div className="hidden overflow-x-auto lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-rc-card">
@@ -932,13 +1309,44 @@ export default async function ClientDashboardPage({
             </CardContent>
           </Card>
 
-          <Card className="border-border/80 shadow-sm">
-            <CardHeader>
+          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
               <CardTitle>Clients</CardTitle>
               <CardDescription>Organizations, user counts, project counts, and latest sign-in.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
+                {clientRows.map((row) => (
+                  <div key={row.org.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words font-medium">{row.org.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{formatLabel(row.org.type)}</p>
+                      </div>
+                      <Badge variant="secondary" className="capitalize">
+                        {row.org.tier ?? 'free'}
+                      </Badge>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-3">
+                      <MobileField label="Projects">{row.projectCount}</MobileField>
+                      <MobileField label="Users">
+                        {row.userCount}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({row.adminCount} admins)
+                        </span>
+                      </MobileField>
+                      <MobileField label="Value">{formatMoney(row.budgetTotal)}</MobileField>
+                      <MobileField label="Last sign-in">{formatDateTime(row.latestSignIn)}</MobileField>
+                    </div>
+                  </div>
+                ))}
+                {clientRows.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground md:col-span-2">
+                    No client organizations found.
+                  </div>
+                )}
+              </div>
+              <div className="hidden overflow-x-auto lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-rc-card">
