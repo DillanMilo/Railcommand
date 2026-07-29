@@ -6,12 +6,13 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   Activity,
+  ArrowRight,
   Building2,
   ChevronRight,
   Clock3,
   FlaskConical,
   FolderKanban,
-  Lock,
+  LockKeyhole,
   LogOut,
   Mail,
   MailCheck,
@@ -20,9 +21,10 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
+import styles from './client.module.css';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -445,25 +447,25 @@ function projectSearchText(values: Array<string | null | undefined>): string {
 
 function roleBadgeClass(role: string | null | undefined): string {
   if (role === 'admin' || role === 'owner' || role === 'manager') {
-    return 'border-rc-orange/30 bg-rc-orange/10 text-rc-orange';
+    return 'rounded-none border-rc-orange/30 bg-orange-50 text-orange-700';
   }
   if (role === 'superintendent' || role === 'foreman' || role === 'engineer') {
-    return 'border-rc-emerald/30 bg-rc-emerald/10 text-rc-emerald';
+    return 'rounded-none border-emerald-300 bg-emerald-50 text-emerald-700';
   }
-  return 'border-muted-foreground/20 bg-muted text-muted-foreground';
+  return 'rounded-none border-[#d5d8d0] bg-[#efefe9] text-[#63695f]';
 }
 
 function emailStatusClass(status: EmailEventRow['status']): string {
-  if (status === 'sent') return 'border-rc-emerald/30 bg-rc-emerald/10 text-rc-emerald';
-  if (status === 'failed') return 'border-destructive/30 bg-destructive/10 text-destructive';
-  return 'border-muted-foreground/20 bg-muted text-muted-foreground';
+  if (status === 'sent') return 'rounded-none border-emerald-300 bg-emerald-50 text-emerald-700';
+  if (status === 'failed') return 'rounded-none border-red-300 bg-red-50 text-red-700';
+  return 'rounded-none border-[#d5d8d0] bg-[#efefe9] text-[#63695f]';
 }
 
 function projectStatusClass(status: string | null | undefined): string {
-  if (status === 'active') return 'border-rc-emerald/30 bg-rc-emerald/10 text-rc-emerald';
-  if (status === 'completed') return 'border-blue-300/50 bg-blue-50 text-blue-700';
-  if (status === 'on_hold') return 'border-amber-300/50 bg-amber-50 text-amber-800';
-  return 'border-muted-foreground/20 bg-muted text-muted-foreground';
+  if (status === 'active') return 'rounded-none border-emerald-300 bg-emerald-50 text-emerald-700';
+  if (status === 'completed') return 'rounded-none border-blue-300 bg-blue-50 text-blue-700';
+  if (status === 'on_hold') return 'rounded-none border-amber-300 bg-amber-50 text-amber-800';
+  return 'rounded-none border-[#d5d8d0] bg-[#efefe9] text-[#63695f]';
 }
 
 function singleSearchParam(value: string | string[] | undefined): string {
@@ -482,28 +484,22 @@ function StatCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card className="gap-0 overflow-hidden border-border/80 py-0 shadow-sm">
-      <CardContent className="flex min-h-[116px] items-start justify-between gap-2 p-3.5 sm:min-h-[132px] sm:items-center sm:gap-4 sm:p-5">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold leading-4 text-muted-foreground sm:text-sm">{title}</p>
-          <p className="mt-1.5 font-heading text-2xl font-bold text-foreground sm:mt-2 sm:text-3xl">{value}</p>
-          <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground sm:mt-2 sm:text-xs sm:leading-5">
-            {description}
-          </p>
-        </div>
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rc-orange/10 text-rc-orange sm:size-11">
-          <Icon className="size-4 sm:size-5" />
-        </div>
-      </CardContent>
-    </Card>
+    <article className={styles.metricCard}>
+      <div>
+        <span>{title}</span>
+        <Icon className="size-[18px]" />
+      </div>
+      <strong>{typeof value === 'number' ? String(value).padStart(2, '0') : value}</strong>
+      <p>{description}</p>
+    </article>
   );
 }
 
 function MobileField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-1 break-words text-sm text-foreground">{children}</div>
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#7c8277]">{label}</p>
+      <div className="mt-1 break-words text-sm text-[#10130f]">{children}</div>
     </div>
   );
 }
@@ -522,76 +518,100 @@ function PasswordGate({ error }: { error?: string }) {
   const passwordConfigured = Boolean(getDashboardPassword());
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-rc-bg px-4 py-10">
-      <Card className="w-full max-w-md border-border/80 shadow-xl">
-        <CardHeader>
-          <div className="mb-2 flex size-11 items-center justify-center rounded-lg bg-rc-orange/10 text-rc-orange">
-            <Lock className="size-5" />
+    <main className={styles.loginShell}>
+      <section className={styles.loginStory}>
+        <div className={styles.storyBrand}>
+          <span className={styles.brandMark}>RC</span>
+          RAILCOMMAND
+        </div>
+        <div className={styles.storyCopy}>
+          <p className={styles.eyebrow}>OWNER INTELLIGENCE / PRIVATE</p>
+          <h1>
+            Your entire rail operation,
+            <br />
+            <em>under one command.</em>
+          </h1>
+          <p>
+            Accounts, projects, communications, and field activity—one private command view
+            built for the RailCommand owner.
+          </p>
+        </div>
+        <div className={styles.storySignal}>
+          <span className={styles.liveDot} />
+          LIVE SUPABASE DATA
+          <small>Encrypted server connection</small>
+        </div>
+      </section>
+
+      <section className={styles.loginPanel}>
+        <div className={styles.loginCard}>
+          <div className={styles.loginMark}>
+            <LockKeyhole size={25} strokeWidth={2.4} />
           </div>
-          <CardTitle>Client dashboard locked</CardTitle>
-          <CardDescription>
-            Enter the internal dashboard password to view RailCommand operations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          <p className={styles.eyebrow}>AUTHORIZED ACCESS ONLY</p>
+          <h2>Owner console</h2>
+          <p className={styles.loginIntro}>
+            Enter your private RailCommand password to continue.
+          </p>
           {!passwordConfigured ? (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+            <div className={styles.configError}>
               ADMIN_DASHBOARD_PASSWORD is not configured.
             </div>
           ) : (
-            <form action={unlockClientDashboard} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="client-dashboard-password" className="text-sm font-medium">
-                  Password
-                </label>
-                <Input
+            <form action={unlockClientDashboard}>
+              <label htmlFor="client-dashboard-password" className={styles.passwordLabel}>
+                <span>PRIVATE PASSWORD</span>
+                <div className={styles.passwordField}>
+                  <input
                   id="client-dashboard-password"
                   name="password"
                   type="password"
                   autoComplete="current-password"
-                  placeholder="Enter dashboard password"
+                  autoFocus
                   required
-                />
-              </div>
+                  />
+                  <LockKeyhole size={19} />
+                </div>
+              </label>
               {error === 'invalid' && (
-                <p className="text-sm text-destructive">Incorrect dashboard password.</p>
+                <p className={styles.loginError}>Incorrect dashboard password.</p>
               )}
               {error === 'rate' && (
-                <p className="text-sm text-destructive">Too many attempts. Try again later.</p>
+                <p className={styles.loginError}>Too many attempts. Try again later.</p>
               )}
               {error === 'config' && (
-                <p className="text-sm text-destructive">Dashboard password is not configured.</p>
+                <p className={styles.loginError}>Dashboard password is not configured.</p>
               )}
-              <Button type="submit" className="w-full bg-rc-orange text-white hover:bg-rc-orange-dark">
-                Unlock dashboard
-              </Button>
+              <button type="submit" className={styles.unlockButton}>
+                Unlock console
+                <ArrowRight size={17} />
+              </button>
+              <div className={styles.securityNote}>
+                <ShieldCheck size={15} />
+                Protected by a signed, secure 8-hour session.
+              </div>
             </form>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </main>
   );
 }
 
 function DashboardError({ message }: { message: string }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-rc-bg px-4 py-10">
-      <Card className="w-full max-w-lg border-border/80 shadow-xl">
-        <CardHeader>
-          <div className="mb-2 flex size-11 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-            <ShieldCheck className="size-5" />
-          </div>
-          <CardTitle>Dashboard data unavailable</CardTitle>
-          <CardDescription>{message}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={lockClientDashboard}>
-            <Button variant="outline" type="submit">
-              Lock dashboard
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <main className={styles.consoleError}>
+      <div>
+        <p className={styles.eyebrow}>OWNER CONSOLE / ERROR</p>
+        <h1>Dashboard data unavailable</h1>
+        <p>{message}</p>
+        <form action={lockClientDashboard}>
+          <button type="submit" className={styles.lockButton}>
+            <LogOut size={16} />
+            Lock console
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
@@ -766,60 +786,93 @@ export default async function ClientDashboardPage({
   });
 
   return (
-    <main className="min-h-screen bg-rc-bg px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:px-10">
-      <div className="mx-auto max-w-[1800px] space-y-4 sm:space-y-6">
-        <header className="flex flex-col gap-4 border-b border-border/80 pb-4 sm:flex-row sm:items-center sm:justify-between sm:pb-5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-rc-orange text-sm font-bold text-white sm:size-11">
-                RC
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-rc-orange sm:text-sm">
-                  RailCommand
-                </p>
-                <h1 className="truncate font-heading text-xl font-bold text-foreground sm:text-3xl">
-                  Client Dashboard
-                </h1>
-              </div>
-            </div>
-            <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground sm:text-sm">
-              Operational view for signups, email delivery, client accounts, and product activity.
-            </p>
+    <main className={styles.consoleShell}>
+      <aside className={styles.consoleRail}>
+        <div className={styles.consoleBrand}>
+          <span className={styles.brandMark}>RC</span>
+          <strong>RAIL</strong>
+          <em>COMMAND</em>
+        </div>
+        <div className={styles.railLabel}>OWNER CONSOLE</div>
+        <nav aria-label="Owner console sections">
+          <Link href="/client#overview" className={styles.activeNav}>
+            <ShieldCheck size={17} />
+            Overview
+          </Link>
+          <Link href="/client#projects">
+            <FolderKanban size={17} />
+            Projects
+            <small>{realProjects.length}</small>
+          </Link>
+          <Link href="/client#activity">
+            <Activity size={17} />
+            Activity
+          </Link>
+          <Link href="/client#accounts">
+            <Users size={17} />
+            Accounts
+            <small>{realAuthUsers.length}</small>
+          </Link>
+        </nav>
+        <div className={styles.railSecure}>
+          <ShieldCheck size={17} />
+          <span>
+            <strong>PRIVATE VIEW</strong>
+            <small>Server-protected</small>
+          </span>
+        </div>
+      </aside>
+
+      <div className={styles.consoleMain}>
+        <header className={styles.consoleTopbar}>
+          <div className={styles.mobileConsoleBrand}>
+            <span className={styles.brandMark}>RC</span>
+            RAILCOMMAND
           </div>
-          <form action={lockClientDashboard} className="w-full sm:w-auto">
-            <Button variant="outline" type="submit" className="w-full gap-2 sm:w-auto">
-              <LogOut className="size-4" />
-              Lock
-            </Button>
+          <div className={styles.topbarStatus}>
+            <span className={styles.liveDot} />
+            LIVE DATA
+            <small>Supabase connected</small>
+          </div>
+          <form action={lockClientDashboard}>
+            <button type="submit" className={styles.lockButton}>
+              <LogOut size={16} />
+              Lock console
+            </button>
           </form>
+          <nav className={styles.mobileSectionNav} aria-label="Dashboard sections">
+            <Link href="/client#overview">Overview</Link>
+            <Link href="/client#projects">Projects</Link>
+            <Link href="/client#activity">Activity</Link>
+            <Link href="/client#accounts">Accounts</Link>
+          </nav>
         </header>
 
-        <nav
-          aria-label="Dashboard sections"
-          className="sticky top-0 z-20 -mx-3 border-y border-border/80 bg-rc-bg/95 px-3 py-2 shadow-sm backdrop-blur sm:static sm:mx-0 sm:rounded-xl sm:border sm:px-2 sm:shadow-none"
-        >
-          <div className="grid grid-cols-4 gap-1 sm:flex sm:flex-wrap">
-            {[
-              { href: '/client#overview', label: 'Overview' },
-              { href: '/client#projects', label: 'Projects' },
-              { href: '/client#activity', label: 'Activity' },
-              { href: '/client#accounts', label: 'Accounts' },
-            ].map((item) => (
-              <Button
-                key={item.href}
-                variant="ghost"
-                size="sm"
-                asChild
-                className="h-9 min-w-0 px-1.5 text-xs sm:px-3 sm:text-sm"
-              >
-                <Link href={item.href}>{item.label}</Link>
-              </Button>
-            ))}
-          </div>
-        </nav>
+        <div className={styles.consoleContent}>
+          <section id="overview" className={styles.consoleHero}>
+            <div>
+              <p className={styles.eyebrow}>BUSINESS CONTROL / REAL-TIME</p>
+              <h1>
+                RailCommand
+                <br />
+                <em>owner intelligence.</em>
+              </h1>
+              <p>
+                A focused view of who is joining, what they are building, and how actively
+                RailCommand is being used across every client organization.
+              </p>
+            </div>
+            <div className={styles.healthCard}>
+              <div>
+                <span className={styles.liveDot} />
+                PLATFORM SIGNAL
+              </div>
+              <strong>ONLINE</strong>
+              <p>Supabase connected · operational data current</p>
+            </div>
+          </section>
 
-        <section id="overview" className="grid scroll-mt-16 grid-cols-2 gap-3 sm:scroll-mt-6 sm:gap-4 xl:grid-cols-4">
+          <section className={styles.metricGrid} aria-label="RailCommand owner metrics">
           <StatCard
             title="Emails sent"
             value={data.emailMetrics.available ? data.emailMetrics.totalSent : 'Pending'}
@@ -872,46 +925,41 @@ export default async function ClientDashboardPage({
             description={`${realProjects.filter((project) => project.status === 'active').length} active projects`}
             icon={Clock3}
           />
-        </section>
+          </section>
 
-        {!data.emailMetrics.available && (
-          <div className="rounded-lg border border-amber-300/50 bg-amber-50 p-4 text-sm text-amber-900">
-            Email send logging is not available yet: {data.emailMetrics.reason ?? 'email_events is unavailable'}.
-          </div>
-        )}
+          {!data.emailMetrics.available && (
+            <div className="border border-amber-300/50 bg-amber-50 p-4 text-sm text-amber-900">
+              Email send logging is not available yet: {data.emailMetrics.reason ?? 'email_events is unavailable'}.
+            </div>
+          )}
 
-        <section id="projects" className="scroll-mt-16 sm:scroll-mt-6">
-          <Card className="gap-0 border-border/80 py-0 shadow-sm">
-            <CardHeader className="gap-4 px-4 py-4 sm:px-6 sm:py-5 xl:flex xl:flex-row xl:items-end xl:justify-between">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <FolderKanban className="size-5 text-rc-orange" />
-                  <CardTitle>Projects</CardTitle>
-                </div>
-                <CardDescription className="mt-2">
-                  Search and inspect non-demo project metadata across client organizations.
-                </CardDescription>
+        <section id="projects" className="scroll-mt-32 lg:scroll-mt-20">
+          <Card className={styles.dataPanel}>
+            <CardHeader className={styles.panelHead}>
+              <div className={styles.panelTitleGroup}>
+                <p className={styles.eyebrow}>PORTFOLIO PULSE</p>
+                <h2>Project intelligence</h2>
+                <p>Search and inspect non-demo projects across client organizations.</p>
               </div>
               <form
                 action="/client#projects"
                 method="get"
-                className="grid w-full grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:max-w-xl"
+                className={styles.consoleSearch}
               >
-                <div className="relative col-span-2 min-w-0 sm:col-span-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <div className={styles.searchField}>
+                  <Search size={16} />
                   <Input
                     name="project_query"
                     defaultValue={projectQuery}
                     placeholder="Search project, client, or organization"
                     aria-label="Search projects"
-                    className="pl-9"
                   />
                 </div>
-                <Button type="submit" variant="outline" className={projectQuery ? '' : 'col-span-2 sm:col-span-1'}>
+                <Button type="submit" className={styles.searchButton}>
                   Search
                 </Button>
                 {projectQuery && (
-                  <Button variant="ghost" asChild>
+                  <Button asChild className={styles.clearButton}>
                     <Link href="/client#projects">Clear</Link>
                   </Button>
                 )}
@@ -919,7 +967,7 @@ export default async function ClientDashboardPage({
             </CardHeader>
 
             {selectedProject && (
-              <CardContent className="border-t border-border/80 bg-rc-card/50 px-4 py-4 sm:px-6 sm:py-5">
+              <CardContent className={styles.detailSummary}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -937,7 +985,7 @@ export default async function ClientDashboardPage({
                       Read-only operational summary. Project content remains inside the client workspace.
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" asChild className="w-full shrink-0 sm:w-auto">
+                  <Button asChild className={`${styles.closeButton} w-full shrink-0 sm:w-auto`}>
                     <Link
                       href={
                         projectQuery
@@ -963,7 +1011,7 @@ export default async function ClientDashboardPage({
                         : 'No recent event',
                     },
                   ].map((field) => (
-                    <div key={field.label} className="rounded-lg border border-border/70 bg-background p-3">
+                    <div key={field.label} className={`${styles.detailField} p-3`}>
                       <MobileField label={field.label}>{field.value}</MobileField>
                     </div>
                   ))}
@@ -987,7 +1035,7 @@ export default async function ClientDashboardPage({
                       ...(projectQuery ? { project_query: projectQuery } : {}),
                       project: row.project.id,
                     }).toString()}#projects`}
-                    className={`block rounded-lg border p-3.5 transition-colors hover:border-rc-orange/40 hover:bg-rc-orange/5 sm:p-4 ${
+                    className={`${styles.mobileDataCard} block p-3.5 transition-colors hover:border-rc-orange/40 hover:bg-orange-50 sm:p-4 ${
                       selectedProjectId === row.project.id ? 'border-rc-orange/50 bg-rc-orange/5' : 'bg-background'
                     }`}
                   >
@@ -1084,17 +1132,21 @@ export default async function ClientDashboardPage({
 
         <section
           id="activity"
-          className="grid scroll-mt-16 gap-4 sm:scroll-mt-6 sm:gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+          className="grid scroll-mt-32 gap-4 lg:scroll-mt-20 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
         >
-          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
-            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
-              <CardTitle>Latest Activity</CardTitle>
-              <CardDescription>Most recent project events across RailCommand.</CardDescription>
+          <Card className={styles.dataPanel}>
+            <CardHeader className={styles.panelHead}>
+              <div className={styles.panelTitleGroup}>
+                <p className={styles.eyebrow}>LATEST SIGNALS</p>
+                <h2>Recent activity</h2>
+                <p>Most recent project events across RailCommand.</p>
+              </div>
+              <Activity size={19} />
             </CardHeader>
             <CardContent className="p-0">
               <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
                 {activityRows.map((entry) => (
-                  <div key={entry.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                  <div key={entry.id} className={`${styles.mobileDataCard} p-3.5 sm:p-4`}>
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="break-words font-medium">{entry.description || formatLabel(entry.action)}</p>
@@ -1154,15 +1206,19 @@ export default async function ClientDashboardPage({
             </CardContent>
           </Card>
 
-          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
-            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
-              <CardTitle>Email Activity</CardTitle>
-              <CardDescription>Recent application email attempts logged by RailCommand.</CardDescription>
+          <Card className={styles.dataPanel}>
+            <CardHeader className={styles.panelHead}>
+              <div className={styles.panelTitleGroup}>
+                <p className={styles.eyebrow}>COMMUNICATION SIGNAL</p>
+                <h2>Email activity</h2>
+                <p>Recent application email attempts logged by RailCommand.</p>
+              </div>
+              <MailCheck size={19} />
             </CardHeader>
             <CardContent className="p-0">
               <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
                 {data.emailMetrics.recent.map((event) => (
-                  <div key={event.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                  <div key={event.id} className={`${styles.mobileDataCard} p-3.5 sm:p-4`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium">{formatLabel(event.type)}</p>
@@ -1241,17 +1297,21 @@ export default async function ClientDashboardPage({
 
         <section
           id="accounts"
-          className="grid scroll-mt-16 gap-4 sm:scroll-mt-6 sm:gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+          className="grid scroll-mt-32 gap-4 lg:scroll-mt-20 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
         >
-          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
-            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
-              <CardTitle>Who Signed Up</CardTitle>
-              <CardDescription>Latest non-demo Supabase auth users.</CardDescription>
+          <Card className={styles.dataPanel}>
+            <CardHeader className={styles.panelHead}>
+              <div className={styles.panelTitleGroup}>
+                <p className={styles.eyebrow}>CUSTOMER ADOPTION</p>
+                <h2>Account intelligence</h2>
+                <p>Latest non-demo Supabase auth users.</p>
+              </div>
+              <UserPlus size={19} />
             </CardHeader>
             <CardContent className="p-0">
               <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
                 {signupRows.map((row) => (
-                  <div key={row.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                  <div key={row.id} className={`${styles.mobileDataCard} p-3.5 sm:p-4`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="break-words font-medium">{row.name}</p>
@@ -1309,15 +1369,19 @@ export default async function ClientDashboardPage({
             </CardContent>
           </Card>
 
-          <Card className="min-w-0 gap-0 border-border/80 py-0 shadow-sm">
-            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
-              <CardTitle>Clients</CardTitle>
-              <CardDescription>Organizations, user counts, project counts, and latest sign-in.</CardDescription>
+          <Card className={styles.dataPanel}>
+            <CardHeader className={styles.panelHead}>
+              <div className={styles.panelTitleGroup}>
+                <p className={styles.eyebrow}>ORGANIZATION HEALTH</p>
+                <h2>Client portfolio</h2>
+                <p>Organizations, user counts, project counts, and latest sign-in.</p>
+              </div>
+              <Building2 size={19} />
             </CardHeader>
             <CardContent className="p-0">
               <div className="grid gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
                 {clientRows.map((row) => (
-                  <div key={row.org.id} className="rounded-lg border bg-background p-3.5 sm:p-4">
+                  <div key={row.org.id} className={`${styles.mobileDataCard} p-3.5 sm:p-4`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="break-words font-medium">{row.org.name}</p>
@@ -1386,6 +1450,7 @@ export default async function ClientDashboardPage({
             </CardContent>
           </Card>
         </section>
+        </div>
       </div>
     </main>
   );
