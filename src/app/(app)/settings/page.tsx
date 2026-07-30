@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
@@ -395,11 +394,8 @@ function InstallAppCard() {
 /*  Settings Page                                                     */
 /* ------------------------------------------------------------------ */
 export default function SettingsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { mode, setMode } = useTheme();
   const { isDemo } = useProject();
-  const isRecoveryFlow = searchParams.get('recovery') === '1';
 
   // Notification toggles -- persisted to Supabase (or localStorage for demo)
   const [notifications, setNotifications] = useState<Record<string, boolean>>(
@@ -509,7 +505,7 @@ export default function SettingsPage() {
       setPasswordError('');
       setPasswordSuccess(false);
 
-      if (!isRecoveryFlow && !currentPassword) {
+      if (!currentPassword) {
         setPasswordError('Current password is required.');
         return;
       }
@@ -538,9 +534,7 @@ export default function SettingsPage() {
           password: newPassword,
         };
 
-        if (!isRecoveryFlow) {
-          attributes.current_password = currentPassword;
-        }
+        attributes.current_password = currentPassword;
 
         const { error } = await supabase.auth.updateUser(attributes);
         if (error) {
@@ -553,10 +547,6 @@ export default function SettingsPage() {
         setNewPassword('');
         setConfirmPassword('');
 
-        if (isRecoveryFlow) {
-          router.replace('/settings');
-        }
-
         setTimeout(() => setPasswordSuccess(false), 4000);
       } catch (error) {
         setPasswordError(getSupabaseAuthErrorMessage(error));
@@ -564,7 +554,7 @@ export default function SettingsPage() {
         setIsUpdatingPassword(false);
       }
     },
-    [confirmPassword, currentPassword, isDemo, isRecoveryFlow, newPassword, router]
+    [confirmPassword, currentPassword, isDemo, newPassword]
   );
 
   // Danger zone
@@ -746,52 +736,48 @@ export default function SettingsPage() {
           {/* Change Password */}
           <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
             <h3 className="text-sm font-semibold text-foreground">
-              {isRecoveryFlow ? 'Set New Password' : 'Change Password'}
+              Change Password
             </h3>
             <p className="text-xs text-muted-foreground">
-              {isRecoveryFlow
-                ? 'Enter and confirm your new password to complete account recovery.'
-                : 'Use your current password to choose a new account password.'}
+              Use your current password to choose a new account password.
             </p>
 
             {/* Current password */}
-            {!isRecoveryFlow && (
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="current-password"
-                  className="text-sm font-medium text-foreground"
+            <div className="space-y-1.5">
+              <label
+                htmlFor="current-password"
+                className="text-sm font-medium text-foreground"
+              >
+                Current password
+              </label>
+              <div className="relative">
+                <Input
+                  id="current-password"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  autoComplete="current-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-rc-steel hover:text-foreground transition-colors p-1"
+                  aria-label={
+                    showCurrentPassword
+                      ? 'Hide current password'
+                      : 'Show current password'
+                  }
                 >
-                  Current password
-                </label>
-                <div className="relative">
-                  <Input
-                    id="current-password"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password"
-                    autoComplete="current-password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-rc-steel hover:text-foreground transition-colors p-1"
-                    aria-label={
-                      showCurrentPassword
-                        ? 'Hide current password'
-                        : 'Show current password'
-                    }
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="size-4" />
-                    ) : (
-                      <Eye className="size-4" />
-                    )}
-                  </button>
-                </div>
+                  {showCurrentPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
               </div>
-            )}
+            </div>
 
             {/* New password */}
             <div className="space-y-1.5">

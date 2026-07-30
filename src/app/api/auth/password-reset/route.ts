@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { recordEmailEvent } from '@/lib/email-events';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { PASSWORD_RECOVERY_COOKIE } from '@/lib/auth/password-recovery';
 
 const FROM_ADDRESS =
   process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
@@ -82,6 +83,18 @@ function genericSuccessResponse() {
   });
 }
 
+export async function DELETE() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(PASSWORD_RECOVERY_COOKIE, '', {
+    httpOnly: true,
+    maxAge: 0,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+  return response;
+}
+
 export async function POST(request: NextRequest) {
   let email = '';
 
@@ -117,7 +130,7 @@ export async function POST(request: NextRequest) {
       type: 'recovery',
       email,
       options: {
-        redirectTo: `${appUrl}/settings?recovery=1`,
+        redirectTo: `${appUrl}/reset-password`,
       },
     });
 
@@ -136,7 +149,7 @@ export async function POST(request: NextRequest) {
     const resetUrl = new URL('/auth/callback', appUrl);
     resetUrl.searchParams.set('token_hash', data.properties.hashed_token);
     resetUrl.searchParams.set('type', 'recovery');
-    resetUrl.searchParams.set('next', '/settings?recovery=1');
+    resetUrl.searchParams.set('next', '/reset-password');
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { data: sent, error: sendError } = await resend.emails.send({

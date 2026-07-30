@@ -242,7 +242,7 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/callback';
     url.searchParams.set('type', 'recovery');
-    url.searchParams.set('next', '/settings?recovery=1');
+    url.searchParams.set('next', '/reset-password');
     return NextResponse.redirect(url);
   }
 
@@ -352,6 +352,7 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute =
     pathname === '/' ||
     pathname === '/login' ||
+    pathname === '/reset-password' ||
     pathname === '/client' ||
     pathname === '/admin/clients' ||
     pathname === '/privacy' ||
@@ -402,12 +403,14 @@ export async function middleware(request: NextRequest) {
 
   // Keep callback failures visible even if another account is already signed in.
   // Otherwise a used or invalid reset link silently drops the user on /dashboard.
-  const hasAuthCallbackError = request.nextUrl.searchParams.has('error');
+  const shouldShowAuthScreen =
+    request.nextUrl.searchParams.has('error') ||
+    request.nextUrl.searchParams.get('password_reset') === 'success';
   if (
     user &&
     hasRememberCookie &&
     pathname === '/login' &&
-    !hasAuthCallbackError
+    !shouldShowAuthScreen
   ) {
     const safeNext = getSafeRedirectPath(request.nextUrl.searchParams.get('next'));
     const url = new URL(safeNext ?? '/dashboard', request.nextUrl.origin);

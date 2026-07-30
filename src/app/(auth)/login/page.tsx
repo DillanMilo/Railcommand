@@ -480,6 +480,7 @@ function LoginPageInner() {
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const passwordResetSucceeded = searchParams.get('password_reset') === 'success';
   const [accessRequestSent, setAccessRequestSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const nextParam = searchParams.get('next');
@@ -1039,6 +1040,13 @@ function LoginPageInner() {
                 </div>
               )}
               </div>
+
+              {passwordResetSucceeded && (
+                <div className="mb-4 flex items-start gap-2 border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+                  <Check className="mt-0.5 size-4 shrink-0" />
+                  <span>Your password was updated. Sign in with your new password.</span>
+                </div>
+              )}
 
               {/* Mode toggle */}
               <div className={styles.modeToggle}>
