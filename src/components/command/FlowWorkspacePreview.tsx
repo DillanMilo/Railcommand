@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,23 +66,22 @@ const flowConfig = {
 } as const;
 
 type FlowKey = keyof typeof flowConfig;
-type FlowStat = readonly [label: string, value: string, Icon: LucideIcon];
 
-const invoiceStats: readonly FlowStat[] = [
+const invoiceStats = [
   ['MTD Income', '$24,100', TrendingUp],
   ['Expenses', '$5,700', TrendingDown],
   ['Open Invoices', '12', ReceiptText],
   ['Tax Reserve', '$4,600', PieChart],
 ];
 
-const leadStats: readonly FlowStat[] = [
+const leadStats = [
   ['Total Leads', '42', Users],
   ['Hot Leads', '11', Target],
   ['Follow Ups', '8', Clock],
   ['Avg SEO', '74%', BarChart3],
 ];
 
-const assetStats: readonly FlowStat[] = [
+const assetStats = [
   ['Portfolio', '$126.8K', Wallet],
   ['Open Trades', '9', LineChart],
   ['Win Rate', '64%', TrendingUp],
@@ -96,7 +94,7 @@ const vibeColumns = [
   ['Complete', ['Repo inventory', 'Command concept']],
 ];
 
-function getFlowStats(flow: FlowKey): readonly FlowStat[] {
+function getFlowStats(flow: FlowKey) {
   if (flow === 'invoice') return invoiceStats;
   if (flow === 'lead') return leadStats;
   if (flow === 'asset') return assetStats;
@@ -105,7 +103,7 @@ function getFlowStats(flow: FlowKey): readonly FlowStat[] {
     ['Cards', '18', ListChecks],
     ['Today', '6', CalendarDays],
     ['Done', '9', CheckCircle2],
-  ];
+  ] as const;
 }
 
 function SidebarNav({ flow }: { flow: FlowKey }) {
