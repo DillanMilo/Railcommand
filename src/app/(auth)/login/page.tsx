@@ -938,6 +938,12 @@ function LoginPageInner() {
                 Back to sign in
               </button>
 
+              {authError && !resetSent && (
+                <div className={`${styles.errorPanel} mb-4 border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive`}>
+                  {authError}
+                </div>
+              )}
+
               {resetSent ? (
                 <div className="text-center py-8">
                   <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-rc-emerald/10 dark:bg-rc-emerald/20 mb-4">
