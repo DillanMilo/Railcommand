@@ -246,10 +246,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (pathname === '/command-preview' || pathname.startsWith('/command-preview/')) {
-    return NextResponse.next({ request });
-  }
-
   const geoBlock = shouldBlockForGeo(request, pathname);
 
   if (geoBlock.blocked) {

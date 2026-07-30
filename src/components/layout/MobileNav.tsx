@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import {
   LayoutDashboard,
-  Command,
   FileCheck,
   MessageSquareMore,
   CalendarDays,
@@ -38,16 +37,15 @@ export default function MobileNav() {
   const hasProject = Boolean(currentProjectId);
 
   const mobileTabs = [
-    { label: 'Command', href: '/command-center', Icon: Command, requiresProject: false },
     { label: 'Dashboard', href: '/dashboard', Icon: LayoutDashboard, requiresProject: false },
     { label: 'Submittals', href: hasProject ? `/projects/${currentProjectId}/submittals` : '#', Icon: FileCheck, requiresProject: true },
     { label: 'RFIs', href: hasProject ? `/projects/${currentProjectId}/rfis` : '#', Icon: MessageSquareMore, requiresProject: true },
+    { label: 'Logs', href: hasProject ? `/projects/${currentProjectId}/daily-logs` : '#', Icon: CalendarDays, requiresProject: true },
     { label: 'More', href: '#more', Icon: MoreHorizontal, requiresProject: false },
   ];
 
   const moreItems = [
     { label: 'Punch List', href: hasProject ? `/projects/${currentProjectId}/punch-list` : '#', Icon: ClipboardCheck, requiresProject: true },
-    { label: 'Daily Logs', href: hasProject ? `/projects/${currentProjectId}/daily-logs` : '#', Icon: CalendarDays, requiresProject: true },
     { label: 'Safety', href: hasProject ? `/projects/${currentProjectId}/safety` : '#', Icon: ShieldAlert, requiresProject: true },
     { label: 'QC/QA', href: hasProject ? `/projects/${currentProjectId}/qcqa` : '#', Icon: ClipboardPenLine, requiresProject: true },
     { label: 'Documents', href: hasProject ? `/projects/${currentProjectId}/documents` : '#', Icon: FolderOpen, requiresProject: true },

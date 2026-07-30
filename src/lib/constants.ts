@@ -282,7 +282,6 @@ export interface NavItem {
 
 export function getNavItems(projectId: string): NavItem[] {
   return [
-    { label: "Command Center", href: "/command-center", icon: "Command" },
     { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
     { label: "Submittals", href: projectId ? `/projects/${projectId}/submittals` : "#", icon: "FileCheck", requiresProject: true },
     { label: "RFIs", href: projectId ? `/projects/${projectId}/rfis` : "#", icon: "MessageSquareMore", requiresProject: true },
