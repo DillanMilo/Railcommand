@@ -16,7 +16,7 @@ export default async function AppLayout({
 
   return (
     <ProjectProvider demoSlug={demoSlug ?? null}>
-      <div className="flex h-screen overflow-hidden bg-rc-bg">
+      <div className="rc-command-shell flex h-screen overflow-hidden bg-rc-bg">
         {/* Sidebar - desktop only */}
         <Sidebar />
 
@@ -25,7 +25,7 @@ export default async function AppLayout({
           <Topbar />
           <DemoBanner demoSlug={demoSlug ?? null} />
 
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-6 lg:pb-8">
+          <main className="flex-1 overflow-y-auto p-3 pb-20 sm:p-4 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             <div className="mx-auto max-w-screen-2xl">
               <PageTransition>{children}</PageTransition>
             </div>

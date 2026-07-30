@@ -338,6 +338,7 @@ export async function middleware(request: NextRequest) {
 
   // Public routes that never require auth
   const isPublicRoute =
+    pathname === '/' ||
     pathname === '/login' ||
     pathname === '/client' ||
     pathname === '/admin/clients' ||

@@ -189,3 +189,63 @@
     }
   }
 }
+
+/*
+ * Command shell prototype
+ *
+ * Carries VoltCommand's sharper, editorial layout language into the signed-in
+ * RailCommand app while keeping RailCommand's established color system.
+ */
+.rc-command-shell {
+  --rc-bg: #f3f3ee;
+  --rc-card: #fbfbf8;
+  --rc-border: #d9dcd3;
+  --background: #f3f3ee;
+  --card: #fbfbf8;
+  --popover: #fbfbf8;
+  --border: #d9dcd3;
+  --input: #c9cdc3;
+  background:
+    linear-gradient(rgba(16, 19, 15, 0.018) 1px, transparent 1px),
+    var(--rc-bg);
+  background-size: 100% 48px;
+}
+
+.rc-command-shell [data-slot="card"] {
+  border-radius: 2px;
+  border-color: var(--rc-border);
+  box-shadow: 3px 3px 0 rgba(16, 19, 15, 0.045);
+}
+
+.rc-command-shell [data-slot="badge"],
+.rc-command-shell [data-slot="button"],
+.rc-command-shell [data-slot="input"] {
+  border-radius: 2px;
+}
+
+.rc-command-shell [data-slot="card-header"].border-b {
+  background: rgba(16, 19, 15, 0.018);
+}
+
+.rc-command-shell :focus-visible {
+  outline-color: var(--rc-orange);
+}
+
+.dark .rc-command-shell {
+  --rc-bg: #0d100c;
+  --rc-card: #161a14;
+  --rc-border: rgba(255, 255, 255, 0.12);
+  --background: #0d100c;
+  --card: #161a14;
+  --popover: #161a14;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    var(--rc-bg);
+  background-size: 100% 48px;
+}
+
+.dark .rc-command-shell [data-slot="card"] {
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.24);
+}

@@ -39,6 +39,7 @@ import {
 } from '@/lib/demo/constants';
 import { createClient } from '@/lib/supabase/client';
 import { getSupabaseAuthErrorMessage } from '@/lib/supabase/connectivity';
+import styles from './login.module.css';
 
 /* ------------------------------------------------------------------ */
 /*  Schemas                                                            */
@@ -794,11 +795,11 @@ function LoginPageInner() {
   }, [accessRequestForm, initialEmail, signInForm, signUpForm]);
 
   return (
-    <div className="flex min-h-screen bg-rc-bg dark:bg-rc-bg">
+    <div className={`${styles.authShell} flex min-h-screen`}>
       {/* ============================================================ */}
       {/*  LEFT PANEL — Brand / Hero (hidden on mobile)                */}
       {/* ============================================================ */}
-      <div className="hidden lg:flex lg:w-[52%] xl:w-[56%] relative overflow-hidden bg-rc-navy">
+      <div className={`${styles.heroPanel} relative hidden overflow-hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-[52%] lg:self-start xl:w-[56%]`}>
         {/* Blueprint grid pattern */}
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -882,10 +883,10 @@ function LoginPageInner() {
       {/* ============================================================ */}
       {/*  RIGHT PANEL — Auth Forms                                     */}
       {/* ============================================================ */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-[420px]">
+      <div className={`${styles.authPanel} flex flex-1 items-center justify-center p-4 sm:p-8`}>
+        <div className={styles.authCard}>
           {/* Mobile logo */}
-          <div className="flex flex-col items-center mb-8 lg:hidden">
+          <div className={`${styles.mobileBrand} mb-8 flex flex-col items-center lg:hidden`}>
             <Image
               src="/IMG_0938.jpg"
               alt="RailCommand"
@@ -993,7 +994,14 @@ function LoginPageInner() {
             /* ====== Sign In / Sign Up Forms ====== */
             <div className="animate-in fade-in duration-300">
               {/* Header */}
-              <div className="mb-6">
+              <div className={`${styles.authHeader} mb-6`}>
+                <p className={styles.eyebrow}>
+                  {mode === 'signin'
+                    ? 'Secure project access'
+                    : isInviteSignup
+                      ? 'Invitation access'
+                      : 'Access and pricing'}
+                </p>
                 <h2 className="font-heading text-2xl font-bold text-foreground">
                   {mode === 'signin'
                     ? 'Welcome back'
@@ -1010,38 +1018,38 @@ function LoginPageInner() {
                 </p>
 
               {authError && (
-                <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                <div className={`${styles.errorPanel} mt-3 border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive`}>
                   {authError}
                 </div>
               )}
               </div>
 
               {/* Mode toggle */}
-              <div className="flex gap-1 p-1 rounded-xl bg-muted/60 dark:bg-muted/30 mb-6">
+              <div className={styles.modeToggle}>
                 <button
                   onClick={() => switchMode('signin')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={
                     mode === 'signin'
-                      ? 'bg-rc-card dark:bg-white/10 text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                      ? styles.modeActive
+                      : styles.modeIdle
+                  }
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => switchMode('signup')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={
                     mode === 'signup'
-                      ? 'bg-rc-card dark:bg-white/10 text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                      ? styles.modeActive
+                      : styles.modeIdle
+                  }
                 >
                   {isInviteFlow ? 'Create Account' : 'See Pricing'}
                 </button>
               </div>
 
               {mode === 'signup' && (
-                <div className="mb-4 rounded-lg border border-rc-emerald/20 bg-rc-emerald/5 p-3 dark:bg-rc-emerald/10">
+                <div className={`${styles.securityPanel} mb-4 border p-3`}>
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-rc-emerald/10 text-rc-emerald dark:bg-rc-emerald/15">
                       <ShieldCheck className="size-4" />
@@ -1068,7 +1076,7 @@ function LoginPageInner() {
                 type="button"
                 onClick={handleTryDemo}
                 disabled={isLoading}
-                className="w-full h-12 gap-2.5 text-sm font-semibold mb-3 bg-rc-emerald hover:bg-rc-emerald/90 text-white"
+                className={`${styles.demoAction} mb-3 w-full gap-2.5 text-sm font-semibold`}
                 aria-label="Try demo project"
               >
                 <Play className="size-4" />
@@ -1084,7 +1092,7 @@ function LoginPageInner() {
                   <div className="w-full border-t border-rc-border dark:border-rc-border" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
+                  <span className={`${styles.dividerLabel} px-3 text-muted-foreground`}>
                     {mode === 'signin'
                       ? 'or sign in to your account'
                       : isInviteSignup
@@ -1102,7 +1110,7 @@ function LoginPageInner() {
                     variant="outline"
                     onClick={handleGoogleSignIn}
                     disabled={isLoading}
-                    className="w-full h-12 gap-3 text-sm font-medium mb-4"
+                    className={`${styles.googleAction} mb-4 w-full gap-3 text-sm font-medium`}
                     aria-label="Continue with Google"
                   >
                     <GoogleIcon className="size-5" />
@@ -1115,7 +1123,7 @@ function LoginPageInner() {
                       <div className="w-full border-t border-rc-border dark:border-rc-border" />
                     </div>
                     <div className="relative flex justify-center text-xs">
-                      <span className="bg-rc-bg dark:bg-rc-bg px-3 text-muted-foreground">
+                      <span className={`${styles.dividerLabel} px-3 text-muted-foreground`}>
                         or continue with email
                       </span>
                     </div>
@@ -1205,7 +1213,7 @@ function LoginPageInner() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
+                    className={`${styles.primaryAction} w-full gap-2 text-sm font-semibold`}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
@@ -1352,7 +1360,7 @@ function LoginPageInner() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
+                    className={`${styles.primaryAction} w-full gap-2 text-sm font-semibold`}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
@@ -1552,7 +1560,7 @@ function LoginPageInner() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-rc-orange hover:bg-rc-orange-dark text-white font-semibold text-sm gap-2"
+                    className={`${styles.primaryAction} w-full gap-2 text-sm font-semibold`}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">

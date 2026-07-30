@@ -308,7 +308,7 @@ export default function Topbar({ children }: TopbarProps) {
 
   return (
     <>
-      <header className="flex items-center justify-between h-16 px-4 md:px-6 bg-rc-card border-b border-rc-border shrink-0">
+      <header className="flex h-[66px] shrink-0 items-center justify-between border-b border-rc-border bg-rc-card/95 px-4 backdrop-blur md:px-6">
         {/* Left: Mobile project switcher + Breadcrumbs slot */}
         <div className="flex items-center min-w-0 gap-2">
           {/* Mobile project switcher - hidden on desktop where sidebar handles it */}
@@ -390,7 +390,7 @@ export default function Topbar({ children }: TopbarProps) {
           {/* Search */}
           <Button
             variant="ghost"
-            className="text-rc-steel gap-2 hidden md:inline-flex"
+            className="hidden gap-2 border border-transparent text-rc-steel hover:border-rc-border hover:bg-background md:inline-flex"
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
           >

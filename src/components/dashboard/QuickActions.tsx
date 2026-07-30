@@ -70,9 +70,9 @@ export default function QuickActions({ projectId }: QuickActionsProps) {
                 <Link
                   key={action.label}
                   href={action.href}
-                  className="flex flex-col items-center gap-1.5 sm:gap-2 rounded-lg border border-rc-border bg-rc-card p-3 sm:p-4 text-center transition-all hover:border-rc-orange hover:shadow-sm active:scale-[0.98] group"
+                  className="group flex flex-col items-center gap-1.5 border border-rc-border bg-rc-card p-3 text-center transition-all hover:border-rc-orange hover:shadow-[2px_2px_0_var(--rc-orange)] active:translate-x-px active:translate-y-px sm:gap-2 sm:p-4"
                 >
-                  <div className="flex items-center justify-center rounded-lg bg-rc-bg p-2 group-hover:bg-rc-orange/10 transition-colors">
+                  <div className="flex items-center justify-center border border-rc-border bg-rc-bg p-2 transition-colors group-hover:border-rc-orange group-hover:bg-rc-orange/10">
                     <Icon className="size-5 text-rc-steel group-hover:text-rc-orange transition-colors" />
                   </div>
                   <span className="text-xs sm:text-sm font-medium text-foreground leading-tight">{action.label}</span>

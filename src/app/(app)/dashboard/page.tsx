@@ -176,7 +176,7 @@ export default function DashboardPage() {
     : 'N/A';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <Breadcrumbs items={[{ label: 'Dashboard' }]} />
 
       {/* Pending invitations banner (real auth only) */}
@@ -186,9 +186,12 @@ export default function DashboardPage() {
       {!isDemo && <NewMembersAlert />}
 
       {/* Project header */}
-      <div>
+      <div className="border-b border-rc-border pb-5">
+        <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-rc-orange">
+          Project control / live overview
+        </p>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-2xl font-bold text-foreground">
+          <h1 className="font-heading text-3xl font-semibold tracking-[-0.045em] text-foreground sm:text-4xl">
             {project.name}
           </h1>
           {can(ACTIONS.PROJECT_EDIT) && (
@@ -202,7 +205,7 @@ export default function DashboardPage() {
           )}
           <Badge
             className={cn(
-              'border-0 font-medium',
+              'border font-mono text-[9px] font-bold uppercase tracking-[0.12em]',
               project.status === 'active' && 'bg-rc-emerald/10 text-rc-emerald',
               project.status === 'on_hold' && 'bg-amber-500/10 text-amber-600',
               project.status === 'completed' && 'bg-rc-blue/10 text-rc-blue',
@@ -212,7 +215,7 @@ export default function DashboardPage() {
             {project.status.charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ')}
           </Badge>
         </div>
-        <p className="mt-1 text-sm text-rc-steel">{project.client}</p>
+        <p className="mt-2 text-sm text-rc-steel">{project.client}</p>
       </div>
       {can(ACTIONS.PROJECT_EDIT) && (
         <EditProjectDialog

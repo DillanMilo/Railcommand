@@ -227,8 +227,8 @@ export default function Sidebar() {
     <>
       <aside
         className={cn(
-          'hidden md:flex flex-col bg-rc-navy text-white transition-all duration-300 ease-in-out h-screen sticky top-0',
-          collapsed ? 'w-[72px]' : 'w-[260px]'
+          'sticky top-0 hidden h-screen flex-col bg-[#10130f] text-white transition-all duration-300 ease-in-out md:flex',
+          collapsed ? 'w-[72px]' : 'w-[248px]'
         )}
       >
         {/* Brand */}
@@ -337,7 +337,7 @@ export default function Sidebar() {
               const disabledEl = (
                 <span
                   key={item.label}
-                  className="flex items-center gap-3.5 px-3 h-11 rounded-lg text-sm font-medium text-white/30 cursor-not-allowed"
+                  className="flex h-11 cursor-not-allowed items-center gap-3.5 border-l-2 border-transparent px-3 text-sm font-medium text-white/30"
                 >
                   {Icon && <Icon className="size-5 shrink-0" />}
                   {!collapsed && (
@@ -368,10 +368,10 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3.5 px-3 h-11 rounded-lg text-sm transition-colors',
+                  'flex h-11 items-center gap-3.5 border-l-2 px-3 text-sm transition-colors',
                   isActive
-                    ? 'bg-rc-orange text-white font-semibold shadow-sm shadow-rc-orange/40 ring-1 ring-inset ring-white/15'
-                    : 'font-medium text-white/85 hover:text-white hover:bg-white/10'
+                    ? 'border-rc-orange bg-white/[0.07] font-semibold text-white'
+                    : 'border-transparent font-medium text-white/70 hover:border-white/20 hover:bg-white/[0.045] hover:text-white'
                 )}
               >
                 {Icon && (
@@ -424,7 +424,7 @@ export default function Sidebar() {
         <div className="px-2 py-3 border-t border-white/10 shrink-0">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-full h-11 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex h-11 w-full items-center justify-center border border-transparent text-white/70 transition-colors hover:border-white/10 hover:bg-white/[0.045] hover:text-white"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
