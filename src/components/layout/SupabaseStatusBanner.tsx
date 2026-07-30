@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  checkSupabaseConnectivity,
-  SUPABASE_CONNECTION_ERROR,
-} from '@/lib/supabase/connectivity';
+import { checkSupabaseConnectivity } from '@/lib/supabase/connectivity';
 
 const CHECK_INTERVAL_MS = 60_000;
 
@@ -15,16 +12,23 @@ type ConnectivityState = 'idle' | 'checking' | 'online' | 'offline';
 export default function SupabaseStatusBanner() {
   const [status, setStatus] = useState<ConnectivityState>('idle');
   const [dismissed, setDismissed] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [lastChecked, setLastChecked] = useState<string | null>(null);
 
   const runCheck = useCallback(async () => {
+    setIsRetrying(true);
     setStatus((current) => (current === 'offline' ? 'offline' : 'checking'));
-    const result = await checkSupabaseConnectivity();
 
-    setLastChecked(result.checkedAt);
-    setStatus(result.ok ? 'online' : 'offline');
-    if (result.ok) {
-      setDismissed(false);
+    try {
+      const result = await checkSupabaseConnectivity();
+
+      setLastChecked(result.checkedAt);
+      setStatus(result.ok ? 'online' : 'offline');
+      if (result.ok) {
+        setDismissed(false);
+      }
+    } finally {
+      setIsRetrying(false);
     }
   }, []);
 
@@ -61,22 +65,30 @@ export default function SupabaseStatusBanner() {
       <div className="pointer-events-auto mx-auto flex max-w-3xl items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 shadow-lg dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-50">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Supabase connection issue</p>
+          <p className="text-sm font-semibold">Temporary connection issue</p>
           <p className="mt-0.5 text-xs leading-5 text-amber-900 dark:text-amber-100">
-            {SUPABASE_CONNECTION_ERROR}
+            RailCommand could not reach the sign-in service.
             {checkedTime ? ` Last checked ${checkedTime}.` : ''}
           </p>
+          <div className="mt-3 rounded-md border border-amber-300/70 bg-white/60 px-3 py-2.5 dark:border-amber-400/30 dark:bg-amber-900/40">
+            <p className="text-sm font-medium">Your project data is safe.</p>
+            <p className="mt-0.5 text-xs leading-5 text-amber-900 dark:text-amber-100">
+              This is usually a brief interruption. Check your connection, then select Retry
+              connection.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-3 border-amber-400 bg-white/70 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-amber-950 dark:text-amber-50 dark:hover:bg-amber-900"
+            onClick={() => void runCheck()}
+            disabled={isRetrying}
+          >
+            <RefreshCw className={isRetrying ? 'animate-spin' : undefined} />
+            {isRetrying ? 'Checking connection…' : 'Retry connection'}
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          className="shrink-0 text-amber-950 hover:bg-amber-100 dark:text-amber-50 dark:hover:bg-amber-900"
-          onClick={() => void runCheck()}
-          aria-label="Retry Supabase connection check"
-        >
-          <RefreshCw className="size-3.5" />
-        </Button>
         <Button
           type="button"
           variant="ghost"
