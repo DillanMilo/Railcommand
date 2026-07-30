@@ -235,6 +235,17 @@ function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Supabase can fall back to the configured Site URL when a recovery
+  // redirect is omitted or rejected. Preserve the one-time PKCE code and
+  // send it through the callback route that exchanges it for a session.
+  if (pathname === '/' && request.nextUrl.searchParams.has('code')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/callback';
+    url.searchParams.set('type', 'recovery');
+    url.searchParams.set('next', '/settings?recovery=1');
+    return NextResponse.redirect(url);
+  }
+
   if (pathname === '/command-preview' || pathname.startsWith('/command-preview/')) {
     return NextResponse.next({ request });
   }
