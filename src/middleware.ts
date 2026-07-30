@@ -234,6 +234,11 @@ function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === '/command-preview' || pathname.startsWith('/command-preview/')) {
+    return NextResponse.next({ request });
+  }
+
   const geoBlock = shouldBlockForGeo(request, pathname);
 
   if (geoBlock.blocked) {

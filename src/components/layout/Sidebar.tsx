@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   GanttChart,
   Users,
+  Command,
   PanelLeftClose,
   PanelLeftOpen,
   ShieldAlert,
@@ -58,6 +59,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Command,
   LayoutDashboard,
   FileCheck,
   MessageSquareMore,
