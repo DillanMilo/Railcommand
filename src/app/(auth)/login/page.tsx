@@ -494,7 +494,12 @@ function LoginPageInner() {
   // Show errors from auth callback redirects (e.g. ?error=auth_callback_error)
   useEffect(() => {
     const error = searchParams.get('error');
-    if (error === 'auth_callback_error') {
+    if (error === 'recovery_link_invalid') {
+      setForgotMode(true);
+      setAuthError(
+        'This password reset link is expired or has already been used. Request a new link below.'
+      );
+    } else if (error === 'auth_callback_error') {
       setAuthError('Something went wrong confirming your account. Please try again.');
     }
   }, [searchParams]);
@@ -756,12 +761,17 @@ function LoginPageInner() {
     const email = (form.elements.namedItem('reset-email') as HTMLInputElement)?.value;
     try {
       if (email) {
-        const supabase = createClient();
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/settings?recovery=1')}`,
+        const response = await fetch('/api/auth/password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
         });
-        if (error) {
-          setAuthError(getSupabaseAuthErrorMessage(error));
+
+        if (!response.ok) {
+          const result = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          setAuthError(result?.error ?? 'Unable to send a reset email. Please try again.');
           return;
         }
       }

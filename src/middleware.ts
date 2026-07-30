@@ -360,6 +360,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/demo/') ||
     pathname === '/api/health/supabase' ||
+    pathname === '/api/auth/password-reset' ||
     pathname === '/api/access-request' ||
     pathname === '/api/admin/demo/lookup' ||
     pathname === '/api/admin/demo/session' ||
@@ -399,8 +400,15 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // If authenticated + remembered and visiting /login → redirect to dashboard
-  if (user && hasRememberCookie && pathname === '/login') {
+  // Keep callback failures visible even if another account is already signed in.
+  // Otherwise a used or invalid reset link silently drops the user on /dashboard.
+  const hasAuthCallbackError = request.nextUrl.searchParams.has('error');
+  if (
+    user &&
+    hasRememberCookie &&
+    pathname === '/login' &&
+    !hasAuthCallbackError
+  ) {
     const safeNext = getSafeRedirectPath(request.nextUrl.searchParams.get('next'));
     const url = new URL(safeNext ?? '/dashboard', request.nextUrl.origin);
     return applyPendingCookies(NextResponse.redirect(url), pendingCookies);

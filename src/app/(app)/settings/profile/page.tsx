@@ -40,7 +40,6 @@ import type { Profile, Organization } from '@/lib/types';
 import { getProfileWithOrg, updateProfile } from '@/lib/store';
 import { getMyProfile, updateMyProfile } from '@/lib/actions/profiles';
 import { uploadMyAvatar } from '@/lib/actions/avatar';
-import { createClient } from '@/lib/supabase/client';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectMembers } from '@/hooks/useData';
 
@@ -283,12 +282,16 @@ export default function ProfilePage() {
     }
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/settings?recovery=1')}`,
+      const response = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: profile.email }),
       });
-      if (error) {
-        setResetError(error.message);
+      if (!response.ok) {
+        const result = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setResetError(result?.error ?? 'Failed to send reset email');
       } else {
         setResetSent(true);
         setSuccessMessage('Password reset email sent');

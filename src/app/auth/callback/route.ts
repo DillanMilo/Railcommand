@@ -26,6 +26,7 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const defaultNext = type === 'recovery' ? '/settings?recovery=1' : '/dashboard';
   const next = getSafeRedirectPath(searchParams.get('next')) ?? defaultNext;
+  const isRecovery = type === 'recovery' || next.includes('recovery=1');
 
   // Email confirmation via token_hash (e.g. signup confirmation)
   if (token_hash && type) {
@@ -70,6 +71,8 @@ export async function GET(request: Request) {
     }
   }
 
-  // Auth code exchange failed — send back to login with error
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+  // Auth code exchange failed. Recovery links are one-time use, so give the
+  // login page enough context to explain how to request a fresh link.
+  const error = isRecovery ? 'recovery_link_invalid' : 'auth_callback_error';
+  return NextResponse.redirect(`${origin}/login?error=${error}`);
 }
