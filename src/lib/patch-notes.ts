@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.6.0-railcommand-new-look',
+    version: '2.6.0',
+    title: "RailCommand's Got a New Look!",
+    description: 'Hope you enjoy it!',
+    date: '2026-07-30',
+  },
+  {
     id: 'v2.5.1-earthcam-live-sample-feed',
     version: '2.5.1',
     title: 'EarthCam Live With Sample Feed',
