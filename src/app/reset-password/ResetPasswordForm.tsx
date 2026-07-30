@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import {
   AlertTriangle,
   Check,
@@ -28,6 +27,34 @@ export default function ResetPasswordForm({ email }: { email: string }) {
   const hasMinimumLength = newPassword.length >= 8;
   const passwordsMatch =
     confirmPassword.length > 0 && newPassword === confirmPassword;
+
+  function clearRailCommandSessionState() {
+    try {
+      localStorage.removeItem('rc-mode');
+      localStorage.removeItem('rc-current-project');
+      document.cookie = 'rc-remember=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'rc-onboarded=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
+    } catch {
+      // Browser privacy settings may block client storage cleanup.
+    }
+  }
+
+  async function endRecoverySession(destination: string) {
+    const supabase = createClient();
+    await Promise.allSettled([
+      supabase.auth.signOut({ scope: 'local' }),
+      fetch('/api/auth/password-reset', { method: 'DELETE' }),
+    ]);
+    clearRailCommandSessionState();
+    window.location.replace(destination);
+  }
+
+  async function handleBackToSignIn() {
+    setIsSubmitting(true);
+    await endRecoverySession('/login');
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,21 +83,7 @@ export default function ResetPasswordForm({ email }: { email: string }) {
         return;
       }
 
-      await supabase.auth.signOut({ scope: 'local' });
-      await fetch('/api/auth/password-reset', { method: 'DELETE' }).catch(() => {});
-
-      try {
-        localStorage.removeItem('rc-mode');
-        localStorage.removeItem('rc-current-project');
-        document.cookie = 'rc-remember=; path=/; max-age=0; SameSite=Lax';
-        document.cookie = 'rc-onboarded=; path=/; max-age=0; SameSite=Lax';
-        document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
-        document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
-      } catch {
-        // Browser privacy settings may block client storage cleanup.
-      }
-
-      window.location.replace('/login?password_reset=success');
+      await endRecoverySession('/login?password_reset=success');
     } catch (updateError) {
       setError(getSupabaseAuthErrorMessage(updateError));
     } finally {
@@ -267,12 +280,14 @@ export default function ResetPasswordForm({ email }: { email: string }) {
 
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 text-xs text-slate-500 sm:px-8">
               <span>Secure one-time recovery</span>
-              <Link
-                href="/login"
+              <button
+                type="button"
+                onClick={handleBackToSignIn}
+                disabled={isSubmitting}
                 className="font-semibold text-slate-700 transition-colors hover:text-orange-600"
               >
                 Back to sign in
-              </Link>
+              </button>
             </div>
           </section>
         </div>
