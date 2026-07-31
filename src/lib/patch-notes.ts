@@ -8,6 +8,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.7.0-multi-document-downloads',
+    version: '2.7.0',
+    title: 'Multi-Document Downloads',
+    description: 'Select multiple items in Documents and download all of their uploaded files together in one organized ZIP. Available on desktop and mobile.',
+    date: '2026-07-31',
+  },
+  {
     id: 'v2.6.0-railcommand-new-look',
     version: '2.6.0',
     title: "RailCommand's Got a New Look!",

@@ -31,6 +31,15 @@ const CATEGORIES: { label: string; value: DocumentCategory }[] = [
   { label: 'Other', value: 'other' },
 ];
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function NewDocumentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
@@ -78,7 +87,7 @@ export default function NewDocumentPage({ params, searchParams }: { params: Prom
           entity_id: doc.id,
           project_id: projectId,
           file_name: file.name,
-          file_url: URL.createObjectURL(file),
+          file_url: await fileToDataUrl(file),
           file_type: file.type,
           file_size: file.size,
         });

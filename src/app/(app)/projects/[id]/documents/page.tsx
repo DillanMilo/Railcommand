@@ -4,7 +4,7 @@ import { useState, useMemo, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
-import { Plus, FolderOpen } from 'lucide-react';
+import { Download, FolderOpen, Loader2, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,13 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectDocuments } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
+import { getDocumentAttachmentsForDownload } from '@/lib/actions/attachments';
+import { getAttachments as getDemoAttachments } from '@/lib/store';
+import {
+  createDocumentArchive,
+  saveDocumentArchive,
+  type DocumentDownloadFile,
+} from '@/lib/document-download';
 import { DOCUMENT_STATUS_COLORS, DOCUMENT_STATUS_LABELS, DOCUMENT_CATEGORY_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import type { DocumentCategory, DocumentStatus } from '@/lib/types';
@@ -50,7 +57,7 @@ function formatFileSize(bytes: number): string {
 export default function DocumentsListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  useProject();
+  const { isDemo } = useProject();
   const urlSearchParams = useSearchParams();
   const { can } = usePermissions(projectId);
 
@@ -64,6 +71,10 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
   const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | 'all'>(initialStatus);
   const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   const { data: documents, loading, error, refetch } = useProjectDocuments(projectId);
 
@@ -92,6 +103,80 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
   }, [documents, categoryFilter, statusFilter, search]);
 
   const basePath = `/projects/${projectId}/documents`;
+  const allFilteredSelected = filtered.length > 0 && filtered.every((doc) => selectedIds.has(doc.id));
+  const someFilteredSelected = filtered.some((doc) => selectedIds.has(doc.id));
+
+  function toggleDocument(documentId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(documentId)) next.delete(documentId);
+      else next.add(documentId);
+      return next;
+    });
+    setDownloadError(null);
+    setDownloadNotice(null);
+  }
+
+  function toggleAllFiltered() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allFilteredSelected) filtered.forEach((doc) => next.delete(doc.id));
+      else filtered.forEach((doc) => next.add(doc.id));
+      return next;
+    });
+    setDownloadError(null);
+    setDownloadNotice(null);
+  }
+
+  async function handleDownloadSelected() {
+    if (selectedIds.size === 0 || downloading) return;
+
+    setDownloading(true);
+    setDownloadError(null);
+    setDownloadNotice(null);
+
+    try {
+      const selectedDocuments = documents.filter((doc) => selectedIds.has(doc.id));
+      let files: DocumentDownloadFile[];
+
+      if (isDemo) {
+        files = selectedDocuments.flatMap((doc) =>
+          getDemoAttachments('project_document', doc.id).map((attachment) => ({
+            id: attachment.id,
+            document_id: doc.id,
+            document_number: doc.number,
+            document_title: doc.title,
+            file_name: attachment.file_name,
+            file_size: attachment.file_size,
+            download_url: attachment.signed_url ?? attachment.file_url,
+          })),
+        );
+      } else {
+        const result = await getDocumentAttachmentsForDownload(projectId, selectedDocuments.map((doc) => doc.id));
+        if (result.error || !result.data) {
+          throw new Error(result.error ?? 'Could not prepare the selected documents.');
+        }
+        files = result.data;
+      }
+
+      const archive = await createDocumentArchive(files);
+      const archiveName = `RailCommand-Documents-${new Date().toISOString().slice(0, 10)}.zip`;
+      saveDocumentArchive(archive, archiveName);
+
+      const documentIdsWithFiles = new Set(files.map((file) => file.document_id));
+      const missingCount = selectedDocuments.filter((doc) => !documentIdsWithFiles.has(doc.id)).length;
+      if (missingCount > 0) {
+        setDownloadNotice(
+          `${files.length} file${files.length === 1 ? '' : 's'} downloaded. ${missingCount} selected document${missingCount === 1 ? '' : 's'} had no uploaded files.`,
+        );
+      }
+      setSelectedIds(new Set());
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : 'The download could not be completed.');
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -125,12 +210,33 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
             {counts.draft} draft, {counts.issued} issued, {counts.under_review} under review, {counts.approved} approved
           </p>
         </div>
-        {can(ACTIONS.DOCUMENT_MANAGE) && (
-          <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
-            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />Upload Document</Link>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handleDownloadSelected}
+            disabled={selectedIds.size === 0 || downloading}
+          >
+            {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+            {downloading ? 'Preparing ZIP...' : `Download selected${selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`}
           </Button>
-        )}
+          {can(ACTIONS.DOCUMENT_MANAGE) && (
+            <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
+              <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />Upload Document</Link>
+            </Button>
+          )}
+        </div>
       </div>
+
+      {downloadError && (
+        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {downloadError}
+        </div>
+      )}
+      {downloadNotice && (
+        <div role="status" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {downloadNotice}
+        </div>
+      )}
 
       {/* Search */}
       <Input
@@ -173,11 +279,35 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
         ))}
       </div>
 
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="text-muted-foreground">
+            {selectedIds.size === 0 ? 'Select documents to download together' : `${selectedIds.size} selected`}
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={toggleAllFiltered}>
+            {allFilteredSelected ? 'Deselect visible' : 'Select all visible'}
+          </Button>
+        </div>
+      )}
+
       {/* Desktop table */}
       <div className="hidden lg:block rounded-lg border border-rc-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-rc-card">
+              <TableHead className="w-10">
+                <input
+                  type="checkbox"
+                  aria-label="Select all visible documents"
+                  checked={allFilteredSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = someFilteredSelected && !allFilteredSelected;
+                  }}
+                  onChange={toggleAllFiltered}
+                  disabled={filtered.length === 0}
+                  className="size-4 accent-rc-orange"
+                />
+              </TableHead>
               <TableHead className="w-[90px]">Number</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Category</TableHead>
@@ -190,7 +320,16 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
           </TableHeader>
           <TableBody>
             {filtered.map((doc) => (
-              <TableRow key={doc.id}>
+              <TableRow key={doc.id} data-state={selectedIds.has(doc.id) ? 'selected' : undefined}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${doc.number}: ${doc.title}`}
+                    checked={selectedIds.has(doc.id)}
+                    onChange={() => toggleDocument(doc.id)}
+                    className="size-4 accent-rc-orange"
+                  />
+                </TableCell>
                 <TableCell>
                   <Link href={`${basePath}/${doc.id}`} className="font-medium text-rc-blue hover:underline py-1 inline-block">{doc.number}</Link>
                 </TableCell>
@@ -215,7 +354,7 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
                   {documents.length === 0 ? (
                     <div className="flex flex-col items-center gap-2">
                       <FolderOpen className="size-10 text-muted-foreground/40" />
@@ -243,10 +382,17 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
           <p className="text-center py-10 text-muted-foreground">No items match your filters.</p>
         )}
         {filtered.map((doc) => (
-          <Link key={doc.id} href={`${basePath}/${doc.id}`}>
-            <Card className="transition-shadow hover:shadow-md">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
+          <Card key={doc.id} className={cn('transition-shadow hover:shadow-md', selectedIds.has(doc.id) && 'bg-muted')}>
+            <CardContent className="flex items-start gap-3 p-4">
+              <input
+                type="checkbox"
+                aria-label={`Select ${doc.number}: ${doc.title}`}
+                checked={selectedIds.has(doc.id)}
+                onChange={() => toggleDocument(doc.id)}
+                className="mt-1 size-4 shrink-0 accent-rc-orange"
+              />
+              <Link href={`${basePath}/${doc.id}`} className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold text-rc-blue">{doc.number}</span>
                   <Badge variant="secondary" className={cn('border-0 text-xs', DOCUMENT_STATUS_COLORS[doc.status])}>
                     {DOCUMENT_STATUS_LABELS[doc.status] ?? doc.status}
@@ -263,9 +409,9 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
                   <span>{doc.uploaded_by_profile?.full_name ?? '\u2014'}</span>
                   <span>{formatFileSize(doc.file_size)}</span>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+              </Link>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

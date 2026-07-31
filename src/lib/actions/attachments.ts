@@ -2,9 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { getAuthenticatedUser } from './permissions-helper';
+import { checkProjectMembership, getAuthenticatedUser } from './permissions-helper';
 import type { ActionResult } from './permissions-helper';
 import type { Attachment } from '@/lib/types';
+import type { DocumentDownloadFile } from '@/lib/document-download';
 import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
@@ -272,6 +273,103 @@ export async function getAttachments(
 
 /** Buckets that require signed URLs (private buckets). */
 const PRIVATE_BUCKETS = new Set(['project-photos', 'thermal-photos', 'project-documents']);
+
+/**
+ * Resolve all files belonging to selected project documents in one authenticated
+ * request. Document ownership is checked before attachment URLs are returned.
+ */
+export async function getDocumentAttachmentsForDownload(
+  projectId: string,
+  documentIds: string[],
+): Promise<ActionResult<DocumentDownloadFile[]>> {
+  try {
+    const ids = [...new Set(documentIds.filter(Boolean))];
+    if (!projectId || ids.length === 0) return { error: 'Select at least one document' };
+    if (ids.length > 500) return { error: 'Too many documents selected' };
+
+    const supabase = await createClient();
+    const { user, error: authError } = await getAuthenticatedUser(supabase);
+    if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    const access = await checkProjectMembership(supabase, user.id, projectId);
+    if (!access.isMember) return { error: access.error };
+
+    const { data: documents, error: documentsError } = await supabase
+      .from('project_documents')
+      .select('id, number, title')
+      .eq('project_id', projectId)
+      .in('id', ids);
+
+    if (documentsError) return { error: documentsError.message };
+    if (!documents || documents.length !== ids.length) {
+      return { error: 'One or more selected documents could not be found' };
+    }
+
+    const documentById = new Map(documents.map((document) => [document.id, document]));
+    const { data: attachments, error: attachmentsError } = await supabase
+      .from('attachments')
+      .select('id, entity_id, file_name, file_url, file_size, photo_category, created_at')
+      .eq('project_id', projectId)
+      .eq('entity_type', 'project_document')
+      .in('entity_id', ids)
+      .order('created_at', { ascending: true });
+
+    if (attachmentsError) return { error: attachmentsError.message };
+    if (!attachments || attachments.length === 0) return { success: true, data: [] };
+
+    const resolvedUrls = new Map<string, string>();
+    const grouped: Record<string, { id: string; path: string }[]> = {};
+
+    for (const attachment of attachments) {
+      const bucket = getBucket(attachment.photo_category);
+      if (!PRIVATE_BUCKETS.has(bucket)) {
+        resolvedUrls.set(attachment.id, attachment.file_url);
+        continue;
+      }
+
+      const urlParts = attachment.file_url.split(`/${bucket}/`);
+      if (urlParts.length !== 2 || !urlParts[1]) {
+        return { error: `Invalid storage URL for ${attachment.file_name}` };
+      }
+
+      if (!grouped[bucket]) grouped[bucket] = [];
+      grouped[bucket].push({ id: attachment.id, path: urlParts[1] });
+    }
+
+    for (const [bucket, items] of Object.entries(grouped)) {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrls(items.map((item) => item.path), 3600);
+
+      if (error || !data) return { error: error?.message ?? 'Failed to prepare files' };
+
+      for (let index = 0; index < items.length; index++) {
+        const signedUrl = data[index]?.signedUrl;
+        if (!signedUrl) return { error: data[index]?.error ?? 'Failed to prepare a file' };
+        resolvedUrls.set(items[index].id, signedUrl);
+      }
+    }
+
+    const files: DocumentDownloadFile[] = attachments.map((attachment) => {
+      const document = documentById.get(attachment.entity_id)!;
+      return {
+        id: attachment.id,
+        document_id: attachment.entity_id,
+        document_number: document.number,
+        document_title: document.title,
+        file_name: attachment.file_name,
+        file_size: attachment.file_size,
+        download_url: resolvedUrls.get(attachment.id)!,
+      };
+    });
+
+    return { success: true, data: files };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : 'Failed to prepare document download',
+    };
+  }
+}
 
 /**
  * Fetch all attachments for an entity and batch-resolve signed URLs for
