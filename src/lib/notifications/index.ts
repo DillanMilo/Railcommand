@@ -1,7 +1,8 @@
 // src/lib/notifications/index.ts
 // Barrel export for the notifications module
 
-export { sendNotification, sendNotificationToUser, getUserProfile, getProjectName } from './send';
+export { getUserProfile, getProjectName } from './send';
+export { createInAppNotification, createInAppNotificationToUser } from './in-app';
 export { getDemoProjectIds, shouldSuppressNotificationEmail } from './filters';
 export { renderNotificationEmail } from './templates';
 export type {

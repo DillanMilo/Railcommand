@@ -501,6 +501,28 @@ export interface ActivityLogEntry {
   created_at: string;
 }
 
+export interface UserNotification {
+  id: string;
+  recipient_id: string;
+  project_id: string | null;
+  type:
+    | 'submittal_status_changed'
+    | 'rfi_assigned'
+    | 'rfi_response_received'
+    | 'punch_list_assigned'
+    | 'punch_list_status_changed'
+    | 'overdue_reminder'
+    | 'team_update';
+  title: string;
+  body: string;
+  href: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  read_at: string | null;
+  dismissed_at: string | null;
+  created_at: string;
+}
+
 // Dashboard KPI
 export interface DashboardKPI {
   label: string;

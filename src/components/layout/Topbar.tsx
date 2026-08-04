@@ -28,10 +28,15 @@ import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { getMyProfile } from '@/lib/actions/profiles';
-import { useActivityLog, useProjectMembers } from '@/hooks/useData';
+import { useActivityLog, useProjectMembers, useUserNotifications } from '@/hooks/useData';
+import {
+  dismissUserNotification,
+  markAllUserNotificationsRead,
+  markUserNotificationRead,
+} from '@/lib/actions/user-notifications';
 import { formatDistanceToNow } from 'date-fns';
 import { PATCH_NOTES } from '@/lib/patch-notes';
-import type { Project, Profile, ActivityLogEntry } from '@/lib/types';
+import type { Project, Profile, ActivityLogEntry, UserNotification } from '@/lib/types';
 
 type EntityType = ActivityLogEntry['entity_type'];
 
@@ -57,6 +62,16 @@ const ENTITY_LABELS: Record<EntityType, string> = {
   earthcam_connection: 'EarthCam',
   earthcam_camera: 'Camera',
   earthcam_evidence: 'Camera Evidence',
+};
+
+const PROFILE_NOTIFICATION_LABELS: Record<UserNotification['type'], string> = {
+  submittal_status_changed: 'Submittal',
+  rfi_assigned: 'RFI assignment',
+  rfi_response_received: 'RFI response',
+  punch_list_assigned: 'Punch assignment',
+  punch_list_status_changed: 'Punch update',
+  overdue_reminder: 'Overdue',
+  team_update: 'Team',
 };
 
 const STATUS_DOT_COLORS: Record<Project['status'], string> = {
@@ -133,6 +148,7 @@ export default function Topbar({ children }: TopbarProps) {
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [profileAlertsOpen, setProfileAlertsOpen] = useState(true);
   const [activityOpen, setActivityOpen] = useState(false);
   const [demoProfile, setDemoProfile] = useState<Profile | null>(null);
   const [demoProfileNames, setDemoProfileNames] = useState<Map<string, string>>(() => new Map());
@@ -202,6 +218,16 @@ export default function Topbar({ children }: TopbarProps) {
   const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
   const { data: recentActivity } = useActivityLog(currentProjectId, 5);
   const { data: projectMembersData } = useProjectMembers(currentProjectId);
+  const {
+    data: profileNotifications,
+    refetch: refetchProfileNotifications,
+  } = useUserNotifications();
+
+  useEffect(() => {
+    if (isDemo) return;
+    const intervalId = window.setInterval(refetchProfileNotifications, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [isDemo, refetchProfileNotifications]);
 
   // Build unified notification list: activity + patch notes, sorted by date desc
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
@@ -249,13 +275,31 @@ export default function Topbar({ children }: TopbarProps) {
     () => activityItems.filter((i) => !readIds.has(i.id)).length,
     [activityItems, readIds]
   );
-  const unreadCount = updatesUnreadCount + activityUnreadCount;
+  const profileUnreadCount = useMemo(
+    () => profileNotifications.filter((notification) => !notification.read_at).length,
+    [profileNotifications],
+  );
+  const unreadCount = profileUnreadCount + updatesUnreadCount + activityUnreadCount;
 
   // All visible (non-dismissed) items for "mark all as read"
   const allVisibleIds = useMemo(
     () => [...patchNoteItems, ...activityItems].map((i) => i.id),
     [patchNoteItems, activityItems]
   );
+
+  const handleMarkAllAsRead = useCallback(() => {
+    markAllAsRead(allVisibleIds);
+    if (isDemo || profileUnreadCount === 0) return;
+    void markAllUserNotificationsRead().then(() => refetchProfileNotifications());
+  }, [allVisibleIds, isDemo, markAllAsRead, profileUnreadCount, refetchProfileNotifications]);
+
+  const handleProfileNotificationRead = useCallback((notificationId: string) => {
+    void markUserNotificationRead(notificationId).then(() => refetchProfileNotifications());
+  }, [refetchProfileNotifications]);
+
+  const handleProfileNotificationDismiss = useCallback((notificationId: string) => {
+    void dismissUserNotification(notificationId).then(() => refetchProfileNotifications());
+  }, [refetchProfileNotifications]);
 
   // Categories stay closed by default — user taps to expand
 
@@ -326,7 +370,7 @@ export default function Topbar({ children }: TopbarProps) {
   }
 
   // Both categories empty means full empty state
-  const bothCategoriesEmpty = patchNoteItems.length === 0 && activityItems.length === 0;
+  const bothCategoriesEmpty = profileNotifications.length === 0 && patchNoteItems.length === 0 && activityItems.length === 0;
   const hasAnyVisible = !bothCategoriesEmpty;
 
   return (
@@ -437,7 +481,13 @@ export default function Topbar({ children }: TopbarProps) {
           <ThemeToggle />
 
           {/* Notifications */}
-          <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+          <Sheet
+            open={notificationsOpen}
+            onOpenChange={(open) => {
+              setNotificationsOpen(open);
+              if (open && !isDemo) refetchProfileNotifications();
+            }}
+          >
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative text-rc-steel" aria-label="Notifications">
                 <Bell className="size-5" />
@@ -456,7 +506,7 @@ export default function Topbar({ children }: TopbarProps) {
                   <Button
                     variant="ghost"
                     className="text-muted-foreground hover:text-foreground min-h-[44px] gap-1.5 text-xs px-3"
-                    onClick={() => markAllAsRead(allVisibleIds)}
+                    onClick={handleMarkAllAsRead}
                   >
                     <CheckCheck className="size-4" />
                     <span className="hidden sm:inline">Mark all read</span>
@@ -476,6 +526,90 @@ export default function Topbar({ children }: TopbarProps) {
 
                 {!bothCategoriesEmpty && (
                   <>
+                    {/* ── Profile-scoped alerts ── */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setProfileAlertsOpen((value) => !value)}
+                        className="flex items-center w-full px-4 py-3 min-h-[44px] bg-muted/50 hover:bg-muted/80 transition-colors text-left"
+                      >
+                        <ChevronRight className={cn('size-4 shrink-0 text-muted-foreground transition-transform duration-200', profileAlertsOpen && 'rotate-90')} />
+                        <Bell className="size-4 shrink-0 text-rc-red ml-2" />
+                        <span className="text-sm font-medium ml-2">For you</span>
+                        {profileUnreadCount > 0 && (
+                          <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rc-red text-white text-[10px] font-bold">
+                            {profileUnreadCount}
+                          </span>
+                        )}
+                        <span className="ml-auto" />
+                      </button>
+
+                      <div className={cn(
+                        'overflow-hidden transition-all duration-200 ease-in-out',
+                        profileAlertsOpen ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
+                      )}>
+                        {profileNotifications.length === 0 ? (
+                          <p className="px-4 py-4 text-xs text-muted-foreground text-center">No alerts for you</p>
+                        ) : (
+                          <div className="divide-y">
+                            {profileNotifications.map((notification) => {
+                              const isRead = Boolean(notification.read_at);
+                              const entityType = notification.entity_type as EntityType | null;
+                              const Icon = entityType ? (ENTITY_ICONS[entityType] ?? Bell) : Bell;
+                              return (
+                                <div
+                                  key={notification.id}
+                                  className={cn(
+                                    'relative flex items-start px-4 py-2.5 transition-colors',
+                                    isRead ? 'opacity-60' : '',
+                                    notification.href ? 'hover:bg-accent' : '',
+                                  )}
+                                >
+                                  {!isRead && (
+                                    <span className="absolute left-1 top-4 size-2 rounded-full bg-rc-red" />
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="flex gap-3 min-w-0 flex-1 text-left"
+                                    onClick={() => {
+                                      handleProfileNotificationRead(notification.id);
+                                      if (notification.href) {
+                                        setNotificationsOpen(false);
+                                        router.push(notification.href);
+                                      }
+                                    }}
+                                  >
+                                    <span className="shrink-0 mt-0.5 flex items-center justify-center size-8 rounded-md bg-rc-red/10 text-rc-red">
+                                      <Icon className="size-4" />
+                                    </span>
+                                    <span className="min-w-0 flex-1 space-y-1">
+                                      <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        {PROFILE_NOTIFICATION_LABELS[notification.type]}
+                                      </span>
+                                      <span className="block text-sm font-medium leading-snug">{notification.title}</span>
+                                      <span className="block text-xs text-muted-foreground leading-relaxed">{notification.body}</span>
+                                      <span className="block text-xs text-muted-foreground" suppressHydrationWarning>
+                                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                      </span>
+                                    </span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleProfileNotificationDismiss(notification.id)}
+                                    className="flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] text-muted-foreground hover:text-foreground transition-colors rounded shrink-0 ml-1"
+                                    aria-label="Dismiss"
+                                    title="Dismiss"
+                                  >
+                                    <X className="size-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* ── Updates category ── */}
                     <div>
                       <button

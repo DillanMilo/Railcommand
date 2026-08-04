@@ -12,7 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
-import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
+import { createInAppNotificationToUser, getProjectName } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getSubmittals -- all submittals for a project
@@ -229,7 +229,7 @@ export async function updateSubmittalStatus(
           .eq('id', user.id)
           .single();
 
-        sendNotificationToUser(submittal.submitted_by, (recipient) => ({
+        await createInAppNotificationToUser(submittal.submitted_by, (recipient) => ({
           type: 'submittal_status_changed',
           recipientEmail: recipient.email,
           recipientName: recipient.name,

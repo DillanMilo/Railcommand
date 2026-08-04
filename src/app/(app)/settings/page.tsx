@@ -136,7 +136,7 @@ const notificationSettings: NotificationSetting[] = [
   {
     key: 'overdue_reminder',
     label: 'Overdue reminders',
-    description: 'Daily digest of overdue RFIs and submittals',
+    description: 'In-app reminders for overdue RFIs and submittals',
     defaultOn: true,
   },
   {

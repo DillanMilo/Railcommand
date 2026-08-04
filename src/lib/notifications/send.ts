@@ -1,10 +1,8 @@
 // src/lib/notifications/send.ts
 //
-// Automated notification email delivery is intentionally disabled. RailCommand
-// only sends email when a user explicitly requests it (for example, inviting a
-// teammate or requesting a password reset).
+// Automated email delivery remains disabled. Project events are delivered to
+// the recipient's in-app notification center instead.
 
-import type { NotificationPayload } from './types';
 import { createClient } from '@/lib/supabase/server';
 
 // ---------------------------------------------------------------------------
@@ -39,29 +37,4 @@ export async function getProjectName(projectId: string): Promise<string> {
   } catch {
     return 'Unknown Project';
   }
-}
-
-// ---------------------------------------------------------------------------
-// Main send function
-// ---------------------------------------------------------------------------
-export async function sendNotification(
-  recipientUserId: string,
-  payload: NotificationPayload
-): Promise<void> {
-  // Keep this exported no-op as a second line of defense for any overlooked
-  // or future call site. Do not initialize Resend or record an email event.
-  void recipientUserId;
-  void payload;
-}
-
-// ---------------------------------------------------------------------------
-// Convenience: send without needing to look up recipient details yourself
-// ---------------------------------------------------------------------------
-export async function sendNotificationToUser(
-  recipientUserId: string,
-  buildPayload: (recipient: { email: string; name: string }) => NotificationPayload
-): Promise<void> {
-  // Avoid even loading the recipient profile while automated email is off.
-  void recipientUserId;
-  void buildPayload;
 }

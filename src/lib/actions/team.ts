@@ -14,7 +14,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
-import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
+import { createInAppNotificationToUser, getProjectName } from '@/lib/notifications';
 import type { TeamUpdatePayload } from '@/lib/notifications';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -199,7 +199,7 @@ export async function addProjectMember(
         .neq('profile_id', user.id); // don't notify the person who made the change
 
       for (const m of allMembers ?? []) {
-        sendNotificationToUser(m.profile_id, (recipient) => ({
+        await createInAppNotificationToUser(m.profile_id, (recipient) => ({
           type: 'team_update',
           recipientEmail: recipient.email,
           recipientName: recipient.name,
@@ -294,7 +294,7 @@ export async function removeProjectMember(
         .neq('profile_id', user.id);
 
       for (const m of remainingMembers ?? []) {
-        sendNotificationToUser(m.profile_id, (recipient) => ({
+        await createInAppNotificationToUser(m.profile_id, (recipient) => ({
           type: 'team_update',
           recipientEmail: recipient.email,
           recipientName: recipient.name,
@@ -396,7 +396,7 @@ export async function leaveProject(
         .eq('project_id', projectId);
 
       for (const m of remainingMembers ?? []) {
-        sendNotificationToUser(m.profile_id, (recipient) => ({
+        await createInAppNotificationToUser(m.profile_id, (recipient) => ({
           type: 'team_update',
           recipientEmail: recipient.email,
           recipientName: recipient.name,

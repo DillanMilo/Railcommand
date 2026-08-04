@@ -24,6 +24,7 @@ import type {
   EarthCamCamera,
   EarthCamEvidence,
   EarthCamEmbed,
+  UserNotification,
 } from '@/lib/types';
 
 // Server actions (real auth mode)
@@ -69,6 +70,7 @@ import {
   getWeeklyReportById as fetchWeeklyReportById,
 } from '@/lib/actions/weekly-reports';
 import { getActivityLog as fetchActivity } from '@/lib/actions/activity-log';
+import { getMyNotifications as fetchUserNotifications } from '@/lib/actions/user-notifications';
 import {
   getProjectInvitations as fetchProjectInvitations,
   getPendingInvitationsForUser as fetchPendingInvitations,
@@ -409,6 +411,15 @@ export function useActivityLog(projectId: string, limit?: number) {
     (store) => store.getActivityLog(projectId).slice(0, limit),
     () => fetchActivity(projectId, limit),
     [projectId, limit],
+    [],
+  );
+}
+
+export function useUserNotifications() {
+  return useQuery<UserNotification[]>(
+    () => [],
+    () => fetchUserNotifications(),
+    [],
     [],
   );
 }

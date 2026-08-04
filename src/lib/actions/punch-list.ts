@@ -12,7 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
-import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
+import { createInAppNotificationToUser, getProjectName } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getPunchListItems -- all punch list items for a project
@@ -170,7 +170,7 @@ export async function createPunchListItem(
           .eq('id', user.id)
           .single();
 
-        sendNotificationToUser(assigneeId, (recipient) => ({
+        await createInAppNotificationToUser(assigneeId, (recipient) => ({
           type: 'punch_list_assigned',
           recipientEmail: recipient.email,
           recipientName: recipient.name,
@@ -271,7 +271,7 @@ export async function updatePunchListStatus(
           .eq('id', user.id)
           .single();
 
-        sendNotificationToUser(item.assigned_to, (recipient) => ({
+        await createInAppNotificationToUser(item.assigned_to, (recipient) => ({
           type: 'punch_list_status_changed',
           recipientEmail: recipient.email,
           recipientName: recipient.name,

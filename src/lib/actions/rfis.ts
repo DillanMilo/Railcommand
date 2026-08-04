@@ -12,7 +12,7 @@ import {
   checkProjectMembership,
   logActivity,
 } from './permissions-helper';
-import { sendNotificationToUser, getProjectName } from '@/lib/notifications';
+import { createInAppNotificationToUser, getProjectName } from '@/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // getRFIs -- all RFIs for a project
@@ -179,7 +179,7 @@ export async function createRFI(
           .eq('id', user.id)
           .single();
 
-        sendNotificationToUser(data.assigned_to, (recipient) => ({
+        await createInAppNotificationToUser(data.assigned_to, (recipient) => ({
           type: 'rfi_assigned',
           recipientEmail: recipient.email,
           recipientName: recipient.name,
@@ -348,7 +348,7 @@ export async function addRFIResponse(
           .eq('id', user.id)
           .single();
 
-        sendNotificationToUser(fullRfi.submitted_by, (recipient) => ({
+        await createInAppNotificationToUser(fullRfi.submitted_by, (recipient) => ({
           type: 'rfi_response_received',
           recipientEmail: recipient.email,
           recipientName: recipient.name,
