@@ -5,8 +5,7 @@ import { Camera, Thermometer, X, MapPin, Loader2, Upload, Image as ImageIcon } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { compressImage } from '@/lib/compressImage';
-import { uploadAttachment } from '@/lib/actions/attachments';
+import { uploadPhotoAttachment } from '@/lib/uploadPhotosAfterCreate';
 import { resolvePhotoGeoBatch, type PhotoGeoSource } from '@/lib/photoGeotag';
 import type { PhotoCategory, Attachment } from '@/lib/types';
 
@@ -100,18 +99,15 @@ export default function PhotoUpload({
     // Upload each photo
     for (const photo of newPhotos) {
       try {
-        const compressed = await compressImage(photo.file, photo.category);
-
-        const formData = new FormData();
-        formData.append('file', compressed);
-        formData.append('entity_type', entityType);
-        formData.append('entity_id', entityId);
-        formData.append('project_id', projectId);
-        formData.append('photo_category', photo.category);
-        if (photo.geo_lat !== null) formData.append('geo_lat', String(photo.geo_lat));
-        if (photo.geo_lng !== null) formData.append('geo_lng', String(photo.geo_lng));
-
-        const result = await uploadAttachment(formData);
+        const result = await uploadPhotoAttachment({
+          file: photo.file,
+          category: photo.category,
+          entityType,
+          entityId,
+          projectId,
+          geoLat: photo.geo_lat,
+          geoLng: photo.geo_lng,
+        });
 
         if (result.error) {
           onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
@@ -120,11 +116,11 @@ export default function PhotoUpload({
           onPhotosChange(
             photosRef.current.map((p) =>
               p.id === photo.id
-                ? { ...p, uploading: false, file: compressed }
+                ? { ...p, uploading: false, file: result.data?.file ?? p.file }
                 : p
             )
           );
-          if (result.data) onUploadComplete?.(result.data);
+          if (result.data) onUploadComplete?.(result.data.attachment);
         }
       } catch {
         onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));

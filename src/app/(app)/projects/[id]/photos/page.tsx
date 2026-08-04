@@ -23,6 +23,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import * as store from '@/lib/store';
 import { compressImage } from '@/lib/compressImage';
 import { resolvePhotoGeo } from '@/lib/photoGeotag';
+import { uploadPhotoAttachment } from '@/lib/uploadPhotosAfterCreate';
 import { ACTIONS } from '@/lib/permissions';
 import type { Attachment, PhotoCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -148,9 +149,9 @@ export default function PhotosPage({
         const geo = await resolvePhotoGeo(file, { allowDeviceGeo: true });
         const geoLat = geo?.lat ?? null;
         const geoLng = geo?.lng ?? null;
-        const compressed = await compressImage(file, 'standard');
 
         if (isDemo) {
+          const compressed = await compressImage(file, 'standard');
           const previewUrl = URL.createObjectURL(compressed);
           store.addProjectPhoto(projectId, {
             file_name: file.name,
@@ -163,18 +164,15 @@ export default function PhotosPage({
           });
           refetch();
         } else {
-          // Server mode: use the upload attachment action
-          const { uploadAttachment } = await import('@/lib/actions/attachments');
-          const formData = new FormData();
-          formData.append('file', compressed);
-          formData.append('entity_type', 'project_photo');
-          formData.append('entity_id', projectId);
-          formData.append('project_id', projectId);
-          formData.append('photo_category', 'standard');
-          if (geoLat !== null) formData.append('geo_lat', String(geoLat));
-          if (geoLng !== null) formData.append('geo_lng', String(geoLng));
-
-          const result = await uploadAttachment(formData);
+          const result = await uploadPhotoAttachment({
+            file,
+            category: 'standard',
+            entityType: 'project_photo',
+            entityId: projectId,
+            projectId,
+            geoLat,
+            geoLng,
+          });
           if (result.error) {
             alert(`Upload failed: ${result.error}`);
           }

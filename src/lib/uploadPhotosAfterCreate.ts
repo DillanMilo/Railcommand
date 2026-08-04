@@ -1,14 +1,64 @@
-import { uploadAttachment, recordAttachment } from '@/lib/actions/attachments';
+import { recordAttachment } from '@/lib/actions/attachments';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
 import { compressImage } from '@/lib/compressImage';
 import type { PhotoFile } from '@/components/shared/PhotoUpload';
+import type { Attachment, PhotoCategory } from '@/lib/types';
 
 export interface UploadResult {
   total: number;
   succeeded: number;
   failed: number;
   errors: string[];
+}
+
+export interface UploadedPhotoAttachment {
+  attachment: Attachment;
+  file: File;
+}
+
+export async function uploadPhotoAttachment(input: {
+  file: File;
+  category: PhotoCategory;
+  entityType: string;
+  entityId: string;
+  projectId: string;
+  geoLat?: number | null;
+  geoLng?: number | null;
+}): Promise<{ success?: boolean; data?: UploadedPhotoAttachment; error?: string }> {
+  const supabase = createSupabaseBrowserClient();
+  const compressed = await compressImage(input.file, input.category);
+  const bucket = getBucket(input.category);
+  const storagePath = buildStoragePath(input.projectId, input.entityType, input.entityId, compressed.name);
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(storagePath, compressed, { contentType: compressed.type, upsert: false });
+
+  if (uploadError) {
+    return { error: uploadError.message };
+  }
+
+  const recordResult = await recordAttachment({
+    entityType: input.entityType,
+    entityId: input.entityId,
+    projectId: input.projectId,
+    storagePath,
+    bucket,
+    fileName: compressed.name,
+    fileType: compressed.type,
+    fileSize: compressed.size,
+    photoCategory: input.category,
+    geoLat: input.geoLat ?? null,
+    geoLng: input.geoLng ?? null,
+  });
+
+  if (recordResult.error || !recordResult.data) {
+    await supabase.storage.from(bucket).remove([storagePath]);
+    return { error: recordResult.error ?? 'Failed to record attachment' };
+  }
+
+  return { success: true, data: { attachment: recordResult.data, file: compressed } };
 }
 
 /**
@@ -26,21 +76,19 @@ export async function uploadPhotosAfterCreate(
 ): Promise<UploadResult> {
   const result: UploadResult = { total: photos.length, succeeded: 0, failed: 0, errors: [] };
 
-  // Upload all photos concurrently with Promise.allSettled to avoid race conditions
+  // Upload all photos concurrently. Each browser upload goes straight to
+  // Supabase Storage, then records a small metadata row through a server action.
   const uploadPromises = photos.map(async (photo) => {
     try {
-      const compressed = await compressImage(photo.file, photo.category);
-
-      const formData = new FormData();
-      formData.append('file', compressed);
-      formData.append('entity_type', entityType);
-      formData.append('entity_id', entityId);
-      formData.append('project_id', projectId);
-      formData.append('photo_category', photo.category);
-      if (photo.geo_lat != null) formData.append('geo_lat', String(photo.geo_lat));
-      if (photo.geo_lng != null) formData.append('geo_lng', String(photo.geo_lng));
-
-      const uploadResult = await uploadAttachment(formData);
+      const uploadResult = await uploadPhotoAttachment({
+        file: photo.file,
+        category: photo.category,
+        entityType,
+        entityId,
+        projectId,
+        geoLat: photo.geo_lat,
+        geoLng: photo.geo_lng,
+      });
       if (uploadResult.error) {
         return { success: false, name: photo.file.name, error: uploadResult.error };
       }
