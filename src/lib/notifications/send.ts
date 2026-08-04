@@ -1,61 +1,11 @@
 // src/lib/notifications/send.ts
 //
-// Core notification sender. All calls are wrapped in try/catch so a failed
-// email NEVER breaks the caller's workflow.
+// Automated notification email delivery is intentionally disabled. RailCommand
+// only sends email when a user explicitly requests it (for example, inviting a
+// teammate or requesting a password reset).
 
-import { Resend } from 'resend';
-import { renderNotificationEmail } from './templates';
-import { shouldSuppressNotificationEmail } from './filters';
-import type { NotificationPayload, NotificationType, NotificationPreferences } from './types';
-import { normalizeNotificationPreferences } from './types';
+import type { NotificationPayload } from './types';
 import { createClient } from '@/lib/supabase/server';
-import { recordEmailEvent } from '@/lib/email-events';
-
-// Lazily initialised so missing env var doesn't crash at import time
-let _resend: Resend | null = null;
-
-function getResendClient(): Resend | null {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('[notifications] RESEND_API_KEY is not set -- skipping email');
-    return null;
-  }
-  if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY);
-  }
-  return _resend;
-}
-
-const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'RailCommand <noreply@railcommand.io>';
-
-// ---------------------------------------------------------------------------
-// Preference check
-// ---------------------------------------------------------------------------
-async function getUserNotificationPreferences(userId: string): Promise<NotificationPreferences> {
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('notification_preferences')
-      .eq('id', userId)
-      .single();
-
-    if (data?.notification_preferences) {
-      return normalizeNotificationPreferences(
-        data.notification_preferences as Partial<NotificationPreferences>
-      );
-    }
-  } catch {
-    // Fall through to defaults
-  }
-  return normalizeNotificationPreferences();
-}
-
-function isNotificationEnabled(
-  prefs: NotificationPreferences,
-  type: NotificationType
-): boolean {
-  return prefs[type] ?? true;
-}
 
 // ---------------------------------------------------------------------------
 // Look up a user's profile by ID to get email + name
@@ -98,80 +48,10 @@ export async function sendNotification(
   recipientUserId: string,
   payload: NotificationPayload
 ): Promise<void> {
-  try {
-    // 1. Check user preferences
-    const prefs = await getUserNotificationPreferences(recipientUserId);
-    if (!isNotificationEnabled(prefs, payload.type)) {
-      return; // User has opted out of this notification type
-    }
-
-    if (shouldSuppressNotificationEmail(payload.recipientEmail)) {
-      console.warn(`[notifications] Suppressed ${payload.type} to non-deliverable address: ${payload.recipientEmail}`);
-      await recordEmailEvent({
-        type: payload.type,
-        recipientEmail: payload.recipientEmail,
-        status: 'suppressed',
-        metadata: { recipientUserId },
-      });
-      return;
-    }
-
-    // 2. Get Resend client
-    const resend = getResendClient();
-    if (!resend) {
-      await recordEmailEvent({
-        type: payload.type,
-        recipientEmail: payload.recipientEmail,
-        status: 'skipped',
-        errorMessage: 'RESEND_API_KEY is not configured',
-        metadata: { recipientUserId },
-      });
-      return;
-    }
-
-    // 3. Render the email
-    const { subject, html } = renderNotificationEmail(payload);
-
-    // 4. Send
-    const { data, error } = await resend.emails.send({
-      from: FROM_ADDRESS,
-      to: payload.recipientEmail,
-      subject,
-      html,
-    });
-
-    if (error) {
-      console.error(`[notifications] Failed to send ${payload.type} to ${payload.recipientEmail}:`, error);
-      await recordEmailEvent({
-        type: payload.type,
-        recipientEmail: payload.recipientEmail,
-        subject,
-        status: 'failed',
-        errorMessage: error.message,
-        metadata: { recipientUserId },
-      });
-      return;
-    }
-
-    await recordEmailEvent({
-      type: payload.type,
-      recipientEmail: payload.recipientEmail,
-      subject,
-      providerMessageId: data?.id,
-      status: 'sent',
-      metadata: { recipientUserId },
-    });
-  } catch (err) {
-    // NEVER let email failures bubble up
-    console.error('[notifications] Unexpected error sending notification:', err);
-    await recordEmailEvent({
-      type: payload.type,
-      recipientEmail: payload.recipientEmail,
-      status: 'failed',
-      errorMessage: err instanceof Error ? err.message : 'Unexpected notification email error',
-      metadata: { recipientUserId },
-    });
-  }
+  // Keep this exported no-op as a second line of defense for any overlooked
+  // or future call site. Do not initialize Resend or record an email event.
+  void recipientUserId;
+  void payload;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,15 +61,7 @@ export async function sendNotificationToUser(
   recipientUserId: string,
   buildPayload: (recipient: { email: string; name: string }) => NotificationPayload
 ): Promise<void> {
-  try {
-    const profile = await getUserProfile(recipientUserId);
-    if (!profile) {
-      console.warn(`[notifications] Could not find profile for user ${recipientUserId}`);
-      return;
-    }
-    const payload = buildPayload({ email: profile.email, name: profile.full_name });
-    await sendNotification(recipientUserId, payload);
-  } catch (err) {
-    console.error('[notifications] Unexpected error in sendNotificationToUser:', err);
-  }
+  // Avoid even loading the recipient profile while automated email is off.
+  void recipientUserId;
+  void buildPayload;
 }
