@@ -11,7 +11,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { addProject } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { createProject as serverCreateProject } from '@/lib/actions/projects';
 
@@ -59,7 +58,8 @@ export default function NewProjectDialog({ open, onOpenChange }: NewProjectDialo
     let projectId: string;
 
     if (isDemo) {
-      const project = addProject(projectData);
+      const store = await import('@/lib/store');
+      const project = store.addProject(projectData);
       projectId = project.id;
     } else {
       const result = await serverCreateProject(projectData);

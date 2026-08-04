@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { getActivityLog as fetchActivityLog } from '@/lib/actions/activity-log';
 import { cn } from '@/lib/utils';
-import * as store from '@/lib/store';
 import type { ChangeOrder, Milestone, Modification, Project } from '@/lib/types';
 import {
   ALL_HISTORY_EXPORT_SECTIONS,
@@ -80,7 +79,10 @@ export default function ProjectHistoryExportButton({
 
   const loadActivityLog = async () => {
     if (!selectedSet.has('activity')) return [];
-    if (isDemo) return store.getActivityLog(projectId);
+    if (isDemo) {
+      const store = await import('@/lib/store');
+      return store.getActivityLog(projectId);
+    }
 
     const result = await fetchActivityLog(projectId, 'all');
     if (result.error) throw new Error(result.error);

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { getPendingInvitationsForUser, declineInvitation } from '@/lib/actions/invitations';
-import { getUserInvitations } from '@/lib/store';
 import type { ProjectInvitation } from '@/lib/types';
 
 export default function PendingInvitations() {
@@ -23,7 +22,8 @@ export default function PendingInvitations() {
     async function fetchInvitations() {
       if (isDemo) {
         // In demo mode, use the store with a placeholder email
-        const demoInvitations = getUserInvitations('demo@railcommand.io');
+        const store = await import('@/lib/store');
+        const demoInvitations = store.getUserInvitations('demo@railcommand.io');
         if (!cancelled) {
           setInvitations(demoInvitations);
           setLoading(false);

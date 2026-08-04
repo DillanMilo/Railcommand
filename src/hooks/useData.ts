@@ -26,9 +26,6 @@ import type {
   EarthCamEmbed,
 } from '@/lib/types';
 
-// Store (demo mode)
-import * as store from '@/lib/store';
-
 // Server actions (real auth mode)
 import { getDashboardData as fetchDashboardData, type DashboardData } from '@/lib/actions/dashboard';
 import { getProjects as fetchProjects } from '@/lib/actions/projects';
@@ -82,8 +79,27 @@ import {
   getEarthCamWorkspace as fetchEarthCamWorkspace,
 } from '@/lib/actions/earthcam';
 import type { EarthCamWorkspace } from '@/lib/actions/earthcam';
+import { isRfiOverdue } from '@/lib/date-utils';
 
 const DAILY_LOG_PAGE_SIZE = 500;
+const EMPTY_DASHBOARD_METRICS: DashboardData['metrics'] = {
+  totalSubmittals: 0,
+  pendingSubmittals: 0,
+  openRFIs: 0,
+  overdueRFIs: 0,
+  openPunch: 0,
+  criticalPunch: 0,
+  totalLogs: 0,
+  lastLogDate: null,
+  approvedChangeOrderTotal: 0,
+  pendingChangeOrders: 0,
+  earnedValue: 0,
+};
+type DemoStore = typeof import('@/lib/store');
+
+function loadDemoStore(): Promise<DemoStore> {
+  return import('@/lib/store');
+}
 
 /* ------------------------------------------------------------------ */
 /*  Generic query hook                                                 */
@@ -97,26 +113,41 @@ interface QueryResult<T> {
 }
 
 function useQuery<T>(
-  demoFn: () => T,
+  demoFn: (store: DemoStore) => T | Promise<T>,
   serverFn: () => Promise<{ data?: T; error?: string }>,
   deps: unknown[],
   initial: T,
 ): QueryResult<T> {
   const { isDemo } = useProject();
-  const [data, setData] = useState<T>(() => (isDemo ? demoFn() : initial));
-  const [loading, setLoading] = useState(!isDemo);
+  const [data, setData] = useState<T>(initial);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(() => {
-    if (isDemo) {
-      setData(demoFn());
-      setLoading(false);
-      setError(null);
-      return;
-    }
+    let cancelled = false;
     setLoading(true);
     setError(null);
+
+    if (isDemo) {
+      loadDemoStore()
+        .then((store) => demoFn(store))
+        .then((demoData) => {
+          if (cancelled) return;
+          setData(demoData);
+          setLoading(false);
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setError(err instanceof Error ? err.message : 'Failed to load demo data');
+          setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     serverFn().then((result) => {
+      if (cancelled) return;
       if (result.error) {
         setError(result.error);
       } else if (result.data !== undefined) {
@@ -124,11 +155,14 @@ function useQuery<T>(
       }
       setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, [isDemo, ...deps]);
 
   useEffect(() => {
-    refetch();
+    return refetch();
   }, [refetch]);
 
   return { data, loading, error, refetch };
@@ -140,28 +174,52 @@ function useQuery<T>(
 
 export function useDashboardData(projectId: string | null) {
   return useQuery<DashboardData>(
-    () => ({
-      submittals: projectId ? store.getSubmittals(projectId) : [],
-      rfis: projectId ? store.getRFIs(projectId) : [],
-      punchListItems: projectId ? store.getPunchListItems(projectId) : [],
-      dailyLogs: projectId ? store.getDailyLogs(projectId) : [],
-      milestones: projectId ? store.getMilestones(projectId) : [],
-      changeOrders: projectId ? store.getChangeOrders(projectId) : [],
-    }),
+    (store) => {
+      const submittals = projectId ? store.getSubmittals(projectId) : [];
+      const rfis = projectId ? store.getRFIs(projectId) : [];
+      const punchListItems = projectId ? store.getPunchListItems(projectId) : [];
+      const dailyLogs = projectId ? store.getDailyLogs(projectId) : [];
+      const milestones = projectId ? store.getMilestones(projectId) : [];
+      const changeOrders = projectId ? store.getChangeOrders(projectId) : [];
+      const lastLog = [...dailyLogs].sort((a, b) => b.log_date.localeCompare(a.log_date))[0];
+
+      return {
+        metrics: {
+          totalSubmittals: submittals.length,
+          pendingSubmittals: submittals.filter((s) => s.status === 'submitted' || s.status === 'under_review').length,
+          openRFIs: rfis.filter((r) => r.status === 'open' || r.status === 'overdue').length,
+          overdueRFIs: rfis.filter(isRfiOverdue).length,
+          openPunch: punchListItems.filter((p) => p.status === 'open' || p.status === 'in_progress').length,
+          criticalPunch: punchListItems.filter(
+            (p) => (p.status === 'open' || p.status === 'in_progress') && p.priority === 'critical',
+          ).length,
+          totalLogs: dailyLogs.length,
+          lastLogDate: lastLog?.log_date ?? null,
+          approvedChangeOrderTotal: changeOrders
+            .filter((co) => co.status === 'approved')
+            .reduce((sum, co) => sum + co.amount, 0),
+          pendingChangeOrders: changeOrders.filter((co) => co.status === 'submitted' || co.status === 'draft').length,
+          earnedValue: milestones.reduce(
+            (sum, milestone) => sum + (milestone.budget_planned * milestone.percent_complete) / 100,
+            0,
+          ),
+        },
+      };
+    },
     () =>
       projectId
         ? fetchDashboardData(projectId)
         : Promise.resolve({
-            data: { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [], changeOrders: [] },
+            data: { metrics: EMPTY_DASHBOARD_METRICS },
           }),
     [projectId],
-    { submittals: [], rfis: [], punchListItems: [], dailyLogs: [], milestones: [], changeOrders: [] },
+    { metrics: EMPTY_DASHBOARD_METRICS },
   );
 }
 
 export function useProjects() {
   return useQuery<Project[]>(
-    () => store.getProjects(),
+    (store) => store.getProjects(),
     () => fetchProjects(),
     [],
     [],
@@ -170,7 +228,7 @@ export function useProjects() {
 
 export function useSubmittals(projectId: string | null) {
   return useQuery<Submittal[]>(
-    () => (projectId ? store.getSubmittals(projectId) : []),
+    (store) => (projectId ? store.getSubmittals(projectId) : []),
     () => (projectId ? fetchSubmittals(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -179,7 +237,7 @@ export function useSubmittals(projectId: string | null) {
 
 export function useSubmittalDetail(projectId: string, submittalId: string) {
   return useQuery<Submittal | null>(
-    () => store.getSubmittals(projectId).find((s) => s.id === submittalId) ?? null,
+    (store) => store.getSubmittals(projectId).find((s) => s.id === submittalId) ?? null,
     () => fetchSubmittalById(projectId, submittalId),
     [projectId, submittalId],
     null,
@@ -188,7 +246,7 @@ export function useSubmittalDetail(projectId: string, submittalId: string) {
 
 export function useRFIs(projectId: string | null) {
   return useQuery<RFI[]>(
-    () => (projectId ? store.getRFIs(projectId) : []),
+    (store) => (projectId ? store.getRFIs(projectId) : []),
     () => (projectId ? fetchRFIs(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -197,7 +255,7 @@ export function useRFIs(projectId: string | null) {
 
 export function useRFIDetail(projectId: string, rfiId: string) {
   return useQuery<RFI | null>(
-    () => store.getRFIs(projectId).find((r) => r.id === rfiId) ?? null,
+    (store) => store.getRFIs(projectId).find((r) => r.id === rfiId) ?? null,
     () => fetchRFIById(projectId, rfiId),
     [projectId, rfiId],
     null,
@@ -206,8 +264,8 @@ export function useRFIDetail(projectId: string, rfiId: string) {
 
 export function useDailyLogs(projectId: string | null) {
   const { isDemo } = useProject();
-  const [data, setData] = useState<DailyLog[]>(() => (isDemo && projectId ? store.getDailyLogs(projectId) : []));
-  const [loading, setLoading] = useState(!isDemo);
+  const [data, setData] = useState<DailyLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -224,6 +282,7 @@ export function useDailyLogs(projectId: string | null) {
       }
 
       if (isDemo) {
+        const store = await loadDemoStore();
         setData(store.getDailyLogs(projectId));
         setLoading(false);
         setLoadingMore(false);
@@ -275,7 +334,7 @@ export function useDailyLogs(projectId: string | null) {
 
 export function useDailyLogDetail(projectId: string, logId: string) {
   return useQuery<DailyLog | null>(
-    () => store.getDailyLogs(projectId).find((d) => d.id === logId) ?? null,
+    (store) => store.getDailyLogs(projectId).find((d) => d.id === logId) ?? null,
     () => fetchDailyLogById(projectId, logId),
     [projectId, logId],
     null,
@@ -284,7 +343,7 @@ export function useDailyLogDetail(projectId: string, logId: string) {
 
 export function usePunchListItems(projectId: string | null) {
   return useQuery<PunchListItem[]>(
-    () => (projectId ? store.getPunchListItems(projectId) : []),
+    (store) => (projectId ? store.getPunchListItems(projectId) : []),
     () => (projectId ? fetchPunchList(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -293,7 +352,7 @@ export function usePunchListItems(projectId: string | null) {
 
 export function usePunchListDetail(projectId: string, itemId: string) {
   return useQuery<PunchListItem | null>(
-    () => store.getPunchListItems(projectId).find((p) => p.id === itemId) ?? null,
+    (store) => store.getPunchListItems(projectId).find((p) => p.id === itemId) ?? null,
     () => fetchPunchListById(projectId, itemId),
     [projectId, itemId],
     null,
@@ -302,7 +361,7 @@ export function usePunchListDetail(projectId: string, itemId: string) {
 
 export function useProjectMembers(projectId: string) {
   return useQuery<ProjectMember[]>(
-    () => store.getProjectMembers(projectId),
+    (store) => store.getProjectMembers(projectId),
     () => fetchMembers(projectId),
     [projectId],
     [],
@@ -311,7 +370,7 @@ export function useProjectMembers(projectId: string) {
 
 export function useMilestones(projectId: string) {
   return useQuery<Milestone[]>(
-    () => store.getMilestones(projectId),
+    (store) => store.getMilestones(projectId),
     () => fetchMilestones(projectId),
     [projectId],
     [],
@@ -320,7 +379,7 @@ export function useMilestones(projectId: string) {
 
 export function useChangeOrders(projectId: string | null) {
   return useQuery<ChangeOrder[]>(
-    () => (projectId ? store.getChangeOrders(projectId) : []),
+    (store) => (projectId ? store.getChangeOrders(projectId) : []),
     () => (projectId ? fetchChangeOrders(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -329,7 +388,7 @@ export function useChangeOrders(projectId: string | null) {
 
 export function useModifications(projectId: string | null) {
   return useQuery<Modification[]>(
-    () => (projectId ? store.getModifications(projectId) : []),
+    (store) => (projectId ? store.getModifications(projectId) : []),
     () => (projectId ? fetchModifications(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -338,7 +397,7 @@ export function useModifications(projectId: string | null) {
 
 export function useModificationDetail(projectId: string, modificationId: string) {
   return useQuery<Modification | null>(
-    () => store.getModificationById(modificationId),
+    (store) => store.getModificationById(modificationId),
     () => fetchModificationById(modificationId, projectId),
     [projectId, modificationId],
     null,
@@ -347,7 +406,7 @@ export function useModificationDetail(projectId: string, modificationId: string)
 
 export function useActivityLog(projectId: string, limit?: number) {
   return useQuery<ActivityLogEntry[]>(
-    () => store.getActivityLog(projectId).slice(0, limit),
+    (store) => store.getActivityLog(projectId).slice(0, limit),
     () => fetchActivity(projectId, limit),
     [projectId, limit],
     [],
@@ -356,7 +415,7 @@ export function useActivityLog(projectId: string, limit?: number) {
 
 export function useSafetyIncidents(projectId: string | null) {
   return useQuery<SafetyIncident[]>(
-    () => (projectId ? store.getSafetyIncidents(projectId) : []),
+    (store) => (projectId ? store.getSafetyIncidents(projectId) : []),
     () => (projectId ? fetchSafetyIncidents(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -365,7 +424,7 @@ export function useSafetyIncidents(projectId: string | null) {
 
 export function useSafetyIncidentDetail(projectId: string, incidentId: string) {
   return useQuery<SafetyIncident | null>(
-    () => store.getSafetyIncidentById(incidentId),
+    (store) => store.getSafetyIncidentById(incidentId),
     () => fetchSafetyIncident(incidentId, projectId),
     [projectId, incidentId],
     null,
@@ -374,7 +433,7 @@ export function useSafetyIncidentDetail(projectId: string, incidentId: string) {
 
 export function useProjectInvitations(projectId: string) {
   return useQuery<ProjectInvitation[]>(
-    () => store.getProjectInvitations(projectId),
+    (store) => store.getProjectInvitations(projectId),
     async () => {
       const result = await fetchProjectInvitations(projectId);
       return { data: result.data ?? [], error: result.error };
@@ -386,7 +445,7 @@ export function useProjectInvitations(projectId: string) {
 
 export function useWeeklyReports(projectId: string | null) {
   return useQuery<WeeklyReport[]>(
-    () => (projectId ? store.getWeeklyReports(projectId) : []),
+    (store) => (projectId ? store.getWeeklyReports(projectId) : []),
     () => (projectId ? fetchWeeklyReports(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -395,7 +454,7 @@ export function useWeeklyReports(projectId: string | null) {
 
 export function useWeeklyReportDetail(projectId: string, reportId: string) {
   return useQuery<WeeklyReport | null>(
-    () => store.getWeeklyReportById(reportId),
+    (store) => store.getWeeklyReportById(reportId),
     () => fetchWeeklyReportById(reportId, projectId),
     [projectId, reportId],
     null,
@@ -404,7 +463,7 @@ export function useWeeklyReportDetail(projectId: string, reportId: string) {
 
 export function useQCQAReports(projectId: string | null) {
   return useQuery<QCQAReport[]>(
-    () => (projectId ? store.getQCQAReports(projectId) : []),
+    (store) => (projectId ? store.getQCQAReports(projectId) : []),
     () => (projectId ? fetchQCQAReports(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -413,7 +472,7 @@ export function useQCQAReports(projectId: string | null) {
 
 export function useQCQAReportDetail(projectId: string, reportId: string) {
   return useQuery<QCQAReport | null>(
-    () => store.getQCQAReportById(reportId),
+    (store) => store.getQCQAReportById(reportId),
     () => fetchQCQAReportById(reportId, projectId),
     [projectId, reportId],
     null,
@@ -422,7 +481,7 @@ export function useQCQAReportDetail(projectId: string, reportId: string) {
 
 export function useProjectDocuments(projectId: string | null) {
   return useQuery<ProjectDocument[]>(
-    () => (projectId ? store.getProjectDocuments(projectId) : []),
+    (store) => (projectId ? store.getProjectDocuments(projectId) : []),
     () => (projectId ? fetchProjectDocuments(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -431,7 +490,7 @@ export function useProjectDocuments(projectId: string | null) {
 
 export function useProjectDocumentDetail(projectId: string, documentId: string) {
   return useQuery<ProjectDocument | null>(
-    () => store.getProjectDocumentById(documentId),
+    (store) => store.getProjectDocumentById(documentId),
     () => fetchProjectDocumentById(documentId, projectId),
     [projectId, documentId],
     null,
@@ -440,7 +499,7 @@ export function useProjectDocumentDetail(projectId: string, documentId: string) 
 
 export function usePendingInvitations() {
   return useQuery<ProjectInvitation[]>(
-    () => store.getUserInvitations('demo@railcommand.io'),
+    (store) => store.getUserInvitations('demo@railcommand.io'),
     async () => {
       const result = await fetchPendingInvitations();
       return { data: result.data ?? [], error: result.error };
@@ -452,7 +511,7 @@ export function usePendingInvitations() {
 
 export function useProjectPhotos(projectId: string | null) {
   return useQuery<Attachment[]>(
-    () => (projectId ? store.getAllProjectPhotos(projectId) : []),
+    (store) => (projectId ? store.getAllProjectPhotos(projectId) : []),
     () => (projectId ? fetchProjectPhotos(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
@@ -461,7 +520,7 @@ export function useProjectPhotos(projectId: string | null) {
 
 export function useEarthCamWorkspace(projectId: string | null) {
   return useQuery<EarthCamWorkspace>(
-    () => ({
+    (store) => ({
       connection: store.getEarthCamConnection(),
       cameras: projectId ? store.getEarthCamCameras(projectId) : [],
       evidence: projectId ? store.getEarthCamEvidence(projectId) : [],
@@ -483,7 +542,7 @@ export function useEarthCamWorkspace(projectId: string | null) {
 
 export function useEarthCamEmbeds(projectId: string | null) {
   return useQuery<EarthCamEmbed[]>(
-    () => (projectId ? store.getEarthCamEmbeds(projectId) : []),
+    (store) => (projectId ? store.getEarthCamEmbeds(projectId) : []),
     () => (projectId ? fetchEarthCamEmbeds(projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],

@@ -9,7 +9,6 @@ import { getNavItems } from '@/lib/constants';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
-import { updateProjectStatus as storeUpdateProjectStatus, deleteProject as storeDeleteProject } from '@/lib/store';
 import { updateProjectStatus as serverUpdateProjectStatus, deleteProject as serverDeleteProject } from '@/lib/actions/projects';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import DeleteProjectDialog from '@/components/projects/DeleteProjectDialog';
@@ -101,7 +100,8 @@ export default function Sidebar() {
 
   const handleMarkComplete = async (project: Project) => {
     if (isDemo) {
-      storeUpdateProjectStatus(project.id, 'completed');
+      const store = await import('@/lib/store');
+      store.updateProjectStatus(project.id, 'completed');
     } else {
       await serverUpdateProjectStatus(project.id, 'completed');
     }
@@ -110,7 +110,8 @@ export default function Sidebar() {
 
   const handleArchive = async (project: Project) => {
     if (isDemo) {
-      storeUpdateProjectStatus(project.id, 'archived');
+      const store = await import('@/lib/store');
+      store.updateProjectStatus(project.id, 'archived');
     } else {
       await serverUpdateProjectStatus(project.id, 'archived');
     }
@@ -120,7 +121,8 @@ export default function Sidebar() {
   const handleDeleteConfirmed = async (projectId: string) => {
     const wasCurrentProject = projectId === currentProjectId;
     if (isDemo) {
-      storeDeleteProject(projectId);
+      const store = await import('@/lib/store');
+      store.deleteProject(projectId);
     } else {
       await serverDeleteProject(projectId);
     }

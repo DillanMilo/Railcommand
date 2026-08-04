@@ -17,7 +17,6 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectDocuments } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
 import { getDocumentAttachmentsForDownload } from '@/lib/actions/attachments';
-import { getAttachments as getDemoAttachments } from '@/lib/store';
 import {
   createDocumentArchive,
   saveDocumentArchive,
@@ -140,8 +139,9 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
       let files: DocumentDownloadFile[];
 
       if (isDemo) {
+        const store = await import('@/lib/store');
         files = selectedDocuments.flatMap((doc) =>
-          getDemoAttachments('project_document', doc.id).map((attachment) => ({
+          store.getAttachments('project_document', doc.id).map((attachment) => ({
             id: attachment.id,
             document_id: doc.id,
             document_number: doc.number,

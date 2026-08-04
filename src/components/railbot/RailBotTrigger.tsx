@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import RailBotPanel from './RailBotPanel';
+
+const RailBotPanel = dynamic(() => import('./RailBotPanel'), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function RailBotTrigger() {
   const [isOpen, setIsOpen] = useState(false);

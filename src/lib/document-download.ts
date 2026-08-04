@@ -11,6 +11,13 @@ export interface DocumentDownloadFile {
 }
 
 type FetchFile = (url: string) => Promise<Response>;
+const DEFAULT_MAX_CONCURRENT_FETCHES = 4;
+const DEFAULT_MAX_ARCHIVE_BYTES = 250 * 1024 * 1024;
+
+export interface DocumentArchiveOptions {
+  maxConcurrentFetches?: number;
+  maxArchiveBytes?: number;
+}
 
 function readDataUrl(url: string): Uint8Array<ArrayBuffer> | null {
   if (!url.startsWith('data:')) return null;
@@ -66,20 +73,37 @@ export function buildArchivePaths(files: DocumentDownloadFile[]): string[] {
 export async function createDocumentArchive(
   files: DocumentDownloadFile[],
   fetchFile: FetchFile = fetch,
+  options: DocumentArchiveOptions = {},
 ): Promise<Uint8Array<ArrayBuffer>> {
   if (files.length === 0) {
     throw new Error('None of the selected documents have uploaded files.');
   }
 
+  const totalBytes = files.reduce((sum, file) => sum + Math.max(0, file.file_size), 0);
+  const maxArchiveBytes = options.maxArchiveBytes ?? DEFAULT_MAX_ARCHIVE_BYTES;
+  if (totalBytes > maxArchiveBytes) {
+    throw new Error(
+      `Selected files total ${formatBytes(totalBytes)}. Please select ${formatBytes(maxArchiveBytes)} or less at a time.`,
+    );
+  }
+
   const paths = buildArchivePaths(files);
   const entries: AsyncZippable = {};
+  const maxConcurrentFetches = Math.max(
+    1,
+    Math.floor(options.maxConcurrentFetches ?? DEFAULT_MAX_CONCURRENT_FETCHES),
+  );
+  let nextIndex = 0;
 
-  await Promise.all(
-    files.map(async (file, index) => {
+  async function worker(): Promise<void> {
+    while (nextIndex < files.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const file = files[index];
       const dataUrlBytes = readDataUrl(file.download_url);
       if (dataUrlBytes) {
         entries[paths[index]] = dataUrlBytes;
-        return;
+        continue;
       }
 
       const response = await fetchFile(file.download_url);
@@ -88,7 +112,11 @@ export async function createDocumentArchive(
       }
 
       entries[paths[index]] = new Uint8Array(await response.arrayBuffer());
-    }),
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(maxConcurrentFetches, files.length) }, () => worker()),
   );
 
   return new Promise((resolve, reject) => {
@@ -102,6 +130,11 @@ export async function createDocumentArchive(
       resolve(archive);
     });
   });
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${Math.ceil(bytes / (1024 * 1024))} MB`;
 }
 
 export function saveDocumentArchive(archive: Uint8Array<ArrayBuffer>, fileName: string): void {

@@ -2,20 +2,29 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Submittal, RFI, DailyLog, PunchListItem, Milestone, ChangeOrder } from '@/lib/types';
+import { getLocalDateString } from '@/lib/date-utils';
 import {
   type ActionResult,
   getAuthenticatedUser,
   checkProjectMembership,
 } from './permissions-helper';
 
+export interface DashboardMetrics {
+  totalSubmittals: number;
+  pendingSubmittals: number;
+  openRFIs: number;
+  overdueRFIs: number;
+  openPunch: number;
+  criticalPunch: number;
+  totalLogs: number;
+  lastLogDate: string | null;
+  approvedChangeOrderTotal: number;
+  pendingChangeOrders: number;
+  earnedValue: number;
+}
+
 export interface DashboardData {
-  submittals: Submittal[];
-  rfis: RFI[];
-  punchListItems: PunchListItem[];
-  dailyLogs: DailyLog[];
-  milestones: Milestone[];
-  changeOrders: ChangeOrder[];
+  metrics: DashboardMetrics;
 }
 
 /**
@@ -33,90 +42,130 @@ export async function getDashboardData(
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
 
-    // Run all 6 queries in parallel — single auth check above.
-    //
-    // NOTE: the dashboard page aggregates KPI stats client-side from these raw
-    // arrays (lengths, status filters, EV/CO amount reductions), so the return
-    // shape must remain full row arrays — head-true count queries cannot be
-    // substituted without changing the consumer. Each query carries a
-    // defensive .limit(1000) (ordered newest-first) to bound the payload.
-    const DASHBOARD_ROW_CAP = 1000;
-    const [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes, changeOrdersRes] = await Promise.all([
+    const today = getLocalDateString();
+    const [
+      submittalsTotalRes,
+      pendingSubmittalsRes,
+      openRfisRes,
+      overdueRfisRes,
+      openPunchRes,
+      criticalPunchRes,
+      logsCountRes,
+      lastLogRes,
+      approvedChangeOrdersRes,
+      pendingChangeOrdersRes,
+      milestonesRes,
+    ] = await Promise.all([
       supabase
         .from('submittals')
-        .select(`
-          *,
-          submitted_by_profile:profiles!submittals_submitted_by_fkey(id, full_name, email, avatar_url),
-          reviewed_by_profile:profiles!submittals_reviewed_by_fkey(id, full_name, email, avatar_url)
-        `)
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId),
+
+      supabase
+        .from('submittals')
+        .select('id', { count: 'exact', head: true })
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(DASHBOARD_ROW_CAP),
+        .in('status', ['submitted', 'under_review']),
 
       supabase
         .from('rfis')
-        .select(`
-          *,
-          submitted_by_profile:profiles!rfis_submitted_by_fkey(id, full_name, email, avatar_url),
-          assigned_to_profile:profiles!rfis_assigned_to_fkey(id, full_name, email, avatar_url)
-        `)
+        .select('id', { count: 'exact', head: true })
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(DASHBOARD_ROW_CAP),
+        .in('status', ['open', 'overdue']),
+
+      supabase
+        .from('rfis')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .lt('due_date', today)
+        .not('status', 'in', '("answered","closed")'),
 
       supabase
         .from('punch_list_items')
-        .select(`
-          *,
-          assigned_to_profile:profiles!punch_list_items_assigned_to_fkey(id, full_name, email, avatar_url),
-          created_by_profile:profiles!punch_list_items_created_by_fkey(id, full_name, email, avatar_url)
-        `)
+        .select('id', { count: 'exact', head: true })
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(DASHBOARD_ROW_CAP),
+        .in('status', ['open', 'in_progress']),
+
+      supabase
+        .from('punch_list_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .in('status', ['open', 'in_progress'])
+        .eq('priority', 'critical'),
 
       supabase
         .from('daily_logs')
-        .select(`
-          *,
-          created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url)
-        `)
-        .eq('project_id', projectId)
-        .order('log_date', { ascending: false })
-        .limit(DASHBOARD_ROW_CAP),
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId),
 
       supabase
-        .from('milestones')
-        .select('*')
+        .from('daily_logs')
+        .select('log_date')
         .eq('project_id', projectId)
-        .order('sort_order', { ascending: true })
-        .limit(DASHBOARD_ROW_CAP),
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
 
       supabase
         .from('change_orders')
-        .select(`
-          *,
-          submitted_by_profile:profiles!change_orders_submitted_by_fkey(id, full_name, email, avatar_url),
-          approved_by_profile:profiles!change_orders_approved_by_fkey(id, full_name, email, avatar_url)
-        `)
+        .select('amount')
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(DASHBOARD_ROW_CAP),
+        .eq('status', 'approved'),
+
+      supabase
+        .from('change_orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .in('status', ['submitted', 'draft']),
+
+      supabase
+        .from('milestones')
+        .select('budget_planned, percent_complete')
+        .eq('project_id', projectId),
     ]);
 
     // Return first error if any query failed
-    const firstError = [submittalsRes, rfisRes, punchRes, logsRes, milestonesRes, changeOrdersRes].find((r) => r.error);
+    const firstError = [
+      submittalsTotalRes,
+      pendingSubmittalsRes,
+      openRfisRes,
+      overdueRfisRes,
+      openPunchRes,
+      criticalPunchRes,
+      logsCountRes,
+      lastLogRes,
+      approvedChangeOrdersRes,
+      pendingChangeOrdersRes,
+      milestonesRes,
+    ].find((r) => r.error);
     if (firstError?.error) return { error: firstError.error.message };
+
+    const approvedChangeOrderTotal = (approvedChangeOrdersRes.data ?? []).reduce(
+      (sum, co) => sum + (Number(co.amount) || 0),
+      0,
+    );
+    const earnedValue = (milestonesRes.data ?? []).reduce(
+      (sum, milestone) =>
+        sum + ((Number(milestone.budget_planned) || 0) * (Number(milestone.percent_complete) || 0)) / 100,
+      0,
+    );
 
     return {
       success: true,
       data: {
-        submittals: (submittalsRes.data as Submittal[]) ?? [],
-        rfis: (rfisRes.data as RFI[]) ?? [],
-        punchListItems: (punchRes.data as PunchListItem[]) ?? [],
-        dailyLogs: (logsRes.data as DailyLog[]) ?? [],
-        milestones: (milestonesRes.data as Milestone[]) ?? [],
-        changeOrders: (changeOrdersRes.data as ChangeOrder[]) ?? [],
+        metrics: {
+          totalSubmittals: submittalsTotalRes.count ?? 0,
+          pendingSubmittals: pendingSubmittalsRes.count ?? 0,
+          openRFIs: openRfisRes.count ?? 0,
+          overdueRFIs: overdueRfisRes.count ?? 0,
+          openPunch: openPunchRes.count ?? 0,
+          criticalPunch: criticalPunchRes.count ?? 0,
+          totalLogs: logsCountRes.count ?? 0,
+          lastLogDate: lastLogRes.data?.log_date ?? null,
+          approvedChangeOrderTotal,
+          pendingChangeOrders: pendingChangeOrdersRes.count ?? 0,
+          earnedValue,
+        },
       },
     };
   } catch (err) {

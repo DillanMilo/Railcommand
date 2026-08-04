@@ -26,7 +26,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
-import * as store from '@/lib/store';
 import { globalSearch } from '@/lib/actions/search';
 import type { SearchResultItem, GlobalSearchResult } from '@/lib/actions/search';
 
@@ -81,7 +80,8 @@ function getInitials(name: string): string {
  * Demo mode: search the in-memory store data across all modules.
  * Also searches by assignee profile name.
  */
-function demoSearch(query: string): GlobalSearchResult {
+async function demoSearch(query: string): Promise<GlobalSearchResult> {
+  const store = await import('@/lib/store');
   const q = query.toLowerCase();
   const projects = store.getProjects();
   const projectMap = new Map(projects.map((p) => [p.id, p.name]));
@@ -248,7 +248,10 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
       }
 
       if (isDemo) {
-        setResults(demoSearch(trimmed));
+        const requestId = ++searchCounterRef.current;
+        const demoResults = await demoSearch(trimmed);
+        if (requestId !== searchCounterRef.current) return;
+        setResults(demoResults);
         setLoading(false);
         return;
       }

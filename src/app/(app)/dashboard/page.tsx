@@ -18,7 +18,6 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import { useDashboardData } from '@/hooks/useData';
 import { format, parseISO } from 'date-fns';
-import { isRfiOverdue } from '@/lib/date-utils';
 import {
   DollarSign,
   Calendar,
@@ -42,12 +41,7 @@ export default function DashboardPage() {
 
   // Single batched fetch — 1 auth check + 4 parallel queries instead of 4 × (auth + membership + query)
   const { data: dashboardData, loading: dashboardLoading } = useDashboardData(currentProjectId);
-  const allSubmittals = dashboardData.submittals;
-  const allRFIs = dashboardData.rfis;
-  const allPunch = dashboardData.punchListItems;
-  const allLogs = dashboardData.dailyLogs;
-  const allMilestones = dashboardData.milestones;
-  const allChangeOrders = dashboardData.changeOrders ?? [];
+  const metrics = dashboardData.metrics;
 
   if (!currentProject) {
     // Real auth user with no projects — show welcome state
@@ -98,16 +92,12 @@ export default function DashboardPage() {
     );
   }
 
-  const approvedCOTotal = allChangeOrders.filter(co => co.status === 'approved').reduce((sum, co) => sum + co.amount, 0);
-  const pendingCOs = allChangeOrders.filter(co => co.status === 'submitted' || co.status === 'draft').length;
+  const approvedCOTotal = metrics.approvedChangeOrderTotal;
+  const pendingCOs = metrics.pendingChangeOrders;
   const adjustedBudget = project.budget_total + approvedCOTotal;
 
   const budgetDisplay = `$${(adjustedBudget / 1_000_000).toFixed(1)}M`;
   const budgetSpent = `$${(project.budget_spent / 1_000_000).toFixed(1)}M spent${pendingCOs > 0 ? ` · ${pendingCOs} CO pending` : ''}`;
-  const budgetPercent = adjustedBudget > 0
-    ? Math.round((project.budget_spent / adjustedBudget) * 100)
-    : 0;
-
   const totalDays =
     parseISO(project.target_end_date).getTime() - parseISO(project.start_date).getTime();
   const elapsed = now - parseISO(project.start_date).getTime();
@@ -134,10 +124,7 @@ export default function DashboardPage() {
   }
 
   // Earned Value metrics (CPI / SPI)
-  const earnedValue = allMilestones.reduce(
-    (sum, m) => sum + (m.budget_planned * m.percent_complete) / 100,
-    0,
-  );
+  const earnedValue = metrics.earnedValue;
   const timeRatio = totalDays > 0 ? Math.min(1, Math.max(0, elapsed / totalDays)) : 1;
   const plannedValue = adjustedBudget * timeRatio;
   const actualCost = project.budget_spent;
@@ -146,33 +133,16 @@ export default function DashboardPage() {
 
   const evTrend = (value: number): 'up' | 'down' | 'flat' =>
     value >= 1.05 ? 'up' : value <= 0.95 ? 'down' : 'flat';
-  const evColor = (value: number): string =>
-    value >= 1.05 ? 'text-rc-emerald' : value <= 0.95 ? 'text-rc-red' : 'text-rc-amber';
 
-  const totalSubmittals = allSubmittals.length;
-  const pendingSubmittals = allSubmittals.filter(
-    (s) => s.status === 'submitted' || s.status === 'under_review'
-  ).length;
-
-  const openRFIs = allRFIs.filter(
-    (r) => r.status === 'open' || r.status === 'overdue'
-  ).length;
-  const overdueRFIs = allRFIs.filter(isRfiOverdue).length;
-
-  const openPunch = allPunch.filter(
-    (p) => p.status === 'open' || p.status === 'in_progress'
-  ).length;
-  const criticalPunch = allPunch.filter(
-    (p) =>
-      (p.status === 'open' || p.status === 'in_progress') && p.priority === 'critical'
-  ).length;
-
-  const totalLogs = allLogs.length;
-  const lastLog = [...allLogs].sort(
-    (a, b) => parseISO(b.log_date).getTime() - parseISO(a.log_date).getTime()
-  )[0];
-  const lastLogDate = lastLog
-    ? format(parseISO(lastLog.log_date), 'MMM d')
+  const totalSubmittals = metrics.totalSubmittals;
+  const pendingSubmittals = metrics.pendingSubmittals;
+  const openRFIs = metrics.openRFIs;
+  const overdueRFIs = metrics.overdueRFIs;
+  const openPunch = metrics.openPunch;
+  const criticalPunch = metrics.criticalPunch;
+  const totalLogs = metrics.totalLogs;
+  const lastLogDate = metrics.lastLogDate
+    ? format(parseISO(metrics.lastLogDate), 'MMM d')
     : 'N/A';
 
   return (

@@ -1,9 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useActivityLog } from '@/hooks/useData';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { getProfiles } from '@/lib/store';
 import { formatDistanceToNow } from 'date-fns';
 import {
   FileCheck,
@@ -43,12 +43,6 @@ const entityConfig: Record<string, { icon: typeof FileCheck; dotColor: string }>
   project: { icon: Activity, dotColor: 'bg-rc-steel' },
 };
 
-function getProfileName(profileId: string, demo: boolean): string {
-  if (!demo) return 'Unknown';
-  const profile = getProfiles().find((p) => p.id === profileId);
-  return profile?.full_name ?? 'Unknown';
-}
-
 interface ActivityFeedProps {
   projectId: string;
 }
@@ -56,6 +50,24 @@ interface ActivityFeedProps {
 export default function ActivityFeed({ projectId }: ActivityFeedProps) {
   const { isDemo } = useProject();
   const { data: activityLog, loading: activityLoading } = useActivityLog(projectId, 10);
+  const [demoProfileNames, setDemoProfileNames] = useState<Map<string, string>>(() => new Map());
+
+  useEffect(() => {
+    if (!isDemo) {
+      setDemoProfileNames(new Map());
+      return;
+    }
+
+    let cancelled = false;
+    import('@/lib/store').then((store) => {
+      if (cancelled) return;
+      setDemoProfileNames(new Map(store.getProfiles().map((profile) => [profile.id, profile.full_name])));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemo]);
 
   if (activityLoading) {
     return (
@@ -95,7 +107,7 @@ export default function ActivityFeed({ projectId }: ActivityFeedProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm leading-snug">
                     <span className="font-medium">
-                      {activity.performed_by_profile?.full_name ?? getProfileName(activity.performed_by, isDemo)}
+                      {activity.performed_by_profile?.full_name ?? demoProfileNames.get(activity.performed_by) ?? 'Unknown'}
                     </span>{' '}
                     <span className="text-rc-steel">{activity.description}</span>
                   </p>

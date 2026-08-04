@@ -82,6 +82,51 @@ describe('document batch downloads', () => {
     );
   });
 
+  it('limits concurrent network downloads', async () => {
+    let active = 0;
+    let maxActive = 0;
+    const files = Array.from({ length: 12 }, (_, index) =>
+      file({
+        id: `attachment-${index}`,
+        document_id: `document-${index}`,
+        document_number: `DOC-${index}`,
+        download_url: `https://files.example/${index}.txt`,
+      }),
+    );
+
+    await createDocumentArchive(
+      files,
+      async () => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        active -= 1;
+        return new Response('ok', { status: 200 });
+      },
+      { maxConcurrentFetches: 3 },
+    );
+
+    assert.equal(maxActive, 3);
+  });
+
+  it('rejects oversized selections before fetching files', async () => {
+    let fetched = false;
+
+    await assert.rejects(
+      createDocumentArchive(
+        [file({ file_size: 11 })],
+        async () => {
+          fetched = true;
+          return new Response('too late', { status: 200 });
+        },
+        { maxArchiveBytes: 10 },
+      ),
+      /Please select 1 KB or less/,
+    );
+
+    assert.equal(fetched, false);
+  });
+
   it('explains when selected documents do not contain files', async () => {
     await assert.rejects(createDocumentArchive([]), /have uploaded files/);
   });

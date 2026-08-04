@@ -27,7 +27,6 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
-import { getProfiles } from '@/lib/store';
 import { getMyProfile } from '@/lib/actions/profiles';
 import { useActivityLog, useProjectMembers } from '@/hooks/useData';
 import { formatDistanceToNow } from 'date-fns';
@@ -102,9 +101,13 @@ interface TopbarProps {
   children?: React.ReactNode;
 }
 
-function getProfileName(id: string, performedByProfile?: { full_name?: string } | null, demo?: boolean) {
+function getProfileName(
+  id: string,
+  performedByProfile?: { full_name?: string } | null,
+  demoProfileNames?: Map<string, string>,
+) {
   if (performedByProfile?.full_name) return performedByProfile.full_name;
-  if (demo) return getProfiles().find((p) => p.id === id)?.full_name ?? 'Unknown';
+  if (demoProfileNames) return demoProfileNames.get(id) ?? 'Unknown';
   return 'Unknown';
 }
 
@@ -131,6 +134,8 @@ export default function Topbar({ children }: TopbarProps) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [updatesOpen, setUpdatesOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [demoProfile, setDemoProfile] = useState<Profile | null>(null);
+  const [demoProfileNames, setDemoProfileNames] = useState<Map<string, string>>(() => new Map());
 
   // Load read/dismissed IDs from localStorage on mount
   useEffect(() => {
@@ -262,9 +267,27 @@ export default function Topbar({ children }: TopbarProps) {
     });
   }, [isDemo]);
 
-  const currentProfile = isDemo
-    ? getProfiles().find((p) => p.id === currentUserId) ?? null
-    : authProfile;
+  useEffect(() => {
+    if (!isDemo) {
+      setDemoProfile(null);
+      setDemoProfileNames(new Map());
+      return;
+    }
+
+    let cancelled = false;
+    import('@/lib/store').then((store) => {
+      if (cancelled) return;
+      const profiles = store.getProfiles();
+      setDemoProfile(profiles.find((p) => p.id === currentUserId) ?? null);
+      setDemoProfileNames(new Map(profiles.map((profile) => [profile.id, profile.full_name])));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, isDemo]);
+
+  const currentProfile = isDemo ? demoProfile : authProfile;
   const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
   // Cmd+K / Ctrl+K keyboard shortcut to open global search
@@ -583,7 +606,11 @@ export default function Topbar({ children }: TopbarProps) {
                               );
                               const Icon = ENTITY_ICONS[activity.entity_type] ?? Bell;
                               const label = ENTITY_LABELS[activity.entity_type] ?? 'Activity';
-                              const actorName = getProfileName(activity.performed_by, activity.performed_by_profile, isDemo);
+                              const actorName = getProfileName(
+                                activity.performed_by,
+                                activity.performed_by_profile,
+                                isDemo ? demoProfileNames : undefined,
+                              );
 
                               return (
                                 <div

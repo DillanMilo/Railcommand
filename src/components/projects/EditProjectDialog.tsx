@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { updateProject as storeUpdateProject } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { updateProject as serverUpdateProject } from '@/lib/actions/projects';
 import type { Project } from '@/lib/types';
@@ -70,7 +69,8 @@ export default function EditProjectDialog({ open, onOpenChange, project }: EditP
     };
 
     if (isDemo) {
-      storeUpdateProject(project.id, data);
+      const store = await import('@/lib/store');
+      store.updateProject(project.id, data);
     } else {
       const result = await serverUpdateProject(project.id, {
         ...data,

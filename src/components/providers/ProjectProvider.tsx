@@ -3,7 +3,6 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { getProjects as getStoreProjects, getProjectById as getStoreProjectById, getCurrentUserId, setCurrentUserId as setStoreUserId, initDemoData, initFreshData } from '@/lib/store';
 import { getProjects as fetchProjects } from '@/lib/actions/projects';
 import type { Project } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
@@ -36,32 +35,37 @@ export const useProject = () => useContext(ProjectContext);
 
 const STORAGE_KEY = 'rc-current-project';
 const MODE_KEY = 'rc-mode';
+type DemoStore = typeof import('@/lib/store');
+
+function loadDemoStore(): Promise<DemoStore> {
+  return import('@/lib/store');
+}
 
 /** Rehydrate the store from localStorage mode flag on page reload.
  *  Only runs for explicit demo/fresh modes — real auth users skip this entirely. */
-function rehydrateMode(): void {
+async function rehydrateMode(store: DemoStore): Promise<void> {
   try {
     const mode = localStorage.getItem(MODE_KEY);
     if (mode === 'fresh') {
       const storedName = localStorage.getItem('rc-user-name') ?? 'User';
       const storedEmail = localStorage.getItem('rc-user-email') ?? '';
-      initFreshData(storedName, storedEmail);
+      store.initFreshData(storedName, storedEmail);
     } else if (mode === 'demo') {
-      initDemoData();
+      store.initDemoData();
     }
     // mode is null → real auth user, don't touch the in-memory store
   } catch { /* noop */ }
 }
 
-function getStoredProjectId(isDemoMode: boolean): string {
+function getStoredProjectId(isDemoMode: boolean, store?: DemoStore): string {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (isDemoMode) {
       const mode = localStorage.getItem(MODE_KEY);
       if (mode === 'fresh') {
-        return stored && getStoreProjectById(stored) ? stored : '';
+        return stored && store?.getProjectById(stored) ? stored : '';
       }
-      return stored && getStoreProjectById(stored) ? stored : 'proj-001';
+      return stored && store?.getProjectById(stored) ? stored : 'proj-001';
     }
     // Real auth — return stored ID; will be validated after projects fetch
     return stored ?? '';
@@ -90,20 +94,35 @@ export default function ProjectProvider({
 
   // Rehydrate from localStorage on mount (client-only)
   useEffect(() => {
-    if (!modeRehydrated) {
+    let cancelled = false;
+
+    async function hydrate() {
       const mode = localStorage.getItem(MODE_KEY);
       if (mode === 'demo' || mode === 'fresh') {
-        rehydrateMode();
+        const store = await loadDemoStore();
+        if (cancelled) return;
+        if (!modeRehydrated) {
+          await rehydrateMode(store);
+          modeRehydrated = true;
+        }
+        const demo = true;
+        setIsDemo(demo);
+        setStoredProjectId(getStoredProjectId(demo, store));
+        setProjects(store.getProjects());
+        setCurrentUserIdState(store.getCurrentUserId());
+      } else {
+        modeRehydrated = true;
+        setIsDemo(false);
+        setStoredProjectId(getStoredProjectId(false));
+        setProjects([]);
+        setCurrentUserIdState('');
       }
-      modeRehydrated = true;
     }
 
-    const mode = localStorage.getItem(MODE_KEY);
-    const demo = mode === 'demo' || mode === 'fresh';
-    setIsDemo(demo);
-    setStoredProjectId(getStoredProjectId(demo));
-    setProjects(demo ? getStoreProjects() : []);
-    setCurrentUserIdState(demo ? getCurrentUserId() : '');
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // URL takes priority over stored project ID
@@ -155,10 +174,13 @@ export default function ProjectProvider({
           }
         });
       } else if (mode === 'demo' || mode === 'fresh') {
-        setIsDemo(true);
-        setStoredProjectId(getStoredProjectId(true));
-        setProjects(getStoreProjects());
-        setCurrentUserIdState(getCurrentUserId());
+        loadDemoStore().then((store) => {
+          if (cancelled) return;
+          setIsDemo(true);
+          setStoredProjectId(getStoredProjectId(true, store));
+          setProjects(store.getProjects());
+          setCurrentUserIdState(store.getCurrentUserId());
+        });
       } else {
         // No session and no demo mode — redirect to login
         router.push('/login');
@@ -168,8 +190,9 @@ export default function ProjectProvider({
     return () => { cancelled = true; };
   }, [router]);
 
-  function setCurrentUser(profileId: string) {
-    setStoreUserId(profileId);
+  async function setCurrentUser(profileId: string) {
+    const store = await loadDemoStore();
+    store.setCurrentUserId(profileId);
     setCurrentUserIdState(profileId);
   }
 
@@ -185,7 +208,8 @@ export default function ProjectProvider({
   const refreshProjects = useCallback(async () => {
     let updatedProjects: Project[];
     if (isDemo) {
-      updatedProjects = getStoreProjects();
+      const store = await loadDemoStore();
+      updatedProjects = store.getProjects();
     } else {
       const result = await fetchProjects();
       updatedProjects = result.data ?? projects;
