@@ -19,9 +19,11 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectPhotos } from '@/hooks/useData';
+import { usePermissions } from '@/hooks/usePermissions';
 import * as store from '@/lib/store';
 import { compressImage } from '@/lib/compressImage';
 import { resolvePhotoGeo } from '@/lib/photoGeotag';
+import { ACTIONS } from '@/lib/permissions';
 import type { Attachment, PhotoCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -93,7 +95,8 @@ export default function PhotosPage({
 }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  const { isDemo } = useProject();
+  const { currentUserId, isDemo } = useProject();
+  const { can } = usePermissions(projectId);
 
   const { data: photos, loading, refetch } = useProjectPhotos(projectId);
 
@@ -103,6 +106,12 @@ export default function PhotosPage({
   const [deleting, setDeleting] = useState(false);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const canDeletePhoto = useCallback(
+    (photo: Attachment) =>
+      isDemo || photo.uploaded_by === currentUserId || can(ACTIONS.PHOTO_DELETE),
+    [can, currentUserId, isDemo]
+  );
 
   /* ---- Filter ---- */
   const filtered = useMemo(() => {
@@ -462,20 +471,22 @@ export default function PhotosPage({
                         </a>
                       )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={deleting}
-                    onClick={() => handleDelete(selectedPhoto)}
-                    className="text-muted-foreground hover:text-red-500 hover:bg-red-50 h-8 px-2"
-                  >
-                    {deleting ? (
-                      <Loader2 className="size-3.5 animate-spin mr-1" />
-                    ) : (
-                      <Trash2 className="size-3.5 mr-1" />
-                    )}
-                    Delete
-                  </Button>
+                  {canDeletePhoto(selectedPhoto) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={deleting}
+                      onClick={() => handleDelete(selectedPhoto)}
+                      className="text-muted-foreground hover:text-red-500 hover:bg-red-50 h-8 px-2"
+                    >
+                      {deleting ? (
+                        <Loader2 className="size-3.5 animate-spin mr-1" />
+                      ) : (
+                        <Trash2 className="size-3.5 mr-1" />
+                      )}
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

@@ -21,6 +21,7 @@ export const ACTIONS = {
   QCQA_CREATE: 'qcqa:create',
   QCQA_CLOSE: 'qcqa:close',
   DOCUMENT_MANAGE: 'document:manage',
+  PHOTO_DELETE: 'photo:delete',
   EARTHCAM_VIEW: 'earthcam:view',
   EARTHCAM_ADMIN: 'earthcam:admin',
   EARTHCAM_MANAGE: 'earthcam:manage',

@@ -2,11 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { checkProjectMembership, getAuthenticatedUser } from './permissions-helper';
+import { checkPermission, checkProjectMembership, getAuthenticatedUser } from './permissions-helper';
 import type { ActionResult } from './permissions-helper';
 import type { Attachment } from '@/lib/types';
 import type { DocumentDownloadFile } from '@/lib/document-download';
 import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
+import { ACTIONS } from '@/lib/permissions';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
@@ -176,9 +177,23 @@ export async function deleteAttachment(
       .eq('id', attachmentId)
       .single();
 
-    if (fetchError || !attachment) return { error: 'Attachment not found' };
-    if (attachment.uploaded_by !== user.id)
-      return { error: 'Permission denied' };
+    if (fetchError || !attachment || attachment.project_id !== projectId) {
+      return { error: 'Attachment not found' };
+    }
+
+    const isPhoto =
+      attachment.file_type?.startsWith('image/') || attachment.photo_category === 'thermal';
+    if (attachment.uploaded_by !== user.id) {
+      if (!isPhoto) return { error: 'Permission denied' };
+
+      const permission = await checkPermission(
+        supabase,
+        user.id,
+        projectId,
+        ACTIONS.PHOTO_DELETE
+      );
+      if (!permission.allowed) return { error: permission.error };
+    }
 
     const bucket = getBucket(attachment.photo_category);
     const urlParts = attachment.file_url.split(`/${bucket}/`);
