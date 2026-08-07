@@ -351,6 +351,8 @@ export async function middleware(request: NextRequest) {
   // Public routes that never require auth
   const isPublicRoute =
     pathname === '/' ||
+    pathname === '/sw.js' ||
+    pathname === '/offline.html' ||
     pathname === '/login' ||
     pathname === '/reset-password' ||
     pathname === '/client' ||
@@ -480,8 +482,9 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization)
+     * - offline service-worker assets
      * - favicon.ico, manifest, icons, etc.
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|sw\\.js|offline\\.html|favicon.ico|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

@@ -51,3 +51,22 @@ describe('service worker cache policy', () => {
     assert.match(serviceWorker, /url\.pathname\.startsWith\(["']\/_next\/static\/["']\)/);
   });
 });
+
+describe('offline asset routing policy', () => {
+  const middleware = readFileSync(
+    new URL('../../middleware.ts', import.meta.url),
+    'utf8'
+  );
+
+  it('keeps the service worker and neutral fallback public', () => {
+    assert.match(middleware, /pathname === ['"]\/sw\.js['"]/);
+    assert.match(middleware, /pathname === ['"]\/offline\.html['"]/);
+  });
+
+  it('bypasses authentication middleware for offline bootstrap assets', () => {
+    assert.equal(
+      middleware.includes('_next/image|sw\\\\.js|offline\\\\.html|favicon.ico'),
+      true
+    );
+  });
+});
