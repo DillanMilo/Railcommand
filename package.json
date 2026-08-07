@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
+    "test:offline": "mocha --require tsx \"src/lib/offline/*.test.ts\"",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
     "test:email": "tsx scripts/test-email.ts"
   },

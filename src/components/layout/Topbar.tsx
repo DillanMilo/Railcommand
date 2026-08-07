@@ -24,8 +24,10 @@ import {
 import ThemeToggle from './ThemeToggle';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import { createClient } from '@/lib/supabase/client';
+import { clearOfflineDataForUser } from '@/lib/offline/storage';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { getProfiles } from '@/lib/store';
 import { getMyProfile } from '@/lib/actions/profiles';
@@ -123,6 +125,7 @@ type UnifiedItem =
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
   const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId, isDemo } = useProject();
+  const { markSynced } = usePWA();
   const [searchOpen, setSearchOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
@@ -137,6 +140,14 @@ export default function Topbar({ children }: TopbarProps) {
     setReadIds(loadReadIds());
     setDismissedIds(loadDismissedIds());
   }, []);
+
+  // ProjectProvider publishes a new projects array after a successful server
+  // refresh. Record that moment without coupling offline storage to its fetch logic.
+  useEffect(() => {
+    if (!isDemo && currentUserId && projects.length > 0) {
+      void markSynced(currentUserId);
+    }
+  }, [currentUserId, isDemo, markSynced, projects]);
 
   const markAsRead = useCallback((id: string) => {
     setReadIds((prev) => {
@@ -286,6 +297,9 @@ export default function Topbar({ children }: TopbarProps) {
 
   async function handleSignOut() {
     const supabase = createClient();
+    if (currentUserId) {
+      await clearOfflineDataForUser(currentUserId).catch(() => {});
+    }
     await supabase.auth.signOut();
     await fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
     // Clear demo mode state
