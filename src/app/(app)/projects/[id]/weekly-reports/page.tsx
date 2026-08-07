@@ -18,6 +18,7 @@ import { ACTIONS } from '@/lib/permissions';
 import { WEEKLY_REPORT_STATUS_COLORS, WEEKLY_REPORT_STATUS_LABELS, WEEKLY_REPORT_TYPE_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import type { WeeklyReportType, WeeklyReportStatus } from '@/lib/types';
+import UpReportingWorkspaceCard from '@/components/weekly-reports/UpReportingWorkspaceCard';
 
 const TYPE_TABS: { label: string; value: WeeklyReportType | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -36,7 +37,7 @@ const STATUS_TABS: { label: string; value: WeeklyReportStatus | 'all' }[] = [
 export default function WeeklyReportsListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
-  useProject();
+  const { isDemo } = useProject();
 
   const { can } = usePermissions(projectId);
 
@@ -98,6 +99,19 @@ export default function WeeklyReportsListPage({ params, searchParams }: { params
           </Button>
         )}
       </div>
+
+      {(isDemo || can(ACTIONS.BUDGET_VIEW)) && (
+        <UpReportingWorkspaceCard
+          projectId={projectId}
+          isDemo={isDemo}
+          canConfigure={
+            can(ACTIONS.PROJECT_EDIT) && can(ACTIONS.BUDGET_VIEW)
+          }
+          canCreate={
+            can(ACTIONS.WEEKLY_REPORT_CREATE) && can(ACTIONS.BUDGET_VIEW)
+          }
+        />
+      )}
 
       {/* Search */}
       <div className="relative max-w-sm">

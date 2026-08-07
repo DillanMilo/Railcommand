@@ -136,7 +136,15 @@ function formatProjectRole(role: string): string {
 
 type UnifiedItem =
   | { type: 'activity'; id: string; date: string; activity: ActivityLogEntry }
-  | { type: 'patch_note'; id: string; date: string; version: string; title: string; description: string };
+  | {
+      type: 'patch_note';
+      id: string;
+      date: string;
+      version: string;
+      title: string;
+      description: string;
+      projectRoute?: 'weekly-reports';
+    };
 
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
@@ -247,6 +255,7 @@ export default function Topbar({ children }: TopbarProps) {
         version: p.version,
         title: p.title,
         description: p.description,
+        projectRoute: p.projectRoute,
       });
     }
 
@@ -639,6 +648,10 @@ export default function Topbar({ children }: TopbarProps) {
                             {patchNoteItems.map((item) => {
                               if (item.type !== 'patch_note') return null;
                               const isRead = readIds.has(item.id);
+                              const updateHref =
+                                item.projectRoute === 'weekly-reports' && currentProjectId
+                                  ? `/projects/${currentProjectId}/weekly-reports`
+                                  : null;
                               return (
                                 <div
                                   key={item.id}
@@ -665,6 +678,19 @@ export default function Topbar({ children }: TopbarProps) {
                                       </div>
                                       <p className="text-sm font-medium leading-snug">{item.title}</p>
                                       <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+                                      {updateHref && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            markAsRead(item.id);
+                                            setNotificationsOpen(false);
+                                            router.push(updateHref);
+                                          }}
+                                          className="text-xs font-semibold text-rc-blue hover:underline"
+                                        >
+                                          Open Reports
+                                        </button>
+                                      )}
                                       <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                                         {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
                                       </p>

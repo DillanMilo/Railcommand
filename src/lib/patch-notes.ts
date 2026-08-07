@@ -4,9 +4,18 @@ export interface PatchNote {
   title: string;
   description: string;
   date: string; // ISO date
+  projectRoute?: 'weekly-reports';
 }
 
 export const PATCH_NOTES: PatchNote[] = [
+  {
+    id: 'v2.8.0-railcommand-workbooks',
+    version: '2.8.0',
+    title: 'RailCommand Workbooks Are Here',
+    description: 'Create a reviewed weekly construction report from project data, then download a formatted, editable Excel workbook—no client template or automatic email required.',
+    date: '2026-08-07',
+    projectRoute: 'weekly-reports',
+  },
   {
     id: 'v2.7.0-multi-document-downloads',
     version: '2.7.0',
