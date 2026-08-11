@@ -64,11 +64,13 @@ For each feature, consider all applicable items:
 
 ## Current offline rollout
 
-- **Day 1 complete locally:** static-only service-worker policy, user-scoped IndexedDB
-  schema, connectivity state, last-refresh metadata, offline UI, sign-out cleanup, and
-  focused security tests.
-- **Production acceptance pending:** verify service-worker activation and shared-device
-  cache isolation after deployment.
+- **Day 1 complete and accepted:** static-only service-worker policy, user-scoped
+  IndexedDB schema, connectivity state, last-refresh metadata, offline UI, sign-out
+  cleanup, and focused security tests. Deployed-browser acceptance verified worker
+  activation, the public cache boundary, and A→B→A shared-device database isolation
+  with non-human QA accounts. A real network-offline run against the exact accepted
+  commit verified that the neutral shell opens without exposing the signed-in QA user
+  or project.
 - Later phases will add cached project reads, daily-log drafts/creation, the mutation
   outbox, synchronization, photos, punch items, RFIs, and conflict handling.
 
