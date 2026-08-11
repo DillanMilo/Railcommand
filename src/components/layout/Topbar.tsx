@@ -28,7 +28,8 @@ import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { getMyProfile } from '@/lib/actions/profiles';
-import { useActivityLog, useProjectMembers, useUserNotifications } from '@/hooks/useData';
+import { getActivityLog } from '@/lib/actions/activity-log';
+import { getMyNotifications } from '@/lib/actions/user-notifications';
 import {
   dismissUserNotification,
   markAllUserNotificationsRead,
@@ -160,6 +161,11 @@ export default function Topbar({ children }: TopbarProps) {
   const [activityOpen, setActivityOpen] = useState(false);
   const [demoProfile, setDemoProfile] = useState<Profile | null>(null);
   const [demoProfileNames, setDemoProfileNames] = useState<Map<string, string>>(() => new Map());
+  const [recentActivity, setRecentActivity] = useState<ActivityLogEntry[]>([]);
+  const [profileNotifications, setProfileNotifications] = useState<UserNotification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsLoadedKey, setNotificationsLoadedKey] = useState<string | null>(null);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
 
   // Load read/dismissed IDs from localStorage on mount
   useEffect(() => {
@@ -224,18 +230,46 @@ export default function Topbar({ children }: TopbarProps) {
 
   const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'on_hold');
   const inactiveProjects = projects.filter((p) => p.status === 'completed' || p.status === 'archived');
-  const { data: recentActivity } = useActivityLog(currentProjectId, 5);
-  const { data: projectMembersData } = useProjectMembers(currentProjectId);
-  const {
-    data: profileNotifications,
-    refetch: refetchProfileNotifications,
-  } = useUserNotifications();
 
-  useEffect(() => {
-    if (isDemo) return;
-    const intervalId = window.setInterval(refetchProfileNotifications, 60_000);
-    return () => window.clearInterval(intervalId);
-  }, [isDemo, refetchProfileNotifications]);
+  const loadNotifications = useCallback(async (force = false) => {
+    const loadKey = `${isDemo ? 'demo' : 'auth'}:${currentProjectId || 'none'}:${currentUserId || 'none'}`;
+    if (!force && notificationsLoadedKey === loadKey) return;
+
+    setNotificationsLoading(true);
+    setNotificationsError(null);
+
+    try {
+      if (isDemo) {
+        const store = await import('@/lib/store');
+        setRecentActivity(currentProjectId ? store.getActivityLog(currentProjectId).slice(0, 5) : []);
+        setProfileNotifications([]);
+      } else {
+        const [notificationsResult, activityResult] = await Promise.all([
+          getMyNotifications(),
+          currentProjectId
+            ? getActivityLog(currentProjectId, 5)
+            : Promise.resolve({
+                success: true as const,
+                data: [] as ActivityLogEntry[],
+                error: undefined,
+              }),
+        ]);
+
+        if (notificationsResult.error) throw new Error(notificationsResult.error);
+        if (activityResult.error) throw new Error(activityResult.error);
+
+        setProfileNotifications(notificationsResult.data ?? []);
+        setRecentActivity(activityResult.data ?? []);
+      }
+      setNotificationsLoadedKey(loadKey);
+    } catch (error) {
+      setNotificationsError(
+        error instanceof Error ? error.message : 'Failed to load notifications',
+      );
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [currentProjectId, currentUserId, isDemo, notificationsLoadedKey]);
 
   // Build unified notification list: activity + patch notes, sorted by date desc
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
@@ -299,16 +333,16 @@ export default function Topbar({ children }: TopbarProps) {
   const handleMarkAllAsRead = useCallback(() => {
     markAllAsRead(allVisibleIds);
     if (isDemo || profileUnreadCount === 0) return;
-    void markAllUserNotificationsRead().then(() => refetchProfileNotifications());
-  }, [allVisibleIds, isDemo, markAllAsRead, profileUnreadCount, refetchProfileNotifications]);
+    void markAllUserNotificationsRead().then(() => loadNotifications(true));
+  }, [allVisibleIds, isDemo, loadNotifications, markAllAsRead, profileUnreadCount]);
 
   const handleProfileNotificationRead = useCallback((notificationId: string) => {
-    void markUserNotificationRead(notificationId).then(() => refetchProfileNotifications());
-  }, [refetchProfileNotifications]);
+    void markUserNotificationRead(notificationId).then(() => loadNotifications(true));
+  }, [loadNotifications]);
 
   const handleProfileNotificationDismiss = useCallback((notificationId: string) => {
-    void dismissUserNotification(notificationId).then(() => refetchProfileNotifications());
-  }, [refetchProfileNotifications]);
+    void dismissUserNotification(notificationId).then(() => loadNotifications(true));
+  }, [loadNotifications]);
 
   // Categories stay closed by default — user taps to expand
 
@@ -341,7 +375,6 @@ export default function Topbar({ children }: TopbarProps) {
   }, [currentUserId, isDemo]);
 
   const currentProfile = isDemo ? demoProfile : authProfile;
-  const currentMembership = projectMembersData.find((m) => m.profile_id === currentUserId);
 
   // Cmd+K / Ctrl+K keyboard shortcut to open global search
   // Cmd+Shift+F / Ctrl+Shift+F to navigate to full search page
@@ -494,7 +527,7 @@ export default function Topbar({ children }: TopbarProps) {
             open={notificationsOpen}
             onOpenChange={(open) => {
               setNotificationsOpen(open);
-              if (open && !isDemo) refetchProfileNotifications();
+              if (open) void loadNotifications();
             }}
           >
             <SheetTrigger asChild>
@@ -524,8 +557,18 @@ export default function Topbar({ children }: TopbarProps) {
               </div>
 
               <div className="flex-1 overflow-y-auto">
+                {notificationsLoading && (
+                  <div className="px-4 py-3 text-xs text-muted-foreground">
+                    Loading notifications...
+                  </div>
+                )}
+                {notificationsError && (
+                  <div className="mx-4 mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {notificationsError}
+                  </div>
+                )}
                 {/* Full empty state when both categories have nothing */}
-                {bothCategoriesEmpty && (
+                {!notificationsLoading && !notificationsError && bothCategoriesEmpty && (
                   <div className="flex flex-col items-center justify-center text-center py-16 gap-2">
                     <BellOff className="size-8 text-muted-foreground/60" />
                     <p className="text-sm font-medium">You&apos;re all caught up</p>
@@ -533,7 +576,7 @@ export default function Topbar({ children }: TopbarProps) {
                   </div>
                 )}
 
-                {!bothCategoriesEmpty && (
+                {!notificationsLoading && !notificationsError && !bothCategoriesEmpty && (
                   <>
                     {/* ── Profile-scoped alerts ── */}
                     <div>
@@ -881,7 +924,7 @@ export default function Topbar({ children }: TopbarProps) {
                     {currentProfile?.full_name || currentProfile?.email || 'New User'}
                   </p>
                   <p className="text-xs text-muted-foreground leading-tight">
-                    {currentMembership ? formatProjectRole(currentMembership.project_role) : (currentProfile?.role ? formatProjectRole(currentProfile.role) : 'No Role')}
+                    {currentProfile?.role ? formatProjectRole(currentProfile.role) : 'No Role'}
                   </p>
                 </div>
               </button>
