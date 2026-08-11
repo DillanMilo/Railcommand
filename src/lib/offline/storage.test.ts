@@ -70,3 +70,29 @@ describe('offline asset routing policy', () => {
     );
   });
 });
+
+describe('offline acceptance diagnostics security', () => {
+  const diagnosticsPage = readFileSync(
+    new URL('../../app/(app)/offline-acceptance/page.tsx', import.meta.url),
+    'utf8'
+  );
+  const diagnosticsClient = readFileSync(
+    new URL(
+      '../../app/(app)/offline-acceptance/OfflineAcceptanceDiagnostics.tsx',
+      import.meta.url
+    ),
+    'utf8'
+  );
+
+  it('requires a server-validated QA app_metadata claim', () => {
+    assert.match(diagnosticsPage, /supabase\.auth\.getUser\(\)/);
+    assert.match(diagnosticsPage, /user\.app_metadata\?\.railcommand_qa !== true/);
+    assert.doesNotMatch(diagnosticsPage, /user\.user_metadata/);
+  });
+
+  it('checks only public static cache paths', () => {
+    assert.match(diagnosticsClient, /railcommand-static-v3/);
+    assert.match(diagnosticsClient, /pathname\.startsWith\('\/_next\/static\/'\)/);
+    assert.doesNotMatch(diagnosticsClient, /localStorage/);
+  });
+});
