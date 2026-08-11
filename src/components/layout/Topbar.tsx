@@ -35,6 +35,7 @@ import { useActivityLog, useProjectMembers } from '@/hooks/useData';
 import { formatDistanceToNow } from 'date-fns';
 import { PATCH_NOTES } from '@/lib/patch-notes';
 import type { Project, Profile, ActivityLogEntry } from '@/lib/types';
+import OfflineProjectSnapshotSync from '@/components/providers/OfflineProjectSnapshotSync';
 
 type EntityType = ActivityLogEntry['entity_type'];
 
@@ -322,6 +323,7 @@ export default function Topbar({ children }: TopbarProps) {
 
   return (
     <>
+      <OfflineProjectSnapshotSync />
       <header className="flex h-[66px] shrink-0 items-center justify-between border-b border-rc-border bg-rc-card/95 px-4 backdrop-blur md:px-6">
         {/* Left: Mobile project switcher + Breadcrumbs slot */}
         <div className="flex items-center min-w-0 gap-2">

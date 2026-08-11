@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 
 import type {
   Project,
@@ -82,6 +83,13 @@ import {
   getEarthCamWorkspace as fetchEarthCamWorkspace,
 } from '@/lib/actions/earthcam';
 import type { EarthCamWorkspace } from '@/lib/actions/earthcam';
+import {
+  cacheDailyLogs,
+  cacheProjectMembers,
+  readCachedDailyLogs,
+  readCachedProjectMembers,
+} from '@/lib/offline/project-cache';
+import { getActiveOfflineUserId } from '@/lib/offline/storage';
 
 const DAILY_LOG_PAGE_SIZE = 500;
 
@@ -94,6 +102,12 @@ interface QueryResult<T> {
   loading: boolean;
   error: string | null;
   refetch: () => void;
+}
+
+export interface OfflineReadState {
+  dataSource: 'network' | 'cache' | 'demo';
+  cachedAt: string | null;
+  isCacheStale: boolean;
 }
 
 function useQuery<T>(
@@ -205,17 +219,47 @@ export function useRFIDetail(projectId: string, rfiId: string) {
 }
 
 export function useDailyLogs(projectId: string | null) {
-  const { isDemo } = useProject();
+  const { isDemo, currentUserId } = useProject();
+  const { isOffline } = usePWA();
+  const offlineUserId = currentUserId || getActiveOfflineUserId() || '';
   const [data, setData] = useState<DailyLog[]>(() => (isDemo && projectId ? store.getDailyLogs(projectId) : []));
+  const dataRef = useRef(data);
+  const loadedProjectRef = useRef(projectId);
   const [loading, setLoading] = useState(!isDemo);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [dataSource, setDataSource] = useState<OfflineReadState['dataSource']>(
+    isDemo ? 'demo' : 'network'
+  );
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [isCacheStale, setIsCacheStale] = useState(false);
+
+  const loadCachedLogs = useCallback(async (): Promise<boolean> => {
+    if (!offlineUserId || !projectId) return false;
+    const cached = await readCachedDailyLogs(offlineUserId, projectId).catch(() => null);
+    if (!cached) return false;
+    setData(cached.value);
+    dataRef.current = cached.value;
+    setDataSource('cache');
+    setCachedAt(cached.cachedAt);
+    setIsCacheStale(cached.isStale);
+    setHasMore(false);
+    setError(null);
+    return true;
+  }, [offlineUserId, projectId]);
 
   const loadPage = useCallback(
     async (offset: number, append: boolean) => {
+      if (loadedProjectRef.current !== projectId) {
+        loadedProjectRef.current = projectId;
+        dataRef.current = [];
+        setData([]);
+      }
+
       if (!projectId) {
         setData([]);
+        dataRef.current = [];
         setLoading(false);
         setLoadingMore(false);
         setError(null);
@@ -225,10 +269,23 @@ export function useDailyLogs(projectId: string | null) {
 
       if (isDemo) {
         setData(store.getDailyLogs(projectId));
+        dataRef.current = store.getDailyLogs(projectId);
         setLoading(false);
         setLoadingMore(false);
         setError(null);
         setHasMore(false);
+        setDataSource('demo');
+        setCachedAt(null);
+        setIsCacheStale(false);
+        return;
+      }
+
+      if (isOffline) {
+        if (!append && !(await loadCachedLogs())) {
+          setError('No saved daily logs are available for this project yet.');
+        }
+        setLoading(false);
+        setLoadingMore(false);
         return;
       }
 
@@ -245,16 +302,24 @@ export function useDailyLogs(projectId: string | null) {
       });
 
       if (result.error) {
-        setError(result.error);
+        if (!append && !(await loadCachedLogs())) setError(result.error);
       } else if (result.data) {
-        setData((current) => (append ? [...current, ...result.data!] : result.data!));
+        const nextData = append ? [...dataRef.current, ...result.data] : result.data;
+        setData(nextData);
+        dataRef.current = nextData;
         setHasMore(result.data.length === DAILY_LOG_PAGE_SIZE);
+        setDataSource('network');
+        setCachedAt(new Date().toISOString());
+        setIsCacheStale(false);
+        if (offlineUserId) {
+          void cacheDailyLogs(offlineUserId, projectId, nextData).catch(() => {});
+        }
       }
 
       setLoading(false);
       setLoadingMore(false);
     },
-    [isDemo, projectId],
+    [isDemo, isOffline, loadCachedLogs, offlineUserId, projectId],
   );
 
   const refetch = useCallback(() => {
@@ -270,16 +335,88 @@ export function useDailyLogs(projectId: string | null) {
     refetch();
   }, [refetch]);
 
-  return { data, loading, error, refetch, hasMore, loadingMore, loadMore };
+  return {
+    data,
+    loading,
+    error,
+    refetch,
+    hasMore,
+    loadingMore,
+    loadMore,
+    dataSource,
+    cachedAt,
+    isCacheStale,
+  };
 }
 
 export function useDailyLogDetail(projectId: string, logId: string) {
-  return useQuery<DailyLog | null>(
-    () => store.getDailyLogs(projectId).find((d) => d.id === logId) ?? null,
-    () => fetchDailyLogById(projectId, logId),
-    [projectId, logId],
-    null,
+  const { isDemo, currentUserId } = useProject();
+  const { isOffline } = usePWA();
+  const offlineUserId = currentUserId || getActiveOfflineUserId() || '';
+  const [data, setData] = useState<DailyLog | null>(() =>
+    isDemo ? store.getDailyLogs(projectId).find((dailyLog) => dailyLog.id === logId) ?? null : null
   );
+  const [loading, setLoading] = useState(!isDemo);
+  const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<OfflineReadState['dataSource']>(
+    isDemo ? 'demo' : 'network'
+  );
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [isCacheStale, setIsCacheStale] = useState(false);
+
+  const loadCachedLog = useCallback(async (): Promise<boolean> => {
+    if (!offlineUserId) return false;
+    const cached = await readCachedDailyLogs(offlineUserId, projectId).catch(() => null);
+    const cachedLog = cached?.value.find((dailyLog) => dailyLog.id === logId) ?? null;
+    if (!cached || !cachedLog) return false;
+    setData(cachedLog);
+    setDataSource('cache');
+    setCachedAt(cached.cachedAt);
+    setIsCacheStale(cached.isStale);
+    setError(null);
+    return true;
+  }, [logId, offlineUserId, projectId]);
+
+  const refetch = useCallback(async () => {
+    if (isDemo) {
+      setData(store.getDailyLogs(projectId).find((dailyLog) => dailyLog.id === logId) ?? null);
+      setLoading(false);
+      setError(null);
+      setDataSource('demo');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    if (isOffline) {
+      if (!(await loadCachedLog())) setError('This daily log has not been saved for offline viewing.');
+      setLoading(false);
+      return;
+    }
+
+    const result = await fetchDailyLogById(projectId, logId);
+    if (result.data) {
+      const cacheSafeLog = { ...result.data, attachments: [] };
+      setData(result.data);
+      setDataSource('network');
+      setCachedAt(new Date().toISOString());
+      setIsCacheStale(false);
+      if (offlineUserId) {
+        const cached = await readCachedDailyLogs(offlineUserId, projectId).catch(() => null);
+        const otherLogs = cached?.value.filter((dailyLog) => dailyLog.id !== logId) ?? [];
+        void cacheDailyLogs(offlineUserId, projectId, [cacheSafeLog, ...otherLogs]).catch(() => {});
+      }
+    } else if (!(await loadCachedLog())) {
+      setError(result.error ?? 'Failed to load daily log');
+    }
+    setLoading(false);
+  }, [isDemo, isOffline, loadCachedLog, logId, offlineUserId, projectId]);
+
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
+
+  return { data, loading, error, refetch, dataSource, cachedAt, isCacheStale };
 }
 
 export function usePunchListItems(projectId: string | null) {
@@ -301,12 +438,69 @@ export function usePunchListDetail(projectId: string, itemId: string) {
 }
 
 export function useProjectMembers(projectId: string) {
-  return useQuery<ProjectMember[]>(
-    () => store.getProjectMembers(projectId),
-    () => fetchMembers(projectId),
-    [projectId],
-    [],
+  const { isDemo, currentUserId } = useProject();
+  const { isOffline } = usePWA();
+  const offlineUserId = currentUserId || getActiveOfflineUserId() || '';
+  const [data, setData] = useState<ProjectMember[]>(() =>
+    isDemo ? store.getProjectMembers(projectId) : []
   );
+  const [loading, setLoading] = useState(!isDemo);
+  const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<OfflineReadState['dataSource']>(
+    isDemo ? 'demo' : 'network'
+  );
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [isCacheStale, setIsCacheStale] = useState(false);
+
+  const loadCachedMembers = useCallback(async (): Promise<boolean> => {
+    if (!offlineUserId) return false;
+    const cached = await readCachedProjectMembers(offlineUserId, projectId).catch(() => null);
+    if (!cached) return false;
+    setData(cached.value);
+    setDataSource('cache');
+    setCachedAt(cached.cachedAt);
+    setIsCacheStale(cached.isStale);
+    setError(null);
+    return true;
+  }, [offlineUserId, projectId]);
+
+  const refetch = useCallback(async () => {
+    if (isDemo) {
+      setData(store.getProjectMembers(projectId));
+      setLoading(false);
+      setError(null);
+      setDataSource('demo');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    if (isOffline) {
+      if (!(await loadCachedMembers())) setError('No saved team reference is available.');
+      setLoading(false);
+      return;
+    }
+
+    const result = await fetchMembers(projectId);
+    if (result.data) {
+      setData(result.data);
+      setDataSource('network');
+      setCachedAt(new Date().toISOString());
+      setIsCacheStale(false);
+      if (offlineUserId) {
+        void cacheProjectMembers(offlineUserId, projectId, result.data).catch(() => {});
+      }
+    } else if (!(await loadCachedMembers())) {
+      setError(result.error ?? 'Failed to load project team');
+    }
+    setLoading(false);
+  }, [isDemo, isOffline, loadCachedMembers, offlineUserId, projectId]);
+
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
+
+  return { data, loading, error, refetch, dataSource, cachedAt, isCacheStale };
 }
 
 export function useMilestones(projectId: string) {

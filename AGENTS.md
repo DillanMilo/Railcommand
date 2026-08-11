@@ -71,8 +71,15 @@ For each feature, consider all applicable items:
   with non-human QA accounts. A real network-offline run against the exact accepted
   commit verified that the neutral shell opens without exposing the signed-in QA user
   or project.
-- Later phases will add cached project reads, daily-log drafts/creation, the mutation
-  outbox, synchronization, photos, punch items, RFIs, and conflict handling.
+- **Day 2 offline read-only project data complete locally:** the active project, team
+  reference, and latest 90 daily logs are cached in the signed-in user's IndexedDB
+  after an authenticated membership/RLS check. Project records refresh after 24 hours,
+  team references after 1 hour, and daily logs after 15 minutes. Stale copies remain
+  visibly read-only while offline and are discarded after 30 days (projects/logs) or
+  7 days (team). A real network-offline restart test verified cached daily-log list and
+  detail viewing. The public service-worker cache remains static-only.
+- Later phases will add daily-log drafts/creation, the mutation outbox, synchronization,
+  photos, punch items, RFIs, and conflict handling.
 
 Until those later phases land, do not describe RailCommand as supporting full offline
 project work. Distinguish the installable PWA/offline fallback from data-aware offline mode.

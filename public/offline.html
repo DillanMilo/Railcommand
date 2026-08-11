@@ -14,12 +14,12 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      text-align: center;
       padding: 2rem;
     }
     .container {
-      max-width: 420px;
+      width: min(100%, 760px);
     }
+    .neutral { text-align: center; }
     .icon {
       font-size: 3rem;
       margin-bottom: 1.5rem;
@@ -44,6 +44,45 @@
       line-height: 1.6;
       margin-bottom: 2rem;
     }
+    #offline-data-status {
+      min-height: 1.5rem;
+      margin: 1rem 0;
+      text-align: center;
+      color: #CBD5E1;
+      font-size: 0.875rem;
+    }
+    .project-title { margin: 0 0 0.35rem; font-size: 1.5rem; }
+    .cache-meta { margin: 0 0 1rem; color: #94A3B8; font-size: 0.8rem; }
+    .read-only-note {
+      margin: 0 0 1rem;
+      border: 1px solid #92400E;
+      border-radius: 0.6rem;
+      background: rgba(146, 64, 14, 0.2);
+      color: #FDE68A;
+      padding: 0.75rem;
+      font-size: 0.85rem;
+    }
+    .log-list { display: grid; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .log-card, .detail-card {
+      display: grid;
+      gap: 0.35rem;
+      border: 1px solid #334155;
+      border-radius: 0.65rem;
+      background: #1E293B;
+      color: #F8FAFC;
+      padding: 1rem;
+      text-decoration: none;
+      text-align: left;
+    }
+    .log-card:hover { border-color: #F97316; }
+    .log-summary, .log-meta { color: #CBD5E1; font-size: 0.85rem; line-height: 1.45; }
+    .log-meta { color: #94A3B8; font-size: 0.75rem; }
+    .detail-card { margin-bottom: 0.75rem; }
+    .detail-card h3 { color: #F8FAFC; font-size: 1rem; }
+    .detail-card p { margin: 0.35rem 0 0; color: #CBD5E1; font-size: 0.9rem; }
+    .back-link { display: inline-block; color: #FDBA74; margin-bottom: 1rem; }
+    .empty-state { margin: 1.5rem 0; text-align: center; }
+    .actions { text-align: center; margin-top: 1.25rem; }
     .retry-btn {
       display: inline-block;
       background: #F97316;
@@ -66,11 +105,18 @@
 </head>
 <body>
   <div class="container">
-    <div class="icon">&#x1F6F0;&#xFE0F;</div>
-    <div class="brand">RailCommand</div>
-    <h1>You're offline</h1>
-    <p>It looks like you've lost your internet connection. Check your network and try again.</p>
-    <button class="retry-btn" onclick="location.reload()">Retry</button>
+    <div id="offline-neutral-message" class="neutral">
+      <div class="icon">&#x1F6F0;&#xFE0F;</div>
+      <div class="brand">RailCommand</div>
+      <h1>You're offline</h1>
+      <p>It looks like you've lost your internet connection. Check your network and try again.</p>
+    </div>
+    <div id="offline-data-status">Checking for a saved project copy…</div>
+    <main id="offline-project-data" hidden aria-live="polite"></main>
+    <div class="actions">
+      <button class="retry-btn" onclick="location.reload()">Retry</button>
+    </div>
   </div>
+  <script src="/offline-data.js" defer></script>
 </body>
 </html>

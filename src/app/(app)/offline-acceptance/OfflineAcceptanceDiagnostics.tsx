@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getOfflineDatabaseName } from '@/lib/offline/storage';
 
-const PUBLIC_CACHE_NAME = 'railcommand-static-v3';
+const PUBLIC_CACHE_NAME = 'railcommand-static-v5';
 const PUBLIC_CACHE_PATHS = new Set([
   '/offline.html',
+  '/offline-data.js',
   '/favicon-16x16.png',
   '/favicon-32x32.png',
   '/icon-192.png',
@@ -18,6 +19,7 @@ const PUBLIC_CACHE_PATHS = new Set([
 type CheckStatus = 'checking' | 'pass' | 'fail' | 'unsupported';
 
 type Diagnostics = {
+  activeProjectId: string | null;
   cacheEntries: string[];
   cacheNames: string[];
   cacheStatus: CheckStatus;
@@ -26,10 +28,13 @@ type Diagnostics = {
   databaseStatus: CheckStatus;
   expectedDatabasePresent: boolean;
   registrationStatus: CheckStatus;
+  dayTwoRecordTypes: string[];
+  dayTwoStatus: CheckStatus;
   unsafeCacheEntries: string[];
 };
 
 const initialDiagnostics: Diagnostics = {
+  activeProjectId: null,
   cacheEntries: [],
   cacheNames: [],
   cacheStatus: 'checking',
@@ -38,6 +43,8 @@ const initialDiagnostics: Diagnostics = {
   databaseStatus: 'checking',
   expectedDatabasePresent: false,
   registrationStatus: 'checking',
+  dayTwoRecordTypes: [],
+  dayTwoStatus: 'checking',
   unsafeCacheEntries: [],
 };
 
@@ -58,6 +65,44 @@ function Status({ value }: { value: CheckStatus }) {
       {value}
     </span>
   );
+}
+
+function inspectOfflineDatabase(databaseName: string): Promise<{
+  activeProjectId: string | null;
+  recordTypes: string[];
+}> {
+  return new Promise((resolve, reject) => {
+    const openRequest = indexedDB.open(databaseName);
+    openRequest.onerror = () => reject(openRequest.error);
+    openRequest.onsuccess = () => {
+      const database = openRequest.result;
+      if (
+        !database.objectStoreNames.contains('metadata') ||
+        !database.objectStoreNames.contains('records')
+      ) {
+        database.close();
+        resolve({ activeProjectId: null, recordTypes: [] });
+        return;
+      }
+
+      const transaction = database.transaction(['metadata', 'records'], 'readonly');
+      const activeProjectRequest = transaction.objectStore('metadata').get('active_project_id');
+      const recordsRequest = transaction.objectStore('records').getAll();
+      transaction.oncomplete = () => {
+        const activeProjectId = activeProjectRequest.result?.value ?? null;
+        const recordTypes = (recordsRequest.result as { entityType?: string; projectId?: string }[])
+          .filter((record) => !activeProjectId || record.projectId === activeProjectId)
+          .map((record) => record.entityType)
+          .filter((value): value is string => Boolean(value));
+        database.close();
+        resolve({ activeProjectId, recordTypes: [...new Set(recordTypes)].sort() });
+      };
+      transaction.onerror = () => {
+        database.close();
+        reject(transaction.error);
+      };
+    };
+  });
 }
 
 export default function OfflineAcceptanceDiagnostics({ userId }: { userId: string }) {
@@ -89,6 +134,8 @@ export default function OfflineAcceptanceDiagnostics({ userId }: { userId: strin
     let databaseStatus: CheckStatus = 'unsupported';
     let databaseCount = 0;
     let expectedDatabasePresent = false;
+    let activeProjectId: string | null = null;
+    let dayTwoRecordTypes: string[] = [];
 
     if (typeof indexedDB.databases === 'function') {
       const databases = await indexedDB.databases();
@@ -100,12 +147,18 @@ export default function OfflineAcceptanceDiagnostics({ userId }: { userId: strin
         (database) => database.name === expectedDatabaseName
       );
       databaseStatus = databaseCount === 1 && expectedDatabasePresent ? 'pass' : 'fail';
+      if (expectedDatabasePresent) {
+        const inspection = await inspectOfflineDatabase(expectedDatabaseName);
+        activeProjectId = inspection.activeProjectId;
+        dayTwoRecordTypes = inspection.recordTypes;
+      }
     }
 
     const onlyPublicCache =
       railCommandCacheNames.length === 1 && railCommandCacheNames[0] === PUBLIC_CACHE_NAME;
 
     setDiagnostics({
+      activeProjectId,
       cacheEntries: [...new Set(cacheEntries)].sort(),
       cacheNames: railCommandCacheNames,
       cacheStatus: onlyPublicCache && unsafeCacheEntries.length === 0 ? 'pass' : 'fail',
@@ -119,6 +172,16 @@ export default function OfflineAcceptanceDiagnostics({ userId }: { userId: strin
         registration.active.scriptURL.endsWith('/sw.js')
           ? 'pass'
           : 'fail',
+      dayTwoRecordTypes,
+      dayTwoStatus:
+        databaseStatus === 'unsupported'
+          ? 'unsupported'
+          : activeProjectId &&
+              ['daily_logs', 'project', 'project_members'].every((type) =>
+                dayTwoRecordTypes.includes(type)
+              )
+            ? 'pass'
+            : 'fail',
       unsafeCacheEntries,
     });
     setCheckedAt(new Date().toISOString());
@@ -179,6 +242,17 @@ export default function OfflineAcceptanceDiagnostics({ userId }: { userId: strin
           <p className="mt-2 text-sm text-muted-foreground">
             RailCommand databases: {diagnostics.databaseCount}. Current QA scope present:{' '}
             {diagnostics.expectedDatabasePresent ? 'yes' : 'no'}.
+          </p>
+        </section>
+
+        <section className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold">Day 2 project snapshot</h2>
+            <Status value={diagnostics.dayTwoStatus} />
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Active project: {diagnostics.activeProjectId ?? 'none'}. Records:{' '}
+            {diagnostics.dayTwoRecordTypes.join(', ') || 'none'}.
           </p>
         </section>
       </div>

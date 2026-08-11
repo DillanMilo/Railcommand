@@ -18,6 +18,7 @@ import { useDailyLogDetail } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
 import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
 import type { DailyLog, Attachment } from '@/lib/types';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 
 function weatherIcon(conditions: string) {
   const c = conditions.toLowerCase();
@@ -30,8 +31,17 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const { id: projectId, logId } = use(params);
   use(searchParams);
   const { isDemo, currentProject } = useProject();
+  const { isOffline } = usePWA();
   const { can } = usePermissions(projectId);
-  const { data: log, loading } = useDailyLogDetail(projectId, logId);
+  const {
+    data: log,
+    loading,
+    error,
+    dataSource,
+    cachedAt,
+    isCacheStale,
+  } = useDailyLogDetail(projectId, logId);
+  const isOfflineReadOnly = isOffline || dataSource === 'cache';
   const rawAttachments: Attachment[] = log
     ? (log as DailyLog & { attachments?: Attachment[] }).attachments?.length
       ? (log as DailyLog & { attachments?: Attachment[] }).attachments!
@@ -40,10 +50,10 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
   const [signedAttachments, setSignedAttachments] = useState<Attachment[]>([]);
 
   const resolveSignedUrls = useCallback(async () => {
-    if (isDemo || !log) return;
+    if (isDemo || !log || isOfflineReadOnly) return;
     const result = await getAttachmentsWithSignedUrls('daily_log', logId);
     if (result.data) setSignedAttachments(result.data);
-  }, [isDemo, log, logId]);
+  }, [isDemo, isOfflineReadOnly, log, logId]);
 
   useEffect(() => { resolveSignedUrls(); }, [resolveSignedUrls]);
 
@@ -60,7 +70,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
     return (
       <div className="space-y-6">
         <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs', href: `/projects/${projectId}/daily-logs` }, { label: 'Not Found' }]} />
-        <p className="text-muted-foreground">Daily log not found.</p>
+        <p className="text-muted-foreground">{error ?? 'Daily log not found.'}</p>
       </div>
     );
   }
@@ -80,6 +90,18 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
         { label: dateLabel },
       ]} />
 
+      {isOfflineReadOnly && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-semibold">Saved daily log — read only</p>
+          <p className="mt-1 text-xs opacity-80">
+            {cachedAt
+              ? `Saved ${new Date(cachedAt).toLocaleString()}${isCacheStale ? ' · refresh overdue' : ''}.`
+              : 'RailCommand is offline.'}{' '}
+            Reconnect before editing this record or loading its files.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -87,14 +109,16 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
           {authorName && <p className="text-sm text-muted-foreground mt-1">Created by {authorName}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <ExportPDFButton
-            getDocument={async () => {
-              const { default: DailyLogPDF } = await import('@/lib/pdf/DailyLogPDF');
-              return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} />;
-            }}
-            fileName={`daily-log-${log.log_date}-${projectId}`}
-          />
-          {can(ACTIONS.DAILY_LOG_UPDATE) && (
+          {!isOfflineReadOnly && (
+            <ExportPDFButton
+              getDocument={async () => {
+                const { default: DailyLogPDF } = await import('@/lib/pdf/DailyLogPDF');
+                return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} />;
+              }}
+              fileName={`daily-log-${log.log_date}-${projectId}`}
+            />
+          )}
+          {can(ACTIONS.DAILY_LOG_UPDATE) && !isOfflineReadOnly && (
             <Button asChild variant="outline" size="sm">
               <Link href={`/projects/${projectId}/daily-logs/${logId}/edit`}>
                 <Pencil className="mr-1.5 size-3.5" />Edit
@@ -204,7 +228,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       <PhotoGallery attachments={attachments} />
 
       {/* Document attachments */}
-      {!isDemo && (
+      {!isDemo && !isOfflineReadOnly && (
         <FileUpload
           existingAttachments={(attachments as Attachment[]).filter(
             (a) => !a.file_type?.startsWith('image/') && a.photo_category !== 'thermal'

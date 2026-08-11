@@ -3,8 +3,19 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'mocha';
 import {
   getOfflineDatabaseName,
+  getOfflineUserIdFromDatabaseName,
+  getOfflineRecordKey,
   isRailCommandCacheName,
+  isOfflineRecordDiscarded,
+  isOfflineRecordStale,
 } from './storage';
+import {
+  createOfflineRecord,
+  limitRecentDailyLogs,
+  OFFLINE_CACHE_POLICIES,
+  RECENT_DAILY_LOG_LIMIT,
+} from './project-cache';
+import type { DailyLog } from '@/lib/types';
 
 describe('offline storage security boundaries', () => {
   it('creates a separate database name for every user', () => {
@@ -20,14 +31,69 @@ describe('offline storage security boundaries', () => {
     );
   });
 
+  it('recovers only a RailCommand user scope from an encoded database name', () => {
+    assert.equal(
+      getOfflineUserIdFromDatabaseName('railcommand-offline:user%2Fname%40example.com'),
+      'user/name@example.com'
+    );
+    assert.equal(getOfflineUserIdFromDatabaseName('another-app:user-a'), null);
+    assert.equal(getOfflineUserIdFromDatabaseName('railcommand-offline:%E0%A4%A'), null);
+    assert.equal(getOfflineUserIdFromDatabaseName('railcommand-offline:'), null);
+  });
+
   it('rejects an empty offline user scope', () => {
     assert.throws(() => getOfflineDatabaseName('  '), /user ID is required/);
   });
 
   it('identifies only RailCommand-owned caches for cleanup', () => {
     assert.equal(isRailCommandCacheName('railcommand-v2'), true);
-    assert.equal(isRailCommandCacheName('railcommand-static-v3'), true);
+    assert.equal(isRailCommandCacheName('railcommand-static-v5'), true);
     assert.equal(isRailCommandCacheName('another-app-cache'), false);
+  });
+
+  it('creates project-scoped record keys and rejects an empty project scope', () => {
+    assert.equal(getOfflineRecordKey('project', 'project-a'), 'project:project-a');
+    assert.equal(
+      getOfflineRecordKey('daily_logs', 'project-a'),
+      'daily_logs:project-a'
+    );
+    assert.throws(() => getOfflineRecordKey('project_members', '  '), /project ID is required/);
+  });
+});
+
+describe('Day 2 offline project cache policies', () => {
+  it('uses explicit refresh and discard windows for every cached entity', () => {
+    const cachedAt = new Date('2026-08-11T12:00:00.000Z');
+    const record = createOfflineRecord('daily_logs', 'project-a', [], cachedAt);
+    const policy = OFFLINE_CACHE_POLICIES.daily_logs;
+
+    assert.equal(
+      Date.parse(record.refreshAfter) - cachedAt.getTime(),
+      policy.refreshAfterMs
+    );
+    assert.equal(
+      Date.parse(record.discardAfter) - cachedAt.getTime(),
+      policy.discardAfterMs
+    );
+    assert.equal(isOfflineRecordStale(record, Date.parse(record.refreshAfter) - 1), false);
+    assert.equal(isOfflineRecordStale(record, Date.parse(record.refreshAfter)), true);
+    assert.equal(isOfflineRecordDiscarded(record, Date.parse(record.discardAfter)), true);
+  });
+
+  it('keeps only the most recent daily logs in the device cache', () => {
+    const logs = Array.from({ length: RECENT_DAILY_LOG_LIMIT + 10 }, (_, index) => ({
+      id: `log-${index}`,
+      log_date: `2026-01-${String((index % 28) + 1).padStart(2, '0')}`,
+    })) as DailyLog[];
+    const cached = limitRecentDailyLogs(logs);
+
+    assert.equal(cached.length, RECENT_DAILY_LOG_LIMIT);
+    assert.ok(cached.every((log, index) => index === 0 || cached[index - 1].log_date >= log.log_date));
+  });
+
+  it('keeps project records out of global localStorage', () => {
+    const projectCache = readFileSync(new URL('./project-cache.ts', import.meta.url), 'utf8');
+    assert.doesNotMatch(projectCache, /localStorage/);
   });
 });
 
@@ -43,12 +109,47 @@ describe('service worker cache policy', () => {
 
   it('uses a neutral fallback for failed navigations', () => {
     assert.match(serviceWorker, /request\.mode === ["']navigate["']/);
+    assert.match(serviceWorker, /fetch\(request, \{ cache: ["']no-store["'] \}\)/);
     assert.match(serviceWorker, /caches\.match\(["']\/offline\.html["']\)/);
   });
 
   it('limits runtime caching to same-origin public static files', () => {
     assert.match(serviceWorker, /url\.origin !== self\.location\.origin/);
     assert.match(serviceWorker, /url\.pathname\.startsWith\(["']\/_next\/static\/["']\)/);
+  });
+
+  it('pre-caches the public offline data reader without caching private records', () => {
+    assert.match(serviceWorker, /["']\/offline-data\.js["']/);
+    assert.doesNotMatch(serviceWorker, /project_members|daily_logs|indexedDB/);
+  });
+});
+
+describe('Day 2 offline read security', () => {
+  const offlineReader = readFileSync(
+    new URL('../../../public/offline-data.js', import.meta.url),
+    'utf8'
+  );
+  const offlineAction = readFileSync(
+    new URL('../actions/offline.ts', import.meta.url),
+    'utf8'
+  );
+
+  it('fails closed without the current signed-in database scope', () => {
+    assert.match(offlineReader, /localStorage\.getItem\(SCOPE_KEY\)/);
+    assert.match(offlineReader, /return null/);
+    assert.doesNotMatch(offlineReader, /indexedDB\.databases/);
+  });
+
+  it('renders cached field values with textContent rather than HTML injection', () => {
+    assert.match(offlineReader, /node\.textContent = text/);
+    assert.doesNotMatch(offlineReader, /innerHTML/);
+  });
+
+  it('revalidates membership before building an offline snapshot', () => {
+    assert.match(offlineAction, /getAuthenticatedUser\(supabase\)/);
+    assert.match(offlineAction, /checkProjectMembership\(supabase, user\.id, projectId\)/);
+    assert.match(offlineAction, /\.from\('project_members'\)/);
+    assert.match(offlineAction, /\.from\('daily_logs'\)/);
   });
 });
 
@@ -61,13 +162,18 @@ describe('offline asset routing policy', () => {
   it('keeps the service worker and neutral fallback public', () => {
     assert.match(middleware, /pathname === ['"]\/sw\.js['"]/);
     assert.match(middleware, /pathname === ['"]\/offline\.html['"]/);
+    assert.match(middleware, /pathname === ['"]\/offline-data\.js['"]/);
   });
 
   it('bypasses authentication middleware for offline bootstrap assets', () => {
     assert.equal(
-      middleware.includes('_next/image|sw\\\\.js|offline\\\\.html|favicon.ico'),
+      middleware.includes('_next/image|sw\\\\.js|offline\\\\.html|offline-data\\\\.js|favicon.ico'),
       true
     );
+  });
+
+  it('prevents authenticated HTML from being restored from the browser HTTP cache', () => {
+    assert.match(middleware, /Cache-Control['"], ['"]private, no-store, max-age=0['"]/);
   });
 });
 
@@ -91,7 +197,7 @@ describe('offline acceptance diagnostics security', () => {
   });
 
   it('checks only public static cache paths', () => {
-    assert.match(diagnosticsClient, /railcommand-static-v3/);
+    assert.match(diagnosticsClient, /railcommand-static-v5/);
     assert.match(diagnosticsClient, /pathname\.startsWith\('\/_next\/static\/'\)/);
     assert.doesNotMatch(diagnosticsClient, /localStorage/);
   });

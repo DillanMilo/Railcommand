@@ -1,10 +1,11 @@
-const STATIC_CACHE_NAME = "railcommand-static-v3";
+const STATIC_CACHE_NAME = "railcommand-static-v5";
 const RAILCOMMAND_CACHE_PREFIX = "railcommand-";
 
 // Only public, user-neutral files belong in Cache Storage. Project data and
 // authenticated Next.js/RSC responses are intentionally excluded.
 const PUBLIC_APP_SHELL = [
   "/offline.html",
+  "/offline-data.js",
   "/favicon-16x16.png",
   "/favicon-32x32.png",
   "/icon-192.png",
@@ -82,7 +83,7 @@ self.addEventListener("fetch", (event) => {
   // must never enter Cache Storage. The neutral page is the only offline fallback.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/offline.html"))
+      fetch(request, { cache: "no-store" }).catch(() => caches.match("/offline.html"))
     );
     return;
   }

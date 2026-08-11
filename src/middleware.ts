@@ -353,6 +353,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/' ||
     pathname === '/sw.js' ||
     pathname === '/offline.html' ||
+    pathname === '/offline-data.js' ||
     pathname === '/login' ||
     pathname === '/reset-password' ||
     pathname === '/client' ||
@@ -373,6 +374,13 @@ export async function middleware(request: NextRequest) {
     pathname === '/api/email/send' ||
     pathname === '/api/notifications' ||
     pathname.startsWith('/api/cron/');
+
+  // Authenticated HTML must never be revived from the browser's ordinary HTTP
+  // cache after connectivity is lost. The service worker will provide the
+  // neutral offline reader, whose private records remain in user-scoped IDB.
+  if (!isPublicRoute && !pathname.startsWith('/api/')) {
+    supabaseResponse.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  }
 
   // If not authenticated, not demo, and not on a public route → redirect to login
   if (!user && !isDemoMode && !isPublicRoute) {
@@ -485,6 +493,6 @@ export const config = {
      * - offline service-worker assets
      * - favicon.ico, manifest, icons, etc.
      */
-    '/((?!_next/static|_next/image|sw\\.js|offline\\.html|favicon.ico|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|sw\\.js|offline\\.html|offline-data\\.js|favicon.ico|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
