@@ -78,7 +78,14 @@ For each feature, consider all applicable items:
   visibly read-only while offline and are discarded after 30 days (projects/logs) or
   7 days (team). A real network-offline restart test verified cached daily-log list and
   detail viewing. The public service-worker cache remains static-only.
-- Later phases will add daily-log drafts/creation, the mutation outbox, synchronization,
+- **Day 3 offline daily-log drafts complete locally:** new daily-log forms autosave
+  weather, personnel, equipment, work items, work summary, safety notes, and GPS
+  location in a non-expiring user/project-scoped IndexedDB draft. Users can close and
+  reopen the unfinished form offline through the neutral fallback, continue editing,
+  and see a clear “Saved on this device” status. Submission and photos remain
+  online-only until the mutation-outbox and blob phases; successful authenticated
+  creation removes the device draft.
+- Later phases will add queued daily-log creation, the mutation outbox, synchronization,
   photos, punch items, RFIs, and conflict handling.
 
 Until those later phases land, do not describe RailCommand as supporting full offline

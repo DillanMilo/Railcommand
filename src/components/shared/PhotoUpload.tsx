@@ -33,6 +33,7 @@ interface PhotoUploadProps {
   entityId?: string;
   projectId?: string;
   onUploadComplete?: (attachment: Attachment) => void;
+  disabled?: boolean;
 }
 
 const ACCEPTED_IMAGE_TYPES = '.jpg,.jpeg,.png,.webp,.heic,.heif';
@@ -49,6 +50,7 @@ export default function PhotoUpload({
   entityId,
   projectId,
   onUploadComplete,
+  disabled = false,
 }: PhotoUploadProps) {
   const [category, setCategory] = useState<PhotoCategory>('standard');
   const [geoLoading, setGeoLoading] = useState(false);
@@ -60,7 +62,7 @@ export default function PhotoUpload({
   }, [photos]);
 
   const handleFiles = useCallback(async (fileList: FileList | null) => {
-    if (!fileList) return;
+    if (!fileList || disabled) return;
 
     const remaining = maxFiles - photos.length;
     if (remaining <= 0) return;
@@ -131,7 +133,7 @@ export default function PhotoUpload({
         alert(`Upload failed for ${photo.file.name}`);
       }
     }
-  }, [photos, onPhotosChange, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete]);
+  }, [photos, onPhotosChange, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete, disabled]);
 
   const removePhoto = useCallback((id: string) => {
     const photo = photos.find((p) => p.id === id);
@@ -162,6 +164,7 @@ export default function PhotoUpload({
             variant={category === 'standard' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCategory('standard')}
+            disabled={disabled}
             className={category === 'standard' ? 'bg-rc-blue hover:bg-rc-blue/90 text-white' : ''}
           >
             <Camera className="mr-1.5 size-3.5" />
@@ -172,6 +175,7 @@ export default function PhotoUpload({
             variant={category === 'thermal' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCategory('thermal')}
+            disabled={disabled}
             className={category === 'thermal' ? 'bg-rc-orange hover:bg-rc-orange/90 text-white' : ''}
           >
             <Thermometer className="mr-1.5 size-3.5" />
@@ -181,13 +185,15 @@ export default function PhotoUpload({
 
         {/* Upload area */}
         <div
-          className="relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-rc-border py-8 px-4 cursor-pointer transition-colors hover:border-rc-blue/50 hover:bg-rc-blue/5"
-          onClick={() => fileInputRef.current?.click()}
+          className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-rc-border py-8 px-4 transition-colors ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-rc-blue/50 hover:bg-rc-blue/5'}`}
+          onClick={() => {
+            if (!disabled) fileInputRef.current?.click();
+          }}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            handleFiles(e.dataTransfer.files);
+            if (!disabled) handleFiles(e.dataTransfer.files);
           }}
         >
           {geoLoading ? (
@@ -217,6 +223,7 @@ export default function PhotoUpload({
             type="file"
             accept={acceptTypes}
             multiple
+            disabled={disabled}
             className="hidden"
             onChange={(e) => {
               handleFiles(e.target.files);

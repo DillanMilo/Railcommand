@@ -1,4 +1,4 @@
-const STATIC_CACHE_NAME = "railcommand-static-v5";
+const STATIC_CACHE_NAME = "railcommand-static-v6";
 const RAILCOMMAND_CACHE_PREFIX = "railcommand-";
 
 // Only public, user-neutral files belong in Cache Storage. Project data and

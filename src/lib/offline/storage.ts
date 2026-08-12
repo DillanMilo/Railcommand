@@ -1,11 +1,12 @@
 const OFFLINE_DB_PREFIX = 'railcommand-offline';
-const OFFLINE_DB_VERSION = 1;
+const OFFLINE_DB_VERSION = 2;
 const RAILCOMMAND_CACHE_PREFIX = 'railcommand-';
-const PUBLIC_STATIC_CACHE_NAME = 'railcommand-static-v5';
+const PUBLIC_STATIC_CACHE_NAME = 'railcommand-static-v6';
 export const OFFLINE_SCOPE_STORAGE_KEY = 'rc-offline-database-scope';
 
 export const OFFLINE_STORES = {
   blobs: 'blobs',
+  drafts: 'drafts',
   metadata: 'metadata',
   outbox: 'outbox',
   records: 'records',
@@ -132,6 +133,15 @@ export function openOfflineDatabase(userId: string): Promise<IDBDatabase> {
 
       if (!database.objectStoreNames.contains(OFFLINE_STORES.blobs)) {
         database.createObjectStore(OFFLINE_STORES.blobs, { keyPath: 'id' });
+      }
+
+      if (!database.objectStoreNames.contains(OFFLINE_STORES.drafts)) {
+        const drafts = database.createObjectStore(OFFLINE_STORES.drafts, {
+          keyPath: 'draftId',
+        });
+        drafts.createIndex('by_project', 'projectId', { unique: false });
+        drafts.createIndex('by_kind', 'kind', { unique: false });
+        drafts.createIndex('by_updated_at', 'updatedAt', { unique: false });
       }
     };
 

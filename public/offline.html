@@ -81,6 +81,31 @@
     .detail-card h3 { color: #F8FAFC; font-size: 1rem; }
     .detail-card p { margin: 0.35rem 0 0; color: #CBD5E1; font-size: 0.9rem; }
     .back-link { display: inline-block; color: #FDBA74; margin-bottom: 1rem; }
+    .draft-help { margin: 0 0 1rem; color: #CBD5E1; font-size: 0.85rem; }
+    .draft-saved-note { border-color: #1D4ED8; background: rgba(29, 78, 216, 0.18); color: #BFDBFE; }
+    .draft-card { gap: 0.75rem; }
+    .draft-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .draft-field { display: grid; gap: 0.35rem; color: #CBD5E1; font-size: 0.75rem; }
+    .draft-field input, .draft-field select, .draft-field textarea, .draft-row input, .draft-row select {
+      width: 100%; border: 1px solid #475569; border-radius: 0.4rem; background: #0F172A;
+      color: #F8FAFC; padding: 0.65rem; font: inherit;
+    }
+    .draft-field textarea { resize: vertical; }
+    .draft-rows { display: grid; gap: 0.5rem; }
+    .draft-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0.5rem; align-items: center; }
+    .draft-add, .draft-remove {
+      width: fit-content; border: 1px solid #475569; border-radius: 0.4rem; background: #1E293B;
+      color: #F8FAFC; padding: 0.5rem 0.75rem; cursor: pointer;
+    }
+    .draft-remove { color: #FCA5A5; }
+    .draft-remove:disabled { cursor: not-allowed; opacity: 0.45; }
+    .draft-location { margin: 0; color: #CBD5E1; font-size: 0.85rem; }
+    .draft-continue {
+      display: block; margin: 0 0 1rem; border: 1px solid #2563EB; border-radius: 0.6rem;
+      background: rgba(37, 99, 235, 0.16); color: #BFDBFE; padding: 0.8rem; text-decoration: none;
+      font-size: 0.9rem; font-weight: 600;
+    }
+    @media (max-width: 540px) { .draft-grid { grid-template-columns: 1fr; } }
     .empty-state { margin: 1.5rem 0; text-align: center; }
     .actions { text-align: center; margin-top: 1.25rem; }
     .retry-btn {

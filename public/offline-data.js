@@ -5,6 +5,8 @@
   var SCOPE_KEY = 'rc-offline-database-scope';
   var RECORDS_STORE = 'records';
   var METADATA_STORE = 'metadata';
+  var DRAFTS_STORE = 'drafts';
+  var DAILY_LOG_DRAFT_KIND = 'daily_log_create';
 
   function byId(id) {
     return document.getElementById(id);
@@ -46,9 +48,23 @@
     });
   }
 
+  function writeRecord(database, storeName, value) {
+    return new Promise(function (resolve, reject) {
+      if (!database.objectStoreNames.contains(storeName)) {
+        reject(new Error('Saved draft storage is unavailable'));
+        return;
+      }
+      var transaction = database.transaction(storeName, 'readwrite');
+      transaction.objectStore(storeName).put(value);
+      transaction.oncomplete = function () { resolve(); };
+      transaction.onerror = function () { reject(transaction.error || new Error('Could not save draft')); };
+      transaction.onabort = function () { reject(transaction.error || new Error('Draft save was interrupted')); };
+    });
+  }
+
   async function resolveDatabaseName() {
     var storedScope = null;
-    try { storedScope = localStorage.getItem(SCOPE_KEY); } catch (_) {}
+    try { storedScope = localStorage.getItem(SCOPE_KEY); } catch {}
     if (storedScope && storedScope.indexOf(DATABASE_PREFIX) === 0) return storedScope;
     return null;
   }
@@ -65,7 +81,7 @@
     byId('offline-data-status').textContent = message;
   }
 
-  function renderLogList(container, project, logs, cachedAt, isStale) {
+  function renderLogList(container, project, logs, cachedAt, isStale, draft) {
     container.appendChild(element('h2', project.name, 'project-title'));
     var meta = element(
       'p',
@@ -80,6 +96,12 @@
       'read-only-note'
     );
     container.appendChild(note);
+
+    if (draft && draft.kind === DAILY_LOG_DRAFT_KIND && draft.projectId === project.id) {
+      var continueDraft = element('a', 'Continue daily-log draft · Saved on this device', 'draft-continue');
+      continueDraft.href = '/projects/' + encodeURIComponent(project.id) + '/daily-logs/new';
+      container.appendChild(continueDraft);
+    }
 
     if (!logs.length) {
       container.appendChild(element('p', 'No recent daily logs were saved for this project.', 'empty-state'));
@@ -158,6 +180,214 @@
     }
   }
 
+  function renderDraftField(parent, labelText, input) {
+    var wrapper = element('label', undefined, 'draft-field');
+    wrapper.appendChild(element('span', labelText));
+    wrapper.appendChild(input);
+    parent.appendChild(wrapper);
+    return input;
+  }
+
+  function draftInput(type, value, placeholder) {
+    var input = element('input');
+    input.type = type;
+    input.value = value === undefined || value === null ? '' : String(value);
+    if (placeholder) input.placeholder = placeholder;
+    if (type === 'number') input.min = '0';
+    return input;
+  }
+
+  function draftSelect(value, options, placeholder) {
+    var select = element('select');
+    var empty = element('option', placeholder || 'Select…');
+    empty.value = '';
+    select.appendChild(empty);
+    options.forEach(function (optionValue) {
+      var option = element('option', optionValue);
+      option.value = optionValue;
+      select.appendChild(option);
+    });
+    select.value = value || '';
+    return select;
+  }
+
+  function renderDraftRows(parent, title, rows, columns, createEmptyRow, scheduleSave) {
+    var card = element('section', undefined, 'detail-card draft-card');
+    card.appendChild(element('h3', title));
+    var rowsContainer = element('div', undefined, 'draft-rows');
+    card.appendChild(rowsContainer);
+
+    function drawRows() {
+      while (rowsContainer.firstChild) rowsContainer.removeChild(rowsContainer.firstChild);
+      rows.forEach(function (row, rowIndex) {
+        var rowNode = element('div', undefined, 'draft-row');
+        columns.forEach(function (column) {
+          var control = column.options
+            ? draftSelect(row[column.key], column.options, column.label)
+            : draftInput(column.type || 'text', row[column.key], column.label);
+          control.setAttribute('aria-label', title + ' ' + column.label + ' ' + (rowIndex + 1));
+          control.addEventListener('input', function () {
+            row[column.key] = column.type === 'number' ? Number(control.value) : control.value;
+            scheduleSave();
+          });
+          rowNode.appendChild(control);
+        });
+        var remove = element('button', 'Remove', 'draft-remove');
+        remove.type = 'button';
+        remove.disabled = rows.length === 1;
+        remove.addEventListener('click', function () {
+          if (rows.length === 1) return;
+          rows.splice(rowIndex, 1);
+          drawRows();
+          scheduleSave();
+        });
+        rowNode.appendChild(remove);
+        rowsContainer.appendChild(rowNode);
+      });
+    }
+
+    drawRows();
+    var add = element('button', 'Add ' + title.replace(/s$/, ''), 'draft-add');
+    add.type = 'button';
+    add.addEventListener('click', function () {
+      rows.push(createEmptyRow());
+      drawRows();
+      scheduleSave();
+    });
+    card.appendChild(add);
+    parent.appendChild(card);
+  }
+
+  function renderDailyLogDraft(container, database, project, draft) {
+    var values = draft.values;
+    var saveTimer = null;
+    container.appendChild(element('h2', 'New Daily Log', 'project-title'));
+    container.appendChild(element('p', project ? project.name : 'Saved project draft', 'cache-meta'));
+    var savedNote = element('p', 'Saved on this device', 'read-only-note draft-saved-note');
+    container.appendChild(savedNote);
+    container.appendChild(element(
+      'p',
+      'This unfinished log remains private on this device. Reconnect before submitting it or adding photos.',
+      'draft-help'
+    ));
+
+    function saveNow() {
+      draft.updatedAt = new Date().toISOString();
+      savedNote.textContent = 'Saving on this device…';
+      openDatabase(database.name).then(function (writableDatabase) {
+        return writeRecord(writableDatabase, DRAFTS_STORE, draft).finally(function () {
+          writableDatabase.close();
+        });
+      }).then(function () {
+          savedNote.textContent = 'Saved on this device';
+        }).catch(function () {
+          savedNote.textContent = 'Could not save on this device — keep this page open';
+        });
+    }
+
+    function scheduleSave() {
+      if (saveTimer) window.clearTimeout(saveTimer);
+      savedNote.textContent = 'Saving on this device…';
+      saveTimer = window.setTimeout(saveNow, 150);
+    }
+
+    window.addEventListener('pagehide', saveNow);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') saveNow();
+    });
+
+    var basics = element('section', undefined, 'detail-card draft-card draft-grid');
+    renderDraftField(basics, 'Date', draftInput('date', values.date)).addEventListener('input', function (event) {
+      values.date = event.target.value;
+      scheduleSave();
+    });
+    renderDraftField(basics, 'Temperature (°F)', draftInput('number', values.temp, '42')).addEventListener('input', function (event) {
+      values.temp = event.target.value === '' ? '' : Number(event.target.value);
+      scheduleSave();
+    });
+    renderDraftField(basics, 'Conditions', draftSelect(values.conditions, [
+      'Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'
+    ])).addEventListener('input', function (event) {
+      values.conditions = event.target.value;
+      scheduleSave();
+    });
+    renderDraftField(basics, 'Wind', draftInput('text', values.wind, 'NW 8 mph')).addEventListener('input', function (event) {
+      values.wind = event.target.value;
+      scheduleSave();
+    });
+    container.appendChild(basics);
+
+    renderDraftRows(container, 'Personnel', values.personnel, [
+      { key: 'role', label: 'Role', options: ['Foreman', 'Track Laborer', 'Operator', 'Signal Tech', 'Inspector', 'Grading Foreman', 'Laborer'] },
+      { key: 'headcount', label: 'Count', type: 'number' },
+      { key: 'company', label: 'Company' },
+    ], function () { return { role: '', headcount: 0, company: '' }; }, scheduleSave);
+    renderDraftRows(container, 'Equipment', values.equipment, [
+      { key: 'type', label: 'Equipment Type' },
+      { key: 'count', label: 'Count', type: 'number' },
+      { key: 'notes', label: 'Notes' },
+    ], function () { return { type: '', count: 0, notes: '' }; }, scheduleSave);
+    renderDraftRows(container, 'Work Items', values.workItems, [
+      { key: 'description', label: 'Description' },
+      { key: 'quantity', label: 'Qty', type: 'number' },
+      { key: 'unit', label: 'Unit', options: ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] },
+      { key: 'location', label: 'Location' },
+    ], function () { return { description: '', quantity: 0, unit: '', location: '' }; }, scheduleSave);
+
+    var notes = element('section', undefined, 'detail-card draft-card');
+    var summary = element('textarea');
+    summary.rows = 4;
+    summary.value = values.workSummary || '';
+    renderDraftField(notes, 'Work Summary', summary).addEventListener('input', function (event) {
+      values.workSummary = event.target.value;
+      scheduleSave();
+    });
+    var safety = element('textarea');
+    safety.rows = 3;
+    safety.value = values.safetyNotes || '';
+    renderDraftField(notes, 'Safety Notes', safety).addEventListener('input', function (event) {
+      values.safetyNotes = event.target.value;
+      scheduleSave();
+    });
+    container.appendChild(notes);
+
+    var locationCard = element('section', undefined, 'detail-card draft-card');
+    locationCard.appendChild(element('h3', 'Location'));
+    var locationText = element(
+      'p',
+      values.geoTag
+        ? values.geoTag.lat.toFixed(6) + ', ' + values.geoTag.lng.toFixed(6)
+        : 'No GPS location captured.',
+      'draft-location'
+    );
+    locationCard.appendChild(locationText);
+    var capture = element('button', values.geoTag ? 'Update GPS location' : 'Capture GPS location', 'draft-add');
+    capture.type = 'button';
+    capture.addEventListener('click', function () {
+      if (!navigator.geolocation) return;
+      capture.disabled = true;
+      capture.textContent = 'Capturing…';
+      navigator.geolocation.getCurrentPosition(function (position) {
+        values.geoTag = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          altitude: position.coords.altitude === null ? undefined : position.coords.altitude,
+          timestamp: new Date(position.timestamp).toISOString(),
+        };
+        locationText.textContent = values.geoTag.lat.toFixed(6) + ', ' + values.geoTag.lng.toFixed(6);
+        capture.textContent = 'Update GPS location';
+        capture.disabled = false;
+        scheduleSave();
+      }, function () {
+        capture.textContent = values.geoTag ? 'Update GPS location' : 'Capture GPS location';
+        capture.disabled = false;
+      });
+    });
+    locationCard.appendChild(capture);
+    container.appendChild(locationCard);
+  }
+
   async function renderOfflineData() {
     if (!('indexedDB' in window)) {
       renderStatus('This browser cannot open saved RailCommand data.');
@@ -183,12 +413,39 @@
         return;
       }
 
+      var isNewDailyLogDraft = /^\/projects\/[^/]+\/daily-logs\/new\/?$/.test(location.pathname);
+      if (isNewDailyLogDraft) {
+        var draftRecords = await Promise.all([
+          readRecord(database, RECORDS_STORE, 'project:' + projectId),
+          readRecord(database, DRAFTS_STORE, DAILY_LOG_DRAFT_KIND + ':' + projectId),
+        ]);
+        var savedProject = draftRecords[0];
+        var draft = draftRecords[1];
+        if (!draft || draft.kind !== DAILY_LOG_DRAFT_KIND || draft.projectId !== projectId) {
+          renderStatus('No unfinished daily-log draft is saved for this project. Reconnect to start one.');
+          return;
+        }
+        var draftContainer = byId('offline-project-data');
+        draftContainer.hidden = false;
+        byId('offline-neutral-message').hidden = true;
+        renderStatus('');
+        renderDailyLogDraft(
+          draftContainer,
+          database,
+          recordIsUsable(savedProject) ? savedProject.value : null,
+          draft
+        );
+        return;
+      }
+
       var records = await Promise.all([
         readRecord(database, RECORDS_STORE, 'project:' + projectId),
         readRecord(database, RECORDS_STORE, 'daily_logs:' + projectId),
+        readRecord(database, DRAFTS_STORE, DAILY_LOG_DRAFT_KIND + ':' + projectId),
       ]);
       var projectRecord = records[0];
       var logsRecord = records[1];
+      var dailyLogDraft = records[2];
       if (!recordIsUsable(projectRecord) || !recordIsUsable(logsRecord)) {
         renderStatus('The saved project copy is missing or has expired. Reconnect to refresh it.');
         return;
@@ -216,7 +473,7 @@
         }
         renderLogDetail(container, project, log, logsRecord.cachedAt, isStale);
       } else {
-        renderLogList(container, project, logs, logsRecord.cachedAt, isStale);
+        renderLogList(container, project, logs, logsRecord.cachedAt, isStale, dailyLogDraft);
       }
     } finally {
       database.close();

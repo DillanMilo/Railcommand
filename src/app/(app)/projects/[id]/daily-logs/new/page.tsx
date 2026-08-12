@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useCallback, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, HardDrive, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,10 +16,13 @@ import { addDailyLog, addAttachment } from '@/lib/store';
 import { createDailyLog as serverCreateDailyLog } from '@/lib/actions/daily-logs';
 import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDailyLogDraft } from '@/hooks/useDailyLogDraft';
 import { ACTIONS } from '@/lib/permissions';
 import { getLocalDateString } from '@/lib/date-utils';
 import type { GeoTag } from '@/lib/types';
+import type { DailyLogDraftValues } from '@/lib/offline/daily-log-draft';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -33,7 +36,8 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const { id: projectId } = use(params);
   use(searchParams);
   const router = useRouter();
-  const { isDemo } = useProject();
+  const { isDemo, currentUserId } = useProject();
+  const { isOffline } = usePWA();
   const { can } = usePermissions(projectId);
 
   const [date, setDate] = useState(getLocalDateString);
@@ -51,6 +55,45 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const draftValues = useMemo<DailyLogDraftValues>(() => ({
+    date,
+    temp,
+    conditions,
+    wind,
+    personnel,
+    equipment,
+    workItems,
+    workSummary,
+    safetyNotes,
+    geoTag,
+  }), [conditions, date, equipment, geoTag, personnel, safetyNotes, temp, wind, workItems, workSummary]);
+
+  const restoreDraft = useCallback((draft: DailyLogDraftValues) => {
+    setDate(draft.date);
+    setTemp(draft.temp);
+    setConditions(draft.conditions);
+    setWind(draft.wind);
+    setPersonnel(draft.personnel.length > 0 ? draft.personnel : [{ role: '', headcount: 0, company: '' }]);
+    setEquipment(draft.equipment.length > 0 ? draft.equipment : [{ type: '', count: 0, notes: '' }]);
+    setWorkItems(draft.workItems.length > 0 ? draft.workItems : [{ description: '', quantity: 0, unit: '', location: '' }]);
+    setWorkSummary(draft.workSummary);
+    setSafetyNotes(draft.safetyNotes);
+    setGeoTag(draft.geoTag);
+  }, []);
+
+  const {
+    status: draftStatus,
+    savedAt: draftSavedAt,
+    recovered: draftRecovered,
+    clearDraft,
+  } = useDailyLogDraft({
+    userId: currentUserId,
+    projectId,
+    values: draftValues,
+    enabled: !isDemo,
+    onRestore: restoreDraft,
+  });
 
   if (!can(ACTIONS.DAILY_LOG_CREATE)) {
     return (
@@ -87,6 +130,47 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
       ]} />
 
       <h1 className="font-heading text-2xl font-bold">New Daily Log</h1>
+
+      {!isDemo && (
+        <div
+          className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2 font-semibold">
+            {draftStatus === 'saving' || draftStatus === 'loading' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <HardDrive className="size-4" />
+            )}
+            {draftStatus === 'error'
+              ? 'Could not save on this device'
+              : draftStatus === 'saving'
+                ? 'Saving on this device…'
+                : draftStatus === 'loading'
+                  ? 'Checking this device for a saved draft…'
+                  : draftSavedAt
+                    ? 'Saved on this device'
+                    : 'Draft autosave is ready'}
+          </div>
+          <p className="mt-1 text-xs opacity-80">
+            {draftStatus === 'error'
+              ? 'Keep this page open and check your browser storage settings before leaving.'
+              : draftRecovered
+                ? `Recovered your unfinished draft${draftSavedAt ? ` from ${new Date(draftSavedAt).toLocaleString()}` : ''}.`
+                : 'Personnel, equipment, work items, location, weather, summary, and safety notes are stored in your private offline database.'}
+          </p>
+        </div>
+      )}
+
+      {isOffline && (
+        <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTitle>Working offline</AlertTitle>
+          <AlertDescription>
+            You can continue this draft. Reconnect before submitting the daily log or adding photos.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Date */}
       <Card>
@@ -232,7 +316,12 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
       </Card>
 
       {/* Photo Upload */}
-      <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+      <div className="space-y-2">
+        <PhotoUpload photos={photos} onPhotosChange={setPhotos} disabled={isOffline} />
+        <p className="text-xs text-muted-foreground">
+          Photos are not included in the device draft yet. Add them when you are ready to submit while online.
+        </p>
+      </div>
 
       {errorMsg && (
         <Alert className="border-red-300 bg-red-50">
@@ -253,7 +342,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting}
+          disabled={success || submitting || isOffline}
           onClick={async () => {
             setErrorMsg(null);
             setSubmitting(true);
@@ -309,6 +398,8 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                 return;
               }
 
+              await clearDraft().catch(() => {});
+
               // Upload photos to Supabase storage
               if (photos.length > 0 && result.data) {
                 setUploadProgress(`Uploading ${photos.length} photo${photos.length !== 1 ? 's' : ''}…`);
@@ -326,7 +417,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
             }
           }}
         >
-          {uploadProgress ?? (submitting && !success ? 'Submitting…' : 'Submit Log')}
+          {uploadProgress ?? (isOffline ? 'Submit — online required' : submitting && !success ? 'Submitting…' : 'Submit Log')}
         </Button>
       </div>
     </div>

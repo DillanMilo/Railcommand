@@ -15,6 +15,12 @@ import {
   OFFLINE_CACHE_POLICIES,
   RECENT_DAILY_LOG_LIMIT,
 } from './project-cache';
+import {
+  createDailyLogDraftRecord,
+  dailyLogDraftHasEnteredData,
+  getDailyLogDraftId,
+  type DailyLogDraftValues,
+} from './daily-log-draft';
 import type { DailyLog } from '@/lib/types';
 
 describe('offline storage security boundaries', () => {
@@ -47,7 +53,7 @@ describe('offline storage security boundaries', () => {
 
   it('identifies only RailCommand-owned caches for cleanup', () => {
     assert.equal(isRailCommandCacheName('railcommand-v2'), true);
-    assert.equal(isRailCommandCacheName('railcommand-static-v5'), true);
+    assert.equal(isRailCommandCacheName('railcommand-static-v6'), true);
     assert.equal(isRailCommandCacheName('another-app-cache'), false);
   });
 
@@ -94,6 +100,70 @@ describe('Day 2 offline project cache policies', () => {
   it('keeps project records out of global localStorage', () => {
     const projectCache = readFileSync(new URL('./project-cache.ts', import.meta.url), 'utf8');
     assert.doesNotMatch(projectCache, /localStorage/);
+  });
+});
+
+describe('Day 3 offline daily-log drafts', () => {
+  const emptyDraft: DailyLogDraftValues = {
+    date: '2026-08-12',
+    temp: '',
+    conditions: '',
+    wind: '',
+    personnel: [{ role: '', headcount: 0, company: '' }],
+    equipment: [{ type: '', count: 0, notes: '' }],
+    workItems: [{ description: '', quantity: 0, unit: '', location: '' }],
+    workSummary: '',
+    safetyNotes: '',
+    geoTag: null,
+  };
+
+  it('uses a project-scoped create-draft key without treating the date as entered work', () => {
+    assert.equal(getDailyLogDraftId('project-a'), 'daily_log_create:project-a');
+    assert.equal(dailyLogDraftHasEnteredData(emptyDraft), false);
+    assert.equal(
+      dailyLogDraftHasEnteredData({ ...emptyDraft, safetyNotes: 'Toolbox talk completed' }),
+      true
+    );
+  });
+
+  it('preserves the client UUID and idempotency key across every autosave', () => {
+    const first = createDailyLogDraftRecord(
+      'project-a',
+      { ...emptyDraft, workSummary: 'Initial field work' },
+      null,
+      new Date('2026-08-12T12:00:00.000Z')
+    );
+    const second = createDailyLogDraftRecord(
+      'project-a',
+      { ...emptyDraft, workSummary: 'Updated field work' },
+      first,
+      new Date('2026-08-12T12:01:00.000Z')
+    );
+
+    assert.equal(second.clientId, first.clientId);
+    assert.equal(second.idempotencyKey, first.idempotencyKey);
+    assert.equal(second.createdAt, first.createdAt);
+    assert.notEqual(second.updatedAt, first.updatedAt);
+    assert.equal('discardAfter' in second, false);
+  });
+
+  it('keeps private drafts in IndexedDB and labels both recovery surfaces', () => {
+    const storage = readFileSync(new URL('./storage.ts', import.meta.url), 'utf8');
+    const createPage = readFileSync(
+      new URL('../../app/(app)/projects/[id]/daily-logs/new/page.tsx', import.meta.url),
+      'utf8'
+    );
+    const offlineReader = readFileSync(
+      new URL('../../../public/offline-data.js', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(storage, /drafts: 'drafts'/);
+    assert.match(storage, /createObjectStore\(OFFLINE_STORES\.drafts/);
+    assert.match(createPage, /Saved on this device/);
+    assert.match(offlineReader, /Saved on this device/);
+    assert.match(offlineReader, /DRAFTS_STORE/);
+    assert.doesNotMatch(createPage, /localStorage\.setItem/);
   });
 });
 
@@ -197,7 +267,7 @@ describe('offline acceptance diagnostics security', () => {
   });
 
   it('checks only public static cache paths', () => {
-    assert.match(diagnosticsClient, /railcommand-static-v5/);
+    assert.match(diagnosticsClient, /railcommand-static-v6/);
     assert.match(diagnosticsClient, /pathname\.startsWith\('\/_next\/static\/'\)/);
     assert.doesNotMatch(diagnosticsClient, /localStorage/);
   });

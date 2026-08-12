@@ -101,8 +101,8 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
           </Button>
         )}
         {can(ACTIONS.DAILY_LOG_CREATE) && isOfflineReadOnly && (
-          <Button disabled variant="outline" title="Reconnect to create a daily log">
-            <Plus className="mr-2 size-4" />New Log — online required
+          <Button asChild variant="outline">
+            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New or Continue Device Draft</Link>
           </Button>
         )}
       </div>

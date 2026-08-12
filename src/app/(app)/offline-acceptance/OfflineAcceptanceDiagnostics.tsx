@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getOfflineDatabaseName } from '@/lib/offline/storage';
 
-const PUBLIC_CACHE_NAME = 'railcommand-static-v5';
+const PUBLIC_CACHE_NAME = 'railcommand-static-v6';
 const PUBLIC_CACHE_PATHS = new Set([
   '/offline.html',
   '/offline-data.js',
