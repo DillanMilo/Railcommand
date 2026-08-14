@@ -18,6 +18,8 @@ export async function compressImage(
     'image/jpg',
     'image/png',
     'image/webp',
+    'image/heic',
+    'image/heif',
   ];
   if (!compressibleTypes.includes(file.type)) return file;
 

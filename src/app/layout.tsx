@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
+import OfflineSyncProvider from "@/components/providers/OfflineSyncProvider";
 import SupabaseStatusBanner from "@/components/layout/SupabaseStatusBanner";
 import "./globals.css";
 
@@ -84,8 +85,10 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ServiceWorkerProvider>
-            <SupabaseStatusBanner />
-            <TooltipProvider>{children}</TooltipProvider>
+            <OfflineSyncProvider>
+              <SupabaseStatusBanner />
+              <TooltipProvider>{children}</TooltipProvider>
+            </OfflineSyncProvider>
           </ServiceWorkerProvider>
         </ThemeProvider>
       </body>

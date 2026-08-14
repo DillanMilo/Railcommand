@@ -79,9 +79,16 @@ export default function PhotoUpload({
         )
       : files.map(() => null);
 
-    const newPhotos: PhotoFile[] = files
+    // Compress before anything can persist the files to IndexedDB. GPS is
+    // resolved from the originals first because canvas compression removes
+    // EXIF metadata by design.
+    const preparedFiles = await Promise.all(
+      files.map((file) => compressImage(file, category, { maxPx: 1600, quality: 0.72 }))
+    );
+
+    const newPhotos: PhotoFile[] = preparedFiles
       .map((file, index) => ({
-        id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: crypto.randomUUID(),
         file,
         preview: URL.createObjectURL(file),
         category,
@@ -89,7 +96,7 @@ export default function PhotoUpload({
         geo_lng: geos[index]?.lng ?? null,
         geo_source: geos[index]?.source ?? null,
         uploading: !!(entityType && entityId && projectId),
-        originalSize: file.size,
+        originalSize: files[index].size,
       }));
 
     // Show previews immediately

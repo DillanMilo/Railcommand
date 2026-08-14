@@ -82,11 +82,28 @@ For each feature, consider all applicable items:
   weather, personnel, equipment, work items, work summary, safety notes, and GPS
   location in a non-expiring user/project-scoped IndexedDB draft. Users can close and
   reopen the unfinished form offline through the neutral fallback, continue editing,
-  and see a clear “Saved on this device” status. Submission and photos remain
-  online-only until the mutation-outbox and blob phases; successful authenticated
-  creation removes the device draft.
-- Later phases will add queued daily-log creation, the mutation outbox, synchronization,
-  photos, punch items, RFIs, and conflict handling.
+  and see a clear “Saved on this device” status. Daily-log creation now moves into
+  the Day 4 outbox, and attached photos move into the Day 5 child-operation queue.
+  Successful authenticated creation or queuing removes the device draft.
+- **Day 4 offline daily-log synchronization complete locally:** daily-log create
+  operations move atomically from drafts into a durable user-scoped outbox with
+  client UUIDs and idempotency keys. Verified foreground synchronization retries
+  transient connectivity and session-refresh failures with bounded backoff. A
+  transaction-scoped Postgres RPC rechecks the signed-in user and current project
+  permission, creates the log and child rows together, and makes repeat delivery
+  return the original row instead of creating a duplicate. Permanent validation,
+  integrity, and permission failures remain visible for manual action. Photos are
+  synchronized through the Day 5 child-operation queue.
+- **Day 5 offline daily-log photos complete locally:** standard photos are compressed
+  before they enter the signed-in user's IndexedDB; thermal/radiometric files remain
+  lossless. Photo operations carry client UUIDs and idempotency keys, wait for their
+  client-ID parent daily log, and upload independently through short-lived signed
+  upload authorization. Authentication, parent ownership, project permission, path,
+  metadata, and idempotency are revalidated when each attachment is finalized. The
+  Sync Center shows pending, retrying, failed, and recently synchronized logs/photos.
+  Successful photo synchronization atomically removes its local blob. Storage quota
+  failures preserve the form and are shown clearly.
+- Later phases will extend the outbox to punch items, RFIs, and conflict handling.
 
 Until those later phases land, do not describe RailCommand as supporting full offline
 project work. Distinguish the installable PWA/offline fallback from data-aware offline mode.

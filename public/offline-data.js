@@ -6,6 +6,7 @@
   var RECORDS_STORE = 'records';
   var METADATA_STORE = 'metadata';
   var DRAFTS_STORE = 'drafts';
+  var OUTBOX_STORE = 'outbox';
   var DAILY_LOG_DRAFT_KIND = 'daily_log_create';
 
   function byId(id) {
@@ -59,6 +60,60 @@
       transaction.oncomplete = function () { resolve(); };
       transaction.onerror = function () { reject(transaction.error || new Error('Could not save draft')); };
       transaction.onabort = function () { reject(transaction.error || new Error('Draft save was interrupted')); };
+    });
+  }
+
+  function queueDailyLogDraft(databaseName, draft) {
+    var timestamp = new Date().toISOString();
+    var values = draft.values;
+    var operation = {
+      operationId: draft.clientId,
+      kind: DAILY_LOG_DRAFT_KIND,
+      projectId: draft.projectId,
+      clientId: draft.clientId,
+      idempotencyKey: draft.idempotencyKey,
+      payload: {
+        log_date: values.date,
+        weather_temp: typeof values.temp === 'number' ? values.temp : 0,
+        weather_conditions: values.conditions || '',
+        weather_wind: values.wind || '',
+        work_summary: values.workSummary || '',
+        safety_notes: values.safetyNotes || '',
+        geo_tag: values.geoTag || null,
+        personnel: values.personnel || [],
+        equipment: (values.equipment || []).map(function (row) {
+          return { equipment_type: row.type, count: row.count, notes: row.notes };
+        }),
+        work_items: values.workItems || [],
+      },
+      status: 'pending',
+      attemptCount: 0,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      nextAttemptAt: timestamp,
+      lastError: null,
+    };
+
+    return openDatabase(databaseName).then(function (database) {
+      return new Promise(function (resolve, reject) {
+        if (!database.objectStoreNames.contains(OUTBOX_STORE)) {
+          database.close();
+          reject(new Error('Synchronization storage is unavailable'));
+          return;
+        }
+        var transaction = database.transaction([OUTBOX_STORE, DRAFTS_STORE], 'readwrite');
+        transaction.objectStore(OUTBOX_STORE).add(operation);
+        transaction.objectStore(DRAFTS_STORE).delete(draft.id);
+        transaction.oncomplete = function () { database.close(); resolve(operation); };
+        transaction.onerror = function () {
+          database.close();
+          reject(transaction.error || new Error('Could not queue the daily log'));
+        };
+        transaction.onabort = function () {
+          database.close();
+          reject(transaction.error || new Error('Daily-log queue was interrupted'));
+        };
+      });
     });
   }
 
@@ -261,17 +316,19 @@
   function renderDailyLogDraft(container, database, project, draft) {
     var values = draft.values;
     var saveTimer = null;
+    var draftQueued = false;
     container.appendChild(element('h2', 'New Daily Log', 'project-title'));
     container.appendChild(element('p', project ? project.name : 'Saved project draft', 'cache-meta'));
     var savedNote = element('p', 'Saved on this device', 'read-only-note draft-saved-note');
     container.appendChild(savedNote);
     container.appendChild(element(
       'p',
-      'This unfinished log remains private on this device. Reconnect before submitting it or adding photos.',
+      'This unfinished log remains private on this device. You can queue it now; photos still require an online connection.',
       'draft-help'
     ));
 
     function saveNow() {
+      if (draftQueued) return;
       draft.updatedAt = new Date().toISOString();
       savedNote.textContent = 'Saving on this device…';
       openDatabase(database.name).then(function (writableDatabase) {
@@ -386,6 +443,26 @@
     });
     locationCard.appendChild(capture);
     container.appendChild(locationCard);
+
+    var queue = element('button', 'Queue Log for Sync', 'draft-add');
+    queue.type = 'button';
+    queue.addEventListener('click', function () {
+      if (saveTimer) window.clearTimeout(saveTimer);
+      queue.disabled = true;
+      queue.textContent = 'Saving to synchronization queue…';
+      queueDailyLogDraft(database.name, draft).then(function () {
+        draftQueued = true;
+        savedNote.textContent = 'Queued for synchronization · Saved on this device';
+        queue.textContent = 'Queued for synchronization';
+      }).catch(function (error) {
+        queue.disabled = false;
+        queue.textContent = 'Queue Log for Sync';
+        savedNote.textContent = error && error.message
+          ? error.message
+          : 'Could not queue this daily log — your draft is still saved';
+      });
+    });
+    container.appendChild(queue);
   }
 
   async function renderOfflineData() {

@@ -1,8 +1,9 @@
 const OFFLINE_DB_PREFIX = 'railcommand-offline';
-const OFFLINE_DB_VERSION = 2;
+const OFFLINE_DB_VERSION = 3;
 const RAILCOMMAND_CACHE_PREFIX = 'railcommand-';
-const PUBLIC_STATIC_CACHE_NAME = 'railcommand-static-v6';
+const PUBLIC_STATIC_CACHE_NAME = 'railcommand-static-v8';
 export const OFFLINE_SCOPE_STORAGE_KEY = 'rc-offline-database-scope';
+export const OFFLINE_DATA_CLEARING_EVENT = 'railcommand:offline-data-clearing';
 
 export const OFFLINE_STORES = {
   blobs: 'blobs',
@@ -10,6 +11,7 @@ export const OFFLINE_STORES = {
   metadata: 'metadata',
   outbox: 'outbox',
   records: 'records',
+  syncHistory: 'sync_history',
 } as const;
 
 export type OfflineMetadataKey =
@@ -142,6 +144,13 @@ export function openOfflineDatabase(userId: string): Promise<IDBDatabase> {
         drafts.createIndex('by_project', 'projectId', { unique: false });
         drafts.createIndex('by_kind', 'kind', { unique: false });
         drafts.createIndex('by_updated_at', 'updatedAt', { unique: false });
+      }
+
+      if (!database.objectStoreNames.contains(OFFLINE_STORES.syncHistory)) {
+        const history = database.createObjectStore(OFFLINE_STORES.syncHistory, {
+          keyPath: 'operationId',
+        });
+        history.createIndex('by_completed_at', 'completedAt', { unique: false });
       }
     };
 
@@ -320,9 +329,30 @@ export function deleteOfflineDatabase(userId: string): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const request = factory.deleteDatabase(getOfflineDatabaseName(userId));
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error('Could not delete offline data'));
-    request.onblocked = () => reject(new Error('Close other RailCommand tabs to remove offline data'));
+    let blockedTimeout: ReturnType<typeof setTimeout> | null = null;
+    const clearBlockedTimeout = () => {
+      if (blockedTimeout) clearTimeout(blockedTimeout);
+      blockedTimeout = null;
+    };
+    request.onsuccess = () => {
+      clearBlockedTimeout();
+      resolve();
+    };
+    request.onerror = () => {
+      clearBlockedTimeout();
+      reject(request.error ?? new Error('Could not delete offline data'));
+    };
+    // IndexedDB fires `blocked` before open connections have processed their
+    // versionchange close handlers. Give those handlers time to finish rather
+    // than abandoning private-data deletion immediately.
+    request.onblocked = () => {
+      if (!blockedTimeout) {
+        blockedTimeout = setTimeout(
+          () => reject(new Error('Close other RailCommand tabs to remove offline data')),
+          5_000
+        );
+      }
+    };
   });
 }
 
@@ -340,6 +370,9 @@ export async function clearRailCommandCaches(): Promise<void> {
 }
 
 export async function clearOfflineDataForUser(userId: string): Promise<void> {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(OFFLINE_DATA_CLEARING_EVENT, { detail: { userId } }));
+  }
   await Promise.allSettled([
     deleteOfflineDatabase(userId),
     clearRailCommandCaches(),

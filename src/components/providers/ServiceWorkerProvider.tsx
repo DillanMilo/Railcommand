@@ -21,6 +21,12 @@ import {
 const isDevelopment = process.env.NODE_ENV === "development";
 const CONNECTIVITY_CHECK_INTERVAL_MS = 60_000;
 
+function isDevelopmentOfflineSimulation(): boolean {
+  return isDevelopment
+    && typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("simulate-offline") === "1";
+}
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -138,6 +144,13 @@ export default function ServiceWorkerProvider({
   }, [offlineUserId]);
 
   const retryConnectivity = useCallback(async () => {
+    // Local acceptance tests can exercise the complete offline UI/outbox path
+    // without changing the host machine's network connection. Production
+    // builds always use real browser and Supabase connectivity signals.
+    if (isDevelopmentOfflineSimulation()) {
+      setConnectivityStatus("offline");
+      return;
+    }
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       setConnectivityStatus("offline");
       return;

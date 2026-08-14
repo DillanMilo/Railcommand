@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, CheckCircle2, HardDrive, Loader2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, CloudUpload, HardDrive, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,8 +13,6 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { addDailyLog, addAttachment } from '@/lib/store';
-import { createDailyLog as serverCreateDailyLog } from '@/lib/actions/daily-logs';
-import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -52,8 +50,8 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const draftValues = useMemo<DailyLogDraftValues>(() => ({
@@ -86,7 +84,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
     status: draftStatus,
     savedAt: draftSavedAt,
     recovered: draftRecovered,
-    clearDraft,
+    queueDraft,
   } = useDailyLogDraft({
     userId: currentUserId,
     projectId,
@@ -119,6 +117,20 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
   const removeRow = <T,>(arr: T[], i: number, setter: (v: T[]) => void) => {
     setter(arr.filter((_, idx) => idx !== i));
+  };
+
+  const resetForm = () => {
+    setDate(getLocalDateString());
+    setTemp('');
+    setConditions('');
+    setWind('');
+    setPersonnel([{ role: '', headcount: 0, company: '' }]);
+    setEquipment([{ type: '', count: 0, notes: '' }]);
+    setWorkItems([{ description: '', quantity: 0, unit: '', location: '' }]);
+    setWorkSummary('');
+    setSafetyNotes('');
+    setGeoTag(null);
+    setPhotos([]);
   };
 
   return (
@@ -167,7 +179,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
           <AlertTitle>Working offline</AlertTitle>
           <AlertDescription>
-            You can continue this draft. Reconnect before submitting the daily log or adding photos.
+            You can queue this daily log and its compressed photos now. RailCommand keeps them on this device and synchronizes the log first, followed by each photo, after it verifies the connection and your current permission.
           </AlertDescription>
         </Alert>
       )}
@@ -317,9 +329,9 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
       {/* Photo Upload */}
       <div className="space-y-2">
-        <PhotoUpload photos={photos} onPhotosChange={setPhotos} disabled={isOffline} />
+        <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
         <p className="text-xs text-muted-foreground">
-          Photos are not included in the device draft yet. Add them when you are ready to submit while online.
+          Standard photos are compressed before being saved privately on this device. Queued photos upload independently after their daily log synchronizes.
         </p>
       </div>
 
@@ -338,14 +350,49 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         </Alert>
       )}
 
+      {queuedMessage && (
+        <Alert className="border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+          <CloudUpload className="size-4 text-blue-600" />
+          <AlertTitle>Queued for synchronization</AlertTitle>
+          <AlertDescription>{queuedMessage}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pb-8">
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting || isOffline}
+          disabled={success || submitting || (isOffline && isDemo)}
           onClick={async () => {
             setErrorMsg(null);
+            setQueuedMessage(null);
             setSubmitting(true);
+
+            if (!isDemo) {
+              if (!date) {
+                setErrorMsg('Choose a log date before adding this daily log to the synchronization queue.');
+                setSubmitting(false);
+                return;
+              }
+              try {
+                await queueDraft(photos);
+                resetForm();
+                setQueuedMessage(
+                  `Saved securely on this device with ${photos.length} photo${photos.length === 1 ? '' : 's'}. You can enter another log while synchronization continues.`
+                );
+              } catch (error) {
+                setErrorMsg(
+                  error instanceof DOMException && error.name === 'QuotaExceededError'
+                    ? 'This device does not have enough offline storage for those photos. Remove one or more photos and try again.'
+                    : error instanceof Error
+                      ? error.message
+                      : 'Could not queue this daily log and its photos'
+                );
+              } finally {
+                setSubmitting(false);
+              }
+              return;
+            }
 
             if (isDemo) {
               const log = addDailyLog(projectId, {
@@ -378,46 +425,12 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
               setSuccess(true);
               setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
-            } else {
-              const result = await serverCreateDailyLog(projectId, {
-                log_date: date,
-                weather_temp: typeof temp === 'number' ? temp : 0,
-                weather_conditions: conditions,
-                weather_wind: wind,
-                work_summary: workSummary,
-                safety_notes: safetyNotes,
-                geo_tag: geoTag,
-                personnel,
-                equipment: equipment.map((e) => ({ equipment_type: e.type, count: e.count, notes: e.notes })),
-                work_items: workItems,
-              });
-
-              if (result.error) {
-                setErrorMsg(result.error);
-                setSubmitting(false);
-                return;
-              }
-
-              await clearDraft().catch(() => {});
-
-              // Upload photos to Supabase storage
-              if (photos.length > 0 && result.data) {
-                setUploadProgress(`Uploading ${photos.length} photo${photos.length !== 1 ? 's' : ''}…`);
-                const uploadResult = await uploadPhotosAfterCreate(photos, 'daily_log', result.data.id, projectId);
-                setUploadProgress(null);
-                if (uploadResult.failed > 0) {
-                  setErrorMsg(`${uploadResult.succeeded} of ${uploadResult.total} photos uploaded. ${uploadResult.failed} failed.`);
-                  setSubmitting(false);
-                  return;
-                }
-              }
-
-              setSuccess(true);
-              setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
             }
           }}
         >
-          {uploadProgress ?? (isOffline ? 'Submit — online required' : submitting && !success ? 'Submitting…' : 'Submit Log')}
+          {isOffline
+            ? submitting ? 'Saving to device…' : isDemo ? 'Submit — online required' : 'Queue Log & Photos'
+            : submitting && !success ? 'Adding to sync queue…' : 'Submit Log'}
         </Button>
       </div>
     </div>

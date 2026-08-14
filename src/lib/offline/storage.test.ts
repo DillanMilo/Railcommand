@@ -21,6 +21,15 @@ import {
   getDailyLogDraftId,
   type DailyLogDraftValues,
 } from './daily-log-draft';
+import {
+  createDailyLogPhotoOperation,
+  createDailyLogOutboxOperation,
+  DAILY_LOG_PHOTO_UPLOAD_OPERATION,
+  getRetryDelayMs,
+  MAX_RETRY_DELAY_MS,
+  MAX_SYNC_ATTEMPTS,
+  scheduleOutboxRetry,
+} from './outbox';
 import type { DailyLog } from '@/lib/types';
 
 describe('offline storage security boundaries', () => {
@@ -53,7 +62,7 @@ describe('offline storage security boundaries', () => {
 
   it('identifies only RailCommand-owned caches for cleanup', () => {
     assert.equal(isRailCommandCacheName('railcommand-v2'), true);
-    assert.equal(isRailCommandCacheName('railcommand-static-v6'), true);
+    assert.equal(isRailCommandCacheName('railcommand-static-v8'), true);
     assert.equal(isRailCommandCacheName('another-app-cache'), false);
   });
 
@@ -167,6 +176,197 @@ describe('Day 3 offline daily-log drafts', () => {
   });
 });
 
+describe('Day 4 durable daily-log synchronization', () => {
+  const values: DailyLogDraftValues = {
+    date: '2026-08-13',
+    temp: 72,
+    conditions: 'Clear',
+    wind: 'NW 8 mph',
+    personnel: [{ role: 'Foreman', headcount: 2, company: 'Rail QA' }],
+    equipment: [{ type: 'Excavator', count: 1, notes: 'Inspected' }],
+    workItems: [{ description: 'Set rail', quantity: 100, unit: 'LF', location: 'MP 12' }],
+    workSummary: 'Exact-once synchronization test',
+    safetyNotes: 'Toolbox talk completed',
+    geoTag: { lat: 41.1, lng: -87.2, timestamp: '2026-08-13T12:00:00.000Z' },
+  };
+
+  it('keeps the draft UUID and idempotency key when it becomes an outbox operation', () => {
+    const draft = createDailyLogDraftRecord('project-a', values);
+    const operation = createDailyLogOutboxOperation(
+      draft,
+      new Date('2026-08-13T12:00:00.000Z')
+    );
+
+    assert.equal(operation.operationId, draft.clientId);
+    assert.equal(operation.clientId, draft.clientId);
+    assert.equal(operation.idempotencyKey, draft.idempotencyKey);
+    assert.equal(operation.projectId, draft.projectId);
+    assert.deepEqual(operation.payload.personnel, values.personnel);
+    assert.deepEqual(operation.payload.equipment, [
+      { equipment_type: 'Excavator', count: 1, notes: 'Inspected' },
+    ]);
+  });
+
+  it('backs off intermittent failures and stops automatic retries at the limit', () => {
+    const operation = createDailyLogOutboxOperation(
+      createDailyLogDraftRecord('project-a', values),
+      new Date('2026-08-13T12:00:00.000Z')
+    );
+    let retry = operation;
+    for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt += 1) {
+      retry = scheduleOutboxRetry(retry, 'Temporary network failure');
+      assert.equal(retry.attemptCount, attempt);
+    }
+    assert.equal(retry.status, 'failed');
+    assert.equal(getRetryDelayMs(99), MAX_RETRY_DELAY_MS);
+  });
+
+  it('moves a draft to the outbox in one IndexedDB transaction', () => {
+    const outbox = readFileSync(new URL('./outbox.ts', import.meta.url), 'utf8');
+    const offlineReader = readFileSync(
+      new URL('../../../public/offline-data.js', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(outbox, /OFFLINE_STORES\.outbox, OFFLINE_STORES\.drafts/);
+    assert.match(outbox, /outboxStore\.add\(operation\)/);
+    assert.match(outbox, /objectStore\(OFFLINE_STORES\.drafts\)\.delete/);
+    assert.match(offlineReader, /database\.transaction\(\[OUTBOX_STORE, DRAFTS_STORE\], 'readwrite'\)/);
+    assert.doesNotMatch(outbox, /localStorage/);
+  });
+
+  it('revalidates identity and permission before the transactional RPC', () => {
+    const action = readFileSync(new URL('../actions/offline-sync.ts', import.meta.url), 'utf8');
+    const migration = readFileSync(
+      new URL('../../../supabase/migrations/20260813134528_offline_daily_log_sync.sql', import.meta.url),
+      'utf8'
+    );
+    const triggerFix = readFileSync(
+      new URL('../../../supabase/migrations/20260813135342_offline_daily_log_sync_trigger_fix.sql', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(action, /getAuthenticatedUser\(supabase\)/);
+    assert.match(action, /checkPermission\([\s\S]*ACTIONS\.DAILY_LOG_CREATE/);
+    assert.match(action, /\.rpc\('sync_daily_log_create'/);
+    assert.match(migration, /security invoker/);
+    assert.match(migration, /v_user_id uuid := auth\.uid\(\)/);
+    assert.match(migration, /pg_advisory_xact_lock/);
+    assert.match(migration, /daily_logs_created_by_idempotency_key_uidx/);
+    assert.match(migration, /insert into public\.daily_log_personnel/);
+    assert.match(migration, /insert into public\.daily_log_equipment/);
+    assert.match(migration, /insert into public\.daily_log_work_items/);
+    assert.match(migration, /grant execute[\s\S]*to authenticated/);
+    assert.doesNotMatch(triggerFix, /insert into public\.activity_log/);
+  });
+
+  it('uses foreground verified-connectivity synchronization', () => {
+    const provider = readFileSync(
+      new URL('../../components/providers/OfflineSyncProvider.tsx', import.meta.url),
+      'utf8'
+    );
+    assert.match(provider, /connectivityRef\.current !== 'online'/);
+    assert.match(provider, /FOREGROUND_SYNC_INTERVAL_MS/);
+    assert.match(provider, /scheduleOutboxRetry/);
+    assert.doesNotMatch(provider, /SyncManager|registration\.sync/);
+  });
+});
+
+describe('Day 5 offline daily-log photos', () => {
+  const values: DailyLogDraftValues = {
+    date: '2026-08-14',
+    temp: 70,
+    conditions: 'Clear',
+    wind: 'Calm',
+    personnel: [],
+    equipment: [],
+    workItems: [],
+    workSummary: 'Photo synchronization test',
+    safetyNotes: 'No incidents',
+    geoTag: null,
+  };
+
+  it('queues every photo behind the stable client-generated daily-log ID', () => {
+    const parent = createDailyLogOutboxOperation(
+      createDailyLogDraftRecord('project-a', values),
+      new Date('2026-08-14T12:00:00.000Z')
+    );
+    const file = new File(['compressed'], 'field.jpg', { type: 'image/jpeg' });
+    const photo = createDailyLogPhotoOperation(parent, {
+      id: '7d2834a5-79de-418a-94c6-711228f65e84',
+      file,
+      category: 'standard',
+      geo_lat: 41.1,
+      geo_lng: -87.2,
+      originalSize: 10_000,
+    });
+
+    assert.equal(photo.kind, DAILY_LOG_PHOTO_UPLOAD_OPERATION);
+    assert.equal(photo.parentOperationId, parent.operationId);
+    assert.equal(photo.parentEntityId, parent.clientId);
+    assert.equal(photo.blobId, photo.operationId);
+    assert.match(photo.idempotencyKey, /daily-log-photo:/);
+    assert.equal(photo.payload.fileSize, file.size);
+    assert.equal(photo.payload.originalSize, 10_000);
+  });
+
+  it('stores the log, compressed blobs, and operations atomically in user-scoped IndexedDB', () => {
+    const storage = readFileSync(new URL('./storage.ts', import.meta.url), 'utf8');
+    const outbox = readFileSync(new URL('./outbox.ts', import.meta.url), 'utf8');
+    assert.match(storage, /syncHistory: 'sync_history'/);
+    assert.match(outbox, /OFFLINE_STORES\.outbox, OFFLINE_STORES\.drafts, OFFLINE_STORES\.blobs/);
+    assert.match(outbox, /blobStore\.add\(blobRecord\)/);
+    assert.match(outbox, /completeOutboxOperation/);
+    assert.match(outbox, /objectStore\(OFFLINE_STORES\.blobs\)\.delete/);
+    assert.doesNotMatch(outbox, /localStorage/);
+  });
+
+  it('compresses selected standard photos before exposing them to the queue', () => {
+    const photoUpload = readFileSync(
+      new URL('../../components/shared/PhotoUpload.tsx', import.meta.url),
+      'utf8'
+    );
+    assert.match(photoUpload, /await Promise\.all\([\s\S]*compressImage/);
+    assert.match(photoUpload, /maxPx: 1600, quality: 0\.72/);
+    assert.match(photoUpload, /originalSize: files\[index\]\.size/);
+    assert.match(photoUpload, /id: crypto\.randomUUID\(\)/);
+  });
+
+  it('rechecks permission around signed upload and idempotent attachment finalization', () => {
+    const action = readFileSync(new URL('../actions/offline-sync.ts', import.meta.url), 'utf8');
+    const provider = readFileSync(
+      new URL('../../components/providers/OfflineSyncProvider.tsx', import.meta.url),
+      'utf8'
+    );
+    const migration = readFileSync(
+      new URL('../../../supabase/migrations/20260814121049_offline_daily_log_photo_sync.sql', import.meta.url),
+      'utf8'
+    );
+    assert.match(action, /prepareOfflineDailyLogPhotoUpload/);
+    assert.match(action, /finalizeOfflineDailyLogPhotoUpload/);
+    assert.match(action, /checkPermission\([\s\S]*ACTIONS\.DAILY_LOG_CREATE/);
+    assert.match(action, /createSignedUploadUrl\(path, \{ upsert: true \}\)/);
+    assert.match(provider, /uploadToSignedUrl/);
+    assert.match(provider, /one photo upload[\s\S]*another photo/);
+    assert.match(migration, /security invoker/);
+    assert.match(migration, /attachments_uploaded_by_idempotency_key_uidx/);
+    assert.match(migration, /pg_advisory_xact_lock/);
+    assert.match(migration, /dl\.created_by = v_user_id/);
+    assert.match(migration, /grant execute[\s\S]*to authenticated/);
+  });
+
+  it('shows pending, failed, and synchronized operations in the Sync Center', () => {
+    const syncCenter = readFileSync(
+      new URL('../../components/offline/SyncCenter.tsx', import.meta.url),
+      'utf8'
+    );
+    assert.match(syncCenter, /Pending and failed/);
+    assert.match(syncCenter, /Recently synchronized/);
+    assert.match(syncCenter, /Retry failed/);
+    assert.match(syncCenter, /Synchronized/);
+  });
+});
+
 describe('service worker cache policy', () => {
   const serviceWorker = readFileSync(
     new URL('../../../public/sw.js', import.meta.url),
@@ -267,7 +467,7 @@ describe('offline acceptance diagnostics security', () => {
   });
 
   it('checks only public static cache paths', () => {
-    assert.match(diagnosticsClient, /railcommand-static-v6/);
+    assert.match(diagnosticsClient, /railcommand-static-v8/);
     assert.match(diagnosticsClient, /pathname\.startsWith\('\/_next\/static\/'\)/);
     assert.doesNotMatch(diagnosticsClient, /localStorage/);
   });

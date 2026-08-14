@@ -10,6 +10,10 @@ import {
   type DailyLogDraftValues,
 } from '@/lib/offline/daily-log-draft';
 import { getActiveOfflineUserId } from '@/lib/offline/storage';
+import {
+  enqueueDailyLogCreate,
+  type OfflinePhotoInput,
+} from '@/lib/offline/outbox';
 
 export type DailyLogDraftSaveStatus = 'loading' | 'idle' | 'saving' | 'saved' | 'error';
 
@@ -37,6 +41,7 @@ export function useDailyLogDraft({
   const valuesRef = useRef(values);
   const onRestoreRef = useRef(onRestore);
   const writeChainRef = useRef<Promise<void>>(Promise.resolve());
+  const skipNextAutosaveRef = useRef(false);
 
   useEffect(() => {
     valuesRef.current = values;
@@ -109,6 +114,10 @@ export function useDailyLogDraft({
 
   useEffect(() => {
     if (!hydratedRef.current) return;
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      return;
+    }
     const timeout = window.setTimeout(() => void persistLatest(), 200);
     return () => window.clearTimeout(timeout);
   }, [persistLatest, values]);
@@ -135,5 +144,23 @@ export function useDailyLogDraft({
     setStatus('idle');
   }, [offlineUserId, projectId]);
 
-  return { status, savedAt, recovered, clearDraft, persistNow: persistLatest };
+  const queueDraft = useCallback(async (photos: OfflinePhotoInput[] = []) => {
+    if (!offlineUserId || !projectId) throw new Error('No signed-in offline storage is available');
+    await writeChainRef.current.catch(() => {});
+    const operation = await enqueueDailyLogCreate(
+      offlineUserId,
+      projectId,
+      valuesRef.current,
+      draftRef.current,
+      photos
+    );
+    draftRef.current = null;
+    skipNextAutosaveRef.current = true;
+    setSavedAt(null);
+    setRecovered(false);
+    setStatus('idle');
+    return operation;
+  }, [offlineUserId, projectId]);
+
+  return { status, savedAt, recovered, clearDraft, queueDraft, persistNow: persistLatest };
 }

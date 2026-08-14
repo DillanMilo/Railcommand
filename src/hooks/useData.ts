@@ -335,6 +335,12 @@ export function useDailyLogs(projectId: string | null) {
     refetch();
   }, [refetch]);
 
+  useEffect(() => {
+    const handleSynchronization = () => refetch();
+    window.addEventListener('railcommand:sync-complete', handleSynchronization);
+    return () => window.removeEventListener('railcommand:sync-complete', handleSynchronization);
+  }, [refetch]);
+
   return {
     data,
     loading,
