@@ -110,6 +110,21 @@ export async function readDailyLogDraft(
   });
 }
 
+export async function listDailyLogDrafts(userId: string): Promise<DailyLogDraftRecord[]> {
+  const database = await openOfflineDatabase(userId);
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(OFFLINE_STORES.drafts, 'readonly');
+    const request = transaction.objectStore(OFFLINE_STORES.drafts).getAll();
+    request.onsuccess = () => resolve(
+      ((request.result as DailyLogDraftRecord[]) ?? [])
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    );
+    request.onerror = () => reject(request.error ?? new Error('Could not inspect saved drafts'));
+    transaction.oncomplete = () => database.close();
+    transaction.onabort = () => database.close();
+  });
+}
+
 export async function writeDailyLogDraft(
   userId: string,
   projectId: string,

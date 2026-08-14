@@ -8,7 +8,9 @@ import {
   isRailCommandCacheName,
   isOfflineRecordDiscarded,
   isOfflineRecordStale,
+  isOfflineStorageNearlyFull,
 } from './storage';
+import { getOfflineStorageErrorMessage, isOfflineStorageQuotaError } from './errors';
 import {
   createOfflineRecord,
   limitRecentDailyLogs,
@@ -364,6 +366,103 @@ describe('Day 5 offline daily-log photos', () => {
     assert.match(syncCenter, /Recently synchronized/);
     assert.match(syncCenter, /Retry failed/);
     assert.match(syncCenter, /Synchronized/);
+  });
+});
+
+describe('offline alpha hardening acceptance', () => {
+  it('warns before browser storage reaches capacity and recognizes quota failures', () => {
+    assert.equal(isOfflineStorageNearlyFull(89, 100), false);
+    assert.equal(isOfflineStorageNearlyFull(90, 100), true);
+    assert.equal(isOfflineStorageNearlyFull(1, 0), false);
+
+    const quota = new DOMException('Quota exceeded', 'QuotaExceededError');
+    assert.equal(isOfflineStorageQuotaError(quota), true);
+    assert.equal(isOfflineStorageQuotaError(new Error('disk is full')), true);
+    assert.match(getOfflineStorageErrorMessage(quota), /Keep this page open/);
+  });
+
+  it('fails sign-out closed when drafts or queued work cannot be safely inspected', () => {
+    const provider = readFileSync(
+      new URL('../../components/providers/OfflineSyncProvider.tsx', import.meta.url),
+      'utf8'
+    );
+    const dialog = readFileSync(
+      new URL('../../components/offline/PendingWorkSignOutDialog.tsx', import.meta.url),
+      'utf8'
+    );
+    const topbar = readFileSync(
+      new URL('../../components/layout/Topbar.tsx', import.meta.url),
+      'utf8'
+    );
+    const profile = readFileSync(
+      new URL('../../app/(app)/settings/profile/page.tsx', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(provider, /Promise\.all\(\[\s*listOutboxOperations\(activeUserId\),\s*listDailyLogDrafts\(activeUserId\)/);
+    assert.match(provider, /Fail closed/);
+    assert.match(provider, /signOut\(\{ scope: 'local' \}\)/);
+    assert.match(dialog, /RailCommand will not[\s\S]*explicit confirmation/);
+    assert.match(dialog, /Confirm discard and sign out/);
+    assert.match(topbar, /requestSignOut/);
+    assert.match(profile, /requestSignOut/);
+    assert.doesNotMatch(topbar, /clearOfflineDataForUser/);
+  });
+
+  it('keeps retry identity stable across interrupted and repeatedly resumed synchronization', () => {
+    const original = createDailyLogOutboxOperation(
+      createDailyLogDraftRecord('project-a', {
+        date: '2026-08-14',
+        temp: '',
+        conditions: '',
+        wind: '',
+        personnel: [],
+        equipment: [],
+        workItems: [],
+        workSummary: 'Connection flapping test',
+        safetyNotes: '',
+        geoTag: null,
+      })
+    );
+    let retry = original;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      retry = scheduleOutboxRetry(retry, 'Connection dropped');
+      assert.equal(retry.operationId, original.operationId);
+      assert.equal(retry.idempotencyKey, original.idempotencyKey);
+      assert.deepEqual(retry.payload, original.payload);
+    }
+  });
+
+  it('has development-only deterministic storage-pressure and post-upload interruption gates', () => {
+    const storage = readFileSync(new URL('./storage.ts', import.meta.url), 'utf8');
+    const provider = readFileSync(
+      new URL('../../components/providers/OfflineSyncProvider.tsx', import.meta.url),
+      'utf8'
+    );
+    assert.match(storage, /NODE_ENV === 'development'[\s\S]*simulate-storage/);
+    assert.match(provider, /NODE_ENV !== 'development'[\s\S]*simulate-photo-finalize-interruption/);
+    assert.match(provider, /connection dropped after upload and before finalization/);
+  });
+
+  it('keeps quota-sensitive queue writes atomic so an aborted photo write cannot delete the draft', () => {
+    const outbox = readFileSync(new URL('./outbox.ts', import.meta.url), 'utf8');
+    assert.match(
+      outbox,
+      /database\.transaction\(\s*\[OFFLINE_STORES\.outbox, OFFLINE_STORES\.drafts, OFFLINE_STORES\.blobs\],\s*'readwrite'/
+    );
+    assert.match(outbox, /transaction\.onabort/);
+    assert.match(outbox, /Daily-log queue transaction was interrupted/);
+  });
+
+  it('keeps permission failures visible instead of discarding local operations', () => {
+    const provider = readFileSync(
+      new URL('../../components/providers/OfflineSyncProvider.tsx', import.meta.url),
+      'utf8'
+    );
+    const action = readFileSync(new URL('../actions/offline-sync.ts', import.meta.url), 'utf8');
+    assert.match(action, /checkPermission/);
+    assert.match(provider, /failOutboxOperation/);
+    assert.match(provider, /RailCommand has not signed you out or deleted the local copy/);
   });
 });
 

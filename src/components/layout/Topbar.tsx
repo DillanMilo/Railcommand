@@ -23,8 +23,6 @@ import {
 } from '@/components/ui/sheet';
 import ThemeToggle from './ThemeToggle';
 import GlobalSearch from '@/components/shared/GlobalSearch';
-import { createClient } from '@/lib/supabase/client';
-import { clearOfflineDataForUser } from '@/lib/offline/storage';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
@@ -36,6 +34,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { PATCH_NOTES } from '@/lib/patch-notes';
 import type { Project, Profile, ActivityLogEntry } from '@/lib/types';
 import OfflineProjectSnapshotSync from '@/components/providers/OfflineProjectSnapshotSync';
+import { useOfflineSync } from '@/components/providers/OfflineSyncProvider';
 
 type EntityType = ActivityLogEntry['entity_type'];
 
@@ -127,6 +126,7 @@ export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
   const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId, isDemo } = useProject();
   const { markSynced } = usePWA();
+  const { requestSignOut } = useOfflineSync();
   const [searchOpen, setSearchOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
@@ -295,27 +295,6 @@ export default function Topbar({ children }: TopbarProps) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [router]);
-
-  async function handleSignOut() {
-    const supabase = createClient();
-    if (currentUserId) {
-      await clearOfflineDataForUser(currentUserId).catch(() => {});
-    }
-    await supabase.auth.signOut();
-    await fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
-    // Clear demo mode state
-    try {
-      localStorage.removeItem('rc-mode');
-      localStorage.removeItem('rc-user-name');
-      localStorage.removeItem('rc-user-email');
-      localStorage.removeItem('rc-current-project');
-      document.cookie = 'rc-mode=; path=/; max-age=0';
-      document.cookie = 'rc-demo-session=; path=/; max-age=0';
-      document.cookie = 'rc-demo-slug=; path=/; max-age=0';
-      document.cookie = 'rc-remember=; path=/; max-age=0';
-    } catch { /* noop */ }
-    router.push('/login');
-  }
 
   // Both categories empty means full empty state
   const bothCategoriesEmpty = patchNoteItems.length === 0 && activityItems.length === 0;
@@ -732,7 +711,7 @@ export default function Topbar({ children }: TopbarProps) {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
+              <DropdownMenuItem variant="destructive" onClick={() => void requestSignOut()}>
                 <LogOut className="size-4" />
                 Sign out
               </DropdownMenuItem>

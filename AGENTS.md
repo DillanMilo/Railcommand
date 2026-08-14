@@ -103,6 +103,13 @@ For each feature, consider all applicable items:
   Sync Center shows pending, retrying, failed, and recently synchronized logs/photos.
   Successful photo synchronization atomically removes its local blob. Storage quota
   failures preserve the form and are shown clearly.
+- **Offline alpha hardening gate in progress:** user-initiated sign-out checks both
+  unfinished drafts and queued operations before deleting the user-scoped database.
+  Users must synchronize, reopen the saved draft, cancel sign-out, or confirm discard
+  twice. Storage pressure is warned at 90%, and quota failures remain explicit and
+  atomic. Use `docs/OFFLINE_ALPHA_ACCEPTANCE.md` as the advancement checklist. Physical
+  iPhone/iPad and Android restart/network testing remains required before the alpha is
+  accepted for merge.
 - Later phases will extend the outbox to punch items, RFIs, and conflict handling.
 
 Until those later phases land, do not describe RailCommand as supporting full offline

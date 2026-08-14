@@ -40,6 +40,49 @@ export interface OfflineRecordResult<T> {
   isStale: boolean;
 }
 
+export interface OfflineStorageEstimate {
+  usage: number;
+  quota: number;
+  usageRatio: number;
+  isNearlyFull: boolean;
+}
+
+export const OFFLINE_STORAGE_WARNING_RATIO = 0.9;
+
+export function isOfflineStorageNearlyFull(
+  usage: number,
+  quota: number,
+  warningRatio = OFFLINE_STORAGE_WARNING_RATIO
+): boolean {
+  return Number.isFinite(usage)
+    && Number.isFinite(quota)
+    && quota > 0
+    && usage / quota >= warningRatio;
+}
+
+export async function estimateOfflineStorage(): Promise<OfflineStorageEstimate | null> {
+  if (
+    process.env.NODE_ENV === 'development'
+    && typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('simulate-storage') === 'near-full'
+  ) {
+    return { usage: 95, quota: 100, usageRatio: 0.95, isNearlyFull: true };
+  }
+  if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return null;
+  try {
+    const estimate = await navigator.storage.estimate();
+    if (typeof estimate.usage !== 'number' || typeof estimate.quota !== 'number') return null;
+    return {
+      usage: estimate.usage,
+      quota: estimate.quota,
+      usageRatio: estimate.quota > 0 ? estimate.usage / estimate.quota : 0,
+      isNearlyFull: isOfflineStorageNearlyFull(estimate.usage, estimate.quota),
+    };
+  } catch {
+    return null;
+  }
+}
+
 type OfflineMetadataRecord<T = unknown> = {
   key: OfflineMetadataKey;
   value: T;

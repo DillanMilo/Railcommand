@@ -14,6 +14,7 @@ import {
   enqueueDailyLogCreate,
   type OfflinePhotoInput,
 } from '@/lib/offline/outbox';
+import { getOfflineStorageErrorMessage } from '@/lib/offline/errors';
 
 export type DailyLogDraftSaveStatus = 'loading' | 'idle' | 'saving' | 'saved' | 'error';
 
@@ -36,6 +37,7 @@ export function useDailyLogDraft({
   const [status, setStatus] = useState<DailyLogDraftSaveStatus>('loading');
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [recovered, setRecovered] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const hydratedRef = useRef(false);
   const draftRef = useRef<DailyLogDraftRecord | null>(null);
   const valuesRef = useRef(values);
@@ -56,6 +58,7 @@ export function useDailyLogDraft({
     draftRef.current = null;
     setRecovered(false);
     setSavedAt(null);
+    setSaveError(null);
 
     if (!enabled || !offlineUserId || !projectId) {
       setStatus('idle');
@@ -79,7 +82,10 @@ export function useDailyLogDraft({
         hydratedRef.current = true;
       })
       .catch(() => {
-        if (!cancelled) setStatus('error');
+        if (!cancelled) {
+          setSaveError('RailCommand could not read the draft saved on this device.');
+          setStatus('error');
+        }
         hydratedRef.current = true;
       });
 
@@ -92,6 +98,7 @@ export function useDailyLogDraft({
     if (!enabled || !offlineUserId || !projectId || !hydratedRef.current) return;
     if (!draftRef.current && !dailyLogDraftHasEnteredData(valuesRef.current)) return;
     setStatus('saving');
+    setSaveError(null);
     const save = async () => {
       try {
         const saved = await writeDailyLogDraft(
@@ -103,7 +110,8 @@ export function useDailyLogDraft({
         draftRef.current = saved;
         setSavedAt(saved.updatedAt);
         setStatus('saved');
-      } catch {
+      } catch (error) {
+        setSaveError(getOfflineStorageErrorMessage(error));
         setStatus('error');
       }
     };
@@ -141,6 +149,7 @@ export function useDailyLogDraft({
     draftRef.current = null;
     setSavedAt(null);
     setRecovered(false);
+    setSaveError(null);
     setStatus('idle');
   }, [offlineUserId, projectId]);
 
@@ -162,5 +171,13 @@ export function useDailyLogDraft({
     return operation;
   }, [offlineUserId, projectId]);
 
-  return { status, savedAt, recovered, clearDraft, queueDraft, persistNow: persistLatest };
+  return {
+    status,
+    savedAt,
+    recovered,
+    saveError,
+    clearDraft,
+    queueDraft,
+    persistNow: persistLatest,
+  };
 }

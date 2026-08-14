@@ -21,6 +21,7 @@ import { ACTIONS } from '@/lib/permissions';
 import { getLocalDateString } from '@/lib/date-utils';
 import type { GeoTag } from '@/lib/types';
 import type { DailyLogDraftValues } from '@/lib/offline/daily-log-draft';
+import { getOfflineStorageErrorMessage } from '@/lib/offline/errors';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -84,6 +85,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
     status: draftStatus,
     savedAt: draftSavedAt,
     recovered: draftRecovered,
+    saveError: draftSaveError,
     queueDraft,
   } = useDailyLogDraft({
     userId: currentUserId,
@@ -167,7 +169,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
           </div>
           <p className="mt-1 text-xs opacity-80">
             {draftStatus === 'error'
-              ? 'Keep this page open and check your browser storage settings before leaving.'
+              ? draftSaveError ?? 'Keep this page open and check your browser storage settings before leaving.'
               : draftRecovered
                 ? `Recovered your unfinished draft${draftSavedAt ? ` from ${new Date(draftSavedAt).toLocaleString()}` : ''}.`
                 : 'Personnel, equipment, work items, location, weather, summary, and safety notes are stored in your private offline database.'}
@@ -381,13 +383,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                   `Saved securely on this device with ${photos.length} photo${photos.length === 1 ? '' : 's'}. You can enter another log while synchronization continues.`
                 );
               } catch (error) {
-                setErrorMsg(
-                  error instanceof DOMException && error.name === 'QuotaExceededError'
-                    ? 'This device does not have enough offline storage for those photos. Remove one or more photos and try again.'
-                    : error instanceof Error
-                      ? error.message
-                      : 'Could not queue this daily log and its photos'
-                );
+                setErrorMsg(getOfflineStorageErrorMessage(error));
               } finally {
                 setSubmitting(false);
               }

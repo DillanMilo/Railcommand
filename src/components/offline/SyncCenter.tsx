@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CloudUpload,
   FileText,
+  HardDrive,
   Image as ImageIcon,
   Loader2,
   RotateCcw,
@@ -24,6 +25,7 @@ import {
   type OutboxOperation,
   type SyncHistoryItem,
 } from '@/lib/offline/outbox';
+import type { OfflineStorageEstimate } from '@/lib/offline/storage';
 
 function operationLabel(operation: OutboxOperation): string {
   return operation.kind === DAILY_LOG_CREATE_OPERATION
@@ -42,11 +44,13 @@ export default function SyncCenter({
   operations,
   history,
   isSyncing,
+  storageEstimate,
   onRetry,
 }: {
   operations: OutboxOperation[];
   history: SyncHistoryItem[];
   isSyncing: boolean;
+  storageEstimate: OfflineStorageEstimate | null;
   onRetry: () => void;
 }) {
   const failedCount = operations.filter((operation) => operation.status === 'failed').length;
@@ -80,6 +84,18 @@ export default function SyncCenter({
             Daily logs synchronize before their photos. Every photo uploads and retries independently.
           </DialogDescription>
         </DialogHeader>
+
+        {storageEstimate?.isNearlyFull && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100" role="alert">
+            <HardDrive className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="font-medium">Device storage is nearly full</p>
+              <p className="mt-1 text-xs opacity-80">
+                Approximately {(storageEstimate.usageRatio * 100).toFixed(0)}% of browser storage is in use. Synchronize pending photos and free device storage before entering more field work.
+              </p>
+            </div>
+          </div>
+        )}
 
         <section className="space-y-3" aria-labelledby="pending-sync-heading">
           <div className="flex items-center justify-between gap-3">
