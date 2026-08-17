@@ -69,6 +69,10 @@
 :root {
   --radius: 0.625rem;
 
+  --font-plus-jakarta-sans: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-dm-sans: "DM Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", "SFMono-Regular", "SF Mono", Consolas, monospace;
+
   /* RailCommand light mode */
   --rc-navy: #0F172A;
   --rc-slate: #1E293B;

@@ -1,9 +1,7 @@
-import { createHmac, timingSafeEqual } from 'crypto';
 import type { ComponentType, ReactNode } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { cookies, headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import {
   Activity,
   ArrowRight,
@@ -35,6 +33,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { lockClientDashboard, unlockClientDashboard } from './actions';
+import {
+  CLIENT_DASHBOARD_COOKIE,
+  getDashboardPassword,
+  getGateSignature,
+  safeCompare,
+} from './gate';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,13 +50,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-const CLIENT_DASHBOARD_COOKIE = 'rc-client-dashboard-unlocked';
-const GATE_PURPOSE = 'client-dashboard';
-const UNLOCK_WINDOW_MS = 15 * 60 * 1000;
-const UNLOCK_ATTEMPT_LIMIT = 12;
-
-const unlockAttempts = new Map<string, { count: number; resetAt: number }>();
 
 type OrganizationRow = {
   id: string;
@@ -169,46 +167,6 @@ type DashboardData = {
   emailMetrics: EmailMetrics;
 };
 
-function getDashboardPassword(): string | null {
-  const password = process.env.ADMIN_DASHBOARD_PASSWORD?.trim();
-  return password && password.length >= 8 ? password : null;
-}
-
-function getGateSignature(): string | null {
-  const password = getDashboardPassword();
-  if (!password) return null;
-  return createHmac('sha256', password).update(GATE_PURPOSE).digest('hex');
-}
-
-function safeCompare(a: string, b: string): boolean {
-  const aBuffer = Buffer.from(a);
-  const bBuffer = Buffer.from(b);
-  if (aBuffer.length !== bBuffer.length) return false;
-  return timingSafeEqual(aBuffer, bBuffer);
-}
-
-function checkUnlockRateLimit(key: string): boolean {
-  const now = Date.now();
-  const entry = unlockAttempts.get(key);
-  if (!entry || now > entry.resetAt) {
-    unlockAttempts.set(key, { count: 1, resetAt: now + UNLOCK_WINDOW_MS });
-    return true;
-  }
-
-  if (entry.count >= UNLOCK_ATTEMPT_LIMIT) return false;
-  entry.count += 1;
-  return true;
-}
-
-async function getRequestKey(): Promise<string> {
-  const headerStore = await headers();
-  return (
-    headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    headerStore.get('x-real-ip')?.trim() ||
-    'unknown'
-  );
-}
-
 async function isUnlocked(): Promise<boolean> {
   const signature = getGateSignature();
   if (!signature) return false;
@@ -217,49 +175,6 @@ async function isUnlocked(): Promise<boolean> {
   if (!stored || stored.length !== signature.length) return false;
 
   return safeCompare(stored, signature);
-}
-
-export async function unlockClientDashboard(formData: FormData) {
-  'use server';
-
-  const password = getDashboardPassword();
-  if (!password) redirect('/client?error=config');
-
-  if (!checkUnlockRateLimit(await getRequestKey())) {
-    redirect('/client?error=rate');
-  }
-
-  const entered = String(formData.get('password') ?? '');
-  if (!safeCompare(entered, password)) {
-    redirect('/client?error=invalid');
-  }
-
-  const signature = getGateSignature();
-  if (!signature) redirect('/client?error=config');
-
-  (await cookies()).set(CLIENT_DASHBOARD_COOKIE, signature, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/client',
-    maxAge: 60 * 60 * 8,
-  });
-
-  redirect('/client');
-}
-
-export async function lockClientDashboard() {
-  'use server';
-
-  (await cookies()).set(CLIENT_DASHBOARD_COOKIE, '', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/client',
-    maxAge: 0,
-  });
-
-  redirect('/client');
 }
 
 async function getAuthUsers(): Promise<AuthUserSummary[]> {

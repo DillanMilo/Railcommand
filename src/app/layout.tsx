@@ -1,28 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
 import SupabaseStatusBanner from "@/components/layout/SupabaseStatusBanner";
 import "./globals.css";
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://railcommand.io"),
@@ -79,9 +60,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${plusJakartaSans.variable} ${dmSans.variable} ${jetBrainsMono.variable} ${dmSans.className} antialiased`}
-      >
+      <body className="antialiased">
         <ThemeProvider>
           <ServiceWorkerProvider>
             <SupabaseStatusBanner />
