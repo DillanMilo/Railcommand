@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Camera as NativeCamera, CameraDirection, CameraErrorCode, EncodingType } from '@capacitor/camera';
-import { Capacitor } from '@capacitor/core';
+import { Camera as NativeCamera, CameraErrorCode } from '@capacitor/camera';
 import { Network } from '@capacitor/network';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -42,7 +41,7 @@ import {
 } from '@railcommand/offline';
 import { mobileConfig } from './config';
 import { registerMobileDeepLinks } from './deep-links';
-import { materializePhotoBlob, type MaterializedPhoto } from './photo';
+import { captureNativePhoto, type MaterializedPhoto } from './photo';
 import { supabase } from './supabase';
 import { synchronizeMobileOutbox } from './sync';
 
@@ -63,6 +62,7 @@ export function App() {
   const [photoCount, setPhotoCount] = useState(0);
   const [draftFeedback, setDraftFeedback] = useState('No unsaved changes');
   const [photoFeedback, setPhotoFeedback] = useState('No photos saved on this device');
+  const [cameraStatus, setCameraStatus] = useState<'checking' | 'ready' | 'unavailable'>('checking');
   const [online, setOnline] = useState(navigator.onLine);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -177,6 +177,23 @@ export function App() {
   }, [activeProjectId, session?.user.id]);
 
   useEffect(() => {
+    if (!session?.user.id) {
+      setCameraStatus('checking');
+      return;
+    }
+    let active = true;
+    void NativeCamera.checkPermissions().then(() => {
+      if (active) setCameraStatus('ready');
+    }).catch((error) => {
+      if (!active) return;
+      const detail = error instanceof Error ? error.message : String(error);
+      setCameraStatus('unavailable');
+      setPhotoFeedback(`Camera unavailable: ${detail}`);
+    });
+    return () => { active = false; };
+  }, [session?.user.id]);
+
+  useEffect(() => {
     if (!draftDirty || !session?.user.id || !activeProjectId) return;
     const timeout = window.setTimeout(() => {
       const next = createMobileDraft(activeProjectId, draftValues, draft);
@@ -261,32 +278,24 @@ export function App() {
   };
 
   const capturePhoto = async () => {
-    if (!session?.user.id || !activeProjectId) return;
+    if (!session?.user.id) {
+      setPhotoFeedback('Sign in before capturing a photo');
+      return;
+    }
+    if (!activeProjectId) {
+      setPhotoFeedback('Wait for a project to load before capturing a photo');
+      return;
+    }
+    if (cameraStatus !== 'ready') {
+      setPhotoFeedback(cameraStatus === 'unavailable'
+        ? 'Camera is unavailable in this build'
+        : 'Camera is still initializing; please try again');
+      return;
+    }
     setPhotoFeedback('Opening camera…');
     try {
-      const result = await NativeCamera.takePhoto({
-        cameraDirection: CameraDirection.Rear,
-        quality: 85,
-        targetWidth: 1920,
-        targetHeight: 1920,
-        correctOrientation: true,
-        encodingType: EncodingType.JPEG,
-        saveToGallery: false,
-        editable: 'no',
-        includeMetadata: true,
-        webUseInput: true,
-      });
+      const materialized = await captureNativePhoto();
       setPhotoFeedback('Preparing captured photo…');
-      const photoUrl = result.webPath ?? (result.uri ? Capacitor.convertFileSrc(result.uri) : null);
-      if (!photoUrl) throw new Error('The camera returned no readable photo location');
-      const response = await fetch(photoUrl);
-      if (!response.ok) throw new Error(`The captured photo could not be read (${response.status})`);
-      const format = result.metadata?.format?.toLowerCase() || 'jpg';
-      const extension = format === 'jpeg' ? 'jpg' : format;
-      const materialized = await materializePhotoBlob(
-        await response.blob(),
-        `railcommand-photo-${Date.now()}.${extension}`,
-      );
       await persistPhoto(materialized);
     } catch (error) {
       const code = typeof error === 'object' && error && 'code' in error
@@ -404,7 +413,7 @@ export function App() {
       <label>Work summary<textarea placeholder="Describe today’s completed work…" value={draftValues.workSummary} onChange={(event) => editDraft({ ...draftValues, workSummary: event.target.value })} /></label>
       <label>Safety notes<textarea placeholder="Record observations or incidents…" value={draftValues.safetyNotes} onChange={(event) => editDraft({ ...draftValues, safetyNotes: event.target.value })} /></label>
       <button type="button" className="file-button" onClick={() => void capturePhoto()}><Camera size={17} />Capture photo</button>
-      <p className="inline-status" aria-live="polite">{photoFeedback} · Persisted photos: {photoCount}</p>
+      <p className="inline-status" aria-live="polite">{photoFeedback} · Persisted photos: {photoCount} · Camera: {cameraStatus}</p>
       <div className="actions">
         <button type="button" className="secondary" onClick={() => void saveDraft()}><Save size={17} />Save on device</button>
         <button type="button" className="primary-button" onClick={() => void queueAndSync()}><CloudUpload size={17} />Queue daily log</button>

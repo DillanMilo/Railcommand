@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
-import { materializeCapturedPhoto } from './photo';
+import { captureNativePhoto, materializeCapturedPhoto } from './photo';
 
 describe('captured photo materialization', () => {
   it('copies temporary camera-backed bytes into an owned Blob', async () => {
@@ -27,5 +27,37 @@ describe('captured photo materialization', () => {
     } as File;
 
     await assert.rejects(materializeCapturedPhoto(file), /contained no image data/);
+  });
+
+  it('invokes the native camera and materializes its returned file URI', async () => {
+    let takePhotoCalls = 0;
+    let convertedUri = '';
+    const camera = {
+      takePhoto: async () => {
+        takePhotoCalls += 1;
+        return {
+          type: 0,
+          uri: 'file:///temporary/camera.jpg',
+          saved: false,
+          metadata: { format: 'jpeg' },
+        };
+      },
+    };
+    const result = await captureNativePhoto(
+      camera,
+      async (url) => new Response(new Blob([new Uint8Array([5, 6, 7])], { type: 'image/jpeg' }), {
+        status: url === 'capacitor://camera.jpg' ? 200 : 404,
+      }),
+      (uri) => {
+        convertedUri = uri;
+        return 'capacitor://camera.jpg';
+      },
+    );
+
+    assert.equal(takePhotoCalls, 1);
+    assert.equal(convertedUri, 'file:///temporary/camera.jpg');
+    assert.equal(result.fileType, 'image/jpeg');
+    assert.equal(result.size, 3);
+    assert.match(result.fileName, /\.jpg$/);
   });
 });
