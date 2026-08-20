@@ -23,12 +23,12 @@ each platform in the ignored private release runbook.
 - [x] Edit a daily-log field, wait for “Draft saved on this device,” force-close, and confirm the draft returns.
 - [x] Capture/attach a photo, force-close, and confirm the persisted-photo count remains.
 - [x] Queue a daily log offline; reconnect; confirm it synchronizes once and appears in the refreshed list.
-- [ ] Open `railcommand://projects/20000000-0000-4000-8000-000000000001`; confirm the app opens the synthetic project.
+- [x] Open `railcommand://projects/20000000-0000-4000-8000-000000000001`; confirm the app opens the synthetic project.
 - [ ] After Associated Domains provisioning is available, open the equivalent `https://railcommand.io/projects/...` link.
-- [ ] With unsynchronized work present, confirm normal sign-out refuses to delete it.
-- [ ] Confirm discard requires two taps and removes only the current user's local database.
-- [ ] Sign in as synthetic user B and confirm no A project cache, draft, photo, or outbox entry appears.
-- [ ] Add distinct B local work, sign out safely, then sign back in as A and confirm A data is intact and B data is absent.
+- [x] With unsynchronized work present, confirm normal sign-out refuses to delete it.
+- [x] Confirm discard requires two taps and removes only the current user's local database.
+- [x] Sign in as synthetic user B and confirm no A project cache, draft, photo, or outbox entry appears.
+- [x] Add distinct B local work, sign out safely, then sign back in as A and confirm A data is intact and B data is absent.
 - [ ] Repeat network loss during edit and during sync; confirm no draft is silently lost or duplicated.
 - [ ] Restart the phone and repeat session, cache, draft, and photo checks.
 
@@ -82,12 +82,20 @@ each platform in the ignored private release runbook.
   starts online. Physical retesting proved the two local operations became one before
   delivery. Confirmed mobile staging contains exactly one daily-log row with the first
   UUID/key, contains no row for the second key, and the post-success device snapshot
-  shows zero outbox records while the cache and two photo blobs remain. Deep links,
-  sign-out, full restart, and A→B→A checks remain pending.
+  shows zero outbox records while the cache and two photo blobs remain. The custom
+  `railcommand://projects/...` URL then launched the installed app into the synthetic
+  project and showed the synchronized record. Guarded sign-out refused while the two
+  local photos remained; the first discard tap only armed the action, and the confirmed
+  second tap removed A's IndexedDB before sign-out. User B then created a fresh cache
+  with zero inherited drafts, outbox entries, photos, or blobs, saved the distinct
+  `Synthetic B isolation draft`, and removed only B's database through the same two-tap
+  flow. Returning as A recreated only A's cache, restored A's synchronized project/log,
+  and contained zero B drafts, outbox entries, photos, or blobs. Full restart and the
+  repeated mid-sync network-loss check remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
   `d77c310cf422550d1bf45439a1a451a792f6de4f91b73f964fdd9b9d19272730`;
   v2 signature verification passes. ADB reports no physical Android device
   currently connected, so device-level acceptance remains pending.
-- A→B→A: automated IndexedDB coverage passes; physical two-account validation pending.
+- A→B→A: automated IndexedDB coverage and physical two-account validation pass.
