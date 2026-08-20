@@ -1,7 +1,8 @@
 import type { MobileBootstrap, MobileDailyLog, MobileProject } from '@railcommand/domain';
-import { authenticateMobileRequest, mobileJson } from '@/lib/mobile-api/auth';
+import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
 
 export const dynamic = 'force-dynamic';
+export const OPTIONS = mobileOptions;
 
 type MembershipRow = {
   project_id: string;

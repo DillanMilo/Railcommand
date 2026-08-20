@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'mocha';
-import { parseBearerAuthorization } from './auth';
+import { mobileJson, mobileOptions, parseBearerAuthorization } from './auth';
 import { canCreateMobileDailyLog } from './authorization';
 
 describe('mobile API security boundary', () => {
@@ -26,5 +26,30 @@ describe('mobile API security boundary', () => {
     );
     assert.match(middleware, /['"]\/api\/mobile\/v1['"]/);
     assert.match(middleware, /pathname\.startsWith\(['"]\/api\/mobile\/v1\/['"]\)/);
+  });
+
+  it('allows only the bundled Capacitor origin through preflight', () => {
+    const allowed = mobileOptions(new Request('https://staging.example/api/mobile/v1/bootstrap', {
+      method: 'OPTIONS',
+      headers: { origin: 'capacitor://localhost' },
+    }));
+    assert.equal(allowed.status, 204);
+    assert.equal(allowed.headers.get('access-control-allow-origin'), 'capacitor://localhost');
+    assert.match(allowed.headers.get('access-control-allow-headers') ?? '', /Authorization/i);
+
+    const rejected = mobileOptions(new Request('https://staging.example/api/mobile/v1/bootstrap', {
+      method: 'OPTIONS',
+      headers: { origin: 'https://untrusted.example' },
+    }));
+    assert.equal(rejected.status, 403);
+    assert.equal(rejected.headers.get('access-control-allow-origin'), null);
+  });
+
+  it('adds the exact native origin to authenticated JSON responses', async () => {
+    const response = mobileJson({ ok: true });
+    assert.equal(response.headers.get('access-control-allow-origin'), 'capacitor://localhost');
+    assert.equal(response.headers.get('cache-control'), 'no-store, max-age=0');
+    assert.match(response.headers.get('vary') ?? '', /Origin/);
+    assert.deepEqual(await response.json(), { ok: true });
   });
 });

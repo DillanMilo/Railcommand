@@ -1,8 +1,9 @@
 import { isValidSyncOperation, type MobileDailyLogSyncResult } from '@railcommand/domain';
-import { authenticateMobileRequest, mobileJson } from '@/lib/mobile-api/auth';
+import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
 import { canCreateMobileDailyLog } from '@/lib/mobile-api/authorization';
 
 export const dynamic = 'force-dynamic';
+export const OPTIONS = mobileOptions;
 
 export async function POST(request: Request): Promise<Response> {
   const context = await authenticateMobileRequest(request);
