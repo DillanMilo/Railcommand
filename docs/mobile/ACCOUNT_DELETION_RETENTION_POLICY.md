@@ -1,6 +1,6 @@
 # Mobile account deletion and record-retention policy
 
-Status: proposed for accountable business-owner approval  
+Status: approved by accountable business owner
 Last updated: 2026-08-20
 
 ## Scope
@@ -82,7 +82,8 @@ account is deleted while offline.
 
 ## Approval
 
-- Accountable business owner: pending
-- Approval date: pending
+- Accountable business owner: Dillan Milosevich
+- Approval date: 2026-08-20
+- Approval record: explicit approval provided in the RailCommand Phase 0 task
 - Legal review: required before store submission if customer contracts or
   applicable retention obligations differ from this policy

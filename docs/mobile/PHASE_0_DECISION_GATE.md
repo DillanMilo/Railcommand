@@ -18,18 +18,18 @@ reserve identifiers/store records and create isolated staging resources.
 | Business model | RailCommand licenses are sold directly to organizations; mobile apps are free login-only clients | Approved 2026-08-20 | Complete |
 | In-app commerce | No checkout, price, upgrade CTA, external purchase link, or license-key purchase in mobile v1 | Approved 2026-08-20 | Complete |
 | iOS distribution | Public free listing; unlisted distribution remains an option if discoverability is unwanted | Approved 2026-08-20 | App Store Connect record created; free and US-only |
-| Android distribution | Public free listing; Managed Google Play is available for customers that mandate private MDM deployment | Approved 2026-08-20 | Package availability verified; record awaits required declarations |
-| Launch territory | United States only on both stores; no availability outside the US | Approved 2026-08-20 | Enforced on Apple; enforce immediately after Google record creation |
-| Store name | `RailCommand` | Approved 2026-08-20 | Reserved on Apple; available on Google |
-| Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Registered on Apple; available on Google pending record creation |
+| Android distribution | Public free listing; Managed Google Play is available for customers that mandate private MDM deployment | Approved 2026-08-20 | Google Play record created; free and US-only |
+| Launch territory | United States only on both stores; no availability outside the US | Approved 2026-08-20 | Enforced on both store records |
+| Store name | `RailCommand` | Approved 2026-08-20 | Reserved on Apple and Google Play |
+| Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Registered on Apple and Google Play |
 | Development bundle/package ID | `io.railcommand.app.dev` | Approved 2026-08-20 | Registered on Apple and Firebase staging |
 | Verified link host | `railcommand.io` | Approved 2026-08-20 | Domain control verified; association files are Phase 1 work |
 | Custom URL scheme | `railcommand://` | Approved 2026-08-20 | Collision/callback device tests are Phase 1 work |
 | Mobile framework | Capacitor 8 with a bundled React/TypeScript client | Approved by technical assessment | Architecture-spike acceptance |
-| Minimum iOS | iOS 15 | Proposed baseline | Product/device-support approval |
-| Minimum Android | SDK 24 (Android 7.0) | Proposed baseline | Product/device-support approval |
-| Android target/compile | API 36 | Required baseline | Android SDK installation and build evidence |
-| Native tablets | Responsive iPad and Android large-screen support in v1 | Proposed | Product approval |
+| Minimum iOS | iOS 15 | Approved 2026-08-20 | Enforce in Phase 1 native project |
+| Minimum Android | SDK 24 (Android 7.0) | Approved 2026-08-20 | Enforce in Phase 1 native project |
+| Android target/compile | API 36 | Approved 2026-08-20 | Platform and Build Tools 36 verified installed |
+| Native tablets | Responsive iPad and Android large-screen support in v1 | Approved 2026-08-20 | Enforce in Phase 1 responsive acceptance |
 | Production data in development | Prohibited | Approved 2026-08-20 | Staging evidence |
 
 Identifiers are not committed to native project files until their ownership and
@@ -94,13 +94,15 @@ App Store Connect API keys to the repository.
       an organization account.
 - [x] `io.railcommand.app` availability is verified before the first artifact;
       the package becomes permanent when the record is created.
-- [x] Play App Signing and upload-key custody are assigned to the Account Owner;
-      enrollment/key generation occurs only after the app record exists.
-- [x] Android developer identity verification is complete; existing Play
-      packages are shown as registered. RailCommand package registration remains
-      pending because its store record has not been created.
-- [ ] Google Play country/region availability is configured for the United
-      States only before release; every other country or region remains unavailable.
+- [x] Play App Signing is active. Upload-key creation and custody are assigned to
+      the Account Owner for the future Phase 1 release pipeline.
+- [x] Android developer identity verification is complete and the RailCommand
+      Google Play record reserves `io.railcommand.app` (Play app ID
+      `4974656059116836796`).
+- [x] Google Play production availability targets the United States only; no
+      other country or region is targeted.
+- [x] Google Play policy and applicable US export-law declarations were approved
+      by the Account Owner on 2026-08-20.
 - [x] Firebase development is isolated in `railcommand-mobile-staging`; no
       production Firebase app or credentials were created.
 
@@ -172,7 +174,7 @@ language. This document does not determine legal retention obligations.
 | iOS deployment target | 15+ | Phase 1 project setting |
 | Android Studio | 2025.2.1+ | 2026.1 installed |
 | Android minimum SDK | 24 | Phase 1 project setting |
-| Android compile/target SDK | 36 | Installation prepared; license acceptance required |
+| Android compile/target SDK | 36 | Platform 36 revision 2 and Build Tools 36.0.0 installed |
 
 ## Phase 0 exit gate
 
@@ -180,12 +182,13 @@ Phase 1 may begin only when:
 
 - [x] Distribution and licensing decisions are approved.
 - [x] Initial launch territory is approved as United States only.
-- [ ] Production and development identifiers are approved and availability is
-      verified (Apple complete; Google record creation pending declarations).
+- [x] Production and development identifiers are approved, verified, and
+      reserved on the applicable stores and staging services.
 - [x] Apple Account Holder access and Google account-owner access are verified;
       delegated App Manager/Developer roles remain a pre-release operations task.
 - [x] Mobile v1 scope is approved.
-- [ ] Account-deletion and record-retention policy has an accountable approver.
+- [x] Account-deletion and record-retention policy was approved by the
+      accountable business owner on 2026-08-20.
 - [x] A separate staging Supabase project exists with automatic RLS enabled and
       automatic exposure of new tables disabled.
 - [x] A separate staging Vercel project/deployment exists and connects only to
@@ -194,7 +197,11 @@ Phase 1 may begin only when:
 - [x] Development APNs/Firebase responsibilities and resources are separated
       from production.
 - [x] Environment guards identify and reject production backend identifiers.
-- [ ] Android API 36 is installed.
+- [x] Android API 36 and Build Tools 36.0.0 are installed and verified.
+
+All Phase 0 exit-gate items are complete as of 2026-08-20. Phase 1 development
+remains subject to the production-safety boundary and must use only the
+development identifier and isolated staging resources.
 
 ## First Phase 1 issue after approval
 

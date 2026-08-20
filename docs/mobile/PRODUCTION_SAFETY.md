@@ -104,8 +104,8 @@ alone. Match explicit immutable project/origin identifiers.
   production APNs/FCM send, DNS change, or live feature flag is authorized by the
   mobile program unless the user separately approves that exact release action.
 - Store records and permanent identifiers are external state; the approved Apple
-  reservations are complete and Google reservation remains gated by the user's
-  Play policy/export declarations.
+  and Google reservations are complete. Neither record has been submitted for
+  review or connected to a production build.
 - Existing web CI, cron schedules, environment variables, and deployment settings
   remain unchanged.
 

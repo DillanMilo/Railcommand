@@ -29,8 +29,12 @@ out of version control.
   disabled for mobile v1.
 - Google Play organization identity and production access are verified. The
   personal-account 12-testers/14-days rule does not apply. **RailCommand** and
-  `io.railcommand.app` are available in the create-app form; creation awaits the
-  owner's required Play policy and US export declarations.
+  `io.railcommand.app` are reserved by Play app ID `4974656059116836796`.
+- The Account Owner approved the Developer Program Policies and applicable US
+  export-law declarations. The app is free, and the production track targets
+  only the United States.
+- Google Play reports that releases are signed by Play. The Account Owner is
+  responsible for the future upload key and release pipeline.
 
 ## Staging evidence
 
@@ -52,14 +56,18 @@ out of version control.
 - `npm run test:mobile-env`: pass (7 tests)
 - `npx tsc --noEmit`: pass
 - `npm run build`: pass with staging configuration
-- Android Studio 2026.1 is installed. Android API 36 installation awaits explicit
-  acceptance of the Android SDK License Agreement.
+- Android Studio 2026.1, Android Platform 36 revision 2, Android Build Tools
+  36.0.0, and Platform Tools 37.0.1 are installed. The Account Owner explicitly
+  accepted the Android SDK License Agreement on 2026-08-20.
 
-## Remaining blockers
+## Approval and gate result
 
-1. Accountable-owner approval of the 30-day deletion/retention policy.
-2. Explicit Google Play policy and applicable US export-law declarations, then
-   creation of the app record and US-only availability configuration.
-3. Android SDK License Agreement acceptance and API 36 installation evidence.
+- The accountable business owner approved the 30-day account-deletion and
+  organizational-record-retention policy on 2026-08-20.
+- Apple and Google identifiers are reserved and both store records are limited
+  to the United States.
+- Account access, staging isolation, safety guards, toolchain baseline, v1 scope,
+  distribution, commerce, deletion, and retention decisions are complete.
 
-Phase 0 is complete only after all three are resolved and the final checks pass.
+Phase 0 is complete as of 2026-08-20. This is a readiness gate, not authorization
+to connect a development build to production or submit either app for review.
