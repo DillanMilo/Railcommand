@@ -45,3 +45,6 @@ supabase/.temp/
 next-env.d.ts
 .env*.local
 backups/
+
+# mobile release credentials and private account identifiers
+/docs/mobile/private/
