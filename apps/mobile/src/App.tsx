@@ -40,6 +40,7 @@ import {
 } from '@railcommand/offline';
 import { mobileConfig } from './config';
 import { registerMobileDeepLinks } from './deep-links';
+import { materializeCapturedPhoto } from './photo';
 import { supabase } from './supabase';
 import { synchronizeMobileOutbox } from './sync';
 
@@ -58,6 +59,8 @@ export function App() {
   const [draftValues, setDraftValues] = useState(EMPTY_DRAFT);
   const [draftDirty, setDraftDirty] = useState(false);
   const [photoCount, setPhotoCount] = useState(0);
+  const [draftFeedback, setDraftFeedback] = useState('No unsaved changes');
+  const [photoFeedback, setPhotoFeedback] = useState('No photos saved on this device');
   const [online, setOnline] = useState(navigator.onLine);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -156,6 +159,7 @@ export function App() {
     void readMobileDraft(session.user.id, activeProjectId).then(async (saved) => {
       setDraft(saved);
       setDraftDirty(false);
+      setDraftFeedback(saved ? 'Saved draft restored from this device' : 'No unsaved changes');
       setDraftValues(saved ? {
         logDate: saved.logDate,
         weatherConditions: saved.weatherConditions,
@@ -164,6 +168,9 @@ export function App() {
       } : { ...EMPTY_DRAFT, logDate: new Date().toISOString().slice(0, 10) });
       const photos = await listMobilePhotos(session.user.id, `daily-log:${activeProjectId}`);
       setPhotoCount(photos.length);
+      setPhotoFeedback(photos.length
+        ? `${photos.length} photo${photos.length === 1 ? '' : 's'} persisted on this device`
+        : 'No photos saved on this device');
     });
   }, [activeProjectId, session?.user.id]);
 
@@ -171,12 +178,16 @@ export function App() {
     if (!draftDirty || !session?.user.id || !activeProjectId) return;
     const timeout = window.setTimeout(() => {
       const next = createMobileDraft(activeProjectId, draftValues, draft);
+      setDraftFeedback('Saving draft on this device…');
       void saveMobileDraft(session.user.id, next).then(() => {
         setDraft(next);
         setDraftDirty(false);
         setMessage('Draft saved on this device');
+        setDraftFeedback('Saved on this device');
       }).catch((error) => {
-        setMessage(`Draft could not be saved: ${error instanceof Error ? error.message : String(error)}`);
+        const detail = error instanceof Error ? error.message : String(error);
+        setMessage(`Draft could not be saved: ${detail}`);
+        setDraftFeedback(`Save failed: ${detail}`);
       });
     }, 500);
     return () => window.clearTimeout(timeout);
@@ -185,6 +196,7 @@ export function App() {
   const editDraft = (values: typeof EMPTY_DRAFT) => {
     setDraftValues(values);
     setDraftDirty(true);
+    setDraftFeedback('Changes waiting to save…');
   };
 
   const signIn = async (event: React.FormEvent) => {
@@ -198,14 +210,18 @@ export function App() {
   const saveDraft = async (): Promise<MobileDailyLogDraft | null> => {
     if (!session?.user.id || !activeProjectId) return null;
     try {
+      setDraftFeedback('Saving draft on this device…');
       const next = createMobileDraft(activeProjectId, draftValues, draft);
       await saveMobileDraft(session.user.id, next);
       setDraft(next);
       setDraftDirty(false);
       setMessage('Draft saved on this device');
+      setDraftFeedback('Saved on this device');
       return next;
     } catch (error) {
-      setMessage(`Draft could not be saved: ${error instanceof Error ? error.message : String(error)}`);
+      const detail = error instanceof Error ? error.message : String(error);
+      setMessage(`Draft could not be saved: ${detail}`);
+      setDraftFeedback(`Save failed: ${detail}`);
       return null;
     }
   };
@@ -213,22 +229,34 @@ export function App() {
   const addPhoto = async (file: File | undefined) => {
     if (!file || !session?.user.id || !activeProjectId) return;
     try {
+      setPhotoFeedback('Preparing captured photo…');
       const savedDraft = await saveDraft();
       if (!savedDraft) return;
+      const materialized = await materializeCapturedPhoto(file);
+      setPhotoFeedback('Saving photo on this device…');
+      const photoId = crypto.randomUUID();
       await persistMobilePhoto(session.user.id, {
-        photoId: crypto.randomUUID(),
+        photoId,
         draftId: savedDraft.draftId,
         projectId: activeProjectId,
-        fileName: file.name,
-        fileType: file.type || 'image/jpeg',
-        size: file.size,
+        fileName: materialized.fileName,
+        fileType: materialized.fileType,
+        size: materialized.size,
         capturedAt: new Date().toISOString(),
-        blob: file,
+        blob: materialized.blob,
       });
-      setPhotoCount((count) => count + 1);
+      const persistedPhotos = await listMobilePhotos(session.user.id, savedDraft.draftId);
+      const nextCount = persistedPhotos.length;
+      if (!persistedPhotos.some((photo) => photo.photoId === photoId)) {
+        throw new Error('The photo could not be verified after saving');
+      }
+      setPhotoCount(nextCount);
+      setPhotoFeedback(`${nextCount} photo${nextCount === 1 ? '' : 's'} persisted on this device`);
       setMessage('Photo persisted on this device');
     } catch (error) {
-      setMessage(`Photo could not be saved: ${error instanceof Error ? error.message : String(error)}`);
+      const detail = error instanceof Error ? error.message : String(error);
+      setMessage(`Photo could not be saved: ${detail}`);
+      setPhotoFeedback(`Photo save failed: ${detail}`);
     }
   };
 
@@ -334,13 +362,17 @@ export function App() {
       <label>Work summary<textarea placeholder="Describe today’s completed work…" value={draftValues.workSummary} onChange={(event) => editDraft({ ...draftValues, workSummary: event.target.value })} /></label>
       <label>Safety notes<textarea placeholder="Record observations or incidents…" value={draftValues.safetyNotes} onChange={(event) => editDraft({ ...draftValues, safetyNotes: event.target.value })} /></label>
       <label className="file-button"><Camera size={17} />Capture or attach photo
-        <input type="file" accept="image/*" capture="environment" onChange={(event) => void addPhoto(event.target.files?.[0])} />
+        <input type="file" accept="image/*" capture="environment" onClick={(event) => { event.currentTarget.value = ''; }} onChange={(event) => {
+          const input = event.currentTarget;
+          void addPhoto(input.files?.[0]).finally(() => { input.value = ''; });
+        }} />
       </label>
-      <p className="muted">Persisted photos: {photoCount}</p>
+      <p className="inline-status" aria-live="polite">{photoFeedback} · Persisted photos: {photoCount}</p>
       <div className="actions">
         <button type="button" className="secondary" onClick={() => void saveDraft()}><Save size={17} />Save on device</button>
         <button type="button" className="primary-button" onClick={() => void queueAndSync()}><CloudUpload size={17} />Queue daily log</button>
       </div>
+      <p className="inline-status" aria-live="polite">{draftFeedback}</p>
     </section>
 
     <section className="panel danger-zone" id="account">
