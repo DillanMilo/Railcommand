@@ -7,12 +7,12 @@ Last updated: 2026-08-20
 Mobile development, automated testing, beta testing, and store review must not
 mutate, expose, copy, or interrupt live RailCommand user data.
 
-## Current audit finding
+## Isolation baseline
 
-The committed repository has one generic set of Supabase/Vercel environment
-variable names and no committed staging environment definition. The mobile
-architecture spike is blocked until separate staging resources and explicit
-environment identity checks exist.
+The repository has one generic set of Supabase/Vercel environment variable
+names, and the separate staging resources remain pending. Phase 0 now includes a
+fail-closed mobile environment identity guard; the architecture spike remains
+blocked until real staging identifiers are configured and pass that guard.
 
 This branch was created in an isolated worktree from committed revision
 `2a1958b9056db10826a1db9b06e6cf459ca688d7`. It does not contain or modify the
@@ -48,16 +48,20 @@ only synthetic organizations, projects, users, logs, and attachments.
 
 ## Build-time environment guard
 
-Phase 1 must add a build check that fails unless all of these are true:
+The `npm run mobile:env:check` build check fails unless all of these are true:
 
-1. `MOBILE_ENVIRONMENT` is explicitly `development` or `staging` for local and
-   beta builds.
+1. `MOBILE_BUILD_PROFILE` is explicitly `development` or `staging` for local
+   and beta builds.
 2. The configured Supabase URL contains the approved staging project reference.
 3. The configured application API URL is the approved staging origin.
 4. No service-role/secret/admin credential is present.
 5. The bundle/package ID is `io.railcommand.app.dev` outside a controlled release
    build.
 6. Production builds require a separate, explicit release job and human approval.
+
+The guard is covered by `npm run test:mobile-env`. Its committed example values
+are placeholders only; actual staging and production-denylist identifiers belong
+in ignored local configuration and managed deployment secrets.
 
 Do not infer environment from a branch name, hostname substring, or `NODE_ENV`
 alone. Match explicit immutable project/origin identifiers.

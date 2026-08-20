@@ -7,6 +7,7 @@ Start here:
 
 - [Phase 0 decision gate](./PHASE_0_DECISION_GATE.md)
 - [Production safety boundary](./PRODUCTION_SAFETY.md)
+- [Account deletion and retention policy](./ACCOUNT_DELETION_RETENTION_POLICY.md)
 
 No native mobile project may connect to the production backend during Phase 0
 or the architecture spike. Phase 1 starts only after the blocking items in both

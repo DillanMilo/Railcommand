@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:offline": "mocha --require tsx \"src/lib/offline/*.test.ts\"",
+    "test:mobile-env": "node --test scripts/mobile-environment-guard.test.mjs",
+    "mobile:env:check": "node scripts/mobile-environment-guard.mjs",
     "test:offline:backend": "node --env-file=.env.local scripts/offline-permission-acceptance.mjs",
     "test:offline:browser-qa": "node --env-file=.env.local scripts/offline-browser-qa.mjs",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
