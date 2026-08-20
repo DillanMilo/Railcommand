@@ -16,7 +16,7 @@ each platform in the ignored private release runbook.
 ## iPhone and Android checklist
 
 - [x] Confirm installed identifier is `io.railcommand.app.dev`.
-- [ ] Confirm the app opens with Wi-Fi/cellular disabled and loads only bundled assets.
+- [x] Confirm the app opens with Wi-Fi/cellular disabled and loads only bundled assets.
 - [x] Sign in as synthetic user A while online; confirm the synthetic project and fixture log appear.
 - [x] Force-close and reopen; confirm the secure session restores without retyping the password.
 - [ ] Go offline; force-close and reopen; confirm the cached project/log remain visible as device data.
@@ -63,7 +63,12 @@ each platform in the ignored private release runbook.
   synthetic project, fixture log, role, and synchronized state load. Native camera
   capture then persisted two user-scoped photos; after a forced process restart,
   the secure session, project, cached log, draft, and both-photo count restored.
-  Offline/reconnect, queued sync, sign-out, and A→B→A checks remain pending.
+  With Airplane Mode enabled, the physical device console reported
+  `connected: false` / `connectionType: none` while the bundled
+  `capacitor://localhost` app loaded and its secure session restored. A read-only
+  device-container snapshot confirmed one cached bootstrap, one saved draft, zero
+  queued operations, two photo records, and two backing blob files. Offline visual
+  cache confirmation, reconnect, queued sync, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
