@@ -18,6 +18,7 @@ database, deploy the web application, or submit an app-store record.
 | In-app commerce | No checkout, price, upgrade CTA, external purchase link, or license-key purchase in mobile v1 | Approved 2026-08-20 | Complete |
 | iOS distribution | Public free listing; unlisted distribution remains an option if discoverability is unwanted | Approved 2026-08-20 | Account verified; store setup pending |
 | Android distribution | Public free listing; Managed Google Play is available for customers that mandate private MDM deployment | Approved 2026-08-20 | Account/store setup pending |
+| Launch territory | United States only on both stores; no availability outside the US | Approved 2026-08-20 | Enforce when each store record is configured |
 | Store name | `RailCommand` | Approved 2026-08-20 | Store-record reservation pending |
 | Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Absent from the Apple team; global reservation pending on both stores |
 | Development bundle/package ID | `io.railcommand.app.dev` | Approved 2026-08-20 | Absent from the Apple team; registration pending |
@@ -41,10 +42,10 @@ verified deep-link mechanism.
 ### Approval record
 
 On 2026-08-20, the product owner approved the direct B2B licensing model,
-public free iOS and Android listings, production/development identifiers, and
-the scoped mobile v1 product boundary. This approval does not authorize creating
-external store records, staging cloud resources, signing credentials, or a
-production-connected build.
+public free iOS and Android listings limited to the United States,
+production/development identifiers, and the scoped mobile v1 product boundary.
+This approval does not authorize creating external store records, staging cloud
+resources, signing credentials, or a production-connected build.
 
 ### Apple
 
@@ -56,8 +57,8 @@ production-connected build.
       role.
 - [x] The Free Apps Agreement is active through July 20, 2027, and the current
       Apple Developer Program License Agreement is accepted.
-- [ ] EU Digital Services Act trader status is completed before enabling EU
-      distribution.
+- [x] EU Digital Services Act trader status is not a US launch requirement. It
+      remains incomplete and must be completed before any future EU distribution.
 - [ ] The Paid Apps Agreement is signed only if the approved no-purchase model
       changes; it is not required for the free/login-only v1 position.
 - [ ] App Manager and Developer roles are assigned without sharing the Account
@@ -68,6 +69,8 @@ production-connected build.
 - [ ] The App Store Connect record is created only after the production App ID is
       registered.
 - [x] Public versus unlisted distribution is approved: public free listing.
+- [ ] App Store availability is configured for the United States only before
+      release; every other country or region remains unavailable.
 - [ ] APNs development and production credential ownership is assigned.
 
 Do not commit Team IDs, private keys, `.p8` files, provisioning profiles, or
@@ -90,6 +93,8 @@ App Store Connect API keys to the repository.
 - [x] Android developer identity verification is complete; existing Play
       packages are shown as registered. RailCommand package registration remains
       pending because its store record has not been created.
+- [ ] Google Play country/region availability is configured for the United
+      States only before release; every other country or region remains unavailable.
 - [ ] Firebase development and production projects/credentials are separate.
 
 Do not commit upload keystores, passwords, service-account JSON, or Firebase
@@ -167,6 +172,7 @@ language. This document does not determine legal retention obligations.
 Phase 1 may begin only when:
 
 - [x] Distribution and licensing decisions are approved.
+- [x] Initial launch territory is approved as United States only.
 - [ ] Production and development identifiers are approved and availability is
       verified.
 - [x] Apple Account Holder access and Google account-owner access are verified;
