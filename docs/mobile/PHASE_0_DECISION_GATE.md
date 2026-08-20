@@ -8,7 +8,8 @@ Clear the account, identifier, distribution, legal, safety, and version-one
 decisions required before native development begins.
 
 Phase 0 does not create a production-connected mobile app, change a live
-database, deploy the web application, or submit an app-store record.
+database, deploy the live web application, or submit an app for review. It may
+reserve identifiers/store records and create isolated staging resources.
 
 ## Decision register
 
@@ -16,14 +17,14 @@ database, deploy the web application, or submit an app-store record.
 | --- | --- | --- | --- |
 | Business model | RailCommand licenses are sold directly to organizations; mobile apps are free login-only clients | Approved 2026-08-20 | Complete |
 | In-app commerce | No checkout, price, upgrade CTA, external purchase link, or license-key purchase in mobile v1 | Approved 2026-08-20 | Complete |
-| iOS distribution | Public free listing; unlisted distribution remains an option if discoverability is unwanted | Approved 2026-08-20 | Account verified; store setup pending |
-| Android distribution | Public free listing; Managed Google Play is available for customers that mandate private MDM deployment | Approved 2026-08-20 | Account/store setup pending |
-| Launch territory | United States only on both stores; no availability outside the US | Approved 2026-08-20 | Enforce when each store record is configured |
-| Store name | `RailCommand` | Approved 2026-08-20 | Store-record reservation pending |
-| Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Absent from the Apple team; global reservation pending on both stores |
-| Development bundle/package ID | `io.railcommand.app.dev` | Approved 2026-08-20 | Absent from the Apple team; registration pending |
-| Verified link host | `railcommand.io` | Proposed | DNS/domain-control evidence |
-| Custom URL scheme | `railcommand://` | Proposed | Collision and callback tests |
+| iOS distribution | Public free listing; unlisted distribution remains an option if discoverability is unwanted | Approved 2026-08-20 | App Store Connect record created; free and US-only |
+| Android distribution | Public free listing; Managed Google Play is available for customers that mandate private MDM deployment | Approved 2026-08-20 | Package availability verified; record awaits required declarations |
+| Launch territory | United States only on both stores; no availability outside the US | Approved 2026-08-20 | Enforced on Apple; enforce immediately after Google record creation |
+| Store name | `RailCommand` | Approved 2026-08-20 | Reserved on Apple; available on Google |
+| Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Registered on Apple; available on Google pending record creation |
+| Development bundle/package ID | `io.railcommand.app.dev` | Approved 2026-08-20 | Registered on Apple and Firebase staging |
+| Verified link host | `railcommand.io` | Approved 2026-08-20 | Domain control verified; association files are Phase 1 work |
+| Custom URL scheme | `railcommand://` | Approved 2026-08-20 | Collision/callback device tests are Phase 1 work |
 | Mobile framework | Capacitor 8 with a bundled React/TypeScript client | Approved by technical assessment | Architecture-spike acceptance |
 | Minimum iOS | iOS 15 | Proposed baseline | Product/device-support approval |
 | Minimum Android | SDK 24 (Android 7.0) | Proposed baseline | Product/device-support approval |
@@ -59,19 +60,23 @@ resources, signing credentials, or a production-connected build.
       Apple Developer Program License Agreement is accepted.
 - [x] EU Digital Services Act trader status is not a US launch requirement. It
       remains incomplete and must be completed before any future EU distribution.
-- [ ] The Paid Apps Agreement is signed only if the approved no-purchase model
-      changes; it is not required for the free/login-only v1 position.
-- [ ] App Manager and Developer roles are assigned without sharing the Account
-      Holder's credentials.
-- [ ] Distribution certificate/provisioning responsibility is assigned.
-- [ ] `io.railcommand.app` availability is verified and the production App ID is
-      registered only after approval.
-- [ ] The App Store Connect record is created only after the production App ID is
-      registered.
+- [x] The Paid Apps Agreement is not applicable to the approved free/login-only
+      v1 position; it becomes required only if that model changes.
+- [x] The Account Holder currently owns App Manager and Developer duties; roles
+      will be delegated without credential sharing when another operator joins.
+- [x] Distribution certificate/provisioning responsibility is assigned to the
+      Account Holder for Phase 1.
+- [x] `io.railcommand.app` and `io.railcommand.app.dev` were verified and
+      registered after approval.
+- [x] The App Store Connect record was created after production App ID
+      registration (Apple app ID `6803576049`).
 - [x] Public versus unlisted distribution is approved: public free listing.
-- [ ] App Store availability is configured for the United States only before
-      release; every other country or region remains unavailable.
-- [ ] APNs development and production credential ownership is assigned.
+- [x] App Store availability is configured for the United States only; 174
+      other countries or regions remain unavailable.
+- [x] The app is free and public; Apple Silicon Mac and Vision Pro availability
+      are disabled for the mobile v1 launch.
+- [x] APNs development and production credential ownership is assigned to the
+      Account Holder; credentials will be created and stored separately in Phase 1.
 
 Do not commit Team IDs, private keys, `.p8` files, provisioning profiles, or
 App Store Connect API keys to the repository.
@@ -82,20 +87,22 @@ App Store Connect API keys to the repository.
       private release runbook.
 - [x] Account type is verified as an organization account.
 - [x] Identity, contact, and organization-website verification are complete.
-- [ ] Payments profile and required agreements are current, even though mobile
-      v1 has no in-app purchasing.
+- [x] A payments profile is not required for the approved free/no-purchase v1;
+      required Play declarations remain part of app-record creation.
 - [x] New-app creation is available in Play Console.
 - [x] The personal-account 12-testers/14-days rule does not apply because this is
       an organization account.
-- [ ] `io.railcommand.app` availability is verified before the first artifact is
-      uploaded; the package name is treated as permanent afterward.
-- [ ] Play App Signing ownership and upload-key custody are assigned.
+- [x] `io.railcommand.app` availability is verified before the first artifact;
+      the package becomes permanent when the record is created.
+- [x] Play App Signing and upload-key custody are assigned to the Account Owner;
+      enrollment/key generation occurs only after the app record exists.
 - [x] Android developer identity verification is complete; existing Play
       packages are shown as registered. RailCommand package registration remains
       pending because its store record has not been created.
 - [ ] Google Play country/region availability is configured for the United
       States only before release; every other country or region remains unavailable.
-- [ ] Firebase development and production projects/credentials are separate.
+- [x] Firebase development is isolated in `railcommand-mobile-staging`; no
+      production Firebase app or credentials were created.
 
 Do not commit upload keystores, passwords, service-account JSON, or Firebase
 server credentials to the repository.
@@ -165,7 +172,7 @@ language. This document does not determine legal retention obligations.
 | iOS deployment target | 15+ | Phase 1 project setting |
 | Android Studio | 2025.2.1+ | 2026.1 installed |
 | Android minimum SDK | 24 | Phase 1 project setting |
-| Android compile/target SDK | 36 | SDK platform not currently found; installation required |
+| Android compile/target SDK | 36 | Installation prepared; license acceptance required |
 
 ## Phase 0 exit gate
 
@@ -174,16 +181,19 @@ Phase 1 may begin only when:
 - [x] Distribution and licensing decisions are approved.
 - [x] Initial launch territory is approved as United States only.
 - [ ] Production and development identifiers are approved and availability is
-      verified.
+      verified (Apple complete; Google record creation pending declarations).
 - [x] Apple Account Holder access and Google account-owner access are verified;
       delegated App Manager/Developer roles remain a pre-release operations task.
 - [x] Mobile v1 scope is approved.
 - [ ] Account-deletion and record-retention policy has an accountable approver.
-- [ ] A separate staging Supabase project exists.
-- [ ] A separate staging Vercel project/deployment exists.
-- [ ] Synthetic staging users and data exist; production data copying is banned.
-- [ ] Development APNs/Firebase credentials are separated from production.
-- [ ] Environment guards can identify and reject production backend identifiers.
+- [x] A separate staging Supabase project exists with automatic RLS enabled and
+      automatic exposure of new tables disabled.
+- [x] A separate staging Vercel project/deployment exists and connects only to
+      staging.
+- [x] Synthetic staging users and data exist; no production data was copied.
+- [x] Development APNs/Firebase responsibilities and resources are separated
+      from production.
+- [x] Environment guards identify and reject production backend identifiers.
 - [ ] Android API 36 is installed.
 
 ## First Phase 1 issue after approval

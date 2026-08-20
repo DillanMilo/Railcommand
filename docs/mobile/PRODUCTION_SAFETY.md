@@ -9,10 +9,10 @@ mutate, expose, copy, or interrupt live RailCommand user data.
 
 ## Isolation baseline
 
-The repository has one generic set of Supabase/Vercel environment variable
-names, and the separate staging resources remain pending. Phase 0 now includes a
-fail-closed mobile environment identity guard; the architecture spike remains
-blocked until real staging identifiers are configured and pass that guard.
+The mobile worktree has a dedicated Supabase project, Vercel project/deployment,
+and Firebase project. A fail-closed mobile environment identity guard verifies
+their immutable identifiers and rejects the known production projects and
+origins before a mobile build or staging deployment.
 
 This branch was created in an isolated worktree from committed revision
 `2a1958b9056db10826a1db9b06e6cf459ca688d7`. It does not contain or modify the
@@ -97,13 +97,15 @@ alone. Match explicit immutable project/origin identifiers.
 
 ## Deployment boundary
 
-- Phase 0 produces documentation only.
+- Phase 0 produces documentation, permanent store/identifier reservations, and
+  isolated staging resources only.
 - Phase 1 produces development builds only.
 - No `vercel --prod`, production Supabase link/push, production store submission,
   production APNs/FCM send, DNS change, or live feature flag is authorized by the
   mobile program unless the user separately approves that exact release action.
-- Store records and permanent identifiers are external state; availability may be
-  inspected during Phase 0, but creation/reservation requires explicit approval.
+- Store records and permanent identifiers are external state; the approved Apple
+  reservations are complete and Google reservation remains gated by the user's
+  Play policy/export declarations.
 - Existing web CI, cron schedules, environment variables, and deployment settings
   remain unchanged.
 
