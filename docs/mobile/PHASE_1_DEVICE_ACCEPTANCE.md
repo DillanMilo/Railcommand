@@ -49,8 +49,14 @@ each platform in the ignored private release runbook.
   to the WKWebView. The installed follow-up uses Capacitor Camera 8.2.2 directly,
   immediately materializes the returned native file into an owned Blob, verifies
   the exact saved photo ID by reading IndexedDB back, and shows inline draft/photo
-  progress and errors. It is installed and launched in place with the same app
-  data container; physical photo confirmation is pending. Offline/restart, draft, photo,
+  progress and errors. A physical screenshot then exposed a WKWebView connectivity
+  disagreement: Capacitor reported online while `navigator.onLine` suppressed the
+  initial project bootstrap, leaving no active project for the photo. The installed
+  follow-up always attempts the guarded bootstrap, preserves cached data on a real
+  network failure, and refreshes project state after a Capacitor reconnect. Both QA
+  memberships and the complete staging bootstrap/idempotency verifier pass. It is
+  installed and launched in place with the same app data container; physical photo
+  confirmation is pending. Offline/restart, draft, photo,
   reconnect, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID

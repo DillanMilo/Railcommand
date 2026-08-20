@@ -75,14 +75,21 @@ export function App() {
   }), []);
 
   const loadProject = useCallback(async (userId: string, projectId?: string) => {
-    await initializeMobileOfflineStorage(userId);
-    const cached = await readCachedMobileBootstrap(userId);
-    if (cached) {
-      setBootstrap(cached.value);
-      setActiveProjectId(projectId ?? cached.value.activeProjectId);
-      setMessage(cached.stale ? 'Showing stale device data' : 'Showing saved device data');
+    let cached: Awaited<ReturnType<typeof readCachedMobileBootstrap>> = null;
+    try {
+      await initializeMobileOfflineStorage(userId);
+      cached = await readCachedMobileBootstrap(userId);
+      if (cached) {
+        setBootstrap(cached.value);
+        setActiveProjectId(projectId ?? cached.value.activeProjectId);
+        setMessage(cached.stale ? 'Showing stale device data' : 'Showing saved device data');
+      }
+    } catch {
+      setMessage('Device cache unavailable; refreshing from staging…');
     }
-    if (!navigator.onLine) return;
+
+    // WKWebView's navigator.onLine can disagree with Capacitor Network. Always
+    // attempt the guarded bootstrap; a real connection failure keeps cached data.
     try {
       const fresh = await api.getBootstrap(projectId);
       await cacheMobileBootstrap(userId, fresh);
@@ -139,13 +146,18 @@ export function App() {
     void Network.addListener('networkStatusChange', (status) => {
       setOnline(status.connected);
       if (status.connected && session?.user.id) {
-        void synchronizeMobileOutbox(session.user.id, api).then(({ synchronized }) => {
-          if (synchronized) setMessage(`Synchronized ${synchronized} queued item(s)`);
-        });
+        void (async () => {
+          try {
+            const { synchronized } = await synchronizeMobileOutbox(session.user.id, api);
+            if (synchronized) setMessage(`Synchronized ${synchronized} queued item(s)`);
+          } finally {
+            await loadProject(session.user.id, activeProjectId ?? undefined);
+          }
+        })();
       }
     }).then((handle) => { remove = () => handle.remove(); });
     return () => { void remove?.(); };
-  }, [api, session?.user.id]);
+  }, [activeProjectId, api, loadProject, session?.user.id]);
 
   useEffect(() => {
     if (!session?.user.id) {
