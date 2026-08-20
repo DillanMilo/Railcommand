@@ -37,5 +37,10 @@ each platform in the ignored private release runbook.
 - iPhone: branded, signed `.dev` build installed and launched on paired “Dillan”
   iPhone. A `railcommand://projects/...` process launch reached the app. The
   signed-in/offline/restart/photo/A→B→A checklist remains pending.
-- Android: debug APK built; no physical Android device currently connected.
+- Android: branded debug APK rebuilt successfully with the installed JDK 21,
+  min SDK 24, target/compile SDK 36, and application ID
+  `io.railcommand.app.dev`. The APK's SHA-256 is
+  `d77c310cf422550d1bf45439a1a451a792f6de4f91b73f964fdd9b9d19272730`;
+  v2 signature verification passes. ADB reports no physical Android device
+  currently connected, so device-level acceptance remains pending.
 - A→B→A: automated IndexedDB coverage passes; physical two-account validation pending.
