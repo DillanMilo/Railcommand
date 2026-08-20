@@ -15,10 +15,10 @@ each platform in the ignored private release runbook.
 
 ## iPhone and Android checklist
 
-- [ ] Confirm installed identifier is `io.railcommand.app.dev`.
+- [x] Confirm installed identifier is `io.railcommand.app.dev`.
 - [ ] Confirm the app opens with Wi-Fi/cellular disabled and loads only bundled assets.
 - [ ] Sign in as synthetic user A while online; confirm the synthetic project and fixture log appear.
-- [ ] Force-close and reopen; confirm the secure session restores without retyping the password.
+- [x] Force-close and reopen; confirm the secure session restores without retyping the password.
 - [ ] Go offline; force-close and reopen; confirm the cached project/log remain visible as device data.
 - [ ] Edit a daily-log field, wait for “Draft saved on this device,” force-close, and confirm the draft returns.
 - [ ] Capture/attach a photo, force-close, and confirm the persisted-photo count remains.
@@ -38,8 +38,14 @@ each platform in the ignored private release runbook.
   iPhone. A `railcommand://projects/...` process launch reached the app. The
   staging Auth session table confirms synthetic user A signed in from the
   device on 2026-08-20. A follow-up build fixes iOS focus zoom by locking the
-  bundled viewport and keeping form controls at 16 px; it is installed and
-  awaiting physical confirmation. Session restore, offline/restart, draft,
+  bundled viewport and keeping form controls at 16 px. Physical acceptance
+  confirmed the zoom is fixed and user A remained signed in after the in-place
+  reinstall/relaunch. Physical testing then exposed an iOS TCC termination when
+  photo capture requested the camera without `NSCameraUsageDescription`. The
+  crash report identified the missing declaration; camera and photo-library
+  descriptions plus visible draft/photo persistence errors are now included and
+  regression-tested. The repaired build is installed in place with the same app
+  data container and awaits an unlocked-device relaunch. Offline/restart, draft,
   photo, reconnect, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID

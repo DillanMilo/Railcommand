@@ -35,6 +35,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>RailCommand uses the camera to attach field photos to offline daily-log drafts.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>RailCommand lets you select field photos to attach to offline daily-log drafts.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

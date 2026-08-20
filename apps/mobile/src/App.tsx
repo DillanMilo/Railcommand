@@ -171,10 +171,12 @@ export function App() {
     if (!draftDirty || !session?.user.id || !activeProjectId) return;
     const timeout = window.setTimeout(() => {
       const next = createMobileDraft(activeProjectId, draftValues, draft);
-      setDraftDirty(false);
       void saveMobileDraft(session.user.id, next).then(() => {
         setDraft(next);
+        setDraftDirty(false);
         setMessage('Draft saved on this device');
+      }).catch((error) => {
+        setMessage(`Draft could not be saved: ${error instanceof Error ? error.message : String(error)}`);
       });
     }, 500);
     return () => window.clearTimeout(timeout);
@@ -195,30 +197,39 @@ export function App() {
 
   const saveDraft = async (): Promise<MobileDailyLogDraft | null> => {
     if (!session?.user.id || !activeProjectId) return null;
-    const next = createMobileDraft(activeProjectId, draftValues, draft);
-    await saveMobileDraft(session.user.id, next);
-    setDraft(next);
-    setDraftDirty(false);
-    setMessage('Draft saved on this device');
-    return next;
+    try {
+      const next = createMobileDraft(activeProjectId, draftValues, draft);
+      await saveMobileDraft(session.user.id, next);
+      setDraft(next);
+      setDraftDirty(false);
+      setMessage('Draft saved on this device');
+      return next;
+    } catch (error) {
+      setMessage(`Draft could not be saved: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
   };
 
   const addPhoto = async (file: File | undefined) => {
     if (!file || !session?.user.id || !activeProjectId) return;
-    const savedDraft = await saveDraft();
-    if (!savedDraft) return;
-    await persistMobilePhoto(session.user.id, {
-      photoId: crypto.randomUUID(),
-      draftId: savedDraft.draftId,
-      projectId: activeProjectId,
-      fileName: file.name,
-      fileType: file.type || 'image/jpeg',
-      size: file.size,
-      capturedAt: new Date().toISOString(),
-      blob: file,
-    });
-    setPhotoCount((count) => count + 1);
-    setMessage('Photo persisted on this device');
+    try {
+      const savedDraft = await saveDraft();
+      if (!savedDraft) return;
+      await persistMobilePhoto(session.user.id, {
+        photoId: crypto.randomUUID(),
+        draftId: savedDraft.draftId,
+        projectId: activeProjectId,
+        fileName: file.name,
+        fileType: file.type || 'image/jpeg',
+        size: file.size,
+        capturedAt: new Date().toISOString(),
+        blob: file,
+      });
+      setPhotoCount((count) => count + 1);
+      setMessage('Photo persisted on this device');
+    } catch (error) {
+      setMessage(`Photo could not be saved: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   const queueAndSync = async () => {
