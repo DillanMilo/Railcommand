@@ -36,7 +36,11 @@ each platform in the ignored private release runbook.
 
 - iPhone: branded, signed `.dev` build installed and launched on paired “Dillan”
   iPhone. A `railcommand://projects/...` process launch reached the app. The
-  signed-in/offline/restart/photo/A→B→A checklist remains pending.
+  staging Auth session table confirms synthetic user A signed in from the
+  device on 2026-08-20. A follow-up build fixes iOS focus zoom by locking the
+  bundled viewport and keeping form controls at 16 px; it is installed and
+  awaiting physical confirmation. Session restore, offline/restart, draft,
+  photo, reconnect, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
