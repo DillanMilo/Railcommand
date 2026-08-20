@@ -67,8 +67,11 @@ each platform in the ignored private release runbook.
   `connected: false` / `connectionType: none` while the bundled
   `capacitor://localhost` app loaded and its secure session restored. A read-only
   device-container snapshot confirmed one cached bootstrap, one saved draft, zero
-  queued operations, two photo records, and two backing blob files. Offline visual
-  cache confirmation, reconnect, queued sync, sign-out, and A→B→A checks remain pending.
+  queued operations, two photo records, and two backing blob files. After Airplane
+  Mode was disabled, Mirroring and the paired-device console both confirmed Wi-Fi
+  connectivity returned; the app showed Online, Synchronized with staging, the same
+  synthetic project and fixture log, and the two-photo count remained intact. Offline
+  visual cache confirmation, queued sync, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
