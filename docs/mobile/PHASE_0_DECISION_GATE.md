@@ -16,11 +16,11 @@ database, deploy the web application, or submit an app-store record.
 | --- | --- | --- | --- |
 | Business model | RailCommand licenses are sold directly to organizations; mobile apps are free login-only clients | Approved 2026-08-20 | Complete |
 | In-app commerce | No checkout, price, upgrade CTA, external purchase link, or license-key purchase in mobile v1 | Approved 2026-08-20 | Complete |
-| iOS distribution | Public free listing; unlisted distribution remains an option if discoverability is unwanted | Approved 2026-08-20 | Account/store setup pending |
+| iOS distribution | Public free listing; unlisted distribution remains an option if discoverability is unwanted | Approved 2026-08-20 | Account verified; store setup pending |
 | Android distribution | Public free listing; Managed Google Play is available for customers that mandate private MDM deployment | Approved 2026-08-20 | Account/store setup pending |
-| Store name | `RailCommand` | Approved 2026-08-20 | Search and console availability check |
-| Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Apple and Google availability check |
-| Development bundle/package ID | `io.railcommand.app.dev` | Approved 2026-08-20 | Apple and local Android availability check |
+| Store name | `RailCommand` | Approved 2026-08-20 | Store-record reservation pending |
+| Production bundle/package ID | `io.railcommand.app` | Approved 2026-08-20 | Absent from the Apple team; global reservation pending on both stores |
+| Development bundle/package ID | `io.railcommand.app.dev` | Approved 2026-08-20 | Absent from the Apple team; registration pending |
 | Verified link host | `railcommand.io` | Proposed | DNS/domain-control evidence |
 | Custom URL scheme | `railcommand://` | Proposed | Collision and callback tests |
 | Mobile framework | Capacitor 8 with a bundled React/TypeScript client | Approved by technical assessment | Architecture-spike acceptance |
@@ -48,11 +48,18 @@ production-connected build.
 
 ### Apple
 
-- [ ] Apple Developer Program membership is active.
-- [ ] The 10-character Team ID is recorded in the private release runbook.
-- [ ] Legal seller name and organization details are correct.
-- [ ] Account Holder is identified.
-- [ ] Agreements are current in App Store Connect.
+- [x] Apple Developer Program membership is active through July 21, 2027.
+- [x] The 10-character Team ID is recorded in the private release runbook.
+- [x] Legal seller name and organization details are correct for Creative
+      Currents LLC.
+- [x] Account Holder is identified and the signed-in user has the Account Holder
+      role.
+- [x] The Free Apps Agreement is active through July 20, 2027, and the current
+      Apple Developer Program License Agreement is accepted.
+- [ ] EU Digital Services Act trader status is completed before enabling EU
+      distribution.
+- [ ] The Paid Apps Agreement is signed only if the approved no-purchase model
+      changes; it is not required for the free/login-only v1 position.
 - [ ] App Manager and Developer roles are assigned without sharing the Account
       Holder's credentials.
 - [ ] Distribution certificate/provisioning responsibility is assigned.
@@ -60,7 +67,7 @@ production-connected build.
       registered only after approval.
 - [ ] The App Store Connect record is created only after the production App ID is
       registered.
-- [ ] Public versus unlisted distribution is approved.
+- [x] Public versus unlisted distribution is approved: public free listing.
 - [ ] APNs development and production credential ownership is assigned.
 
 Do not commit Team IDs, private keys, `.p8` files, provisioning profiles, or
@@ -159,11 +166,12 @@ language. This document does not determine legal retention obligations.
 
 Phase 1 may begin only when:
 
-- [ ] Distribution and licensing decisions are approved.
+- [x] Distribution and licensing decisions are approved.
 - [ ] Production and development identifiers are approved and availability is
       verified.
-- [ ] Apple and Google account access/roles are verified.
-- [ ] Mobile v1 scope is approved.
+- [x] Apple Account Holder access and Google account-owner access are verified;
+      delegated App Manager/Developer roles remain a pre-release operations task.
+- [x] Mobile v1 scope is approved.
 - [ ] Account-deletion and record-retention policy has an accountable approver.
 - [ ] A separate staging Supabase project exists.
 - [ ] A separate staging Vercel project/deployment exists.
