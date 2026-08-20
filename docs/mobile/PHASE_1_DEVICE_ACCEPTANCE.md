@@ -17,11 +17,11 @@ each platform in the ignored private release runbook.
 
 - [x] Confirm installed identifier is `io.railcommand.app.dev`.
 - [ ] Confirm the app opens with Wi-Fi/cellular disabled and loads only bundled assets.
-- [ ] Sign in as synthetic user A while online; confirm the synthetic project and fixture log appear.
+- [x] Sign in as synthetic user A while online; confirm the synthetic project and fixture log appear.
 - [x] Force-close and reopen; confirm the secure session restores without retyping the password.
 - [ ] Go offline; force-close and reopen; confirm the cached project/log remain visible as device data.
 - [ ] Edit a daily-log field, wait for “Draft saved on this device,” force-close, and confirm the draft returns.
-- [ ] Capture/attach a photo, force-close, and confirm the persisted-photo count remains.
+- [x] Capture/attach a photo, force-close, and confirm the persisted-photo count remains.
 - [ ] Queue a daily log offline; reconnect; confirm it synchronizes once and appears in the refreshed list.
 - [ ] Open `railcommand://projects/20000000-0000-4000-8000-000000000001`; confirm the app opens the synthetic project.
 - [ ] After Associated Domains provisioning is available, open the equivalent `https://railcommand.io/projects/...` link.
@@ -56,8 +56,14 @@ each platform in the ignored private release runbook.
   network failure, and refreshes project state after a Capacitor reconnect. Both QA
   memberships and the complete staging bootstrap/idempotency verifier pass. It is
   installed and launched in place with the same app data container; physical photo
-  confirmation is pending. Offline/restart, draft, photo,
-  reconnect, sign-out, and A→B→A checks remain pending.
+  confirmation was initially pending. The mobile API's missing native-WebView CORS boundary
+  was then reproduced physically as `TypeError: Load failed`, fixed to allow only
+  `capacitor://localhost`, regression-tested, and deployed solely to
+  `railcommand-mobile-staging`. Physical Mirroring verification confirmed the
+  synthetic project, fixture log, role, and synchronized state load. Native camera
+  capture then persisted two user-scoped photos; after a forced process restart,
+  the secure session, project, cached log, draft, and both-photo count restored.
+  Offline/reconnect, queued sync, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
