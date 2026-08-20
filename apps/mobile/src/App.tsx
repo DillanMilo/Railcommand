@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Camera as NativeCamera, CameraDirection, CameraErrorCode, EncodingType } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import { Network } from '@capacitor/network';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -40,7 +42,7 @@ import {
 } from '@railcommand/offline';
 import { mobileConfig } from './config';
 import { registerMobileDeepLinks } from './deep-links';
-import { materializeCapturedPhoto } from './photo';
+import { materializePhotoBlob, type MaterializedPhoto } from './photo';
 import { supabase } from './supabase';
 import { synchronizeMobileOutbox } from './sync';
 
@@ -226,13 +228,11 @@ export function App() {
     }
   };
 
-  const addPhoto = async (file: File | undefined) => {
-    if (!file || !session?.user.id || !activeProjectId) return;
+  const persistPhoto = async (materialized: MaterializedPhoto) => {
+    if (!session?.user.id || !activeProjectId) return;
     try {
-      setPhotoFeedback('Preparing captured photo…');
       const savedDraft = await saveDraft();
       if (!savedDraft) return;
-      const materialized = await materializeCapturedPhoto(file);
       setPhotoFeedback('Saving photo on this device…');
       const photoId = crypto.randomUUID();
       await persistMobilePhoto(session.user.id, {
@@ -257,6 +257,48 @@ export function App() {
       const detail = error instanceof Error ? error.message : String(error);
       setMessage(`Photo could not be saved: ${detail}`);
       setPhotoFeedback(`Photo save failed: ${detail}`);
+    }
+  };
+
+  const capturePhoto = async () => {
+    if (!session?.user.id || !activeProjectId) return;
+    setPhotoFeedback('Opening camera…');
+    try {
+      const result = await NativeCamera.takePhoto({
+        cameraDirection: CameraDirection.Rear,
+        quality: 85,
+        targetWidth: 1920,
+        targetHeight: 1920,
+        correctOrientation: true,
+        encodingType: EncodingType.JPEG,
+        saveToGallery: false,
+        editable: 'no',
+        includeMetadata: true,
+        webUseInput: true,
+      });
+      setPhotoFeedback('Preparing captured photo…');
+      const photoUrl = result.webPath ?? (result.uri ? Capacitor.convertFileSrc(result.uri) : null);
+      if (!photoUrl) throw new Error('The camera returned no readable photo location');
+      const response = await fetch(photoUrl);
+      if (!response.ok) throw new Error(`The captured photo could not be read (${response.status})`);
+      const format = result.metadata?.format?.toLowerCase() || 'jpg';
+      const extension = format === 'jpeg' ? 'jpg' : format;
+      const materialized = await materializePhotoBlob(
+        await response.blob(),
+        `railcommand-photo-${Date.now()}.${extension}`,
+      );
+      await persistPhoto(materialized);
+    } catch (error) {
+      const code = typeof error === 'object' && error && 'code' in error
+        ? String(error.code)
+        : '';
+      if (code === CameraErrorCode.TakePhotoCancelled) {
+        setPhotoFeedback('Photo capture cancelled');
+        return;
+      }
+      const detail = error instanceof Error ? error.message : String(error);
+      setMessage(`Photo could not be captured: ${detail}`);
+      setPhotoFeedback(`Photo capture failed: ${detail}`);
     }
   };
 
@@ -361,12 +403,7 @@ export function App() {
       <label>Weather conditions<input placeholder="Clear, 72°F" value={draftValues.weatherConditions} onChange={(event) => editDraft({ ...draftValues, weatherConditions: event.target.value })} /></label>
       <label>Work summary<textarea placeholder="Describe today’s completed work…" value={draftValues.workSummary} onChange={(event) => editDraft({ ...draftValues, workSummary: event.target.value })} /></label>
       <label>Safety notes<textarea placeholder="Record observations or incidents…" value={draftValues.safetyNotes} onChange={(event) => editDraft({ ...draftValues, safetyNotes: event.target.value })} /></label>
-      <label className="file-button"><Camera size={17} />Capture or attach photo
-        <input type="file" accept="image/*" capture="environment" onClick={(event) => { event.currentTarget.value = ''; }} onChange={(event) => {
-          const input = event.currentTarget;
-          void addPhoto(input.files?.[0]).finally(() => { input.value = ''; });
-        }} />
-      </label>
+      <button type="button" className="file-button" onClick={() => void capturePhoto()}><Camera size={17} />Capture photo</button>
       <p className="inline-status" aria-live="polite">{photoFeedback} · Persisted photos: {photoCount}</p>
       <div className="actions">
         <button type="button" className="secondary" onClick={() => void saveDraft()}><Save size={17} />Save on device</button>

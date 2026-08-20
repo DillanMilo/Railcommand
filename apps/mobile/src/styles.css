@@ -173,8 +173,7 @@ button, .file-button {
 .log-date { display: flex; align-items: center; gap: 6px; color: var(--rc-muted); font-family: "JetBrains Mono", monospace; font-size: .65rem; font-weight: 700; }
 .log-date svg { color: var(--rc-orange-dark); }
 .panel label { margin: 13px 0; }
-.file-button { position: relative; width: 100%; margin: 14px 0 0; color: var(--rc-slate); border-color: #bfc4ba; background: #f4f5f0; }
-.file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file-button { width: 100%; margin: 14px 0 0; color: var(--rc-slate); border-color: #bfc4ba; background: #f4f5f0; }
 .inline-status { margin: 10px 0 0; color: #565c53; font-family: "JetBrains Mono", monospace; font-size: .65rem; font-weight: 700; line-height: 1.45; }
 .actions { display: grid; gap: 10px; margin-top: 14px; }
 .secondary { color: var(--rc-slate); border-color: #bfc4ba; background: #f4f5f0; }

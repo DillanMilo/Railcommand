@@ -5,9 +5,12 @@ export interface MaterializedPhoto {
   size: number;
 }
 
-export async function materializeCapturedPhoto(file: File): Promise<MaterializedPhoto> {
-  const bytes = await file.arrayBuffer();
-  const fileType = file.type || 'image/jpeg';
+export async function materializePhotoBlob(
+  source: Blob,
+  fileName: string,
+): Promise<MaterializedPhoto> {
+  const bytes = await source.arrayBuffer();
+  const fileType = source.type || 'image/jpeg';
   const blob = new Blob([bytes], { type: fileType });
 
   if (blob.size <= 0) {
@@ -16,8 +19,15 @@ export async function materializeCapturedPhoto(file: File): Promise<Materialized
 
   return {
     blob,
-    fileName: file.name || `railcommand-photo-${Date.now()}.jpg`,
+    fileName,
     fileType,
     size: blob.size,
   };
+}
+
+export async function materializeCapturedPhoto(file: File): Promise<MaterializedPhoto> {
+  return materializePhotoBlob(
+    file,
+    file.name || `railcommand-photo-${Date.now()}.jpg`,
+  );
 }

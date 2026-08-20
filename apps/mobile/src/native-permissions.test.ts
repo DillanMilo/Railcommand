@@ -17,5 +17,9 @@ describe('native privacy declarations', () => {
       infoPlist,
       /<key>NSPhotoLibraryUsageDescription<\/key>\s*<string>[^<]+<\/string>/,
     );
+    assert.match(
+      infoPlist,
+      /<key>NSPhotoLibraryAddUsageDescription<\/key>\s*<string>[^<]+<\/string>/,
+    );
   });
 });

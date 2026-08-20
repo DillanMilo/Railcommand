@@ -39,6 +39,8 @@
 	<string>RailCommand uses the camera to attach field photos to offline daily-log drafts.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>RailCommand lets you select field photos to attach to offline daily-log drafts.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>RailCommand can save a field photo to your library only when you request it.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

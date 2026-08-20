@@ -45,11 +45,12 @@ each platform in the ignored private release runbook.
   crash report identified the missing declaration; camera and photo-library
   descriptions plus visible draft/photo persistence errors are now included and
   regression-tested. Physical retesting confirmed the camera opens without a
-  second crash, but photo persistence was not visibly confirmed. The follow-up
-  build materializes the camera-backed file into an owned Blob, verifies the
-  exact saved photo ID by reading IndexedDB back, and shows inline draft/photo
-  progress and errors. It is installed in place with the same app data container
-  and awaits an unlocked-device relaunch. Offline/restart, draft, photo,
+  second crash, but the HTML file input did not deliver the captured photo back
+  to the WKWebView. The installed follow-up uses Capacitor Camera 8.2.2 directly,
+  immediately materializes the returned native file into an owned Blob, verifies
+  the exact saved photo ID by reading IndexedDB back, and shows inline draft/photo
+  progress and errors. It is installed and launched in place with the same app
+  data container; physical photo confirmation is pending. Offline/restart, draft, photo,
   reconnect, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
