@@ -22,6 +22,19 @@ ID is `io.railcommand.app.dev`.
 | Session | Supabase access/refresh session persisted in Keychain/Android Keystore-backed storage |
 | Staging | Synthetic-only Supabase and Vercel projects guarded against production refs/hosts |
 
+## Visual parity baseline
+
+The spike reuses the web application as its visual source of truth instead of
+maintaining a separate mobile brand. The bundled app includes the same
+RailCommand symbol and wordmark, Plus Jakarta Sans headings, DM Sans body copy,
+JetBrains Mono labels, command-shell paper/card/grid treatment, navy project
+switcher, orange actions, sharp controls, and Lucide icon language. The same
+brand artwork is also applied to the iOS and Android launcher and splash assets.
+
+An iPhone-sized 390 px render verified that all three bundled fonts and the
+RailCommand mark load locally, the authoritative paper/orange/navy tokens are
+used, no asset or console errors occur, and there is no horizontal overflow.
+
 ## Offline classification
 
 This spike is a mixed **offline read-only** and **offline draft/queue** feature.
@@ -65,8 +78,9 @@ Staging API: `https://railcommand-mobile-staging.vercel.app`
 
 ## Remaining gate work
 
-- Unlock the paired iPhone, launch the installed `.dev` app, and complete the
-  checklist in `PHASE_1_DEVICE_ACCEPTANCE.md`.
+- Complete the signed-in, offline/restart, photo, reconnect, and A→B→A checks on
+  the paired iPhone using synthetic staging accounts. Installation, launch, and
+  the custom-scheme entry point are already proven.
 - Sign into Xcode with the Apple developer account and generate a development
   profile containing Associated Domains to validate the HTTPS universal link.
   The custom `railcommand://` scheme can be tested with the existing wildcard

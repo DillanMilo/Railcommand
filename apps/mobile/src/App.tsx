@@ -1,6 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Network } from '@capacitor/network';
 import type { Session } from '@supabase/supabase-js';
+import {
+  ArrowRight,
+  CalendarDays,
+  Camera,
+  ChevronDown,
+  ClipboardList,
+  CloudUpload,
+  FolderKanban,
+  LayoutDashboard,
+  LockKeyhole,
+  LogOut,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
 import { MobileApiClient } from '@railcommand/api-client';
 import {
   createMobileDraft,
@@ -240,73 +257,96 @@ export function App() {
   };
 
   if (!session) {
-    return <main className="shell auth-shell">
-      <section className="panel auth-panel">
-        <img src="./railcommand-mark.svg" className="brand-mark" alt="RailCommand" />
-        <p className="eyebrow">MOBILE ARCHITECTURE SPIKE</p>
-        <h1>RailCommand</h1>
-        <p className="muted">Staging only. No production data is available to this build.</p>
+    return <main className="auth-shell">
+      <div className="auth-accent" aria-hidden="true" />
+      <section className="auth-panel">
+        <div className="auth-brand">
+          <img src="./IMG_0936.jpg" className="brand-mark" alt="RailCommand" />
+          <span>by A5 Rail</span>
+        </div>
+        <p className="eyebrow">Secure project access</p>
+        <h1>Welcome back</h1>
+        <p className="auth-intro">Sign in to continue to your projects</p>
         <form onSubmit={signIn}>
-          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-          <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
-          <button type="submit">Sign in securely</button>
+          <label>Email address<input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
+          <label>Password<input type="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          <button type="submit" className="primary-button"><LockKeyhole size={17} /> Sign in securely <ArrowRight size={18} /></button>
         </form>
-        <p className="status">{message}</p>
+        <p className="status auth-status" aria-live="polite"><ShieldCheck size={15} />{message}</p>
+        <p className="environment-note">Development build · Staging data only</p>
       </section>
     </main>;
   }
 
   const projects = bootstrap?.projects ?? [];
   const activeProject = projects.find((project) => project.id === activeProjectId) ?? null;
-  return <main className="shell">
-    <header>
-      <div><p className="eyebrow">RAILCOMMAND DEVELOPMENT</p><h1>{activeProject?.name ?? 'Mobile spike'}</h1></div>
-      <span className={online ? 'pill online' : 'pill offline'}>{online ? 'Online' : 'Offline'}</span>
+  return <main className="command-shell">
+    <header className="mobile-topbar">
+      <div className="project-switcher">
+        <img src="./IMG_0936.jpg" alt="" />
+        <div><span>Active project</span><strong>{activeProject?.name ?? 'RailCommand'}</strong></div>
+        <ChevronDown size={16} aria-hidden="true" />
+      </div>
+      <span className={online ? 'pill online' : 'pill offline'}>{online ? <Wifi size={14} /> : <WifiOff size={14} />}{online ? 'Online' : 'Offline'}</span>
     </header>
-    <p className="status" aria-live="polite">{message}</p>
 
-    <section className="panel">
-      <h2>Project</h2>
-      <select value={activeProjectId ?? ''} onChange={(event) => {
-        setActiveProjectId(event.target.value);
-        void loadProject(session.user.id, event.target.value);
-      }}>
-        {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
-      </select>
-      <p className="muted">{activeProject?.location || 'No location'} · {activeProject?.role || 'No role'}</p>
+    <div className="shell">
+      <section className="page-heading">
+        <p className="eyebrow">Project control · Mobile field log</p>
+        <h1>{activeProject?.name ?? 'Mobile workspace'}</h1>
+        <p className="status" aria-live="polite"><RefreshCw size={14} />{message}</p>
+      </section>
+
+    <section className="panel" id="overview">
+      <div className="panel-header"><span className="panel-icon"><FolderKanban size={18} /></span><div><p className="eyebrow">Workspace</p><h2>Project</h2></div></div>
+      <div className="select-wrap"><select aria-label="Active project" value={activeProjectId ?? ''} onChange={(event) => {
+          setActiveProjectId(event.target.value);
+          void loadProject(session.user.id, event.target.value);
+        }}>
+          {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+        </select><ChevronDown size={16} aria-hidden="true" /></div>
+      <p className="muted project-meta">{activeProject?.location || 'No location'} <span>·</span> {activeProject?.role || 'No role'}</p>
     </section>
 
-    <section className="panel">
-      <h2>Cached daily logs</h2>
+    <section className="panel" id="logs">
+      <div className="panel-header"><span className="panel-icon"><ClipboardList size={18} /></span><div><p className="eyebrow">Saved for field access</p><h2>Cached daily logs</h2></div></div>
       {!bootstrap?.dailyLogs.length && <p className="muted">No synchronized logs in the device cache.</p>}
       <ul className="log-list">{bootstrap?.dailyLogs.map((log) =>
-        <li key={log.id}><strong>{log.logDate}</strong><span>{log.workSummary || 'No summary'}</span></li>
+        <li key={log.id}><span className="log-date"><CalendarDays size={15} />{log.logDate}</span><strong>{log.workSummary || 'No summary'}</strong></li>
       )}</ul>
     </section>
 
-    <section className="panel">
-      <h2>Offline daily-log draft</h2>
+    <section className="panel" id="draft">
+      <div className="panel-header"><span className="panel-icon"><Save size={18} /></span><div><p className="eyebrow">Autosaved on this device</p><h2>Offline daily-log draft</h2></div></div>
       <label>Date<input type="date" value={draftValues.logDate} onChange={(event) => editDraft({ ...draftValues, logDate: event.target.value })} /></label>
-      <label>Weather<input value={draftValues.weatherConditions} onChange={(event) => editDraft({ ...draftValues, weatherConditions: event.target.value })} /></label>
-      <label>Work summary<textarea value={draftValues.workSummary} onChange={(event) => editDraft({ ...draftValues, workSummary: event.target.value })} /></label>
-      <label>Safety notes<textarea value={draftValues.safetyNotes} onChange={(event) => editDraft({ ...draftValues, safetyNotes: event.target.value })} /></label>
-      <label className="file-button">Capture or attach photo
+      <label>Weather conditions<input placeholder="Clear, 72°F" value={draftValues.weatherConditions} onChange={(event) => editDraft({ ...draftValues, weatherConditions: event.target.value })} /></label>
+      <label>Work summary<textarea placeholder="Describe today’s completed work…" value={draftValues.workSummary} onChange={(event) => editDraft({ ...draftValues, workSummary: event.target.value })} /></label>
+      <label>Safety notes<textarea placeholder="Record observations or incidents…" value={draftValues.safetyNotes} onChange={(event) => editDraft({ ...draftValues, safetyNotes: event.target.value })} /></label>
+      <label className="file-button"><Camera size={17} />Capture or attach photo
         <input type="file" accept="image/*" capture="environment" onChange={(event) => void addPhoto(event.target.files?.[0])} />
       </label>
       <p className="muted">Persisted photos: {photoCount}</p>
       <div className="actions">
-        <button type="button" className="secondary" onClick={() => void saveDraft()}>Save on device</button>
-        <button type="button" onClick={() => void queueAndSync()}>Queue daily log</button>
+        <button type="button" className="secondary" onClick={() => void saveDraft()}><Save size={17} />Save on device</button>
+        <button type="button" className="primary-button" onClick={() => void queueAndSync()}><CloudUpload size={17} />Queue daily log</button>
       </div>
     </section>
 
-    <section className="panel danger-zone">
-      <h2>Safe sign-out</h2>
+    <section className="panel danger-zone" id="account">
+      <div className="panel-header"><span className="panel-icon danger-icon"><LogOut size={18} /></span><div><p className="eyebrow">Device security</p><h2>Safe sign-out</h2></div></div>
       <p className="muted">Sign-out checks drafts, queued work, and persisted photos before deleting this user’s isolated database.</p>
       <div className="actions">
-        <button type="button" className="secondary" onClick={() => void safeSignOut(false)}>Check and sign out</button>
+        <button type="button" className="secondary" onClick={() => void safeSignOut(false)}><LogOut size={17} />Check and sign out</button>
         <button type="button" className="danger" onClick={() => void safeSignOut(true)}>{discardArmed ? 'Confirm permanent discard' : 'Discard local work'}</button>
       </div>
     </section>
+    </div>
+
+    <nav className="mobile-nav" aria-label="Primary navigation">
+      <a href="#overview" className="active"><LayoutDashboard size={20} /><span>Overview</span></a>
+      <a href="#logs"><ClipboardList size={20} /><span>Logs</span></a>
+      <a href="#draft"><Save size={20} /><span>Draft</span></a>
+      <a href="#account"><ShieldCheck size={20} /><span>Account</span></a>
+    </nav>
   </main>;
 }

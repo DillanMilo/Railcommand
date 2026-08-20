@@ -27,7 +27,8 @@ each platform in the ignored private release runbook.
 
 ## Current physical status
 
-- iPhone: signed `.dev` build installed on paired “Dillan” iPhone; initial launch
-  pending because the device was locked.
+- iPhone: branded, signed `.dev` build installed and launched on paired “Dillan”
+  iPhone. A `railcommand://projects/...` process launch reached the app. The
+  signed-in/offline/restart/photo/A→B→A checklist remains pending.
 - Android: debug APK built; no physical Android device currently connected.
 - A→B→A: automated IndexedDB coverage passes; physical two-account validation pending.
