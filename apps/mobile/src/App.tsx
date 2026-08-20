@@ -346,11 +346,16 @@ export function App() {
       if (!savedDraft) return;
       await queueMobileDraft(session.user.id, draftToSyncOperation(session.user.id, savedDraft));
       setDraft(null);
+      setDraftValues(EMPTY_DRAFT);
       setDraftDirty(false);
-      setMessage(online ? 'Queued; synchronizing…' : 'Queued until connectivity returns');
+      const queuedMessage = online ? 'Queued; synchronizing…' : 'Queued until connectivity returns';
+      setDraftFeedback(queuedMessage);
+      setMessage(queuedMessage);
       if (online) {
         const result = await synchronizeMobileOutbox(session.user.id, api);
-        setMessage(result.synchronized ? 'Daily log synchronized' : 'Synchronization needs attention');
+        const syncMessage = result.synchronized ? 'Daily log synchronized' : 'Synchronization needs attention';
+        setDraftFeedback(syncMessage);
+        setMessage(syncMessage);
         if (result.synchronized) await loadProject(session.user.id, activeProjectId ?? undefined);
       }
     } finally {

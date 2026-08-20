@@ -114,6 +114,13 @@ button, .file-button {
 }
 .primary-button { color: #10130f; background: var(--rc-orange); box-shadow: 4px 4px 0 #10130f; }
 .primary-button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #10130f; }
+.primary-button:disabled {
+  color: #6f746c;
+  background: #d8d9d3;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: .78;
+}
 .auth-panel .primary-button { width: 100%; margin-top: 4px; }
 .auth-panel .primary-button svg:last-child { margin-left: auto; }
 .status { display: flex; align-items: flex-start; gap: 7px; margin: 12px 0; color: #565c53; font-size: .79rem; line-height: 1.45; }

@@ -29,8 +29,8 @@ each platform in the ignored private release runbook.
 - [x] Confirm discard requires two taps and removes only the current user's local database.
 - [x] Sign in as synthetic user B and confirm no A project cache, draft, photo, or outbox entry appears.
 - [x] Add distinct B local work, sign out safely, then sign back in as A and confirm A data is intact and B data is absent.
-- [ ] Repeat network loss during edit and during sync; confirm no draft is silently lost or duplicated.
-- [ ] Restart the phone and repeat session, cache, draft, and photo checks.
+- [x] Repeat network loss during edit and during sync; confirm no draft is silently lost or duplicated.
+- [x] Restart the phone and repeat session, cache, draft, and photo checks.
 
 ## Current physical status
 
@@ -90,8 +90,18 @@ each platform in the ignored private release runbook.
   with zero inherited drafts, outbox entries, photos, or blobs, saved the distinct
   `Synthetic B isolation draft`, and removed only B's database through the same two-tap
   flow. Returning as A recreated only A's cache, restored A's synchronized project/log,
-  and contained zero B drafts, outbox entries, photos, or blobs. Full restart and the
-  repeated mid-sync network-loss check remain pending.
+  and contained zero B drafts, outbox entries, photos, or blobs. A full iPhone reboot
+  then restored A's secure session without credentials and reopened the synthetic
+  project with its cached daily logs. A final synthetic August 21 draft was queued
+  around repeated Airplane Mode/Wi-Fi loss and reconnect; the refreshed cache contains
+  that record exactly once. This exercise exposed misleading form feedback: the durable
+  queue had succeeded, but the submitted values and “Saved on this device” text remained
+  visible while the disabled orange button still looked actionable. The isolated branch
+  now clears the submitted form only after its atomic move to the outbox, surfaces queued
+  and synchronized state beside the form, and visibly distinguishes a disabled queue
+  button. This remains an offline-draft/queue flow: accepted input is durable before the
+  form clears, retry keeps its client UUID and idempotency key, and server authorization
+  is revalidated on delivery.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
