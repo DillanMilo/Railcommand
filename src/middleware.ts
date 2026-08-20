@@ -29,6 +29,7 @@ const GEO_RESTRICTED_PREFIXES = [
   '/api/chat',
   '/api/demo',
   '/api/email/send',
+  '/api/mobile/v1',
   '/api/notifications',
 ];
 
@@ -372,6 +373,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/api/demo/local-session' ||
     pathname === '/api/chat/transcribe' ||
     pathname === '/api/email/send' ||
+    pathname.startsWith('/api/mobile/v1/') ||
     pathname === '/api/notifications' ||
     pathname.startsWith('/api/cron/');
 

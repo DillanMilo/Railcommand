@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RailCommand mark">
+  <rect width="64" height="64" rx="15" fill="#f1b24b"/>
+  <path d="M18 14h28v26c0 7-6 12-14 12s-14-5-14-12V14Zm7 7v11h14V21H25Zm0 18a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm14 0a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" fill="#07101d"/>
+  <path d="M22 55 13 63m29-8 9 8" stroke="#f1b24b" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -2,6 +2,10 @@
   "name": "railcommand-temp",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +14,12 @@
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:offline": "mocha --require tsx \"src/lib/offline/*.test.ts\"",
     "test:mobile-env": "node --test scripts/mobile-environment-guard.test.mjs",
+    "test:mobile": "npm run test --workspace @railcommand/domain && npm run test --workspace @railcommand/offline && npm run test --workspace @railcommand/api-client && npm run test --workspace @railcommand/mobile && npm run test:mobile-api",
+    "test:mobile-api": "mocha --require tsx \"src/lib/mobile-api/*.test.ts\"",
+    "verify:mobile:staging": "node --env-file=.env.mobile.local scripts/verify-mobile-staging.mjs",
     "mobile:env:check": "node scripts/mobile-environment-guard.mjs",
+    "mobile:build": "node --env-file=.env.mobile.local scripts/mobile-build.mjs",
+    "mobile:sync": "npm run mobile:build && npm run cap:sync --workspace @railcommand/mobile",
     "test:offline:backend": "node --env-file=.env.local scripts/offline-permission-acceptance.mjs",
     "test:offline:browser-qa": "node --env-file=.env.local scripts/offline-browser-qa.mjs",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",

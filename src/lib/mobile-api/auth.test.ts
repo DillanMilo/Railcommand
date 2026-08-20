@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { describe, it } from 'mocha';
+import { parseBearerAuthorization } from './auth';
+import { canCreateMobileDailyLog } from './authorization';
+
+describe('mobile API security boundary', () => {
+  it('accepts only one bearer token and never query/cookie fallbacks', () => {
+    assert.equal(parseBearerAuthorization('Bearer token-value'), 'token-value');
+    assert.equal(parseBearerAuthorization('Basic token-value'), null);
+    assert.equal(parseBearerAuthorization('Bearer token one'), null);
+    assert.equal(parseBearerAuthorization(null), null);
+  });
+
+  it('requires current edit permission and an allowed project role', () => {
+    assert.equal(canCreateMobileDailyLog({ organizationRole: 'admin', projectRole: null, canEdit: false }), true);
+    assert.equal(canCreateMobileDailyLog({ organizationRole: 'member', projectRole: 'manager', canEdit: true }), true);
+    assert.equal(canCreateMobileDailyLog({ organizationRole: 'member', projectRole: 'manager', canEdit: false }), false);
+    assert.equal(canCreateMobileDailyLog({ organizationRole: 'member', projectRole: 'inspector', canEdit: true }), false);
+  });
+
+  it('lets bearer routes reach their own auth boundary while retaining US geo checks', () => {
+    const middleware = readFileSync(
+      new URL('../../middleware.ts', import.meta.url),
+      'utf8',
+    );
+    assert.match(middleware, /['"]\/api\/mobile\/v1['"]/);
+    assert.match(middleware, /pathname\.startsWith\(['"]\/api\/mobile\/v1\/['"]\)/);
+  });
+});

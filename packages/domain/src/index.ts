@@ -1,0 +1,205 @@
+export type ProjectRole =
+  | 'engineer'
+  | 'contractor'
+  | 'owner'
+  | 'inspector'
+  | 'manager'
+  | 'superintendent'
+  | 'foreman';
+
+export interface MobileProject {
+  id: string;
+  name: string;
+  status: 'active' | 'on_hold' | 'completed' | 'archived';
+  location: string;
+  client: string;
+  role: ProjectRole | 'admin';
+  canEdit: boolean;
+  updatedAt: string;
+}
+
+export interface MobileDailyLog {
+  id: string;
+  projectId: string;
+  logDate: string;
+  weatherConditions: string;
+  workSummary: string;
+  safetyNotes: string;
+  createdAt: string;
+}
+
+export interface MobileBootstrap {
+  userId: string;
+  projects: MobileProject[];
+  activeProjectId: string | null;
+  dailyLogs: MobileDailyLog[];
+  synchronizedAt: string;
+}
+
+export interface MobileDailyLogDraft {
+  draftId: string;
+  projectId: string;
+  clientId: string;
+  idempotencyKey: string;
+  logDate: string;
+  weatherConditions: string;
+  workSummary: string;
+  safetyNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MobilePhotoRecord {
+  photoId: string;
+  draftId: string;
+  projectId: string;
+  fileName: string;
+  fileType: string;
+  size: number;
+  capturedAt: string;
+  blob: Blob;
+}
+
+export interface MobileDailyLogSyncOperation {
+  operationId: string;
+  userId: string;
+  projectId: string;
+  clientId: string;
+  idempotencyKey: string;
+  payload: {
+    log_date: string;
+    weather_temp: number;
+    weather_conditions: string;
+    weather_wind: string;
+    work_summary: string;
+    safety_notes: string;
+    geo_tag: null;
+    personnel: unknown[];
+    equipment: unknown[];
+    work_items: unknown[];
+  };
+  status: 'pending' | 'retry' | 'failed';
+  attemptCount: number;
+  createdAt: string;
+  updatedAt: string;
+  nextAttemptAt: string;
+  lastError: string | null;
+}
+
+export interface MobileDailyLogSyncResult {
+  id: string;
+  projectId: string;
+  duplicate: boolean;
+}
+
+export type MobileDeepLink =
+  | { kind: 'auth_callback'; code: string | null; accessToken: string | null; refreshToken: string | null }
+  | { kind: 'project'; projectId: string }
+  | { kind: 'daily_log'; projectId: string; dailyLogId: string }
+  | { kind: 'unsupported' };
+
+function segment(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    return decodeURIComponent(value).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseMobileDeepLink(rawUrl: string): MobileDeepLink {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return { kind: 'unsupported' };
+  }
+
+  const isCustom = url.protocol === 'railcommand:';
+  const isVerifiedWeb = url.protocol === 'https:' && url.hostname === 'railcommand.io';
+  if (!isCustom && !isVerifiedWeb) return { kind: 'unsupported' };
+
+  const path = [isCustom ? url.hostname : '', ...url.pathname.split('/')]
+    .map((part) => segment(part))
+    .filter((part): part is string => Boolean(part));
+
+  if (path[0] === 'auth' && path[1] === 'callback') {
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+    return {
+      kind: 'auth_callback',
+      code: url.searchParams.get('code'),
+      accessToken: hash.get('access_token'),
+      refreshToken: hash.get('refresh_token'),
+    };
+  }
+  if (path[0] !== 'projects' || !path[1]) return { kind: 'unsupported' };
+  if (path[2] === 'daily-logs' && path[3]) {
+    return { kind: 'daily_log', projectId: path[1], dailyLogId: path[3] };
+  }
+  return { kind: 'project', projectId: path[1] };
+}
+
+export function createMobileDraft(
+  projectId: string,
+  values: Pick<MobileDailyLogDraft, 'logDate' | 'weatherConditions' | 'workSummary' | 'safetyNotes'>,
+  existing: MobileDailyLogDraft | null = null,
+  now = new Date(),
+  createId: () => string = () => crypto.randomUUID(),
+): MobileDailyLogDraft {
+  const timestamp = now.toISOString();
+  const clientId = existing?.clientId ?? createId();
+  return {
+    draftId: `daily-log:${projectId}`,
+    projectId,
+    clientId,
+    idempotencyKey: existing?.idempotencyKey ?? `daily-log-create:${clientId}`,
+    createdAt: existing?.createdAt ?? timestamp,
+    updatedAt: timestamp,
+    ...values,
+  };
+}
+
+export function draftToSyncOperation(
+  userId: string,
+  draft: MobileDailyLogDraft,
+): MobileDailyLogSyncOperation {
+  return {
+    operationId: draft.clientId,
+    userId,
+    projectId: draft.projectId,
+    clientId: draft.clientId,
+    idempotencyKey: draft.idempotencyKey,
+    payload: {
+      log_date: draft.logDate,
+      weather_temp: 0,
+      weather_conditions: draft.weatherConditions,
+      weather_wind: '',
+      work_summary: draft.workSummary,
+      safety_notes: draft.safetyNotes,
+      geo_tag: null,
+      personnel: [],
+      equipment: [],
+      work_items: [],
+    },
+    status: 'pending',
+    attemptCount: 0,
+    createdAt: draft.createdAt,
+    updatedAt: draft.updatedAt,
+    nextAttemptAt: draft.updatedAt,
+    lastError: null,
+  };
+}
+
+export function isValidSyncOperation(value: unknown): value is MobileDailyLogSyncOperation {
+  if (!value || typeof value !== 'object') return false;
+  const operation = value as Partial<MobileDailyLogSyncOperation>;
+  return operation.operationId === operation.clientId
+    && typeof operation.userId === 'string'
+    && Boolean(operation.userId)
+    && typeof operation.projectId === 'string'
+    && Boolean(operation.projectId)
+    && typeof operation.idempotencyKey === 'string'
+    && operation.idempotencyKey.length >= 16
+    && typeof operation.payload?.log_date === 'string'
+    && typeof operation.payload?.work_summary === 'string';
+}

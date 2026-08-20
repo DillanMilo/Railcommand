@@ -21,6 +21,7 @@ const contentSecurityPolicy = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@railcommand/domain'],
   experimental: {
     serverActions: {
       bodySizeLimit: '100mb',
