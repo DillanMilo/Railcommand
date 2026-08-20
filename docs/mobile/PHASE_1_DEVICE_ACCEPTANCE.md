@@ -20,7 +20,7 @@ each platform in the ignored private release runbook.
 - [x] Sign in as synthetic user A while online; confirm the synthetic project and fixture log appear.
 - [x] Force-close and reopen; confirm the secure session restores without retyping the password.
 - [ ] Go offline; force-close and reopen; confirm the cached project/log remain visible as device data.
-- [ ] Edit a daily-log field, wait for “Draft saved on this device,” force-close, and confirm the draft returns.
+- [x] Edit a daily-log field, wait for “Draft saved on this device,” force-close, and confirm the draft returns.
 - [x] Capture/attach a photo, force-close, and confirm the persisted-photo count remains.
 - [ ] Queue a daily log offline; reconnect; confirm it synchronizes once and appears in the refreshed list.
 - [ ] Open `railcommand://projects/20000000-0000-4000-8000-000000000001`; confirm the app opens the synthetic project.
@@ -71,7 +71,10 @@ each platform in the ignored private release runbook.
   Mode was disabled, Mirroring and the paired-device console both confirmed Wi-Fi
   connectivity returned; the app showed Online, Synchronized with staging, the same
   synthetic project and fixture log, and the two-photo count remained intact. Offline
-  visual cache confirmation, queued sync, sign-out, and A→B→A checks remain pending.
+  draft persistence was then verified by entering an explicit synthetic work summary,
+  saving it on-device, forcing a process restart, and confirming the exact text restored
+  alongside the cached project/log and two photos even when the immediate refresh failed.
+  Offline visual cache confirmation, queued sync, sign-out, and A→B→A checks remain pending.
 - Android: branded debug APK rebuilt successfully with the installed JDK 21,
   min SDK 24, target/compile SDK 36, and application ID
   `io.railcommand.app.dev`. The APK's SHA-256 is
