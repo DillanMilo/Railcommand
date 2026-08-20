@@ -13,7 +13,18 @@ describe('mobile bootstrap connectivity', () => {
   it('refreshes project state after Capacitor reports a reconnect', () => {
     assert.match(
       appSource,
-      /networkStatusChange[\s\S]*status\.connected[\s\S]*await loadProject\(session\.user\.id/,
+      /networkStatusChange[\s\S]*status\.connected[\s\S]*synchronizeAndRefresh/,
+    );
+  });
+
+  it('drains the durable outbox when the app starts with connectivity already restored', () => {
+    assert.match(
+      appSource,
+      /Network\.getStatus\(\)[\s\S]*status\.connected[\s\S]*synchronizeAndRefresh/,
+    );
+    assert.match(
+      appSource,
+      /synchronizeMobileOutbox\(session\.user\.id, api\)[\s\S]*await loadProject\(session\.user\.id/,
     );
   });
 });

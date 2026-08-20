@@ -143,22 +143,30 @@ export function App() {
   }, [loadProject, session?.user.id]);
 
   useEffect(() => {
+    let active = true;
+    let synchronizing = false;
     let remove: (() => Promise<void>) | undefined;
-    void Network.getStatus().then((status) => setOnline(status.connected));
+    const synchronizeAndRefresh = async () => {
+      if (!session?.user.id || synchronizing) return;
+      synchronizing = true;
+      try {
+        const { synchronized } = await synchronizeMobileOutbox(session.user.id, api);
+        if (active && synchronized) setMessage(`Synchronized ${synchronized} queued item(s)`);
+      } finally {
+        if (active) await loadProject(session.user.id, activeProjectId ?? undefined);
+        synchronizing = false;
+      }
+    };
+    void Network.getStatus().then((status) => {
+      if (!active) return;
+      setOnline(status.connected);
+      if (status.connected) void synchronizeAndRefresh();
+    });
     void Network.addListener('networkStatusChange', (status) => {
       setOnline(status.connected);
-      if (status.connected && session?.user.id) {
-        void (async () => {
-          try {
-            const { synchronized } = await synchronizeMobileOutbox(session.user.id, api);
-            if (synchronized) setMessage(`Synchronized ${synchronized} queued item(s)`);
-          } finally {
-            await loadProject(session.user.id, activeProjectId ?? undefined);
-          }
-        })();
-      }
+      if (status.connected) void synchronizeAndRefresh();
     }).then((handle) => { remove = () => handle.remove(); });
-    return () => { void remove?.(); };
+    return () => { active = false; void remove?.(); };
   }, [activeProjectId, api, loadProject, session?.user.id]);
 
   useEffect(() => {
