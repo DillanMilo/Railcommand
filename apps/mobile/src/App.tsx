@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Camera as NativeCamera, CameraErrorCode } from '@capacitor/camera';
 import { Network } from '@capacitor/network';
 import type { Session } from '@supabase/supabase-js';
@@ -68,6 +68,8 @@ export function App() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('Restoring secure session…');
   const [discardArmed, setDiscardArmed] = useState(false);
+  const [queueing, setQueueing] = useState(false);
+  const queueingRef = useRef(false);
 
   const api = useMemo(() => new MobileApiClient({
     baseUrl: mobileConfig.apiBaseUrl,
@@ -324,17 +326,28 @@ export function App() {
   };
 
   const queueAndSync = async () => {
-    if (!session?.user.id) return;
-    const savedDraft = await saveDraft();
-    if (!savedDraft) return;
-    await queueMobileDraft(session.user.id, draftToSyncOperation(session.user.id, savedDraft));
-    setDraft(null);
-    setDraftDirty(false);
-    setMessage(online ? 'Queued; synchronizing…' : 'Queued until connectivity returns');
-    if (online) {
-      const result = await synchronizeMobileOutbox(session.user.id, api);
-      setMessage(result.synchronized ? 'Daily log synchronized' : 'Synchronization needs attention');
-      if (result.synchronized) await loadProject(session.user.id, activeProjectId ?? undefined);
+    if (!session?.user.id || queueingRef.current) return;
+    if (!draft && !draftDirty) {
+      setMessage('Enter or restore a draft before queueing a daily log');
+      return;
+    }
+    queueingRef.current = true;
+    setQueueing(true);
+    try {
+      const savedDraft = await saveDraft();
+      if (!savedDraft) return;
+      await queueMobileDraft(session.user.id, draftToSyncOperation(session.user.id, savedDraft));
+      setDraft(null);
+      setDraftDirty(false);
+      setMessage(online ? 'Queued; synchronizing…' : 'Queued until connectivity returns');
+      if (online) {
+        const result = await synchronizeMobileOutbox(session.user.id, api);
+        setMessage(result.synchronized ? 'Daily log synchronized' : 'Synchronization needs attention');
+        if (result.synchronized) await loadProject(session.user.id, activeProjectId ?? undefined);
+      }
+    } finally {
+      queueingRef.current = false;
+      setQueueing(false);
     }
   };
 
@@ -428,7 +441,7 @@ export function App() {
       <p className="inline-status" aria-live="polite">{photoFeedback} · Persisted photos: {photoCount} · Camera: {cameraStatus}</p>
       <div className="actions">
         <button type="button" className="secondary" onClick={() => void saveDraft()}><Save size={17} />Save on device</button>
-        <button type="button" className="primary-button" onClick={() => void queueAndSync()}><CloudUpload size={17} />Queue daily log</button>
+        <button type="button" className="primary-button" disabled={queueing || (!draft && !draftDirty)} onClick={() => void queueAndSync()}><CloudUpload size={17} />{queueing ? 'Queueing…' : 'Queue daily log'}</button>
       </div>
       <p className="inline-status" aria-live="polite">{draftFeedback}</p>
     </section>

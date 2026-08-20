@@ -193,6 +193,55 @@ export async function listMobileOutbox(
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+/**
+ * Keep one durable create operation for each project/day before synchronization.
+ * A repeated UI submission updates the pending payload while preserving the
+ * first client UUID and idempotency key, so reconnect cannot create duplicate
+ * daily logs for the same logical record.
+ */
+export async function coalesceMobileOutbox(userId: string): Promise<number> {
+  const database = await openDatabase(userId);
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(STORES.outbox, 'readwrite');
+    const store = transaction.objectStore(STORES.outbox);
+    const request = store.getAll();
+    let removed = 0;
+
+    request.onsuccess = () => {
+      const groups = new Map<string, MobileDailyLogSyncOperation[]>();
+      for (const operation of request.result as MobileDailyLogSyncOperation[]) {
+        const key = `${operation.projectId}:${operation.payload.log_date}`;
+        const group = groups.get(key) ?? [];
+        group.push(operation);
+        groups.set(key, group);
+      }
+
+      for (const group of groups.values()) {
+        if (group.length < 2) continue;
+        const byCreated = [...group].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        const first = byCreated[0];
+        const latest = [...group].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).at(-1)!;
+        store.put({
+          ...latest,
+          operationId: first.operationId,
+          clientId: first.clientId,
+          idempotencyKey: first.idempotencyKey,
+          createdAt: first.createdAt,
+        });
+        for (const duplicate of group) {
+          if (duplicate.operationId === first.operationId) continue;
+          store.delete(duplicate.operationId);
+          removed += 1;
+        }
+      }
+    };
+    request.onerror = () => transaction.abort();
+    transaction.oncomplete = () => { database.close(); resolve(removed); };
+    transaction.onerror = () => { database.close(); reject(transaction.error); };
+    transaction.onabort = () => { database.close(); reject(transaction.error); };
+  });
+}
+
 export async function updateMobileOutbox(
   userId: string,
   operation: MobileDailyLogSyncOperation,

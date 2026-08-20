@@ -5,6 +5,7 @@ import { createMobileDraft, draftToSyncOperation, type MobileBootstrap } from '@
 import {
   cacheMobileBootstrap,
   clearMobileUserData,
+  coalesceMobileOutbox,
   inspectUnsyncedMobileWork,
   listMobileOutbox,
   listMobilePhotos,
@@ -55,6 +56,26 @@ describe('mobile offline storage', () => {
     const operations = await listMobileOutbox('user-a', Date.parse('2026-08-20T12:01:00Z'));
     assert.equal(operations.length, 1);
     assert.equal(operations[0].idempotencyKey, 'daily-log-create:client-a');
+  });
+
+  it('coalesces repeat submissions for one project day onto the first idempotency key', async () => {
+    const first = createMobileDraft('project-a', {
+      logDate: '2026-08-20', weatherConditions: 'Clear', workSummary: 'First', safetyNotes: '',
+    }, null, new Date('2026-08-20T12:00:00Z'), () => 'client-a');
+    const repeated = createMobileDraft('project-a', {
+      logDate: '2026-08-20', weatherConditions: 'Clear', workSummary: 'Latest', safetyNotes: '',
+    }, null, new Date('2026-08-20T12:00:07Z'), () => 'client-b');
+    await saveMobileDraft('user-a', first);
+    await queueMobileDraft('user-a', draftToSyncOperation('user-a', first));
+    await saveMobileDraft('user-a', repeated);
+    await queueMobileDraft('user-a', draftToSyncOperation('user-a', repeated));
+
+    assert.equal(await coalesceMobileOutbox('user-a'), 1);
+    const operations = await listMobileOutbox('user-a', Date.parse('2026-08-20T12:01:00Z'));
+    assert.equal(operations.length, 1);
+    assert.equal(operations[0].operationId, 'client-a');
+    assert.equal(operations[0].idempotencyKey, 'daily-log-create:client-a');
+    assert.equal(operations[0].payload.work_summary, 'Latest');
   });
 
   it('persists a photo blob with its draft and reports it before safe sign-out', async () => {

@@ -1,5 +1,6 @@
 import type { MobileDailyLogSyncOperation } from '@railcommand/domain';
 import {
+  coalesceMobileOutbox,
   completeMobileOutbox,
   listMobileOutbox,
   updateMobileOutbox,
@@ -28,6 +29,7 @@ export async function synchronizeMobileOutbox(
   userId: string,
   api: MobileApiClient,
 ): Promise<{ synchronized: number; failed: number }> {
+  await coalesceMobileOutbox(userId);
   const operations = await listMobileOutbox(userId);
   let synchronized = 0;
   let failed = 0;
