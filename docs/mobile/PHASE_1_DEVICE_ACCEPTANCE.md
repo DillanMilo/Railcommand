@@ -3,6 +3,13 @@
 Use synthetic staging accounts only. Never enter a production RailCommand
 credential or inspect production project data in this build.
 
+Before a physical acceptance session, run
+`npm run provision:mobile:device-qa`. It creates or resets two synthetic device
+testers and prints their temporary passwords. The automated staging verifier
+uses a third synthetic account, so running it no longer invalidates user A's
+device-testing password. Re-running the provisioner intentionally rotates both
+device passwords.
+
 Record device model, OS version, build commit, date, tester, and pass/fail for
 each platform in the ignored private release runbook.
 

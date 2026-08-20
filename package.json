@@ -17,6 +17,7 @@
     "test:mobile": "npm run test --workspace @railcommand/domain && npm run test --workspace @railcommand/offline && npm run test --workspace @railcommand/api-client && npm run test --workspace @railcommand/mobile && npm run test:mobile-api",
     "test:mobile-api": "mocha --require tsx \"src/lib/mobile-api/*.test.ts\"",
     "verify:mobile:staging": "node --env-file=.env.mobile.local scripts/verify-mobile-staging.mjs",
+    "provision:mobile:device-qa": "node --env-file=.env.mobile.local scripts/provision-mobile-device-qa.mjs",
     "mobile:env:check": "node scripts/mobile-environment-guard.mjs",
     "mobile:build": "node --env-file=.env.mobile.local scripts/mobile-build.mjs",
     "mobile:sync": "npm run mobile:build && npm run cap:sync --workspace @railcommand/mobile",

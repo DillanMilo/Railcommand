@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const STAGING_REF = 'cyacardivfzrsravqjto';
 const STAGING_API = 'https://railcommand-mobile-staging.vercel.app';
-const QA_EMAIL = 'railcommand-mobile-owner@creativecurrents.test';
+const QA_EMAIL = 'railcommand-mobile-automation@creativecurrents.test';
 const FIXTURE_PROJECT_ID = '20000000-0000-4000-8000-000000000001';
 
 function required(name) {
@@ -35,8 +35,8 @@ begin
   if to_regclass('mobile_staging.fixture_manifest') is null
      or not exists (
        select 1 from mobile_staging.fixture_manifest
-       where fixture_key = 'qa-owner'
-         and synthetic_email = '${QA_EMAIL}'
+       where fixture_key = 'qa-project'
+         and synthetic_name = 'Synthetic US Track Renewal'
      ) then
     raise exception 'Refusing to rotate credentials outside mobile staging';
   end if;
