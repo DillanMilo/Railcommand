@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
-import { createMobileDraft, draftToSyncOperation, parseMobileDeepLink } from './index';
+import {
+  createMobileDraft,
+  draftToSyncOperation,
+  isValidPhotoSyncOperation,
+  parseMobileDeepLink,
+  photoToSyncOperation,
+} from './index';
 
 describe('mobile domain contracts', () => {
   it('parses custom and verified project links but rejects foreign hosts', () => {
@@ -66,5 +72,26 @@ describe('mobile domain contracts', () => {
     }, located, new Date('2026-08-24T12:01:00.000Z'));
 
     assert.equal(cleared.geoTag, null);
+  });
+
+  it('creates an idempotent child-photo operation after the server assigns the parent ID', () => {
+    const blob = new Blob(['photo'], { type: 'image/jpeg' });
+    const operation = photoToSyncOperation('user-a', {
+      photoId: 'photo-a',
+      draftId: 'daily-log:project-a',
+      projectId: 'project-a',
+      parentClientId: 'client-a',
+      fileName: 'track.jpg',
+      fileType: blob.type,
+      size: blob.size,
+      capturedAt: '2026-08-24T12:00:00.000Z',
+      geoTag: { lat: 41.88, lng: -87.63, timestamp: '2026-08-24T12:00:00.000Z' },
+      blob,
+    }, 'server-daily-log-a');
+
+    assert.equal(operation.parentEntityId, 'server-daily-log-a');
+    assert.equal(operation.idempotencyKey, 'daily-log-photo:photo-a');
+    assert.equal(operation.payload.geoLat, 41.88);
+    assert.equal(isValidPhotoSyncOperation(operation), true);
   });
 });

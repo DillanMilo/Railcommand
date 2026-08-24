@@ -200,15 +200,17 @@ export function App() {
     const synchronizeAndRefresh = async () => {
       if (!session?.user.id || synchronizing) return;
       synchronizing = true;
+      let syncMessage: string | null = null;
       try {
         const { synchronized, failed } = await synchronizeMobileOutbox(session.user.id, api);
-        if (active && synchronized) setMessage(`Synchronized ${synchronized} queued item(s)`);
-        if (active && failed) setMessage(`${failed} queued item(s) need attention; device work remains saved`);
+        if (synchronized) syncMessage = `Synchronized ${synchronized} queued item(s)`;
+        if (failed) syncMessage = `${failed} queued item(s) need attention; device work remains saved`;
       } catch (error) {
         errorReporter.capture(error, { area: 'sync', operation: 'foreground drain' });
-        if (active) setMessage('Synchronization paused; queued work remains saved on this device');
+        syncMessage = 'Synchronization paused; queued work remains saved on this device';
       } finally {
         if (active) await loadProject(session.user.id, activeProjectId ?? undefined);
+        if (active && syncMessage) setMessage(syncMessage);
         synchronizing = false;
       }
     };
@@ -281,7 +283,13 @@ export function App() {
         setLocationFeedback(saved?.geoTag
           ? `Location attached · ±${Math.round(saved.geoTag.accuracy ?? 0)} m`
           : 'No location attached');
-        const photos = await listMobilePhotos(session.user.id, `daily-log:${activeProjectId}`);
+        const photos = saved
+          ? await listMobilePhotos(
+              session.user.id,
+              `daily-log:${activeProjectId}`,
+              saved.clientId,
+            )
+          : [];
         if (!active) return;
         setPhotoCount(photos.length);
         setPhotoFeedback(photos.length
@@ -375,13 +383,19 @@ export function App() {
         photoId,
         draftId: savedDraft.draftId,
         projectId: activeProjectId,
+        parentClientId: savedDraft.clientId,
         fileName: materialized.fileName,
         fileType: materialized.fileType,
         size: materialized.size,
         capturedAt: new Date().toISOString(),
+        geoTag: savedDraft.geoTag,
         blob: materialized.blob,
       });
-      const persistedPhotos = await listMobilePhotos(session.user.id, savedDraft.draftId);
+      const persistedPhotos = await listMobilePhotos(
+        session.user.id,
+        savedDraft.draftId,
+        savedDraft.clientId,
+      );
       const nextCount = persistedPhotos.length;
       if (!persistedPhotos.some((photo) => photo.photoId === photoId)) {
         throw new Error('The photo could not be verified after saving');

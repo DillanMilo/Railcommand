@@ -1,5 +1,8 @@
 import type {
   MobileBootstrap,
+  MobileDailyLogPhotoFinalizeResult,
+  MobileDailyLogPhotoPrepareResult,
+  MobileDailyLogPhotoSyncOperation,
   MobileDailyLogSyncOperation,
   MobileDailyLogSyncResult,
 } from '@railcommand/domain';
@@ -67,6 +70,25 @@ export class MobileApiClient {
     return this.request<MobileDailyLogSyncResult>('/api/mobile/v1/daily-logs/sync', {
       method: 'POST',
       body: JSON.stringify(operation),
+    });
+  }
+
+  prepareDailyLogPhoto(
+    operation: MobileDailyLogPhotoSyncOperation,
+  ): Promise<MobileDailyLogPhotoPrepareResult> {
+    return this.request<MobileDailyLogPhotoPrepareResult>('/api/mobile/v1/daily-logs/photos/prepare', {
+      method: 'POST',
+      body: JSON.stringify(operation),
+    });
+  }
+
+  finalizeDailyLogPhoto(
+    operation: MobileDailyLogPhotoSyncOperation,
+    storage: Pick<MobileDailyLogPhotoPrepareResult, 'bucket' | 'path'>,
+  ): Promise<MobileDailyLogPhotoFinalizeResult> {
+    return this.request<MobileDailyLogPhotoFinalizeResult>('/api/mobile/v1/daily-logs/photos/finalize', {
+      method: 'POST',
+      body: JSON.stringify({ operation, storage }),
     });
   }
 }

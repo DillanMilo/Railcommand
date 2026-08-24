@@ -27,7 +27,7 @@ const result = spawnSync(
     '-scheme', 'App',
     '-sdk', 'iphonesimulator',
     '-destination', 'generic/platform=iOS Simulator',
-    `PRODUCT_BUNDLE_IDENTIFIER=${validated.appId}`,
+    `RAILCOMMAND_APP_BUNDLE_IDENTIFIER=${validated.appId}`,
     `MARKETING_VERSION=${appVersion}`,
     `CURRENT_PROJECT_VERSION=${buildNumber}`,
     `MOBILE_DISPLAY_NAME=${names[validated.profile]}`,

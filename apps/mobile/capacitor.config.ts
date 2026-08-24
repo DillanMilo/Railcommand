@@ -20,6 +20,10 @@ const config: CapacitorConfig = {
   appId: profile.appId,
   appName: profile.appName,
   webDir: 'dist',
+  // Capacitor's bridge logger includes plugin return payloads. Secure-storage
+  // payloads contain the Supabase session, so native bridge logging must stay
+  // disabled even in development builds.
+  loggingBehavior: 'none',
   android: {
     minWebViewVersion: 83,
   },

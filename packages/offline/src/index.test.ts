@@ -9,6 +9,7 @@ import {
   inspectUnsyncedMobileWork,
   listMobileOutbox,
   listMobilePhotos,
+  listMobilePhotosForOperation,
   mobileDatabaseName,
   persistMobilePhoto,
   queueMobileDraft,
@@ -82,8 +83,9 @@ describe('mobile offline storage', () => {
     const blob = new Blob(['photo-bytes'], { type: 'image/jpeg' });
     await persistMobilePhoto('user-a', {
       photoId: 'photo-a', draftId: 'daily-log:project-a', projectId: 'project-a',
+      parentClientId: 'client-a',
       fileName: 'track.jpg', fileType: blob.type, size: blob.size,
-      capturedAt: '2026-08-20T12:00:00Z', blob,
+      capturedAt: '2026-08-20T12:00:00Z', geoTag: null, blob,
     });
     const photos = await listMobilePhotos('user-a', 'daily-log:project-a');
     assert.equal(photos.length, 1);
@@ -91,5 +93,27 @@ describe('mobile offline storage', () => {
     assert.deepEqual(await inspectUnsyncedMobileWork('user-a'), {
       drafts: 0, operations: 0, photos: 1,
     });
+  });
+
+  it('keeps child photos attached to the first idempotent parent during coalescing', async () => {
+    const first = createMobileDraft('project-a', {
+      logDate: '2026-08-20', weatherConditions: '', workSummary: 'First', safetyNotes: '',
+    }, null, new Date('2026-08-20T12:00:00Z'), () => 'client-a');
+    const repeated = createMobileDraft('project-a', {
+      logDate: '2026-08-20', weatherConditions: '', workSummary: 'Latest', safetyNotes: '',
+    }, null, new Date('2026-08-20T12:01:00Z'), () => 'client-b');
+    await saveMobileDraft('user-a', first);
+    await queueMobileDraft('user-a', draftToSyncOperation('user-a', first));
+    await saveMobileDraft('user-a', repeated);
+    await persistMobilePhoto('user-a', {
+      photoId: 'photo-b', draftId: repeated.draftId, projectId: repeated.projectId,
+      parentClientId: repeated.clientId, fileName: 'track.jpg', fileType: 'image/jpeg',
+      size: 5, capturedAt: repeated.updatedAt, geoTag: null, blob: new Blob(['photo']),
+    });
+    await queueMobileDraft('user-a', draftToSyncOperation('user-a', repeated));
+
+    await coalesceMobileOutbox('user-a');
+    assert.equal((await listMobilePhotosForOperation('user-a', 'client-a')).length, 1);
+    assert.equal((await listMobilePhotosForOperation('user-a', 'client-b')).length, 0);
   });
 });

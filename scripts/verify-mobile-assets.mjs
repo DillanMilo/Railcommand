@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
+const capacitorConfig = readFileSync(
+  new URL('../apps/mobile/capacitor.config.ts', import.meta.url),
+  'utf8',
+);
+assert.match(
+  capacitorConfig,
+  /loggingBehavior:\s*'none'/,
+  'Capacitor bridge logging must stay disabled so secure-storage payloads never enter native logs',
+);
+
 function pngDimensions(path) {
   const bytes = readFileSync(new URL(`../${path}`, import.meta.url));
   assert.equal(bytes.toString('ascii', 1, 4), 'PNG', `${path} must be a PNG`);

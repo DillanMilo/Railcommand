@@ -1,11 +1,34 @@
-import type { MobileDailyLogSyncOperation } from '@railcommand/domain';
+import {
+  photoToSyncOperation,
+  type MobileDailyLogPhotoPrepareResult,
+  type MobileDailyLogSyncOperation,
+  type MobilePhotoRecord,
+} from '@railcommand/domain';
 import {
   coalesceMobileOutbox,
+  completeMobilePhoto,
   completeMobileOutbox,
   listMobileOutbox,
+  listMobilePhotosForOperation,
   updateMobileOutbox,
 } from '@railcommand/offline';
 import { MobileApiClient, MobileApiError } from '@railcommand/api-client';
+
+export type SignedPhotoUploader = (
+  prepared: MobileDailyLogPhotoPrepareResult,
+  photo: MobilePhotoRecord,
+) => Promise<void>;
+
+export const uploadSignedPhoto: SignedPhotoUploader = async (prepared, photo) => {
+  const { supabase } = await import('./supabase');
+  const { error } = await supabase.storage
+    .from(prepared.bucket)
+    .uploadToSignedUrl(prepared.path, prepared.token, photo.blob, {
+      contentType: photo.fileType,
+      cacheControl: '3600',
+    });
+  if (error) throw error;
+};
 
 export function retryOperation(
   operation: MobileDailyLogSyncOperation,
@@ -28,6 +51,7 @@ export function retryOperation(
 export async function synchronizeMobileOutbox(
   userId: string,
   api: MobileApiClient,
+  uploadPhoto: SignedPhotoUploader = uploadSignedPhoto,
 ): Promise<{ synchronized: number; failed: number }> {
   await coalesceMobileOutbox(userId);
   const operations = await listMobileOutbox(userId);
@@ -35,9 +59,17 @@ export async function synchronizeMobileOutbox(
   let failed = 0;
   for (const operation of operations) {
     try {
-      await api.syncDailyLog(operation);
+      const parent = await api.syncDailyLog(operation);
+      const photos = await listMobilePhotosForOperation(userId, operation.clientId);
+      for (const photo of photos) {
+        const photoOperation = photoToSyncOperation(userId, photo, parent.id);
+        const prepared = await api.prepareDailyLogPhoto(photoOperation);
+        await uploadPhoto(prepared, photo);
+        await api.finalizeDailyLogPhoto(photoOperation, prepared);
+        await completeMobilePhoto(userId, photo.photoId);
+      }
       await completeMobileOutbox(userId, operation.operationId);
-      synchronized += 1;
+      synchronized += 1 + photos.length;
     } catch (error) {
       const retryable = !(error instanceof MobileApiError) || error.retryable;
       const next = retryable

@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
 const QA_A_EMAIL = 'railcommand-mobile-owner@creativecurrents.test';
@@ -21,6 +23,16 @@ function escapeSql(value) {
 const qaAPassword = password('DeviceA');
 const qaBPassword = password('DeviceB');
 const automationPassword = password('Automation');
+const supabaseWorkdir = process.env.MOBILE_SUPABASE_WORKDIR ?? process.cwd();
+const expectedProjectRef = process.env.MOBILE_EXPECTED_SUPABASE_PROJECT_REF;
+const linkedProjectRef = readFileSync(
+  resolve(supabaseWorkdir, 'supabase/.temp/project-ref'),
+  'utf8',
+).trim();
+
+if (!expectedProjectRef || linkedProjectRef !== expectedProjectRef) {
+  throw new Error('Refusing to provision outside the expected RailCommand Mobile Staging project');
+}
 
 const sql = `
 do $$
@@ -111,10 +123,24 @@ on conflict (project_id, profile_id) do update set
 `;
 
 execFileSync('supabase', ['db', 'query', '--linked', sql], {
-  cwd: process.cwd(),
+  cwd: supabaseWorkdir,
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],
 });
+
+const credentials = {
+  warning: 'Synthetic staging credentials only. Never use these for production.',
+  userA: { email: QA_A_EMAIL, password: qaAPassword },
+  userB: { email: QA_B_EMAIL, password: qaBPassword },
+};
+const credentialsOutput = process.env.MOBILE_QA_CREDENTIALS_OUTPUT;
+if (credentialsOutput) {
+  const absoluteOutput = resolve(credentialsOutput);
+  if (!absoluteOutput.startsWith('/private/tmp/') && !absoluteOutput.startsWith('/tmp/')) {
+    throw new Error('MOBILE_QA_CREDENTIALS_OUTPUT must be a temporary absolute path');
+  }
+  writeFileSync(absoluteOutput, `${JSON.stringify(credentials)}\n`, { mode: 0o600 });
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -146,9 +172,7 @@ await verifyDeviceUser(QA_A_EMAIL, qaAPassword);
 await verifyDeviceUser(QA_B_EMAIL, qaBPassword);
 
 console.log(JSON.stringify({
-  warning: 'Synthetic staging credentials only. Never use these for production.',
-  userA: { email: QA_A_EMAIL, password: qaAPassword },
-  userB: { email: QA_B_EMAIL, password: qaBPassword },
+  ...(credentialsOutput ? { credentialsWritten: true } : credentials),
   signInAndBootstrapVerified: true,
   automationReady: true,
 }, null, 2));

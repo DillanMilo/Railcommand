@@ -52,4 +52,22 @@ describe('mobile API security boundary', () => {
     assert.match(response.headers.get('vary') ?? '', /Origin/);
     assert.deepEqual(await response.json(), { ok: true });
   });
+
+  it('revalidates identity, permission, parent ownership, and storage paths for queued photos', () => {
+    const helper = readFileSync(new URL('./photo-sync.ts', import.meta.url), 'utf8');
+    const prepare = readFileSync(
+      new URL('../../app/api/mobile/v1/daily-logs/photos/prepare/route.ts', import.meta.url),
+      'utf8',
+    );
+    const finalize = readFileSync(
+      new URL('../../app/api/mobile/v1/daily-logs/photos/finalize/route.ts', import.meta.url),
+      'utf8',
+    );
+    assert.match(helper, /operation\.userId !== context\.user\.id/);
+    assert.match(helper, /canCreateMobileDailyLog/);
+    assert.match(helper, /\.eq\('created_by', context\.user\.id\)/);
+    assert.match(prepare, /createSignedUploadUrl\(authorized\.path, \{ upsert: true \}\)/);
+    assert.match(finalize, /body\.storage\.path !== authorized\.path/);
+    assert.match(finalize, /sync_daily_log_photo_attachment/);
+  });
 });

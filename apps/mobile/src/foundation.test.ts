@@ -51,10 +51,15 @@ describe('Phase 2 mobile foundation', () => {
 
   it('keeps unsigned native CI on Node 22 without repository secrets', () => {
     const workflow = read('../../../.github/workflows/ci.yml');
+    const simulatorBuild = read('../../../scripts/mobile-ios-simulator-build.mjs');
+    const xcodeProject = read('../ios/App/App.xcodeproj/project.pbxproj');
     assert.match(workflow, /node-version: 22/);
     assert.match(workflow, /android-unsigned:/);
     assert.match(workflow, /ios-simulator-unsigned:/);
     assert.match(workflow, /CODE_SIGNING_ALLOWED=NO|mobile-ios-simulator-build/);
     assert.doesNotMatch(workflow, /secrets\./);
+    assert.match(simulatorBuild, /RAILCOMMAND_APP_BUNDLE_IDENTIFIER=/);
+    assert.doesNotMatch(simulatorBuild, /`PRODUCT_BUNDLE_IDENTIFIER=/);
+    assert.match(xcodeProject, /PRODUCT_BUNDLE_IDENTIFIER = "\$\(RAILCOMMAND_APP_BUNDLE_IDENTIFIER\)"/);
   });
 });

@@ -39,4 +39,34 @@ describe('MobileApiClient', () => {
       return true;
     });
   });
+
+  it('uses authenticated JSON routes for photo prepare and finalize', async () => {
+    const paths: string[] = [];
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com',
+      getAccessToken: async () => 'access-token',
+      fetch: async (input) => {
+        const path = new URL(input instanceof Request ? input.url : input.toString()).pathname;
+        paths.push(path);
+        return Response.json(path.endsWith('/prepare')
+          ? { bucket: 'project-photos', path: 'project/log/photo.jpg', token: 'signed-token' }
+          : { id: 'photo-a', duplicate: false });
+      },
+    });
+    const operation = {
+      operationId: 'photo-a', userId: 'user-a', projectId: 'project-a',
+      parentEntityId: 'log-a', idempotencyKey: 'daily-log-photo:photo-a',
+      payload: {
+        fileName: 'track.jpg', fileType: 'image/jpeg', fileSize: 5,
+        photoCategory: 'standard' as const, geoLat: null, geoLng: null,
+        capturedAt: '2026-08-24T12:00:00.000Z',
+      },
+    };
+    const prepared = await client.prepareDailyLogPhoto(operation);
+    await client.finalizeDailyLogPhoto(operation, prepared);
+    assert.deepEqual(paths, [
+      '/api/mobile/v1/daily-logs/photos/prepare',
+      '/api/mobile/v1/daily-logs/photos/finalize',
+    ]);
+  });
 });

@@ -12,6 +12,7 @@ Start here:
 - [Phase 1 architecture spike](./PHASE_1_ARCHITECTURE_SPIKE.md)
 - [Phase 2 mobile foundation](./PHASE_2_FOUNDATION.md)
 - [Phase 2 privacy inventory](./PHASE_2_PRIVACY_INVENTORY.md)
+- [Phase 2 device acceptance](./PHASE_2_DEVICE_ACCEPTANCE.md)
 
 No native mobile project may connect to the production backend during Phase 0
 or the architecture spike. Phase 1 starts only after the blocking items in both

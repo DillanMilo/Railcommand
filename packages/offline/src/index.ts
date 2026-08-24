@@ -154,13 +154,34 @@ export async function persistMobilePhoto(
 export async function listMobilePhotos(
   userId: string,
   draftId: string,
+  parentClientId?: string,
 ): Promise<MobilePhotoRecord[]> {
-  return requestResult<MobilePhotoRecord[]>(
+  const photos = await requestResult<MobilePhotoRecord[]>(
     userId,
     STORES.photos,
     'readonly',
     (store) => store.index('by_draft').getAll(draftId),
   );
+  return parentClientId
+    ? photos.filter((photo) => photo.parentClientId === parentClientId)
+    : photos;
+}
+
+export async function listMobilePhotosForOperation(
+  userId: string,
+  parentClientId: string,
+): Promise<MobilePhotoRecord[]> {
+  const photos = await requestResult<MobilePhotoRecord[]>(
+    userId,
+    STORES.photos,
+    'readonly',
+    (store) => store.getAll(),
+  );
+  return photos.filter((photo) => photo.parentClientId === parentClientId);
+}
+
+export async function completeMobilePhoto(userId: string, photoId: string): Promise<void> {
+  await requestResult(userId, STORES.photos, 'readwrite', (store) => store.delete(photoId));
 }
 
 export async function queueMobileDraft(
@@ -202,14 +223,19 @@ export async function listMobileOutbox(
 export async function coalesceMobileOutbox(userId: string): Promise<number> {
   const database = await openDatabase(userId);
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction(STORES.outbox, 'readwrite');
+    const transaction = database.transaction([STORES.outbox, STORES.photos], 'readwrite');
     const store = transaction.objectStore(STORES.outbox);
+    const photosStore = transaction.objectStore(STORES.photos);
     const request = store.getAll();
+    const photosRequest = photosStore.getAll();
     let removed = 0;
+    let operations: MobileDailyLogSyncOperation[] | null = null;
+    let photos: MobilePhotoRecord[] | null = null;
 
-    request.onsuccess = () => {
+    const coalesce = () => {
+      if (!operations || !photos) return;
       const groups = new Map<string, MobileDailyLogSyncOperation[]>();
-      for (const operation of request.result as MobileDailyLogSyncOperation[]) {
+      for (const operation of operations) {
         const key = `${operation.projectId}:${operation.payload.log_date}`;
         const group = groups.get(key) ?? [];
         group.push(operation);
@@ -228,6 +254,16 @@ export async function coalesceMobileOutbox(userId: string): Promise<number> {
           idempotencyKey: first.idempotencyKey,
           createdAt: first.createdAt,
         });
+        const duplicateIds = new Set(
+          group
+            .filter((operation) => operation.operationId !== first.operationId)
+            .map((operation) => operation.operationId),
+        );
+        for (const photo of photos) {
+          if (duplicateIds.has(photo.parentClientId)) {
+            photosStore.put({ ...photo, parentClientId: first.operationId });
+          }
+        }
         for (const duplicate of group) {
           if (duplicate.operationId === first.operationId) continue;
           store.delete(duplicate.operationId);
@@ -235,7 +271,17 @@ export async function coalesceMobileOutbox(userId: string): Promise<number> {
         }
       }
     };
+
+    request.onsuccess = () => {
+      operations = request.result as MobileDailyLogSyncOperation[];
+      coalesce();
+    };
+    photosRequest.onsuccess = () => {
+      photos = photosRequest.result as MobilePhotoRecord[];
+      coalesce();
+    };
     request.onerror = () => transaction.abort();
+    photosRequest.onerror = () => transaction.abort();
     transaction.oncomplete = () => { database.close(); resolve(removed); };
     transaction.onerror = () => { database.close(); reject(transaction.error); };
     transaction.onabort = () => { database.close(); reject(transaction.error); };

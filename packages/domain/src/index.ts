@@ -62,11 +62,41 @@ export interface MobilePhotoRecord {
   photoId: string;
   draftId: string;
   projectId: string;
+  parentClientId: string;
   fileName: string;
   fileType: string;
   size: number;
   capturedAt: string;
+  geoTag: MobileGeoTag | null;
   blob: Blob;
+}
+
+export interface MobileDailyLogPhotoSyncOperation {
+  operationId: string;
+  userId: string;
+  projectId: string;
+  parentEntityId: string;
+  idempotencyKey: string;
+  payload: {
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    photoCategory: 'standard' | 'thermal';
+    geoLat: number | null;
+    geoLng: number | null;
+    capturedAt: string;
+  };
+}
+
+export interface MobileDailyLogPhotoPrepareResult {
+  bucket: string;
+  path: string;
+  token: string;
+}
+
+export interface MobileDailyLogPhotoFinalizeResult {
+  id: string;
+  duplicate: boolean;
 }
 
 export interface MobileDailyLogSyncOperation {
@@ -216,4 +246,56 @@ export function isValidSyncOperation(value: unknown): value is MobileDailyLogSyn
     && operation.idempotencyKey.length >= 16
     && typeof operation.payload?.log_date === 'string'
     && typeof operation.payload?.work_summary === 'string';
+}
+
+export function photoToSyncOperation(
+  userId: string,
+  photo: MobilePhotoRecord,
+  parentEntityId: string,
+): MobileDailyLogPhotoSyncOperation {
+  return {
+    operationId: photo.photoId,
+    userId,
+    projectId: photo.projectId,
+    parentEntityId,
+    idempotencyKey: `daily-log-photo:${photo.photoId}`,
+    payload: {
+      fileName: photo.fileName,
+      fileType: photo.fileType,
+      fileSize: photo.size,
+      photoCategory: 'standard',
+      geoLat: photo.geoTag?.lat ?? null,
+      geoLng: photo.geoTag?.lng ?? null,
+      capturedAt: photo.capturedAt,
+    },
+  };
+}
+
+export function isValidPhotoSyncOperation(
+  value: unknown,
+): value is MobileDailyLogPhotoSyncOperation {
+  if (!value || typeof value !== 'object') return false;
+  const operation = value as Partial<MobileDailyLogPhotoSyncOperation>;
+  const payload = operation.payload;
+  return typeof operation.operationId === 'string'
+    && Boolean(operation.operationId)
+    && typeof operation.userId === 'string'
+    && Boolean(operation.userId)
+    && typeof operation.projectId === 'string'
+    && Boolean(operation.projectId)
+    && typeof operation.parentEntityId === 'string'
+    && Boolean(operation.parentEntityId)
+    && typeof operation.idempotencyKey === 'string'
+    && operation.idempotencyKey.length >= 16
+    && typeof payload?.fileName === 'string'
+    && payload.fileName.length > 0
+    && payload.fileName.length <= 500
+    && typeof payload.fileType === 'string'
+    && payload.fileType.startsWith('image/')
+    && typeof payload.fileSize === 'number'
+    && payload.fileSize > 0
+    && payload.fileSize <= 25 * 1024 * 1024
+    && (payload.photoCategory === 'standard' || payload.photoCategory === 'thermal')
+    && typeof payload.capturedAt === 'string'
+    && Number.isFinite(Date.parse(payload.capturedAt));
 }
