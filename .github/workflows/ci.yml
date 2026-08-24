@@ -3,6 +3,20 @@ name: CI
 on:
   pull_request:
 
+env:
+  MOBILE_BUILD_PROFILE: development
+  MOBILE_APP_ID: io.railcommand.app.dev
+  MOBILE_EXPECTED_APP_ID: io.railcommand.app.dev
+  MOBILE_EXPECTED_SUPABASE_PROJECT_REF: cyacardivfzrsravqjto
+  MOBILE_BLOCKED_SUPABASE_PROJECT_REFS: production-placeholder
+  MOBILE_EXPECTED_APP_HOST: railcommand-mobile-staging.vercel.app
+  MOBILE_BLOCKED_APP_HOSTS: railcommand.io
+  MOBILE_APP_VERSION: 0.2.0
+  MOBILE_BUILD_NUMBER: "200001"
+  NEXT_PUBLIC_SUPABASE_URL: https://cyacardivfzrsravqjto.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-publishable-key-placeholder
+  NEXT_PUBLIC_APP_URL: https://railcommand-mobile-staging.vercel.app
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -14,7 +28,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -25,3 +39,87 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+  mobile-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify environment isolation
+        run: npm run test:mobile-env
+
+      - name: Test mobile contracts and foundation
+        run: npm run test:mobile
+
+      - name: Verify mobile icon and splash inventory
+        run: npm run verify:mobile:assets
+
+      - name: Build bundled mobile assets
+        run: node scripts/mobile-build.mjs
+
+  android-unsigned:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and synchronize Android project
+        run: node scripts/mobile-sync.mjs android
+
+      - name: Test Android project
+        working-directory: apps/mobile/android
+        run: ./gradlew testDebugUnitTest
+
+      - name: Assemble unsigned Android debug application
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleDebug
+
+  ios-simulator-unsigned:
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and synchronize iOS project
+        run: node scripts/mobile-sync.mjs ios
+
+      - name: Build unsigned iOS Simulator application
+        run: node scripts/mobile-ios-simulator-build.mjs

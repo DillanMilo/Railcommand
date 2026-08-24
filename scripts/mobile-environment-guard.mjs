@@ -1,4 +1,9 @@
-const DEV_APP_ID = 'io.railcommand.app.dev';
+const PROFILE_APP_IDS = {
+  development: 'io.railcommand.app.dev',
+  staging: 'io.railcommand.app.staging',
+  production: 'io.railcommand.app',
+};
+const PRODUCTION_CONFIRMATION = 'release-authorized';
 const FORBIDDEN_CLIENT_SECRETS = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_SECRET_KEY',
@@ -42,14 +47,18 @@ export function validateMobileEnvironment(env) {
   }
 
   const profile = required(env, 'MOBILE_BUILD_PROFILE');
-  if (!['development', 'staging'].includes(profile)) {
-    throw new Error('MOBILE_BUILD_PROFILE must be development or staging');
+  if (!Object.hasOwn(PROFILE_APP_IDS, profile)) {
+    throw new Error('MOBILE_BUILD_PROFILE must be development, staging, or production');
   }
 
   const appId = required(env, 'MOBILE_APP_ID');
   const expectedAppId = required(env, 'MOBILE_EXPECTED_APP_ID');
-  if (appId !== expectedAppId || appId !== DEV_APP_ID) {
-    throw new Error(`Mobile staging must use ${DEV_APP_ID}`);
+  const profileAppId = PROFILE_APP_IDS[profile];
+  if (appId !== expectedAppId || appId !== profileAppId) {
+    throw new Error(`${profile} mobile builds must use ${profileAppId}`);
+  }
+  if (profile === 'production' && env.MOBILE_ALLOW_PRODUCTION_BUILD !== PRODUCTION_CONFIRMATION) {
+    throw new Error('Production mobile builds require explicit release authorization');
   }
 
   const supabaseUrl = parseHttpsUrl(
@@ -73,8 +82,11 @@ export function validateMobileEnvironment(env) {
       `Supabase host must match the approved staging project ${expectedProjectRef}`
     );
   }
-  if (blockedProjectRefs.has(expectedProjectRef)) {
+  if (profile !== 'production' && blockedProjectRefs.has(expectedProjectRef)) {
     throw new Error('The approved staging Supabase project is marked as production');
+  }
+  if (profile === 'production' && !blockedProjectRefs.has(expectedProjectRef)) {
+    throw new Error('The production Supabase project must be present in the production inventory');
   }
 
   const appUrl = parseHttpsUrl(
@@ -89,8 +101,11 @@ export function validateMobileEnvironment(env) {
   if (appUrl.hostname.toLowerCase() !== expectedAppHost) {
     throw new Error(`Application host must match approved staging host ${expectedAppHost}`);
   }
-  if (blockedAppHosts.has(expectedAppHost)) {
+  if (profile !== 'production' && blockedAppHosts.has(expectedAppHost)) {
     throw new Error('The approved staging application host is marked as production');
+  }
+  if (profile === 'production' && !blockedAppHosts.has(expectedAppHost)) {
+    throw new Error('The production application host must be present in the production inventory');
   }
 
   return {

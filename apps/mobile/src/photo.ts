@@ -2,7 +2,9 @@ import {
   Camera as NativeCamera,
   CameraDirection,
   EncodingType,
+  MediaTypeSelection,
   type CameraPlugin,
+  type MediaResult,
 } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 
@@ -71,4 +73,41 @@ export async function captureNativePhoto(
     await response.blob(),
     `railcommand-photo-${Date.now()}.${extension}`,
   );
+}
+
+async function materializeMediaResult(
+  result: MediaResult,
+  fetchPhoto: typeof fetch,
+  convertFileSrc: (uri: string) => string,
+): Promise<MaterializedPhoto> {
+  const photoUrl = result.webPath ?? (result.uri ? convertFileSrc(result.uri) : null);
+  if (!photoUrl) throw new Error('The photo library returned no readable photo location');
+  const response = await fetchPhoto(photoUrl);
+  if (!response.ok) throw new Error(`The selected photo could not be read (${response.status})`);
+  const format = result.metadata?.format?.toLowerCase() || 'jpg';
+  const extension = format === 'jpeg' ? 'jpg' : format;
+  return materializePhotoBlob(
+    await response.blob(),
+    `railcommand-library-${Date.now()}.${extension}`,
+  );
+}
+
+export async function chooseNativePhoto(
+  camera: Pick<CameraPlugin, 'chooseFromGallery'> = NativeCamera,
+  fetchPhoto: typeof fetch = fetch,
+  convertFileSrc: (uri: string) => string = Capacitor.convertFileSrc,
+): Promise<MaterializedPhoto> {
+  const selected = await camera.chooseFromGallery({
+    mediaType: MediaTypeSelection.Photo,
+    allowMultipleSelection: false,
+    limit: 1,
+    quality: 85,
+    targetWidth: 1920,
+    targetHeight: 1920,
+    editable: 'no',
+    includeMetadata: true,
+  });
+  const result = selected.results[0];
+  if (!result) throw new Error('No photo was selected');
+  return materializeMediaResult(result, fetchPhoto, convertFileSrc);
 }

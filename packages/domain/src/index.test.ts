@@ -29,4 +29,42 @@ describe('mobile domain contracts', () => {
     assert.equal(operation.operationId, 'client-1');
     assert.equal(operation.payload.work_summary, 'Updated track work');
   });
+
+  it('preserves optional device location in the draft and queued payload', () => {
+    const geoTag = {
+      lat: 41.8781,
+      lng: -87.6298,
+      accuracy: 12,
+      timestamp: '2026-08-24T12:00:00.000Z',
+    };
+    const draft = createMobileDraft('project-1', {
+      logDate: '2026-08-24',
+      weatherConditions: 'Clear',
+      workSummary: 'Track inspection',
+      safetyNotes: '',
+      geoTag,
+    });
+
+    assert.deepEqual(draft.geoTag, geoTag);
+    assert.deepEqual(draftToSyncOperation('user-1', draft).payload.geo_tag, geoTag);
+  });
+
+  it('allows a user to remove an optional location from an existing draft', () => {
+    const located = createMobileDraft('project-a', {
+      logDate: '2026-08-24',
+      weatherConditions: '',
+      workSummary: 'Located work',
+      safetyNotes: '',
+      geoTag: { lat: 41.88, lng: -87.63, timestamp: '2026-08-24T12:00:00.000Z' },
+    }, null, new Date('2026-08-24T12:00:00.000Z'), () => 'client-a');
+    const cleared = createMobileDraft('project-a', {
+      logDate: located.logDate,
+      weatherConditions: located.weatherConditions,
+      workSummary: located.workSummary,
+      safetyNotes: located.safetyNotes,
+      geoTag: null,
+    }, located, new Date('2026-08-24T12:01:00.000Z'));
+
+    assert.equal(cleared.geoTag, null);
+  });
 });

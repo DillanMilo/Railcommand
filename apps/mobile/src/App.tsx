@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Camera as NativeCamera, CameraErrorCode } from '@capacitor/camera';
-import { Network } from '@capacitor/network';
 import type { Session } from '@supabase/supabase-js';
 import {
   ArrowRight,
@@ -10,11 +9,14 @@ import {
   ClipboardList,
   CloudUpload,
   FolderKanban,
+  ImagePlus,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
+  MapPin,
   RefreshCw,
   Save,
+  Share2,
   ShieldCheck,
   Wifi,
   WifiOff,
@@ -26,6 +28,7 @@ import {
   type MobileBootstrap,
   type MobileDailyLogDraft,
   type MobileDeepLink,
+  type MobileGeoTag,
 } from '@railcommand/domain';
 import {
   cacheMobileBootstrap,
@@ -41,16 +44,37 @@ import {
 } from '@railcommand/offline';
 import { mobileConfig } from './config';
 import { registerMobileDeepLinks } from './deep-links';
-import { captureNativePhoto, type MaterializedPhoto } from './photo';
-import { supabase } from './supabase';
+import {
+  captureCurrentLocation,
+  getConnectivity,
+  haptic,
+  onConnectivityChange,
+  shareProjectLink,
+} from './device-adapters';
+import { initializeMobileChrome, registerForegroundLifecycle } from './device-lifecycle';
+import { errorReporter } from './error-reporting';
+import { captureNativePhoto, chooseNativePhoto, type MaterializedPhoto } from './photo';
+import { registerAuthRefreshLifecycle, supabase } from './supabase';
 import { synchronizeMobileOutbox } from './sync';
 
-const EMPTY_DRAFT = {
+interface DraftValues {
+  logDate: string;
+  weatherConditions: string;
+  workSummary: string;
+  safetyNotes: string;
+  geoTag: MobileGeoTag | null;
+}
+
+const EMPTY_DRAFT: DraftValues = {
   logDate: new Date().toISOString().slice(0, 10),
   weatherConditions: '',
   workSummary: '',
   safetyNotes: '',
+  geoTag: null,
 };
+
+const MOBILE_SECTIONS = ['overview', 'logs', 'draft', 'account'] as const;
+type MobileSection = (typeof MOBILE_SECTIONS)[number];
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -62,6 +86,7 @@ export function App() {
   const [photoCount, setPhotoCount] = useState(0);
   const [draftFeedback, setDraftFeedback] = useState('No unsaved changes');
   const [photoFeedback, setPhotoFeedback] = useState('No photos saved on this device');
+  const [locationFeedback, setLocationFeedback] = useState('No location attached');
   const [cameraStatus, setCameraStatus] = useState<'checking' | 'ready' | 'unavailable'>('checking');
   const [online, setOnline] = useState(navigator.onLine);
   const [email, setEmail] = useState('');
@@ -69,6 +94,7 @@ export function App() {
   const [message, setMessage] = useState('Restoring secure session…');
   const [discardArmed, setDiscardArmed] = useState(false);
   const [queueing, setQueueing] = useState(false);
+  const [activeSection, setActiveSection] = useState<MobileSection>('overview');
   const queueingRef = useRef(false);
 
   const api = useMemo(() => new MobileApiClient({
@@ -99,9 +125,29 @@ export function App() {
       setActiveProjectId(fresh.activeProjectId);
       setMessage('Synchronized with staging');
     } catch (error) {
+      errorReporter.capture(error, { area: 'bootstrap', operation: 'refresh' });
       setMessage(cached ? 'Refresh failed; saved device data remains available' : String(error));
     }
   }, [api]);
+
+  useEffect(() => {
+    let active = true;
+    let removeChrome: (() => Promise<void>) | undefined;
+    let removeAuth: (() => Promise<void>) | undefined;
+    void initializeMobileChrome().then((lifecycle) => {
+      if (!active) return void lifecycle.remove();
+      removeChrome = () => lifecycle.remove();
+    });
+    void registerAuthRefreshLifecycle().then((handle) => {
+      if (!active) return void handle?.remove();
+      removeAuth = handle ? () => handle.remove() : undefined;
+    });
+    return () => {
+      active = false;
+      void removeChrome?.();
+      void removeAuth?.();
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -135,9 +181,13 @@ export function App() {
       if (!active) return;
       if (link.kind === 'project' || link.kind === 'daily_log') {
         setActiveProjectId(link.projectId);
+        setActiveSection(link.kind === 'daily_log' ? 'logs' : 'overview');
         if (session?.user.id) void loadProject(session.user.id, link.projectId);
       }
       setMessage(link.kind === 'unsupported' ? 'Unsupported RailCommand link' : `Opened ${link.kind}`);
+    }, (error) => {
+      errorReporter.capture(error, { area: 'auth', operation: 'deep-link callback' });
+      setMessage('The sign-in link could not be completed. Request a new link and try again.');
     }).then((handle) => { remove = () => handle.remove(); });
     return () => { active = false; void remove?.(); };
   }, [loadProject, session?.user.id]);
@@ -145,29 +195,62 @@ export function App() {
   useEffect(() => {
     let active = true;
     let synchronizing = false;
-    let remove: (() => Promise<void>) | undefined;
+    let removeNetwork: (() => Promise<void>) | undefined;
+    let removeForeground: (() => Promise<void>) | undefined;
     const synchronizeAndRefresh = async () => {
       if (!session?.user.id || synchronizing) return;
       synchronizing = true;
       try {
-        const { synchronized } = await synchronizeMobileOutbox(session.user.id, api);
+        const { synchronized, failed } = await synchronizeMobileOutbox(session.user.id, api);
         if (active && synchronized) setMessage(`Synchronized ${synchronized} queued item(s)`);
+        if (active && failed) setMessage(`${failed} queued item(s) need attention; device work remains saved`);
+      } catch (error) {
+        errorReporter.capture(error, { area: 'sync', operation: 'foreground drain' });
+        if (active) setMessage('Synchronization paused; queued work remains saved on this device');
       } finally {
         if (active) await loadProject(session.user.id, activeProjectId ?? undefined);
         synchronizing = false;
       }
     };
-    void Network.getStatus().then((status) => {
+    const updateConnectivity = (status: { connected: boolean }) => {
       if (!active) return;
       setOnline(status.connected);
       if (status.connected) void synchronizeAndRefresh();
+    };
+    void getConnectivity().then(updateConnectivity);
+    void onConnectivityChange(updateConnectivity).then((handle) => {
+      removeNetwork = () => handle.remove();
     });
-    void Network.addListener('networkStatusChange', (status) => {
-      setOnline(status.connected);
-      if (status.connected) void synchronizeAndRefresh();
-    }).then((handle) => { remove = () => handle.remove(); });
-    return () => { active = false; void remove?.(); };
+    void registerForegroundLifecycle(async () => {
+      const status = await getConnectivity();
+      updateConnectivity(status);
+      if (!status.connected && session?.user.id) {
+        await loadProject(session.user.id, activeProjectId ?? undefined);
+      }
+    }).then((lifecycle) => { removeForeground = () => lifecycle.remove(); });
+    return () => {
+      active = false;
+      void removeNetwork?.();
+      void removeForeground?.();
+    };
   }, [activeProjectId, api, loadProject, session?.user.id]);
+
+  useEffect(() => {
+    if (!session) return;
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible && MOBILE_SECTIONS.includes(visible.target.id as MobileSection)) {
+        setActiveSection(visible.target.id as MobileSection);
+      }
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: [0.05, 0.4] });
+    MOBILE_SECTIONS.forEach((section) => {
+      const element = document.getElementById(section);
+      if (element) observer.observe(element);
+    });
+    return () => observer.disconnect();
+  }, [session]);
 
   useEffect(() => {
     if (!session?.user.id) {
@@ -180,22 +263,36 @@ export function App() {
 
   useEffect(() => {
     if (!session?.user.id || !activeProjectId) return;
-    void readMobileDraft(session.user.id, activeProjectId).then(async (saved) => {
-      setDraft(saved);
-      setDraftDirty(false);
-      setDraftFeedback(saved ? 'Saved draft restored from this device' : 'No unsaved changes');
-      setDraftValues(saved ? {
-        logDate: saved.logDate,
-        weatherConditions: saved.weatherConditions,
-        workSummary: saved.workSummary,
-        safetyNotes: saved.safetyNotes,
-      } : { ...EMPTY_DRAFT, logDate: new Date().toISOString().slice(0, 10) });
-      const photos = await listMobilePhotos(session.user.id, `daily-log:${activeProjectId}`);
-      setPhotoCount(photos.length);
-      setPhotoFeedback(photos.length
-        ? `${photos.length} photo${photos.length === 1 ? '' : 's'} persisted on this device`
-        : 'No photos saved on this device');
-    });
+    let active = true;
+    void (async () => {
+      try {
+        const saved = await readMobileDraft(session.user.id, activeProjectId);
+        if (!active) return;
+        setDraft(saved);
+        setDraftDirty(false);
+        setDraftFeedback(saved ? 'Saved draft restored from this device' : 'No unsaved changes');
+        setDraftValues(saved ? {
+          logDate: saved.logDate,
+          weatherConditions: saved.weatherConditions,
+          workSummary: saved.workSummary,
+          safetyNotes: saved.safetyNotes,
+          geoTag: saved.geoTag ?? null,
+        } : { ...EMPTY_DRAFT, logDate: new Date().toISOString().slice(0, 10) });
+        setLocationFeedback(saved?.geoTag
+          ? `Location attached · ±${Math.round(saved.geoTag.accuracy ?? 0)} m`
+          : 'No location attached');
+        const photos = await listMobilePhotos(session.user.id, `daily-log:${activeProjectId}`);
+        if (!active) return;
+        setPhotoCount(photos.length);
+        setPhotoFeedback(photos.length
+          ? `${photos.length} photo${photos.length === 1 ? '' : 's'} persisted on this device`
+          : 'No photos saved on this device');
+      } catch (error) {
+        errorReporter.capture(error, { area: 'offline', operation: 'restore draft and photos' });
+        if (active) setMessage('Saved device work could not be opened. It has not been discarded.');
+      }
+    })();
+    return () => { active = false; };
   }, [activeProjectId, session?.user.id]);
 
   useEffect(() => {
@@ -234,7 +331,7 @@ export function App() {
     return () => window.clearTimeout(timeout);
   }, [activeProjectId, draft, draftDirty, draftValues, session?.user.id]);
 
-  const editDraft = (values: typeof EMPTY_DRAFT) => {
+  const editDraft = (values: DraftValues) => {
     setDraftValues(values);
     setDraftDirty(true);
     setDraftFeedback('Changes waiting to save…');
@@ -267,11 +364,11 @@ export function App() {
     }
   };
 
-  const persistPhoto = async (materialized: MaterializedPhoto) => {
-    if (!session?.user.id || !activeProjectId) return;
+  const persistPhoto = async (materialized: MaterializedPhoto): Promise<boolean> => {
+    if (!session?.user.id || !activeProjectId) return false;
     try {
       const savedDraft = await saveDraft();
-      if (!savedDraft) return;
+      if (!savedDraft) return false;
       setPhotoFeedback('Saving photo on this device…');
       const photoId = crypto.randomUUID();
       await persistMobilePhoto(session.user.id, {
@@ -292,10 +389,12 @@ export function App() {
       setPhotoCount(nextCount);
       setPhotoFeedback(`${nextCount} photo${nextCount === 1 ? '' : 's'} persisted on this device`);
       setMessage('Photo persisted on this device');
+      return true;
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       setMessage(`Photo could not be saved: ${detail}`);
       setPhotoFeedback(`Photo save failed: ${detail}`);
+      return false;
     }
   };
 
@@ -318,7 +417,8 @@ export function App() {
     try {
       const materialized = await captureNativePhoto();
       setPhotoFeedback('Preparing captured photo…');
-      await persistPhoto(materialized);
+      const persisted = await persistPhoto(materialized);
+      await haptic(persisted ? 'success' : 'warning');
     } catch (error) {
       const code = typeof error === 'object' && error && 'code' in error
         ? String(error.code)
@@ -330,7 +430,55 @@ export function App() {
       const detail = error instanceof Error ? error.message : String(error);
       setMessage(`Photo could not be captured: ${detail}`);
       setPhotoFeedback(`Photo capture failed: ${detail}`);
+      await haptic('warning');
     }
+  };
+
+  const choosePhoto = async () => {
+    if (!session?.user.id || !activeProjectId) {
+      setPhotoFeedback('Wait for a signed-in project before selecting a photo');
+      return;
+    }
+    setPhotoFeedback('Opening photo library…');
+    try {
+      const materialized = await chooseNativePhoto();
+      setPhotoFeedback('Preparing selected photo…');
+      const persisted = await persistPhoto(materialized);
+      await haptic(persisted ? 'success' : 'warning');
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      errorReporter.capture(error, { area: 'device', operation: 'photo library' });
+      setPhotoFeedback(`Photo library unavailable or cancelled: ${detail}. Your draft remains saved.`);
+    }
+  };
+
+  const attachLocation = async () => {
+    if (!session?.user.id || !activeProjectId) {
+      setLocationFeedback('Wait for a signed-in project before attaching location');
+      return;
+    }
+    setLocationFeedback('Checking location permission…');
+    const result = await captureCurrentLocation();
+    setLocationFeedback(result.message);
+    if (result.status !== 'ok') {
+      await haptic('warning');
+      return;
+    }
+    editDraft({ ...draftValues, geoTag: result.value });
+    setLocationFeedback(`Location attached · ±${Math.round(result.value.accuracy ?? 0)} m`);
+    await haptic('success');
+  };
+
+  const removeLocation = async () => {
+    editDraft({ ...draftValues, geoTag: null });
+    setLocationFeedback('Location removed; the updated draft is waiting to save.');
+    await haptic('selection');
+  };
+
+  const shareActiveProject = async () => {
+    if (!activeProject) return;
+    const result = await shareProjectLink(activeProject.id, activeProject.name);
+    setMessage(result.message);
   };
 
   const queueAndSync = async () => {
@@ -346,8 +494,9 @@ export function App() {
       if (!savedDraft) return;
       await queueMobileDraft(session.user.id, draftToSyncOperation(session.user.id, savedDraft));
       setDraft(null);
-      setDraftValues(EMPTY_DRAFT);
+      setDraftValues({ ...EMPTY_DRAFT, logDate: new Date().toISOString().slice(0, 10) });
       setDraftDirty(false);
+      setLocationFeedback('No location attached');
       const queuedMessage = online ? 'Queued; synchronizing…' : 'Queued until connectivity returns';
       setDraftFeedback(queuedMessage);
       setMessage(queuedMessage);
@@ -357,11 +506,24 @@ export function App() {
         setDraftFeedback(syncMessage);
         setMessage(syncMessage);
         if (result.synchronized) await loadProject(session.user.id, activeProjectId ?? undefined);
+        await haptic(result.synchronized ? 'success' : 'warning');
       }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      errorReporter.capture(error, { area: 'offline', operation: 'queue daily log' });
+      setDraftFeedback(`Queueing paused: ${detail}. Saved device work was not discarded.`);
+      setMessage('Daily-log queueing needs attention; saved device work remains available.');
+      await haptic('warning');
     } finally {
       queueingRef.current = false;
       setQueueing(false);
     }
+  };
+
+  const navigateTo = (section: MobileSection) => {
+    setActiveSection(section);
+    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    void haptic('selection');
   };
 
   const safeSignOut = async (discard = false) => {
@@ -401,7 +563,7 @@ export function App() {
           <button type="submit" className="primary-button"><LockKeyhole size={17} /> Sign in securely <ArrowRight size={18} /></button>
         </form>
         <p className="status auth-status" aria-live="polite"><ShieldCheck size={15} />{message}</p>
-        <p className="environment-note">Development build · Staging data only</p>
+        <p className="environment-note">{mobileConfig.environment} · v{mobileConfig.version} ({mobileConfig.buildNumber})</p>
       </section>
     </main>;
   }
@@ -415,7 +577,10 @@ export function App() {
         <div><span>Active project</span><strong>{activeProject?.name ?? 'RailCommand'}</strong></div>
         <ChevronDown size={16} aria-hidden="true" />
       </div>
-      <span className={online ? 'pill online' : 'pill offline'}>{online ? <Wifi size={14} /> : <WifiOff size={14} />}{online ? 'Online' : 'Offline'}</span>
+      <div className="topbar-status">
+        <span className="environment-pill">{mobileConfig.environment === 'production' ? 'Prod' : mobileConfig.environment}</span>
+        <span className={online ? 'pill online' : 'pill offline'}>{online ? <Wifi size={14} /> : <WifiOff size={14} />}{online ? 'Online' : 'Offline'}</span>
+      </div>
     </header>
 
     <div className="shell">
@@ -434,6 +599,7 @@ export function App() {
           {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
         </select><ChevronDown size={16} aria-hidden="true" /></div>
       <p className="muted project-meta">{activeProject?.location || 'No location'} <span>·</span> {activeProject?.role || 'No role'}</p>
+      <button type="button" className="secondary compact-action" disabled={!activeProject} onClick={() => void shareActiveProject()}><Share2 size={16} />Share project link</button>
     </section>
 
     <section className="panel" id="logs">
@@ -450,8 +616,14 @@ export function App() {
       <label>Weather conditions<input placeholder="Clear, 72°F" value={draftValues.weatherConditions} onChange={(event) => editDraft({ ...draftValues, weatherConditions: event.target.value })} /></label>
       <label>Work summary<textarea placeholder="Describe today’s completed work…" value={draftValues.workSummary} onChange={(event) => editDraft({ ...draftValues, workSummary: event.target.value })} /></label>
       <label>Safety notes<textarea placeholder="Record observations or incidents…" value={draftValues.safetyNotes} onChange={(event) => editDraft({ ...draftValues, safetyNotes: event.target.value })} /></label>
-      <button type="button" className="file-button" onClick={() => void capturePhoto()}><Camera size={17} />Capture photo</button>
+      <div className="device-actions">
+        <button type="button" className="file-button" onClick={() => void capturePhoto()}><Camera size={17} />Capture photo</button>
+        <button type="button" className="file-button" onClick={() => void choosePhoto()}><ImagePlus size={17} />Photo library</button>
+        <button type="button" className="file-button" onClick={() => void attachLocation()}><MapPin size={17} />{draftValues.geoTag ? 'Update location' : 'Attach location'}</button>
+        {draftValues.geoTag && <button type="button" className="file-button" onClick={() => void removeLocation()}><MapPin size={17} />Remove location</button>}
+      </div>
       <p className="inline-status" aria-live="polite">{photoFeedback} · Persisted photos: {photoCount} · Camera: {cameraStatus}</p>
+      <p className="inline-status" aria-live="polite">{locationFeedback}</p>
       <div className="actions">
         <button type="button" className="secondary" onClick={() => void saveDraft()}><Save size={17} />Save on device</button>
         <button type="button" className="primary-button" disabled={queueing || (!draft && !draftDirty)} onClick={() => void queueAndSync()}><CloudUpload size={17} />{queueing ? 'Queueing…' : 'Queue daily log'}</button>
@@ -467,13 +639,14 @@ export function App() {
         <button type="button" className="danger" onClick={() => void safeSignOut(true)}>{discardArmed ? 'Confirm permanent discard' : 'Discard local work'}</button>
       </div>
     </section>
+    <p className="build-stamp">{mobileConfig.environment} · v{mobileConfig.version} ({mobileConfig.buildNumber}) · bundled shell</p>
     </div>
 
     <nav className="mobile-nav" aria-label="Primary navigation">
-      <a href="#overview" className="active"><LayoutDashboard size={20} /><span>Overview</span></a>
-      <a href="#logs"><ClipboardList size={20} /><span>Logs</span></a>
-      <a href="#draft"><Save size={20} /><span>Draft</span></a>
-      <a href="#account"><ShieldCheck size={20} /><span>Account</span></a>
+      <button type="button" className={activeSection === 'overview' ? 'active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => navigateTo('overview')}><LayoutDashboard size={20} /><span>Overview</span></button>
+      <button type="button" className={activeSection === 'logs' ? 'active' : ''} aria-current={activeSection === 'logs' ? 'page' : undefined} onClick={() => navigateTo('logs')}><ClipboardList size={20} /><span>Logs</span></button>
+      <button type="button" className={activeSection === 'draft' ? 'active' : ''} aria-current={activeSection === 'draft' ? 'page' : undefined} onClick={() => navigateTo('draft')}><Save size={20} /><span>Draft</span></button>
+      <button type="button" className={activeSection === 'account' ? 'active' : ''} aria-current={activeSection === 'account' ? 'page' : undefined} onClick={() => navigateTo('account')}><ShieldCheck size={20} /><span>Account</span></button>
     </nav>
   </main>;
 }

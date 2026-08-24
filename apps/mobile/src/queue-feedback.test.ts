@@ -7,7 +7,7 @@ const css = readFileSync(new URL('./styles.css', import.meta.url), 'utf8');
 
 describe('mobile queue feedback', () => {
   it('clears the submitted form and surfaces queue and sync state beside it', () => {
-    assert.match(appSource, /setDraftValues\(EMPTY_DRAFT\)/);
+    assert.match(appSource, /setDraftValues\(\{ \.\.\.EMPTY_DRAFT,/);
     assert.match(appSource, /setDraftFeedback\(queuedMessage\)/);
     assert.match(appSource, /setDraftFeedback\(syncMessage\)/);
   });

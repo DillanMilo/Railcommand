@@ -1,14 +1,28 @@
 apply plugin: 'com.android.application'
 
+def mobileAppId = System.getenv("MOBILE_APP_ID") ?: "io.railcommand.app.dev"
+def mobileAppVersion = System.getenv("MOBILE_APP_VERSION") ?: "0.2.0"
+def mobileBuildNumber = (System.getenv("MOBILE_BUILD_NUMBER") ?: "200001").toInteger()
+def mobileAppNames = [
+    "io.railcommand.app.dev": "RailCommand Development",
+    "io.railcommand.app.staging": "RailCommand Staging",
+    "io.railcommand.app": "RailCommand"
+]
+if (!mobileAppNames.containsKey(mobileAppId)) {
+    throw new GradleException("MOBILE_APP_ID is not a recognized RailCommand application identifier")
+}
+def mobileDisplayName = mobileAppNames[mobileAppId]
+
 android {
     namespace = "io.railcommand.app.dev"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "io.railcommand.app.dev"
+        applicationId mobileAppId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode mobileBuildNumber
+        versionName mobileAppVersion
+        manifestPlaceholders = [railCommandAppName: mobileDisplayName]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

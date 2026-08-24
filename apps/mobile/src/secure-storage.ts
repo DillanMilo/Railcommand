@@ -20,8 +20,8 @@ export const secureSessionStorage = Capacitor.isNativePlatform()
   ? nativeStorage
   : memoryStorage;
 
-export async function initializeSecureSessionStorage(): Promise<void> {
+export async function initializeSecureSessionStorage(environment: string): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
-  await SecureStorage.setKeyPrefix('railcommand_session_');
+  await SecureStorage.setKeyPrefix(`railcommand_${environment}_session_`);
   await SecureStorage.setSynchronize(false);
 }

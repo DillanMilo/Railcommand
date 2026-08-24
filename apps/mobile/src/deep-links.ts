@@ -21,17 +21,21 @@ async function restoreAuthCallback(link: MobileDeepLink): Promise<void> {
 
 export async function registerMobileDeepLinks(
   onLink: (link: MobileDeepLink) => void,
+  onError: (error: unknown) => void = () => undefined,
 ): Promise<PluginListenerHandle> {
-  const handle = await App.addListener('appUrlOpen', async ({ url }) => {
+  const processLink = async (url: string) => {
     const link = parseMobileDeepLink(url);
-    await restoreAuthCallback(link);
-    onLink(link);
+    try {
+      await restoreAuthCallback(link);
+      onLink(link);
+    } catch (error) {
+      onError(error);
+    }
+  };
+  const handle = await App.addListener('appUrlOpen', ({ url }) => {
+    void processLink(url);
   });
   const launch = await App.getLaunchUrl();
-  if (launch?.url) {
-    const link = parseMobileDeepLink(launch.url);
-    await restoreAuthCallback(link);
-    onLink(link);
-  }
+  if (launch?.url) await processLink(launch.url);
   return handle;
 }

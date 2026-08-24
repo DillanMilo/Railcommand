@@ -32,8 +32,54 @@ test('rejects the production mobile app identifier', () => {
         MOBILE_APP_ID: 'io.railcommand.app',
         MOBILE_EXPECTED_APP_ID: 'io.railcommand.app',
       }),
-    /must use io\.railcommand\.app\.dev/
+    /development mobile builds must use io\.railcommand\.app\.dev/
   );
+});
+
+test('accepts an isolated staging application identifier with staging services', () => {
+  assert.deepEqual(validateMobileEnvironment({
+    ...safeEnvironment,
+    MOBILE_BUILD_PROFILE: 'staging',
+    MOBILE_APP_ID: 'io.railcommand.app.staging',
+    MOBILE_EXPECTED_APP_ID: 'io.railcommand.app.staging',
+  }), {
+    profile: 'staging',
+    appId: 'io.railcommand.app.staging',
+    supabaseProjectRef: 'stagingref',
+    appHost: 'staging.railcommand.test',
+  });
+});
+
+test('production fails closed without an explicit release authorization', () => {
+  assert.throws(() => validateMobileEnvironment({
+    ...safeEnvironment,
+    MOBILE_BUILD_PROFILE: 'production',
+    MOBILE_APP_ID: 'io.railcommand.app',
+    MOBILE_EXPECTED_APP_ID: 'io.railcommand.app',
+    NEXT_PUBLIC_SUPABASE_URL: 'https://productionref.supabase.co',
+    MOBILE_EXPECTED_SUPABASE_PROJECT_REF: 'productionref',
+    NEXT_PUBLIC_APP_URL: 'https://railcommand.io',
+    MOBILE_EXPECTED_APP_HOST: 'railcommand.io',
+  }), /explicit release authorization/);
+});
+
+test('accepts production only when identifiers, inventory, and authorization agree', () => {
+  assert.deepEqual(validateMobileEnvironment({
+    ...safeEnvironment,
+    MOBILE_BUILD_PROFILE: 'production',
+    MOBILE_APP_ID: 'io.railcommand.app',
+    MOBILE_EXPECTED_APP_ID: 'io.railcommand.app',
+    MOBILE_ALLOW_PRODUCTION_BUILD: 'release-authorized',
+    NEXT_PUBLIC_SUPABASE_URL: 'https://productionref.supabase.co',
+    MOBILE_EXPECTED_SUPABASE_PROJECT_REF: 'productionref',
+    NEXT_PUBLIC_APP_URL: 'https://railcommand.io',
+    MOBILE_EXPECTED_APP_HOST: 'railcommand.io',
+  }), {
+    profile: 'production',
+    appId: 'io.railcommand.app',
+    supabaseProjectRef: 'productionref',
+    appHost: 'railcommand.io',
+  });
 });
 
 test('rejects a production Supabase project even when it is expected', () => {

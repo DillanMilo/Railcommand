@@ -1,6 +1,6 @@
 {
   "name": "@railcommand/mobile",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,13 @@
     "@capacitor/camera": "8.2.2",
     "@capacitor/core": "8.5.0",
     "@capacitor/filesystem": "8.1.3",
+    "@capacitor/geolocation": "8.2.2",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/keyboard": "8.0.5",
     "@capacitor/network": "8.0.1",
+    "@capacitor/share": "8.0.1",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.3",
     "@railcommand/api-client": "0.1.0",
     "@railcommand/domain": "0.1.0",
     "@railcommand/offline": "0.1.0",

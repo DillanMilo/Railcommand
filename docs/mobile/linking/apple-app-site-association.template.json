@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "UNL7C7QYH9.io.railcommand.app.dev",
+          "UNL7C7QYH9.io.railcommand.app.staging",
+          "UNL7C7QYH9.io.railcommand.app"
+        ],
+        "components": [
+          { "/": "/auth/callback*" },
+          { "/": "/projects/*" }
+        ]
+      }
+    ]
+  }
+}

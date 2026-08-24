@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
-import { captureNativePhoto, materializeCapturedPhoto } from './photo';
+import { captureNativePhoto, chooseNativePhoto, materializeCapturedPhoto } from './photo';
 
 describe('captured photo materialization', () => {
   it('copies temporary camera-backed bytes into an owned Blob', async () => {
@@ -59,5 +59,23 @@ describe('captured photo materialization', () => {
     assert.equal(result.fileType, 'image/jpeg');
     assert.equal(result.size, 3);
     assert.match(result.fileName, /\.jpg$/);
+  });
+
+  it('materializes one photo selected through the native library adapter', async () => {
+    const result = await chooseNativePhoto(
+      {
+        chooseFromGallery: async () => ({
+          results: [{
+            type: 0,
+            saved: false,
+            webPath: 'capacitor://library/photo.jpg',
+            metadata: { format: 'jpg' },
+          }],
+        }),
+      },
+      async () => new Response(new Blob([new Uint8Array([8, 9])], { type: 'image/jpeg' }), { status: 200 }),
+    );
+    assert.equal(result.size, 2);
+    assert.match(result.fileName, /railcommand-library-.*\.jpg$/);
   });
 });

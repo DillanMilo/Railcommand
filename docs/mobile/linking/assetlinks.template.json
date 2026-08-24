@@ -1,0 +1,26 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.railcommand.app.dev",
+      "sha256_cert_fingerprints": ["REPLACE_WITH_DEVELOPMENT_SHA256_CERT_FINGERPRINT"]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.railcommand.app.staging",
+      "sha256_cert_fingerprints": ["REPLACE_WITH_STAGING_SHA256_CERT_FINGERPRINT"]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.railcommand.app",
+      "sha256_cert_fingerprints": ["REPLACE_WITH_PLAY_APP_SIGNING_SHA256_CERT_FINGERPRINT"]
+    }
+  }
+]

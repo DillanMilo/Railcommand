@@ -7,14 +7,14 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>RailCommand Development</string>
+	<string>$(MOBILE_DISPLAY_NAME)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>io.railcommand.app.dev</string>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>railcommand</string>
@@ -39,6 +39,10 @@
 	<string>RailCommand uses the camera to attach field photos to offline daily-log drafts.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>RailCommand lets you select field photos to attach to offline daily-log drafts.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>RailCommand attaches your current location to a field draft only when you request it.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>RailCommand attaches your current location to a field draft only when you request it.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>RailCommand can save a field photo to your library only when you request it.</string>
 	<key>LSRequiresIPhoneOS</key>

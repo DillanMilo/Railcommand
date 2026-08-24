@@ -36,6 +36,14 @@ export interface MobileBootstrap {
   synchronizedAt: string;
 }
 
+export interface MobileGeoTag {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  altitude?: number;
+  timestamp: string;
+}
+
 export interface MobileDailyLogDraft {
   draftId: string;
   projectId: string;
@@ -45,6 +53,7 @@ export interface MobileDailyLogDraft {
   weatherConditions: string;
   workSummary: string;
   safetyNotes: string;
+  geoTag: MobileGeoTag | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -73,7 +82,7 @@ export interface MobileDailyLogSyncOperation {
     weather_wind: string;
     work_summary: string;
     safety_notes: string;
-    geo_tag: null;
+    geo_tag: MobileGeoTag | null;
     personnel: unknown[];
     equipment: unknown[];
     work_items: unknown[];
@@ -141,7 +150,8 @@ export function parseMobileDeepLink(rawUrl: string): MobileDeepLink {
 
 export function createMobileDraft(
   projectId: string,
-  values: Pick<MobileDailyLogDraft, 'logDate' | 'weatherConditions' | 'workSummary' | 'safetyNotes'>,
+  values: Pick<MobileDailyLogDraft, 'logDate' | 'weatherConditions' | 'workSummary' | 'safetyNotes'>
+    & Partial<Pick<MobileDailyLogDraft, 'geoTag'>>,
   existing: MobileDailyLogDraft | null = null,
   now = new Date(),
   createId: () => string = () => crypto.randomUUID(),
@@ -155,7 +165,11 @@ export function createMobileDraft(
     idempotencyKey: existing?.idempotencyKey ?? `daily-log-create:${clientId}`,
     createdAt: existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
-    ...values,
+    logDate: values.logDate,
+    weatherConditions: values.weatherConditions,
+    workSummary: values.workSummary,
+    safetyNotes: values.safetyNotes,
+    geoTag: Object.hasOwn(values, 'geoTag') ? values.geoTag ?? null : existing?.geoTag ?? null,
   };
 }
 
@@ -176,7 +190,7 @@ export function draftToSyncOperation(
       weather_wind: '',
       work_summary: draft.workSummary,
       safety_notes: draft.safetyNotes,
-      geo_tag: null,
+      geo_tag: draft.geoTag,
       personnel: [],
       equipment: [],
       work_items: [],
