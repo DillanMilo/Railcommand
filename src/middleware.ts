@@ -141,6 +141,52 @@ function isGeoRestrictedPath(pathname: string): boolean {
   );
 }
 
+function isPublicRoute(pathname: string): boolean {
+  return (
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/reset-password' ||
+    pathname === '/client' ||
+    pathname === '/admin/clients' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === GEO_RESTRICTED_PAGE ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/demo/') ||
+    pathname === '/api/health/supabase' ||
+    pathname === '/api/auth/password-reset' ||
+    pathname === '/api/access-request' ||
+    pathname === '/api/admin/demo/lookup' ||
+    pathname === '/api/admin/demo/session' ||
+    pathname === '/api/admin/demo/track' ||
+    pathname === '/api/demo/local-session' ||
+    pathname === '/api/chat/transcribe' ||
+    pathname === '/api/email/send' ||
+    pathname === '/api/notifications' ||
+    pathname.startsWith('/api/cron/')
+  );
+}
+
+function canSkipAuthForPublicRoute(pathname: string): boolean {
+  return (
+    pathname === '/' ||
+    pathname === '/client' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === GEO_RESTRICTED_PAGE ||
+    pathname === '/api/health/supabase' ||
+    pathname === '/api/access-request' ||
+    pathname === '/api/admin/demo/lookup' ||
+    pathname === '/api/admin/demo/session' ||
+    pathname === '/api/admin/demo/track' ||
+    pathname === '/api/demo/local-session' ||
+    pathname === '/api/chat/transcribe' ||
+    pathname === '/api/email/send' ||
+    pathname === '/api/notifications' ||
+    pathname.startsWith('/api/cron/')
+  );
+}
+
 function shouldBlockForGeo(
   request: NextRequest,
   pathname: string
@@ -272,6 +318,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const pendingCookies: PendingCookie[] = [];
+  const publicRoute = isPublicRoute(pathname);
   const ipReputationConfig = getIpReputationConfig({
     IP_REPUTATION_ENABLED: process.env.IP_REPUTATION_ENABLED,
     IP_REPUTATION_MODE: process.env.IP_REPUTATION_MODE,
@@ -305,6 +352,10 @@ export async function middleware(request: NextRequest) {
         pendingCookies
       );
     }
+  }
+
+  if (publicRoute && canSkipAuthForPublicRoute(pathname)) {
+    return applyPendingCookies(NextResponse.next({ request }), pendingCookies);
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -348,32 +399,8 @@ export async function middleware(request: NextRequest) {
     : null;
   const isDemoMode = !user && !!demoSession;
 
-  // Public routes that never require auth
-  const isPublicRoute =
-    pathname === '/' ||
-    pathname === '/login' ||
-    pathname === '/reset-password' ||
-    pathname === '/client' ||
-    pathname === '/admin/clients' ||
-    pathname === '/privacy' ||
-    pathname === '/terms' ||
-    pathname === GEO_RESTRICTED_PAGE ||
-    pathname.startsWith('/auth/') ||
-    pathname.startsWith('/demo/') ||
-    pathname === '/api/health/supabase' ||
-    pathname === '/api/auth/password-reset' ||
-    pathname === '/api/access-request' ||
-    pathname === '/api/admin/demo/lookup' ||
-    pathname === '/api/admin/demo/session' ||
-    pathname === '/api/admin/demo/track' ||
-    pathname === '/api/demo/local-session' ||
-    pathname === '/api/chat/transcribe' ||
-    pathname === '/api/email/send' ||
-    pathname === '/api/notifications' ||
-    pathname.startsWith('/api/cron/');
-
   // If not authenticated, not demo, and not on a public route → redirect to login
-  if (!user && !isDemoMode && !isPublicRoute) {
+  if (!user && !isDemoMode && !publicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.search = '';
@@ -384,7 +411,7 @@ export async function middleware(request: NextRequest) {
   // If authenticated but "Remember me" was not checked (session cookie expired
   // after browser close), sign out and redirect to login
   const hasRememberCookie = request.cookies.get('rc-remember')?.value === 'true';
-  if (user && !hasRememberCookie && !isPublicRoute) {
+  if (user && !hasRememberCookie && !publicRoute) {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = '/login';

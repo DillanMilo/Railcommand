@@ -51,6 +51,16 @@ export const metadata: Metadata = {
   },
 };
 
+const AUTH_USER_PAGE_LIMIT = 100;
+const ORGANIZATION_LIMIT = 100;
+const PROJECT_LIMIT = 500;
+const PROFILE_LIMIT = 500;
+const PROJECT_MEMBER_LIMIT = 1000;
+const INVITATION_LIMIT = 250;
+const DEMO_ACCOUNT_LIMIT = 100;
+const DEMO_LOGIN_LIMIT = 250;
+const ACTIVITY_LIMIT = 50;
+
 type OrganizationRow = {
   id: string;
   name: string;
@@ -179,22 +189,13 @@ async function isUnlocked(): Promise<boolean> {
 
 async function getAuthUsers(): Promise<AuthUserSummary[]> {
   const admin = createAdminClient();
-  const users: AuthUserSummary[] = [];
-  let page = 1;
+  const { data, error } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: AUTH_USER_PAGE_LIMIT,
+  });
+  if (error) throw error;
 
-  while (page <= 10) {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage: 1000,
-    });
-    if (error) throw error;
-
-    users.push(...(data.users as AuthUserSummary[]));
-    if (data.users.length < 1000) break;
-    page += 1;
-  }
-
-  return users;
+  return data.users as AuthUserSummary[];
 }
 
 async function getEmailMetrics(): Promise<EmailMetrics> {
@@ -252,18 +253,46 @@ async function getDashboardData(): Promise<DashboardData> {
     emailMetrics,
   ] = await Promise.all([
     getAuthUsers(),
-    admin.from('organizations').select('id, name, type, tier, is_demo, created_at').order('created_at', { ascending: false }),
-    admin.from('projects').select('id, name, client, organization_id, budget_total, status, created_at').order('created_at', { ascending: false }),
-    admin.from('profiles').select('id, email, full_name, role, organization_id, created_at').order('created_at', { ascending: false }),
-    admin.from('project_members').select('id, profile_id, project_id, project_role, can_edit, added_at').order('added_at', { ascending: false }),
-    admin.from('project_invitations').select('id, email, project_id, project_role, status, expires_at, created_at').order('created_at', { ascending: false }),
-    admin.from('demo_accounts').select('id, slug, company_name, organization_id, project_id, is_active, is_team_demo, access_count, last_accessed_at, created_at').order('created_at', { ascending: false }),
-    admin.from('demo_team_logins').select('profile_id, display_name, project_role').order('created_at', { ascending: false }),
+    admin
+      .from('organizations')
+      .select('id, name, type, tier, is_demo, created_at')
+      .order('created_at', { ascending: false })
+      .limit(ORGANIZATION_LIMIT),
+    admin
+      .from('projects')
+      .select('id, name, client, organization_id, budget_total, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(PROJECT_LIMIT),
+    admin
+      .from('profiles')
+      .select('id, email, full_name, role, organization_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(PROFILE_LIMIT),
+    admin
+      .from('project_members')
+      .select('id, profile_id, project_id, project_role, can_edit, added_at')
+      .order('added_at', { ascending: false })
+      .limit(PROJECT_MEMBER_LIMIT),
+    admin
+      .from('project_invitations')
+      .select('id, email, project_id, project_role, status, expires_at, created_at')
+      .order('created_at', { ascending: false })
+      .limit(INVITATION_LIMIT),
+    admin
+      .from('demo_accounts')
+      .select('id, slug, company_name, organization_id, project_id, is_active, is_team_demo, access_count, last_accessed_at, created_at')
+      .order('created_at', { ascending: false })
+      .limit(DEMO_ACCOUNT_LIMIT),
+    admin
+      .from('demo_team_logins')
+      .select('profile_id, display_name, project_role')
+      .order('created_at', { ascending: false })
+      .limit(DEMO_LOGIN_LIMIT),
     admin
       .from('activity_log')
       .select('id, project_id, entity_type, action, description, performed_by, created_at')
       .order('created_at', { ascending: false })
-      .limit(25),
+      .limit(ACTIVITY_LIMIT),
     getEmailMetrics(),
   ]);
 
