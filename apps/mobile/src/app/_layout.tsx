@@ -33,13 +33,13 @@ function Routes() {
     </Stack.Protected>
     <Stack.Screen name="auth/callback" />
     <Stack.Screen name="reset-password" />
+    <Stack.Screen name="invitation/[token]" />
     <Stack.Protected guard={Boolean(session)}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="daily-log/new" />
       <Stack.Screen name="daily-log/[id]" />
       <Stack.Screen name="projects/[id]" />
       <Stack.Screen name="team" />
-      <Stack.Screen name="invitation/[token]" />
     </Stack.Protected>
   </Stack>;
 }

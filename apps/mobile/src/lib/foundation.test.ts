@@ -73,11 +73,21 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     const nativeIntent = source('../app/+native-intent.tsx');
     const callback = source('../app/auth/callback.tsx');
     assert.match(layout, /name="projects\/\[id\]"/);
+    assert.ok(layout.indexOf('name="invitation/[token]"') < layout.indexOf('<Stack.Protected guard={Boolean(session)}>'));
     assert.match(project, /selectProject\(id\)/);
     assert.match(nativeIntent, /url\.protocol === 'railcommand:'/);
     assert.match(nativeIntent, /segments\.join/);
+    assert.match(nativeIntent, /segments\[0\] === 'invite'/);
+    assert.match(nativeIntent, /`\/invitation\/\$\{segments\[1\]\}/);
     assert.match(callback, /Return to RailCommand/);
     assert.match(callback, /setTimeout/);
+    const invitation = source('../app/invitation/[token].tsx');
+    assert.match(invitation, /sign-in\?inviteToken=/);
+    assert.match(invitation, /if \(!session\)/);
+    assert.match(invitation, /Accepting invitation…/);
+    assert.match(invitation, /Invitation accepted\. Opening project…/);
+    assert.match(invitation, /refresh\(result\.projectId\)\.catch/);
+    assert.match(invitation, /<Text style=\{styles\.message\}>\{message\}<\/Text>/);
   });
 
   it('rejects an authentication callback that does not contain verifiable credentials', () => {
@@ -87,5 +97,25 @@ describe('Expo Phase 3 security and offline boundaries', () => {
       deepLinks.indexOf("parsedLink.kind !== 'auth_callback'") <
         deepLinks.indexOf('Authentication callback is missing credentials'),
     );
+  });
+
+  it('keeps physical permission QA development-only and verifies the SQLite draft survives denial', () => {
+    const screen = source('../app/daily-log/new.tsx');
+    assert.match(screen, /mobileConfig\.profile !== 'development'/);
+    assert.match(screen, /qaPermissions !== '1'/);
+    assert.match(screen, /Camera permission did not deny as expected/);
+    assert.match(screen, /Location permission did not deny as expected/);
+    assert.match(screen, /Draft preserved in SQLite/);
+    assert.match(screen, /permission-result\.json/);
+  });
+
+  it('keeps push QA development-only and never writes the push token into its evidence file', () => {
+    const screen = source('../app/(tabs)/account.tsx');
+    assert.match(screen, /mobileConfig\.profile !== 'development'/);
+    assert.match(screen, /qaPush !== '1'/);
+    assert.match(screen, /await registerForFieldNotifications\(\)/);
+    assert.match(screen, /await mobileApi\.registerPushDevice\(registration\)/);
+    assert.match(screen, /push-result\.json/);
+    assert.doesNotMatch(screen, /expoPushToken: registration\.expoPushToken/);
   });
 });

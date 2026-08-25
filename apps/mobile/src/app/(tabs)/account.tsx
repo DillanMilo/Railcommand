@@ -1,9 +1,11 @@
 import * as Crypto from 'expo-crypto';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { Directory, File, Paths } from 'expo-file-system';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, StyleSheet, Text } from 'react-native';
 import { BrandHeader, Card, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { mobileApi } from '@/lib/api';
+import { mobileConfig } from '@/lib/config';
 import { registerForFieldNotifications } from '@/lib/device';
 import { inspectExpoUnsynced, purgeExpoUser } from '@/lib/offline-store';
 import { useAuth } from '@/providers/auth-provider';
@@ -11,10 +13,12 @@ import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors } from '@/theme';
 
 export default function AccountScreen() {
+  const { qaPush } = useLocalSearchParams<{ qaPush?: string }>();
   const { session, signOut } = useAuth();
   const { online } = useMobileData();
   const [status, setStatus] = useState('Session credentials are stored in the device Keychain or Keystore.');
   const [busy, setBusy] = useState(false);
+  const pushQaRan = useRef(false);
   const userId = session?.user.id;
 
   const finishSignOut = async () => {
@@ -44,12 +48,39 @@ export default function AccountScreen() {
     ]);
   };
 
-  const registerPush = async () => {
+  const registerPush = useCallback(async (recordQaEvidence = false) => {
     setBusy(true); setStatus('Requesting notification permission…');
-    try { const registration = await registerForFieldNotifications(); await mobileApi.registerPushDevice(registration); setStatus('This device is registered for field notifications.'); }
+    try {
+      const registration = await registerForFieldNotifications();
+      await mobileApi.registerPushDevice(registration);
+      if (recordQaEvidence && userId) {
+        const evidenceDirectory = new Directory(Paths.document, 'railcommand', userId, 'qa');
+        evidenceDirectory.create({ idempotent: true, intermediates: true });
+        new File(evidenceDirectory, 'push-result.json').write(JSON.stringify({
+          registered: true,
+          platform: registration.platform,
+          appProfile: registration.appProfile,
+          deviceName: registration.deviceName,
+          recordedAt: new Date().toISOString(),
+        }));
+      }
+      setStatus('This device is registered for field notifications.');
+    }
     catch (error) { setStatus(error instanceof Error ? error.message : 'Could not register notifications.'); }
     finally { setBusy(false); }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (
+      mobileConfig.profile !== 'development'
+      || qaPush !== '1'
+      || pushQaRan.current
+      || !userId
+      || !online
+    ) return;
+    pushQaRan.current = true;
+    void registerPush(true);
+  }, [online, qaPush, registerPush, userId]);
 
   const requestDeletion = () => {
     if (!online) { setStatus('Account deletion requests require connectivity. No request was lost or submitted.'); return; }

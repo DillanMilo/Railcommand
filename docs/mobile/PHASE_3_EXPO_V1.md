@@ -1,9 +1,9 @@
 # Phase 3 — Expo v1 field workflows
 
 Status: **implementation complete; isolated staging, verified staging Universal/App
-Link infrastructure, the core physical-iPhone store-review workflow, and a clean
-Android debug build are accepted on 2026-08-25. The remaining physical-device matrix
-is recorded below.**
+Link infrastructure, the complete available physical-iPhone matrix, and a clean
+Android debug build are accepted on 2026-08-25. Physical Android acceptance and a
+real password-recovery inbox remain external test exceptions recorded below.**
 
 The production-intent mobile client now lives in `apps/mobile` and uses Expo SDK 57,
 React Native, Expo Router, Continuous Native Generation, and development builds. The
@@ -43,6 +43,10 @@ RailCommand must not be marketed as full offline project management.
   durable native storage, idempotent parent-first outbox synchronization, and pending,
   retrying, failed, conflicted, and synchronized states for logs and photos.
 - Point-of-use native permission education and denial fallbacks that retain field work.
+- Development-profile-only permission and push QA callbacks exercise the same native
+  adapters and authenticated registration endpoint as the visible controls. They write
+  token-free evidence inside the signed-in user's app-owned directory and cannot run in
+  staging or production profiles.
 - Push-token registration wiring and validated record notification deep links. A
   non-production EAS project ID is configured; push delivery remains disabled until a
   server sending policy is separately approved.
@@ -110,10 +114,32 @@ RailCommand must not be marketed as full offline project management.
   fingerprint is explicitly supplied at release time.
 - Authentication callbacks without a PKCE code, a valid token hash/type pair, or a
   complete access/refresh token pair are rejected rather than treated as signed in.
+- A physical staging HTTPS Universal Link was delivered by iOS to the installed
+  development app and opened the expected synthetic project dashboard.
+- Camera and location were each denied at the iOS Settings boundary. The app returned
+  the exact permission-denial fallback messages and a direct read of the token-free QA
+  evidence confirmed that the same SQLite draft/client ID remained intact. Permissions
+  were then restored and the normal camera/location flows remained usable.
+- Notification denial left the rest of the app usable. After Notifications was enabled
+  in Settings, the physical iPhone registered through the authenticated staging route.
+  The on-device token-free evidence and a user-scoped RLS query independently confirmed
+  one active `ios` / `development` registration; the push token was never printed or
+  copied into QA evidence.
+- The invitation path exposed and fixed three failures before acceptance: `/invite`
+  now rewrites to the Expo `/invitation` route, signed-out links preserve the token
+  through authentication, and accepted-row visibility permits the RLS-checked
+  `pending` → `accepted` transition. The corrected on-phone button accepted a fresh
+  synthetic invitation and refreshed the dashboard to show both expected projects.
+- The physical shared-device isolation sequence passed A → B → A. User A's safe
+  sign-out permanently removed the approved synthetic draft and left zero SQLite files;
+  User B created only its distinct user-scoped database; User B's ordinary sign-out
+  again left zero files; signing back in as User A created only User A's partition and
+  restored the expected online, synchronized projects. No private cache crossed users.
 - Final verification passes: root `npm run build`, iOS and Android Hermes exports,
   mobile/domain/offline/API tests, both TypeScript checks, Expo lint, signed iPhone
   Release `xcodebuild`, Android SDK 36 debug assembly/signature verification, and Expo
-  Doctor 21/21. The final focused suite contains 45 passing tests/checks.
+  Doctor 21/21. The final focused suite also covers the development-only physical QA
+  gates and invitation-route/RLS regressions.
 
 No production deployment, production database mutation, live customer read/write, or
 store release occurred during this acceptance run.
@@ -128,13 +154,14 @@ recorded:
    alias only.
 3. **Complete:** configure the Expo/EAS development project ID and non-production public variables;
    keep all Apple, Google, APNs/FCM, database, and service-role secrets out of Git.
-4. **Partially complete:** physical-iPhone sign-in restore, photo/location persistence,
-   offline restart, reconnect, Sync Center, and project/Sync custom callbacks pass.
-   Staging association infrastructure is independently verified. Physical HTTPS
-   Universal Link launch, invitation/password-reset callbacks, permission-denial
-   fallbacks, push-token registration, and Expo-build A → B → A isolation remain to be
-   recorded. The `.test` QA accounts do not provide an inbox for a real recovery email,
-   so recovery delivery needs a safe test inbox or generated staging recovery link.
+4. **Complete for the available iPhone matrix:** physical-iPhone sign-in restore,
+   photo/location persistence, offline restart, reconnect, Sync Center, custom project
+   and Sync callbacks, physical HTTPS Universal Link launch, invitation acceptance,
+   permission-denial fallbacks, push-token registration, and Expo-build A → B → A
+   isolation pass. Password-recovery callbacks fail closed and are automated; the
+   `.test` QA accounts do not provide an inbox for a real recovery email, so actual
+   email delivery remains deferred until a safe test inbox or generated staging
+   recovery link is available.
 5. **Complete on iPhone:** prove the store-review story against synthetic staging data: create one geotagged
    log with photos offline, force-close/reopen, reconnect, and verify exactly one log
    and one copy of each photo on the server.
@@ -149,7 +176,7 @@ recorded:
 
 Current gate wording:
 **Phase 3 implementation, staging association infrastructure, native builds, and the
-core iPhone store-review workflow are accepted. The remaining iPhone mini-matrix and
-physical Android acceptance are explicitly deferred until the required device/account
-conditions are available.** It must not be described as fully accepted across supported
-platforms or as full offline project management.
+available physical-iPhone acceptance matrix are accepted. Physical Android acceptance
+and real recovery-email delivery are explicitly deferred until the required hardware
+and safe inbox are available.** It must not be described as fully accepted across
+supported platforms or as full offline project management.

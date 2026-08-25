@@ -1,11 +1,13 @@
 import type { MobileDailyLogDraft } from '@railcommand/domain';
 import { createMobileDraft } from '@railcommand/domain';
 import * as Crypto from 'expo-crypto';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Directory, File, Paths } from 'expo-file-system';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, Field, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { attachCurrentLocation, captureFieldPhoto, confirmHaptic, importFieldPhoto } from '@/lib/device';
+import { mobileConfig } from '@/lib/config';
 import { listExpoPhotos, queueExpoDraft, readExpoDraft, saveExpoDraft, saveExpoPhoto, type ExpoStoredPhoto } from '@/lib/offline-store';
 import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
@@ -14,6 +16,7 @@ import { colors } from '@/theme';
 function today() { return new Date().toISOString().slice(0, 10); }
 
 export default function NewDailyLogScreen() {
+  const { qaPermissions } = useLocalSearchParams<{ qaPermissions?: string }>();
   const { session } = useAuth();
   const { activeProjectId, bootstrap, online, reloadSyncRows, synchronize } = useMobileData();
   const userId = session?.user.id ?? null;
@@ -22,6 +25,7 @@ export default function NewDailyLogScreen() {
   const [photos, setPhotos] = useState<ExpoStoredPhoto[]>([]);
   const [status, setStatus] = useState('Opening saved draft…');
   const [busy, setBusy] = useState(false);
+  const permissionQaRan = useRef(false);
 
   useEffect(() => {
     if (!userId || !activeProjectId) return;
@@ -41,6 +45,45 @@ export default function NewDailyLogScreen() {
     const timer = setTimeout(() => void saveExpoDraft(userId, draft).then(() => setStatus('Saved automatically on this device')).catch(() => setStatus('Could not save. Check available device storage.')), 350);
     return () => clearTimeout(timer);
   }, [draft, userId]);
+
+  useEffect(() => {
+    if (
+      mobileConfig.profile !== 'development'
+      || qaPermissions !== '1'
+      || permissionQaRan.current
+      || !userId
+      || !draft
+    ) return;
+    permissionQaRan.current = true;
+    setBusy(true);
+    void (async () => {
+      let cameraResult = 'Camera permission did not deny as expected.';
+      let locationResult = 'Location permission did not deny as expected.';
+      try {
+        await captureFieldPhoto(userId, draft.projectId, draft.clientId, draft.geoTag);
+      } catch (error) {
+        cameraResult = error instanceof Error ? error.message : 'Camera permission check failed safely.';
+      }
+      try {
+        await attachCurrentLocation();
+      } catch (error) {
+        locationResult = error instanceof Error ? error.message : 'Location permission check failed safely.';
+      }
+      const saved = await readExpoDraft(userId, draft.projectId);
+      const draftResult = saved?.clientId === draft.clientId ? 'Draft preserved in SQLite.' : 'Draft persistence check failed.';
+      const evidenceDirectory = new Directory(Paths.document, 'railcommand', userId, 'qa');
+      evidenceDirectory.create({ idempotent: true, intermediates: true });
+      new File(evidenceDirectory, 'permission-result.json').write(JSON.stringify({
+        cameraResult,
+        locationResult,
+        draftResult,
+        projectId: draft.projectId,
+        clientId: draft.clientId,
+        recordedAt: new Date().toISOString(),
+      }));
+      setStatus(`Permission QA · ${cameraResult} · ${locationResult} · ${draftResult}`);
+    })().catch(() => setStatus('Permission QA failed safely. The draft remains saved.')).finally(() => setBusy(false));
+  }, [draft, qaPermissions, userId]);
 
   const update = useCallback((values: Partial<Pick<MobileDailyLogDraft, 'logDate' | 'weatherConditions' | 'workSummary' | 'safetyNotes' | 'geoTag'>>) => {
     setDraft((current) => current ? createMobileDraft(current.projectId, { logDate: values.logDate ?? current.logDate,
