@@ -1,9 +1,10 @@
 # Phase 3 — Expo v1 field workflows
 
-Status: **implementation complete; isolated staging, verified staging Universal/App
-Link infrastructure, the complete available physical-iPhone matrix, and a clean
-Android debug build are accepted on 2026-08-25. Physical Android acceptance and a
-real password-recovery inbox remain external test exceptions recorded below.**
+Status: **Phase 3 complete for implementation and the available physical-iPhone
+matrix on 2026-08-25. Isolated staging, verified Universal/App Link infrastructure,
+and a clean Android debug build are accepted. Physical Android-device acceptance is
+the sole remaining Phase 3 hardware exception. Real password-recovery email delivery
+is carried forward to final pre-release testing.**
 
 The production-intent mobile client now lives in `apps/mobile` and uses Expo SDK 57,
 React Native, Expo Router, Continuous Native Generation, and development builds. The
@@ -158,10 +159,9 @@ recorded:
    photo/location persistence, offline restart, reconnect, Sync Center, custom project
    and Sync callbacks, physical HTTPS Universal Link launch, invitation acceptance,
    permission-denial fallbacks, push-token registration, and Expo-build A → B → A
-   isolation pass. Password-recovery callbacks fail closed and are automated; the
-   `.test` QA accounts do not provide an inbox for a real recovery email, so actual
-   email delivery remains deferred until a safe test inbox or generated staging
-   recovery link is available.
+   isolation pass. Password-recovery callbacks fail closed and are automated. Actual
+   recovery-email delivery is intentionally carried forward to final pre-release
+   testing because the `.test` QA accounts do not provide an inbox.
 5. **Complete on iPhone:** prove the store-review story against synthetic staging data: create one geotagged
    log with photos offline, force-close/reopen, reconnect, and verify exactly one log
    and one copy of each photo on the server.
@@ -177,6 +177,26 @@ recorded:
 Current gate wording:
 **Phase 3 implementation, staging association infrastructure, native builds, and the
 available physical-iPhone acceptance matrix are accepted. Physical Android acceptance
-and real recovery-email delivery are explicitly deferred until the required hardware
-and safe inbox are available.** It must not be described as fully accepted across
+is explicitly deferred until hardware is available. Phase 3 may advance to Phase 4
+with that recorded exception.** It must not be described as fully accepted across
 supported platforms or as full offline project management.
+
+## Final pre-release testing carry-forward
+
+Real password-recovery email delivery is a final release-acceptance item, not a Phase 3
+advancement blocker. Use a dedicated non-customer staging inbox and verify the complete
+online-only flow before store submission:
+
+1. Request recovery from the installed staging app and confirm the generic
+   anti-account-enumeration response.
+2. Receive exactly one staging email and verify its host, environment branding, expiry,
+   and one-time-use behavior.
+3. Open the verified HTTPS link on iOS and Android and confirm it returns to the bundled
+   app's reset-password screen without exposing credentials in logs or public caches.
+4. Have the tester complete the credential change directly, then verify old credentials
+   fail, new credentials work, secure session restoration succeeds, and safe sign-out
+   removes the user-scoped device database.
+5. Repeat expired, already-used, offline-open, and connection-loss cases. The UI must
+   fail clearly and must never claim that an online recovery request was queued.
+
+No live customer account or production inbox is authorized for this test.
