@@ -1,4 +1,4 @@
-import type { MobileBootstrap, MobileDailyLog, MobileProject } from '@railcommand/domain';
+import type { MobileBootstrap, MobileDailyLog, MobileProject, MobileTeamMember } from '@railcommand/domain';
 import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +16,13 @@ type MembershipRow = {
     client: string | null;
     created_at: string;
   } | null;
+};
+
+type TeamRow = {
+  project_id: string;
+  project_role: MobileTeamMember['role'];
+  can_edit: boolean;
+  profile: { id: string; full_name: string | null; email: string } | null;
 };
 
 export async function GET(request: Request): Promise<Response> {
@@ -72,15 +79,22 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   let dailyLogs: MobileDailyLog[] = [];
+  let team: MobileTeamMember[] = [];
   if (activeProjectId) {
-    const { data, error } = await context.supabase
-      .from('daily_logs')
-      .select('id, project_id, log_date, weather_conditions, work_summary, safety_notes, created_at')
-      .eq('project_id', activeProjectId)
-      .order('log_date', { ascending: false })
-      .limit(90);
-    if (error) return mobileJson({ error: 'Could not load daily logs' }, 500);
-    dailyLogs = (data ?? []).map((log) => ({
+    const [{ data: logs, error: logsError }, { data: members, error: membersError }] = await Promise.all([
+      context.supabase
+        .from('daily_logs')
+        .select('id, project_id, log_date, weather_conditions, work_summary, safety_notes, created_at')
+        .eq('project_id', activeProjectId)
+        .order('log_date', { ascending: false })
+        .limit(90),
+      context.supabase
+        .from('project_members')
+        .select('project_id, project_role, can_edit, profile:profiles(id, full_name, email)')
+        .eq('project_id', activeProjectId),
+    ]);
+    if (logsError || membersError) return mobileJson({ error: 'Could not load project field data' }, 500);
+    dailyLogs = (logs ?? []).map((log) => ({
       id: log.id,
       projectId: log.project_id,
       logDate: log.log_date,
@@ -89,6 +103,17 @@ export async function GET(request: Request): Promise<Response> {
       safetyNotes: log.safety_notes ?? '',
       createdAt: log.created_at,
     }));
+    team = ((members ?? []) as unknown as TeamRow[])
+      .filter((member) => member.profile)
+      .map((member) => ({
+        id: member.profile!.id,
+        projectId: member.project_id,
+        fullName: member.profile!.full_name || member.profile!.email,
+        email: member.profile!.email,
+        role: member.project_role,
+        canEdit: member.can_edit,
+      }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
   const response: MobileBootstrap = {
@@ -96,6 +121,7 @@ export async function GET(request: Request): Promise<Response> {
     projects,
     activeProjectId,
     dailyLogs,
+    team,
     synchronizedAt: new Date().toISOString(),
   };
   return mobileJson(response);

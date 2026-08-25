@@ -28,11 +28,21 @@ export interface MobileDailyLog {
   createdAt: string;
 }
 
+export interface MobileTeamMember {
+  id: string;
+  projectId: string;
+  fullName: string;
+  email: string;
+  role: ProjectRole;
+  canEdit: boolean;
+}
+
 export interface MobileBootstrap {
   userId: string;
   projects: MobileProject[];
   activeProjectId: string | null;
   dailyLogs: MobileDailyLog[];
+  team: MobileTeamMember[];
   synchronizedAt: string;
 }
 
@@ -131,10 +141,39 @@ export interface MobileDailyLogSyncResult {
   duplicate: boolean;
 }
 
+export interface MobilePushRegistration {
+  expoPushToken: string;
+  platform: 'ios' | 'android';
+  appProfile: 'development' | 'staging' | 'production';
+  deviceName: string | null;
+}
+
+export interface MobileAccountDeletionRequest {
+  clientRequestId: string;
+}
+
+export interface MobileAccountDeletionResult {
+  id: string;
+  status: 'pending' | 'reviewing';
+  requestedAt: string;
+  scheduledFor: string;
+  duplicate: boolean;
+}
+
+export interface MobileInvitation {
+  token: string;
+  projectId: string;
+  projectName: string;
+  email: string;
+  role: ProjectRole;
+  expiresAt: string;
+}
+
 export type MobileDeepLink =
   | { kind: 'auth_callback'; code: string | null; accessToken: string | null; refreshToken: string | null }
   | { kind: 'project'; projectId: string }
   | { kind: 'daily_log'; projectId: string; dailyLogId: string }
+  | { kind: 'invitation'; token: string }
   | { kind: 'unsupported' };
 
 function segment(value: string | undefined): string | null {
@@ -170,6 +209,9 @@ export function parseMobileDeepLink(rawUrl: string): MobileDeepLink {
       accessToken: hash.get('access_token'),
       refreshToken: hash.get('refresh_token'),
     };
+  }
+  if (path[0] === 'invite' && path[1] && /^[a-f0-9]{32,128}$/i.test(path[1])) {
+    return { kind: 'invitation', token: path[1] };
   }
   if (path[0] !== 'projects' || !path[1]) return { kind: 'unsupported' };
   if (path[2] === 'daily-logs' && path[3]) {

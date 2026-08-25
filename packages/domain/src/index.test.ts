@@ -20,6 +20,9 @@ describe('mobile domain contracts', () => {
     assert.deepEqual(parseMobileDeepLink('https://example.com/projects/project-1'), {
       kind: 'unsupported',
     });
+    assert.deepEqual(parseMobileDeepLink(`https://railcommand.io/invite/${'a'.repeat(64)}`), {
+      kind: 'invitation', token: 'a'.repeat(64),
+    });
   });
 
   it('preserves the client id and idempotency key across draft edits', () => {

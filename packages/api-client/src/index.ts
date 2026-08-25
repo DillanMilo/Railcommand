@@ -1,10 +1,14 @@
 import type {
   MobileBootstrap,
+  MobileAccountDeletionRequest,
+  MobileAccountDeletionResult,
   MobileDailyLogPhotoFinalizeResult,
   MobileDailyLogPhotoPrepareResult,
   MobileDailyLogPhotoSyncOperation,
   MobileDailyLogSyncOperation,
   MobileDailyLogSyncResult,
+  MobilePushRegistration,
+  MobileInvitation,
 } from '@railcommand/domain';
 
 export class MobileApiError extends Error {
@@ -90,5 +94,27 @@ export class MobileApiClient {
       method: 'POST',
       body: JSON.stringify({ operation, storage }),
     });
+  }
+
+  registerPushDevice(registration: MobilePushRegistration): Promise<{ registered: true }> {
+    return this.request('/api/mobile/v1/devices/push-token', {
+      method: 'POST',
+      body: JSON.stringify(registration),
+    });
+  }
+
+  requestAccountDeletion(request: MobileAccountDeletionRequest): Promise<MobileAccountDeletionResult> {
+    return this.request('/api/mobile/v1/account/deletion-request', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  getInvitation(token: string): Promise<MobileInvitation> {
+    return this.request(`/api/mobile/v1/invitations/${encodeURIComponent(token)}`);
+  }
+
+  acceptInvitation(token: string): Promise<{ projectId: string }> {
+    return this.request(`/api/mobile/v1/invitations/${encodeURIComponent(token)}`, { method: 'POST' });
   }
 }

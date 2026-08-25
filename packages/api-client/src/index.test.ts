@@ -17,7 +17,7 @@ describe('MobileApiClient', () => {
         path = new URL(request.url).pathname;
         return Response.json({
           userId: 'user-a', projects: [], activeProjectId: null,
-          dailyLogs: [], synchronizedAt: '2026-08-20T12:00:00Z',
+          dailyLogs: [], team: [], synchronizedAt: '2026-08-20T12:00:00Z',
         });
       },
     });
@@ -67,6 +67,34 @@ describe('MobileApiClient', () => {
     assert.deepEqual(paths, [
       '/api/mobile/v1/daily-logs/photos/prepare',
       '/api/mobile/v1/daily-logs/photos/finalize',
+    ]);
+  });
+
+  it('uses authenticated mobile routes for push, deletion, and invitations', async () => {
+    const requests: Array<{ path: string; method: string }> = [];
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com',
+      getAccessToken: async () => 'access-token',
+      fetch: async (input, init) => {
+        const path = new URL(input instanceof Request ? input.url : input.toString()).pathname;
+        requests.push({ path, method: init?.method ?? 'GET' });
+        if (path.includes('/devices/')) return Response.json({ registered: true });
+        if (path.includes('/deletion-request')) return Response.json({ id: 'request-a', status: 'pending',
+          requestedAt: '2026-08-25T12:00:00Z', scheduledFor: '2026-09-24T12:00:00Z', duplicate: false });
+        if (init?.method === 'POST') return Response.json({ projectId: 'project-a' });
+        return Response.json({ token: 'a'.repeat(64), projectId: 'project-a', projectName: 'Track Renewal',
+          email: 'field@example.com', role: 'engineer', expiresAt: '2026-09-01T12:00:00Z' });
+      },
+    });
+    await client.registerPushDevice({ expoPushToken: 'ExponentPushToken[test]', platform: 'ios', appProfile: 'development', deviceName: 'iPhone' });
+    await client.requestAccountDeletion({ clientRequestId: '11111111-1111-4111-8111-111111111111' });
+    await client.getInvitation('a'.repeat(64));
+    await client.acceptInvitation('a'.repeat(64));
+    assert.deepEqual(requests, [
+      { path: '/api/mobile/v1/devices/push-token', method: 'POST' },
+      { path: '/api/mobile/v1/account/deletion-request', method: 'POST' },
+      { path: `/api/mobile/v1/invitations/${'a'.repeat(64)}`, method: 'GET' },
+      { path: `/api/mobile/v1/invitations/${'a'.repeat(64)}`, method: 'POST' },
     ]);
   });
 });
