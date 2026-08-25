@@ -36,6 +36,7 @@ if (isDeviceAction && !/^[0-9A-F-]{20,40}$/i.test(argument ?? '')) {
 const commands = {
   config: ['npx', ['expo', 'config', '--type', 'public']],
   'prebuild-ios': ['npx', ['expo', 'prebuild', '--platform', 'ios', '--clean']],
+  'prebuild-android': ['npx', ['expo', 'prebuild', '--platform', 'android', '--clean']],
   'run-ios': ['npx', ['expo', 'run:ios', '--device', argument, '--no-bundler']],
   start: ['npx', ['expo', 'start', '--dev-client', '--lan']],
   'build-ios-release': ['xcodebuild', [
@@ -47,11 +48,12 @@ const commands = {
     '-allowProvisioningUpdates',
     'build',
   ]],
+  'build-android-debug': ['./android/gradlew', ['-p', 'android', 'app:testDebugUnitTest', 'app:assembleDebug']],
 };
 
 const command = commands[action];
 if (!command) {
-  throw new Error('Use config, prebuild-ios, run-ios <device-id>, build-ios-release <device-udid>, or start');
+  throw new Error('Use config, prebuild-ios, prebuild-android, run-ios <device-id>, build-ios-release <device-udid>, build-android-debug, or start');
 }
 
 const result = spawnSync(command[0], command[1], {

@@ -1,8 +1,9 @@
 # Phase 3 — Expo v1 field workflows
 
-Status: **implementation complete; isolated staging and the core physical-iPhone
-store-review workflow accepted on 2026-08-25; full iPhone link/permission/isolation
-matrix and physical Android acceptance remain open**.
+Status: **implementation complete; isolated staging, verified staging Universal/App
+Link infrastructure, the core physical-iPhone store-review workflow, and a clean
+Android debug build are accepted on 2026-08-25. The remaining physical-device matrix
+is recorded below.**
 
 The production-intent mobile client now lives in `apps/mobile` and uses Expo SDK 57,
 React Native, Expo Router, Continuous Native Generation, and development builds. The
@@ -23,6 +24,8 @@ release is authorized by this phase implementation.
 | Field photos | Offline draft/queue | App-owned files persist before queueing, wait for the server-created parent, retry independently, and are deleted locally only after finalization. |
 | Account deletion request | Online-only | The UI says connectivity is required and never pretends to queue a legal request. No form input is discarded. |
 | Push registration | Online-only | Permission is requested only after education and registration requires a physical configured build. |
+| Invitation acceptance and password recovery | Online-only | Links can open the bundled app offline, but identity verification and membership/session changes require the authenticated staging service. Missing callback credentials fail closed. |
+| Universal/App Link association discovery | Online-only | Apple and Google fetch public machine-readable association files. This stores no field data and does not change the offline draft/outbox workflow. |
 | Existing-record edits and deferred modules | Unavailable in v1 | Administration, billing, EarthCam admin, RailBot voice, and full document/schedule editing remain on the connected web app. |
 
 RailCommand must not be marketed as full offline project management.
@@ -40,9 +43,9 @@ RailCommand must not be marketed as full offline project management.
   durable native storage, idempotent parent-first outbox synchronization, and pending,
   retrying, failed, conflicted, and synchronized states for logs and photos.
 - Point-of-use native permission education and denial fallbacks that retain field work.
-- Push-token registration wiring and validated record notification deep links. Push
-  delivery remains disabled until an EAS project ID and server sending policy are
-  approved in the non-production environment.
+- Push-token registration wiring and validated record notification deep links. A
+  non-production EAS project ID is configured; push delivery remains disabled until a
+  server sending policy is separately approved.
 - Profile/privacy/support controls, two-confirmation account-deletion request, and safe
   sign-out that checks drafts, outbox rows, and photos before deleting the user scope.
 - Additive, RLS-protected staging migration for device registrations, deletion requests,
@@ -58,6 +61,8 @@ RailCommand must not be marketed as full offline project management.
 - Expo CNG generates both native projects without a remote runtime URL.
 - A clean Expo-generated Android project passes `:app:testDebugUnitTest` and
   `assembleDebug` with Java 21 and Android SDK 36.
+- The generated 251 MB debug APK passes Android signature verification with the exact
+  development certificate fingerprint published in staging Digital Asset Links.
 - A clean Expo-generated iOS project installs its CocoaPods dependencies and passes an
   unsigned Debug Simulator `xcodebuild` with the iOS 26 SDK.
 - Mobile, domain, offline, API-client, environment, native-boundary, type, and asset
@@ -94,9 +99,21 @@ RailCommand must not be marketed as full offline project management.
   physically re-tested after adding native-path rewriting and a concrete project route.
   Both opened the intended screen without the stale callback spinner or unmatched-route
   page. The auth callback also has a visible escape and bounded fallback.
+- Staging now serves an environment-specific Apple App Site Association file and
+  Android Digital Asset Links file without login redirects. Apple CDN independently
+  fetched and accepted the staging association, and Google's Digital Asset Links API
+  independently resolved the development package/certificate relationship. The
+  installed iPhone development build is signed with the matching staging associated
+  domain entitlement.
+- Production remains unchanged: no association file was deployed to `railcommand.io`,
+  and production Android trust fails closed unless an approved Play-signing
+  fingerprint is explicitly supplied at release time.
+- Authentication callbacks without a PKCE code, a valid token hash/type pair, or a
+  complete access/refresh token pair are rejected rather than treated as signed in.
 - Final verification passes: root `npm run build`, iOS and Android Hermes exports,
   mobile/domain/offline/API tests, both TypeScript checks, Expo lint, signed iPhone
-  Release `xcodebuild`, and Expo Doctor 21/21.
+  Release `xcodebuild`, Android SDK 36 debug assembly/signature verification, and Expo
+  Doctor 21/21. The final focused suite contains 45 passing tests/checks.
 
 No production deployment, production database mutation, live customer read/write, or
 store release occurred during this acceptance run.
@@ -113,18 +130,26 @@ recorded:
    keep all Apple, Google, APNs/FCM, database, and service-role secrets out of Git.
 4. **Partially complete:** physical-iPhone sign-in restore, photo/location persistence,
    offline restart, reconnect, Sync Center, and project/Sync custom callbacks pass.
-   Physical invitation/password-reset callbacks, permission-denial fallbacks, and
-   Expo-build A → B → A isolation remain to be recorded.
+   Staging association infrastructure is independently verified. Physical HTTPS
+   Universal Link launch, invitation/password-reset callbacks, permission-denial
+   fallbacks, push-token registration, and Expo-build A → B → A isolation remain to be
+   recorded. The `.test` QA accounts do not provide an inbox for a real recovery email,
+   so recovery delivery needs a safe test inbox or generated staging recovery link.
 5. **Complete on iPhone:** prove the store-review story against synthetic staging data: create one geotagged
    log with photos offline, force-close/reopen, reconnect, and verify exactly one log
    and one copy of each photo on the server.
-6. **Pending hardware:** repeat the full matrix on a physical Android phone when hardware is available. The
-   compile/simulator evidence does not replace this conditional device gate.
-7. **Pending publication:** publish and validate Apple/Android association files before claiming Universal/App
-   Links are active, then record US-only store availability during submission.
+6. **Pending hardware:** repeat the full matrix on a physical Android phone when hardware
+   is available. A clean Java 21/SDK 36 build, Hermes export, signed debug APK, and
+   association verification pass, but compile evidence does not replace this device
+   gate. No Android emulator/AVD is installed on the current Mac.
+7. **Complete for staging; pending for release:** staging Apple/Android association files
+   are published and independently validated. Publish the production association on
+   `railcommand.io` only after the final Apple identifier and Play App Signing
+   certificate are approved, then record US-only store availability during submission.
 
 Current gate wording:
-**Phase 3 implementation and the core iPhone store-review workflow are accepted;
-remaining iPhone link/permission/isolation checks and physical Android are explicitly
-deferred.** It must not be described as fully accepted across supported platforms or
-as full offline project management.
+**Phase 3 implementation, staging association infrastructure, native builds, and the
+core iPhone store-review workflow are accepted. The remaining iPhone mini-matrix and
+physical Android acceptance are explicitly deferred until the required device/account
+conditions are available.** It must not be described as fully accepted across supported
+platforms or as full offline project management.

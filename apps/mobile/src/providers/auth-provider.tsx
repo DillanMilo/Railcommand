@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type PropsWith
 import { consumeAuthCallback } from '@/lib/deep-links';
 import { parseMobileDeepLink } from '@railcommand/domain';
 import { supabase } from '@/lib/supabase';
+import { mobileConfig } from '@/lib/config';
 
 type AuthContextValue = {
   session: Session | null;
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const handle = async (url: string | null) => {
       if (!url) return;
       try {
-        const link = parseMobileDeepLink(url);
+        const link = parseMobileDeepLink(url, [mobileConfig.linkHost]);
         if (link.kind === 'invitation') {
           const current = (await supabase.auth.getSession()).data.session;
           if (current) router.replace(`/invitation/${link.token}`);

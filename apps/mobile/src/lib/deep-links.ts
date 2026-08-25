@@ -1,9 +1,11 @@
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { parseMobileDeepLink } from '@railcommand/domain';
 import { supabase } from './supabase';
+import { mobileConfig } from './config';
 
 export async function consumeAuthCallback(rawUrl: string): Promise<'authenticated' | 'password-reset' | 'ignored'> {
   const url = new URL(rawUrl);
+  const parsedLink = parseMobileDeepLink(rawUrl, [mobileConfig.linkHost]);
   const code = url.searchParams.get('code');
   const tokenHash = url.searchParams.get('token_hash');
   const type = url.searchParams.get('type') as EmailOtpType | null;
@@ -19,8 +21,10 @@ export async function consumeAuthCallback(rawUrl: string): Promise<'authenticate
   } else if (accessToken && refreshToken) {
     const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (error) throw error;
-  } else if (parseMobileDeepLink(rawUrl).kind !== 'auth_callback') {
+  } else if (parsedLink.kind !== 'auth_callback') {
     return 'ignored';
+  } else {
+    throw new Error('Authentication callback is missing credentials');
   }
   return type === 'recovery' || url.searchParams.get('next') === '/reset-password'
     ? 'password-reset'

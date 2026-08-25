@@ -79,4 +79,13 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(callback, /Return to RailCommand/);
     assert.match(callback, /setTimeout/);
   });
+
+  it('rejects an authentication callback that does not contain verifiable credentials', () => {
+    const deepLinks = source('./deep-links.ts');
+    assert.match(deepLinks, /Authentication callback is missing credentials/);
+    assert.ok(
+      deepLinks.indexOf("parsedLink.kind !== 'auth_callback'") <
+        deepLinks.indexOf('Authentication callback is missing credentials'),
+    );
+  });
 });

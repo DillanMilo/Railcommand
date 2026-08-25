@@ -9,6 +9,7 @@ const valid = {
   apiBaseUrl: 'https://mobile-stage.example.com',
   expectedSupabaseProjectRef: 'stage-ref',
   expectedApiHost: 'mobile-stage.example.com',
+  linkHost: 'railcommand-mobile-staging.vercel.app',
   blockedSupabaseProjectRefs: 'production-ref',
   blockedApiHosts: 'railcommand.io',
 };
@@ -28,5 +29,9 @@ describe('Expo mobile environment boundary', () => {
 
   it('rejects server credentials', () => {
     assert.throws(() => validateExpoMobileConfig({ ...valid, publishableKey: 'service_role_secret' }));
+  });
+
+  it('rejects a production link host from a development build', () => {
+    assert.throws(() => validateExpoMobileConfig({ ...valid, linkHost: 'railcommand.io' }));
   });
 });

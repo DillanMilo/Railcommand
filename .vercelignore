@@ -1,1 +1,9 @@
 marketing-video/
+node_modules/
+.next/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/dist/
+apps/mobile/.expo/
+apps/mobile-capacitor-spike/android/
+apps/mobile-capacitor-spike/ios/

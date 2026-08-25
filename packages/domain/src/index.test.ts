@@ -20,6 +20,17 @@ describe('mobile domain contracts', () => {
     assert.deepEqual(parseMobileDeepLink('https://example.com/projects/project-1'), {
       kind: 'unsupported',
     });
+    assert.deepEqual(
+      parseMobileDeepLink(
+        'https://railcommand-mobile-staging.vercel.app/projects/project-1',
+        ['railcommand-mobile-staging.vercel.app'],
+      ),
+      { kind: 'project', projectId: 'project-1' },
+    );
+    assert.deepEqual(
+      parseMobileDeepLink('https://railcommand-mobile-staging.vercel.app/projects/project-1'),
+      { kind: 'unsupported' },
+    );
     assert.deepEqual(parseMobileDeepLink(`https://railcommand.io/invite/${'a'.repeat(64)}`), {
       kind: 'invitation', token: 'a'.repeat(64),
     });

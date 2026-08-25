@@ -7,6 +7,7 @@ export type ExpoMobileConfig = {
   apiBaseUrl: string;
   expectedSupabaseProjectRef: string;
   expectedApiHost: string;
+  linkHost: string;
   easProjectId: string | null;
 };
 
@@ -25,8 +26,9 @@ export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
   const apiBaseUrl = new URL(raw.apiBaseUrl ?? '');
   const expectedSupabaseProjectRef = raw.expectedSupabaseProjectRef?.trim().toLowerCase();
   const expectedApiHost = raw.expectedApiHost?.trim().toLowerCase();
+  const linkHost = raw.linkHost?.trim().toLowerCase();
   const publishableKey = raw.publishableKey?.trim();
-  if (!expectedSupabaseProjectRef || !expectedApiHost || !publishableKey) {
+  if (!expectedSupabaseProjectRef || !expectedApiHost || !linkHost || !publishableKey) {
     throw new Error('RailCommand mobile environment is incomplete');
   }
   if (supabaseUrl.protocol !== 'https:' || apiBaseUrl.protocol !== 'https:') {
@@ -37,6 +39,12 @@ export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
   }
   if (apiBaseUrl.hostname !== expectedApiHost) {
     throw new Error('RailCommand mobile API host does not match the approved inventory');
+  }
+  const approvedLinkHost = profile === 'production'
+    ? 'railcommand.io'
+    : 'railcommand-mobile-staging.vercel.app';
+  if (linkHost !== approvedLinkHost) {
+    throw new Error('RailCommand mobile link host does not match the build profile');
   }
   const blockedRefs = csv(raw.blockedSupabaseProjectRefs);
   const blockedHosts = csv(raw.blockedApiHosts);
@@ -53,6 +61,7 @@ export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
     apiBaseUrl: apiBaseUrl.toString(),
     expectedSupabaseProjectRef,
     expectedApiHost,
+    linkHost,
     easProjectId: raw.easProjectId?.trim() || null,
   };
 }
