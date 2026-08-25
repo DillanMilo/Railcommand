@@ -1,4 +1,5 @@
 import type { MobileGeoTag } from '@railcommand/domain';
+import * as Crypto from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,7 +26,7 @@ async function persistPickedPhoto(
   asset: ImagePicker.ImagePickerAsset,
   geoTag: MobileGeoTag | null,
 ): Promise<ExpoStoredPhoto> {
-  const photoId = crypto.randomUUID();
+  const photoId = Crypto.randomUUID();
   const directory = new Directory(Paths.document, 'railcommand', userId, projectId, 'photos');
   directory.create({ idempotent: true, intermediates: true });
   const extension = asset.fileName?.split('.').pop()?.toLowerCase() || 'jpg';

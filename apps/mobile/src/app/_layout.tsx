@@ -36,6 +36,7 @@ function Routes() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="daily-log/new" />
       <Stack.Screen name="daily-log/[id]" />
+      <Stack.Screen name="projects/[id]" />
       <Stack.Screen name="team" />
       <Stack.Screen name="invitation/[token]" />
     </Stack.Protected>

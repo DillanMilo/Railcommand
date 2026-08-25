@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import { forwardRef, type PropsWithChildren, type ReactNode } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/theme';
@@ -41,10 +41,13 @@ export function SecondaryButton({ title, onPress, disabled }: { title: string; o
   </Pressable>;
 }
 
-export function Field({ label, multiline, ...props }: TextInputProps & { label: string }) {
-  return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput {...props} multiline={multiline}
+export const Field = forwardRef<TextInput, TextInputProps & { label: string }>(function Field(
+  { label, multiline, ...props },
+  ref,
+) {
+  return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput ref={ref} {...props} multiline={multiline}
     placeholderTextColor="#8b8f97" style={[styles.input, multiline && styles.multiline]} /></View>;
-}
+});
 
 export function StatusPill({ online, label }: { online?: boolean; label?: string }) {
   return <View style={[styles.pill, online === false && styles.pillOffline]}><Text style={styles.pillText}>{label ?? (online ? 'ONLINE' : 'OFFLINE')}</Text></View>;

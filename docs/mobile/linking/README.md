@@ -13,7 +13,7 @@ at either:
 - `https://railcommand.io/.well-known/apple-app-site-association`
 - `https://railcommand.io/apple-app-site-association`
 
-The current Apple Team ID is `UNL7C7QYH9`. Confirm it in the signed Xcode account before
+The current Apple Team ID is `PQAGLH9L66`. Confirm it in the signed Xcode account before
 publishing. Test both a cold launch and an already-running callback.
 
 ## Android

@@ -1,5 +1,8 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
+const EAS_OWNER = 'creative-currents';
+const EAS_PROJECT_ID = 'dda86dca-ca12-4efa-a556-6fd8411485d5';
+
 const profiles = {
   development: {
     name: 'RailCommand Development',
@@ -25,7 +28,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: profile.name,
     slug: 'railcommand',
-    owner: process.env.EXPO_OWNER,
+    owner: EAS_OWNER,
     version: '0.3.0',
     orientation: 'portrait',
     scheme: 'railcommand',
@@ -34,6 +37,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       bundleIdentifier: profile.identifier,
       buildNumber,
+      appleTeamId: 'PQAGLH9L66',
       supportsTablet: true,
       associatedDomains: ['applinks:railcommand.io'],
       config: { usesNonExemptEncryption: false },
@@ -83,9 +87,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     experiments: { typedRoutes: true, reactCompiler: true },
     extra: {
       buildProfile: profileName,
-      eas: process.env.EXPO_PUBLIC_EAS_PROJECT_ID
-        ? { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID }
-        : undefined,
+      eas: { projectId: EAS_PROJECT_ID },
     },
   };
 };

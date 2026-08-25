@@ -27,6 +27,11 @@ export type ExpoSyncRow = {
   updatedAt: string;
 };
 
+export type ExpoDailyLogSyncOperation = MobileDailyLogSyncOperation & {
+  photoManifestVersion: 0 | 1;
+  photoIds: string[];
+};
+
 const dbPromises = new Map<string, Promise<SQLite.SQLiteDatabase>>();
 
 function databaseName(userId: string): string {
@@ -137,12 +142,26 @@ export async function listExpoPhotos(userId: string, parentClientId: string): Pr
   return rows.map((row) => JSON.parse(row.payload) as ExpoStoredPhoto);
 }
 
-export async function queueExpoDraft(userId: string, projectId: string): Promise<MobileDailyLogSyncOperation> {
+export async function queueExpoDraft(
+  userId: string,
+  projectId: string,
+  expectedPhotoIds: string[] = [],
+): Promise<ExpoDailyLogSyncOperation> {
   const db = await openUserDatabase(userId);
   const draft = await readExpoDraft(userId, projectId);
   if (!draft) throw new Error('No saved draft is available to submit');
-  const operation = draftToSyncOperation(userId, draft);
+  let operation: ExpoDailyLogSyncOperation | null = null;
   await db.withExclusiveTransactionAsync(async (txn) => {
+    const photoRows = await txn.getAllAsync<{ photo_id: string }>(
+      'SELECT photo_id FROM photos WHERE parent_client_id = ? ORDER BY photo_id',
+      draft.clientId,
+    );
+    const persistedPhotoIds = photoRows.map((row) => row.photo_id);
+    const persisted = new Set(persistedPhotoIds);
+    if (expectedPhotoIds.some((photoId) => !persisted.has(photoId))) {
+      throw new Error('A displayed photo is no longer available on this device. The draft was kept; capture the photo again before queueing.');
+    }
+    operation = { ...draftToSyncOperation(userId, draft), photoManifestVersion: 1, photoIds: persistedPhotoIds };
     await txn.runAsync(
       `INSERT INTO outbox(operation_id, project_id, payload, status, attempt_count, updated_at)
        VALUES(?, ?, ?, 'pending', 0, ?)
@@ -151,18 +170,22 @@ export async function queueExpoDraft(userId: string, projectId: string): Promise
     );
     await txn.runAsync('DELETE FROM drafts WHERE project_id = ?', projectId);
   });
+  if (!operation) throw new Error('Could not create the device queue item. The draft remains saved.');
   return operation;
 }
 
-export async function listExpoOutbox(userId: string): Promise<MobileDailyLogSyncOperation[]> {
+export async function listExpoOutbox(userId: string): Promise<ExpoDailyLogSyncOperation[]> {
   const db = await openUserDatabase(userId);
   const rows = await db.getAllAsync<{ payload: string }>('SELECT payload FROM outbox ORDER BY updated_at');
-  return rows.map((row) => JSON.parse(row.payload) as MobileDailyLogSyncOperation);
+  return rows.map((row) => {
+    const operation = JSON.parse(row.payload) as MobileDailyLogSyncOperation & { photoManifestVersion?: number; photoIds?: string[] };
+    return { ...operation, photoManifestVersion: operation.photoManifestVersion === 1 ? 1 : 0, photoIds: operation.photoIds ?? [] };
+  });
 }
 
 export async function markExpoOutbox(
   userId: string,
-  operation: MobileDailyLogSyncOperation,
+  operation: ExpoDailyLogSyncOperation,
   status: 'retrying' | 'failed' | 'conflicted',
   error: string,
 ): Promise<void> {
@@ -186,7 +209,7 @@ export async function markExpoPhoto(
 
 export async function completeExpoSync(
   userId: string,
-  operation: MobileDailyLogSyncOperation,
+  operation: ExpoDailyLogSyncOperation,
   photos: ExpoStoredPhoto[],
 ): Promise<void> {
   const db = await openUserDatabase(userId);
@@ -220,9 +243,11 @@ export async function listExpoSyncRows(userId: string): Promise<ExpoSyncRow[]> {
   );
   return [
     ...pending.map((row) => {
-      const operation = JSON.parse(row.payload) as MobileDailyLogSyncOperation;
+      const operation = JSON.parse(row.payload) as MobileDailyLogSyncOperation & { photoManifestVersion?: number; photoIds?: string[] };
       return { id: row.operation_id, kind: 'daily_log' as const, state: row.status, label: operation.payload.log_date,
-        detail: row.last_error, updatedAt: row.updated_at };
+        detail: row.last_error ?? (operation.photoManifestVersion === 1
+          ? `${operation.photoIds?.length ?? 0} photo${operation.photoIds?.length === 1 ? '' : 's'} queued`
+          : 'Photo manifest unavailable — review required'), updatedAt: row.updated_at };
     }),
     ...photos.map((row) => {
       const photo = JSON.parse(row.payload) as ExpoStoredPhoto;

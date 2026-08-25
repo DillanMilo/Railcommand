@@ -1,3 +1,5 @@
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, EmptyState, PrimaryButton, Screen, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { useMobileData } from '@/providers/mobile-data-provider';
@@ -6,10 +8,18 @@ import { colors } from '@/theme';
 const labels = { pending: 'Pending', retrying: 'Retrying', failed: 'Failed', conflicted: 'Conflicted', synchronized: 'Synchronized' } as const;
 
 export default function SyncScreen() {
-  const { online, message, syncRows, synchronize } = useMobileData();
+  const { online, message, syncRows, synchronize, reloadSyncRows } = useMobileData();
+  useFocusEffect(useCallback(() => {
+    void reloadSyncRows();
+  }, [reloadSyncRows]));
+
+  const queuedRows = syncRows.filter((row) => row.state !== 'synchronized');
+  const queuedLogs = queuedRows.filter((row) => row.kind === 'daily_log').length;
+  const queuedPhotos = queuedRows.filter((row) => row.kind === 'photo').length;
   return <Screen>
     <BrandHeader eyebrow="DEVICE OUTBOX" title="Sync Center" right={<StatusPill online={online} />} />
     <Card><SectionTitle>Field synchronization</SectionTitle><Text style={uiStyles.muted}>{message}</Text>
+      <Text style={styles.summary}>Device queue: {queuedLogs} daily log{queuedLogs === 1 ? '' : 's'} · {queuedPhotos} photo{queuedPhotos === 1 ? '' : 's'}</Text>
       <PrimaryButton title={online ? 'Synchronize now' : 'Waiting for connectivity'} disabled={!online} onPress={() => void synchronize()} />
     </Card>
     <Card>
@@ -23,6 +33,7 @@ export default function SyncScreen() {
 }
 
 const styles = StyleSheet.create({
+  summary: { color: colors.ink, fontWeight: '800', textAlign: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.line },
   label: { color: colors.ink, fontWeight: '800', marginBottom: 4 }, state: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
   pending: { color: colors.warning }, retrying: { color: colors.info }, failed: { color: colors.danger }, conflicted: { color: colors.danger }, synchronized: { color: colors.success },

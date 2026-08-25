@@ -74,7 +74,7 @@ export default function NewDailyLogScreen() {
     setBusy(true);
     try {
       await saveExpoDraft(userId, draft);
-      await queueExpoDraft(userId, draft.projectId);
+      await queueExpoDraft(userId, draft.projectId, photos.map((photo) => photo.photoId));
       await reloadSyncRows();
       setStatus(online ? 'Submitted to the outbox and synchronizing…' : 'Queued until connectivity returns');
       if (online) await synchronize();

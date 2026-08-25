@@ -3,9 +3,9 @@
     "details": [
       {
         "appIDs": [
-          "UNL7C7QYH9.io.railcommand.app.dev",
-          "UNL7C7QYH9.io.railcommand.app.staging",
-          "UNL7C7QYH9.io.railcommand.app"
+          "PQAGLH9L66.io.railcommand.app.dev",
+          "PQAGLH9L66.io.railcommand.app.staging",
+          "PQAGLH9L66.io.railcommand.app"
         ],
         "components": [
           { "/": "/auth/callback*" },

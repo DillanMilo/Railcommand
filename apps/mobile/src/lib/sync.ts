@@ -1,8 +1,8 @@
 import { File } from 'expo-file-system';
 import { MobileApiError } from '@railcommand/api-client';
-import type { MobileDailyLogPhotoSyncOperation, MobileDailyLogSyncOperation } from '@railcommand/domain';
+import type { MobileDailyLogPhotoSyncOperation } from '@railcommand/domain';
 import { mobileApi } from './api';
-import { completeExpoSync, listExpoOutbox, listExpoPhotos, markExpoOutbox, markExpoPhoto, type ExpoStoredPhoto } from './offline-store';
+import { completeExpoSync, listExpoOutbox, listExpoPhotos, markExpoOutbox, markExpoPhoto, type ExpoDailyLogSyncOperation, type ExpoStoredPhoto } from './offline-store';
 import { supabase } from './supabase';
 
 function photoOperation(userId: string, photo: ExpoStoredPhoto, parentEntityId: string): MobileDailyLogPhotoSyncOperation {
@@ -18,8 +18,22 @@ function failureState(error: unknown): 'retrying' | 'failed' | 'conflicted' {
   return 'retrying';
 }
 
-async function synchronizeOne(userId: string, operation: MobileDailyLogSyncOperation): Promise<number> {
+async function synchronizeOne(userId: string, operation: ExpoDailyLogSyncOperation): Promise<number> {
   const photos = await listExpoPhotos(userId, operation.clientId);
+  if (operation.photoManifestVersion !== 1) {
+    const message = 'This queued log predates verified photo tracking. The daily log was not sent; review or discard it on this device.';
+    await markExpoOutbox(userId, operation, 'failed', message);
+    for (const photo of photos) await markExpoPhoto(userId, photo, 'failed', message);
+    return 0;
+  }
+  const availablePhotoIds = new Set(photos.map((photo) => photo.photoId));
+  const missingPhotoCount = operation.photoIds.filter((photoId) => !availablePhotoIds.has(photoId)).length;
+  if (missingPhotoCount > 0) {
+    const message = `${missingPhotoCount} queued photo${missingPhotoCount === 1 ? ' is' : 's are'} missing from this device. The daily log was not sent.`;
+    await markExpoOutbox(userId, operation, 'failed', message);
+    for (const photo of photos) await markExpoPhoto(userId, photo, 'failed', message);
+    return 0;
+  }
   try {
     const parent = await mobileApi.syncDailyLog(operation);
     for (const photo of photos) {

@@ -1,6 +1,59 @@
 -- Phase 3 mobile device registrations and request-only account deletion workflow.
 -- This migration is additive. It does not alter or delete existing customer records.
 
+begin;
+
+-- Some isolated mobile environments contain only the Phase 1–2 synthetic field
+-- schema. Establish the invitation table when it is absent while leaving the full
+-- web schema unchanged when the table already exists.
+create table if not exists public.project_invitations (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  email text not null,
+  project_role text not null check (project_role in (
+    'manager', 'superintendent', 'foreman', 'engineer', 'contractor',
+    'inspector', 'owner', 'viewer'
+  )),
+  invited_by uuid not null references public.profiles(id) on delete cascade,
+  status text not null default 'pending'
+    check (status in ('pending', 'accepted', 'declined', 'expired')),
+  token text not null unique default encode(gen_random_bytes(32), 'hex'),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '7 days')
+);
+
+create index if not exists project_invitations_project_id_idx
+  on public.project_invitations(project_id);
+create index if not exists project_invitations_email_idx
+  on public.project_invitations(email);
+create unique index if not exists project_invitations_unique_pending
+  on public.project_invitations(project_id, lower(email))
+  where status = 'pending';
+
+alter table public.project_invitations enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'project_invitations'
+      and policyname = 'Mobile invitees can read their pending invitations'
+  ) then
+    create policy "Mobile invitees can read their pending invitations"
+      on public.project_invitations for select to authenticated
+      using (
+        status = 'pending'
+        and expires_at > now()
+        and lower(email) = lower((select p.email from public.profiles p where p.id = (select auth.uid())))
+      );
+  end if;
+end;
+$$;
+
+revoke all on public.project_invitations from anon;
+grant select on public.project_invitations to authenticated;
+
 create table if not exists public.mobile_device_registrations (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
@@ -64,8 +117,8 @@ comment on table public.account_deletion_requests is
 create or replace function public.accept_mobile_project_invitation(p_token text)
 returns uuid
 language plpgsql
-security invoker
-set search_path = public, pg_temp
+security definer
+set search_path = ''
 as $$
 declare
   v_user_id uuid := auth.uid();
@@ -94,3 +147,7 @@ $$;
 
 revoke all on function public.accept_mobile_project_invitation(text) from public, anon;
 grant execute on function public.accept_mobile_project_invitation(text) to authenticated;
+
+notify pgrst, 'reload schema';
+
+commit;

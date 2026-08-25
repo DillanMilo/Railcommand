@@ -33,6 +33,7 @@ export function MobileDataProvider({ children }: PropsWithChildren) {
   const [syncRows, setSyncRows] = useState<ExpoSyncRow[]>([]);
   const activeProjectIdRef = useRef<string | null>(null);
   const syncPromiseRef = useRef<Promise<void> | null>(null);
+  const syncRowsReloadIdRef = useRef(0);
 
   const updateActiveProject = useCallback((projectId: string | null) => {
     activeProjectIdRef.current = projectId;
@@ -40,7 +41,13 @@ export function MobileDataProvider({ children }: PropsWithChildren) {
   }, []);
 
   const reloadSyncRows = useCallback(async () => {
-    if (userId) setSyncRows(await listExpoSyncRows(userId));
+    const reloadId = ++syncRowsReloadIdRef.current;
+    if (!userId) {
+      setSyncRows([]);
+      return;
+    }
+    const rows = await listExpoSyncRows(userId);
+    if (reloadId === syncRowsReloadIdRef.current) setSyncRows(rows);
   }, [userId]);
 
   const refresh = useCallback(async (projectId?: string) => {
