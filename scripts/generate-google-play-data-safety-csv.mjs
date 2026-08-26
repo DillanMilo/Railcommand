@@ -93,7 +93,9 @@ assert.equal(draft.accountProvisioning.inAppAccountCreation, false);
 assert.equal(draft.accountProvisioning.outsideAppAccounts, true);
 assert.equal(draft.accountProvisioning.outsideAppAccountType, 'employment_or_enterprise');
 answer('PSL_SUPPORTED_ACCOUNT_CREATION_METHODS', 'PSL_ACM_NONE');
-answer('PSL_ACCOUNT_DELETION_URL', '', draft.dataSafety.accountDeletionUrl);
+// Google Play rejects the account-deletion URL field when the app declares that
+// it does not support account creation. RailCommand still publishes the same
+// deletion page through the separate user-data deletion response below.
 answer('PSL_SUPPORT_DATA_DELETION_BY_USER', 'DATA_DELETION_YES');
 answer('PSL_DATA_DELETION_URL', '', draft.dataSafety.accountDeletionUrl);
 answer('PSL_HAS_OUTSIDE_APP_ACCOUNTS', '', draft.accountProvisioning.outsideAppAccounts ? 'TRUE' : 'FALSE');

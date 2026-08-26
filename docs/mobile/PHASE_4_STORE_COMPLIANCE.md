@@ -86,18 +86,17 @@ checks and are recorded only in the gitignored private runbook.
 - The public mobile marketing version is `1.0.0`. Installed iPhone 17 Pro Max and
   iPad Pro 13-inch simulators produce the accepted `1320 × 2868` and `2064 × 2752`
   screenshot dimensions, and the capture gate rejects incomplete or malformed sets.
-- A read-only Google Play Console check confirmed the Creative Currents organization
-  owns a draft RailCommand record for `io.railcommand.app`. Its initial setup remains
-  0 of 11 tasks complete; no console fields were changed or submitted during the check.
+- Google Play Console confirms the Creative Currents organization owns the draft
+  RailCommand record for `io.railcommand.app`. The later authorized draft-only work is
+  recorded below; nothing has been sent for review or published.
 - The console-ready US-English listing and Google declaration payloads are structured,
   credential-free, and cross-checked against the 1.0 binary privacy manifest. Metadata
   limits, URLs, US-only scope, eight disclosed data types, no-sharing/no-ads posture,
   encryption, target audience, and asset paths pass automated verification.
 - Google's live 782-row Data Safety CSV schema was exported read-only and converted
-  into a deterministic private import draft with 51 reviewed responses. The generator
+  into a deterministic private import draft with 50 reviewed responses. The generator
   rejects missing machine-readable questions, stale selected data types, required
-  blanks, and divergence between the declaration payload and usage answers. Nothing
-  was imported or saved in Play Console.
+  blanks, and divergence between the declaration payload and usage answers.
 - The private reviewer-video recorder and verifier enforce a portrait H.264/HEVC file,
   1080px-or-better width, and a 45–240 second duration. The approved three-minute
   script starts after authentication, uses only synthetic records, exercises one
@@ -112,6 +111,20 @@ checks and are recorded only in the gitignored private runbook.
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
   microphone, release overlay, advertising ID, and all-files access from the declared
   release posture.
+- An authorized deployment of the verified artifact is `READY` on a unique,
+  deployment-protected URL in the `railcommand-mobile-staging` Vercel project with
+  target `preview`. Authenticated verification returns `200` for `/`, `/privacy`,
+  `/support`, `/account-deletion`, and `/terms`. No `--prod` flag, alias promotion,
+  staging migration, production mutation, or customer-data access occurred. The two
+  association routes intentionally return `404` on the unique hostname because mobile
+  trust is restricted to the fixed staging and production hosts.
+- With explicit release-owner authorization, Google Play now holds saved drafts for
+  the privacy URL, no-ads posture, non-government declaration, no financial or health
+  features, Business category, support contact/HTTPS website, and external marketing
+  OFF. The corrected 50-response Data Safety CSV was imported, reviewed through the
+  store-listing preview, and saved as a draft. The US-English short and full listing
+  descriptions were also saved as a draft. Nothing was sent for review or published,
+  and no Android bundle was uploaded.
 
 ## Remaining external evidence
 
@@ -124,10 +137,14 @@ checks and are recorded only in the gitignored private runbook.
   final testing.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
-- Complete the 11 Google Play initial setup declarations/listing tasks. The approved
-  answers and copy are prepared locally, but saving them is an external store-console
-  change and requires release-owner authorization. No Android emulator is currently
-  installed for honest Android screenshot capture.
+- Complete the remaining Google Play initial setup work. The dashboard currently shows
+  6 of 11 tasks complete. Data Safety remains a saved draft until target-audience
+  content is complete; reviewer sign-in details require the permanent reviewer
+  account; content rating remains pending; and the store-listing task remains
+  incomplete until the prepared icon/feature graphic and final screenshots are
+  uploaded. Chrome asset upload currently requires enabling the ChatGPT extension's
+  **Allow access to file URLs** setting. No Android emulator is currently installed for
+  honest Android screenshot capture.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently
   stop at Apple's sign-in screen.

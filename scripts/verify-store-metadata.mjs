@@ -41,7 +41,7 @@ assert.equal(listing.google.fullDescription, listing.apple.description, 'Store d
 assert.equal(listing.google.category, 'Business');
 assert.equal(listing.google.contactEmail, 'support@railcommand.io');
 assert.equal(listing.google.containsAds, false);
-assert.equal(listing.google.externalMarketingDecision, 'pending_release_owner');
+assert.equal(listing.google.externalMarketingDecision, 'off');
 
 for (const [name, value] of Object.entries(listing.urls)) {
   const url = new URL(value);
