@@ -363,6 +363,8 @@ export async function middleware(request: NextRequest) {
     pathname === '/sw.js' ||
     pathname === '/offline.html' ||
     pathname === '/offline-data.js' ||
+    pathname === '/.well-known/apple-app-site-association' ||
+    pathname === '/.well-known/assetlinks.json' ||
     pathname === '/login' ||
     pathname === '/reset-password' ||
     pathname === '/client' ||

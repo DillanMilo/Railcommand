@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'mocha';
 import { androidAssetLinks, appleAppSiteAssociation } from './mobile-link-associations';
+
+const middleware = readFileSync('src/middleware.ts', 'utf8');
 
 describe('mobile link associations', () => {
   it('isolates development associations to the staging host', () => {
@@ -25,5 +28,10 @@ describe('mobile link associations', () => {
     assert.deepEqual(appleAppSiteAssociation('railcommand.io')?.applinks.details[0].appIDs, [
       'PQAGLH9L66.io.railcommand.app',
     ]);
+  });
+
+  it('keeps both association documents public for operating-system discovery', () => {
+    assert.match(middleware, /pathname === '\/\.well-known\/apple-app-site-association'/);
+    assert.match(middleware, /pathname === '\/\.well-known\/assetlinks\.json'/);
   });
 });

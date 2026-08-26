@@ -5,7 +5,7 @@
 RailCommand is a B2B field application for authorized rail and construction teams.
 There is no public signup, social login, advertising, in-app purchase, or consumer
 subscription. Use the supplied synthetic organization account. It contains no customer
-data and has two projects.
+data and has at least one synthetic project.
 
 After sign-in, select **Synthetic US Track Renewal**. The dashboard and cached records
 are available. Open **Logs > New Daily Log**, enter a work summary, optionally attach

@@ -73,6 +73,9 @@ checks and are recorded only in the gitignored private runbook.
   database/container is removed after the synthetic test.
 - `npm run build`, iOS and Android Hermes exports, Expo Doctor (21/21), a clean Android
   debug APK/release-manifest build, and an unsigned iOS release simulator build pass.
+- The isolated production build returns direct `200` responses for `/privacy`,
+  `/support`, `/account-deletion`, and both `/.well-known` association routes; the
+  association responses use `application/json` and do not redirect to authentication.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
@@ -91,10 +94,19 @@ checks and are recorded only in the gitignored private runbook.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
 - Validate production Apple/Android association files and Play signing fingerprints.
-- Resolve or formally risk-accept the current production dependency audit before the
-  release archive: 0 critical, 5 high, and 11 moderate advisories were reported. The
-  high findings are in Next.js image/CSS dependencies and Expo/build-tool transitive
-  YAML/ID-generation packages; `npm audit fix --force` is prohibited because npm's
-  proposed Expo downgrade is incompatible with the approved Expo 57 baseline.
+  Both `/.well-known` routes must return direct `200 application/json` responses
+  without authentication or redirects after the approved release deployment.
+- Formally review the remaining production dependency audit before the release
+  archive. After upgrading Next.js to 16.3.3 and applying compatible transitive
+  overrides, the audit reports 0 critical, 0 high, and 11 moderate advisories. The
+  remaining findings are confined to Expo CLI/config/prebuild and Xcode build-tool
+  dependencies. npm proposes an incompatible Expo 46 downgrade rather than a safe
+  Expo 57 fix, so `npm audit fix --force` is prohibited; reassess against the next
+  compatible Expo 57 patch and record release-owner risk acceptance if none exists.
+- A read-only production check on 2026-08-26 found that the live association,
+  support, and deletion URLs still redirect to sign-in because this isolated branch
+  has not been deployed; `/privacy` is already public. Recheck all five public URLs
+  after an approved non-production deployment and again from the archived release
+  candidate. This branch does not authorize a production deployment.
 - Run the final physical iPhone deletion flow; physical Android remains a documented
   hardware exception until a device is available.
