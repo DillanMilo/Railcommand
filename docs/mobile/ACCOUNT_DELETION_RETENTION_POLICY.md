@@ -1,7 +1,7 @@
 # Mobile account deletion and record-retention policy
 
 Status: approved by accountable business owner
-Last updated: 2026-08-20
+Last updated: 2026-08-26
 
 ## Scope
 
@@ -22,8 +22,8 @@ precedence when they require longer or shorter retention.
    through the existing protected discard confirmation. Nothing is silently lost.
 4. A sole organization owner must transfer ownership to an eligible member or
    explicitly request organization closure before deletion can proceed.
-5. Submission immediately disables new sessions and starts a 30-day recovery
-   period. The user can cancel during that period after reauthentication.
+5. Submission revokes existing sessions and starts a 30-day recovery period.
+   The user can sign in and cancel during that period after reauthentication.
 6. At the end of 30 days, RailCommand deletes the authentication identity,
    personal profile fields, notification tokens, active sessions, and that
    user's private device cache at the next authenticated cleanup opportunity.
@@ -52,16 +52,16 @@ the user cannot sign in.
 
 ## Offline classification and failure behavior
 
-Account deletion is **offline draft/queue** until it reaches the authenticated
-server. The device preserves the request intent and all entered work, clearly
-shows that connectivity is required to submit deletion, and never claims the
-account is deleted while offline.
+Account-deletion initiation is **online-only** because recent authentication,
+organization ownership, and active-request state must be checked atomically by
+the server. The app clearly says connectivity is required, never queues a
+deletion request, and never claims the account is deleted while offline.
 
-- The deletion request has a client UUID and idempotency key.
+- The deletion request has a client UUID used as its idempotency key.
 - Submission revalidates authentication, organization ownership, membership, and
   queued-work state on the server.
-- A server version or `updated_at` baseline detects changes made while the device
-  was offline; ownership or retention conflicts stop for review.
+- Ownership, active-request state, and recent authentication are checked again in the
+  same online server transaction; offline request intent is never accepted as proof.
 - Sign-out cleanup remains user-scoped. Private data never enters public Cache
   Storage or global `localStorage`.
 - Repeated delivery returns the original deletion request instead of creating
@@ -73,7 +73,7 @@ account is deleted while offline.
 
 - Automated tests for reauthentication, idempotency, sole-owner blocking,
   retention classification, cancellation, and the 30-day finalization job.
-- Physical iOS and Android tests covering offline initiation, reconnect,
+- Physical iOS and Android tests covering the offline submission block, reconnect,
   unfinished drafts/outbox work, protected sign-out, restart, and shared-device
   user isolation.
 - A published privacy-policy update and public Google deletion-request URL.

@@ -110,6 +110,17 @@ export class MobileApiClient {
     });
   }
 
+  getAccountDeletionRequest(): Promise<MobileAccountDeletionResult | null> {
+    return this.request('/api/mobile/v1/account/deletion-request');
+  }
+
+  cancelAccountDeletion(requestId: string): Promise<MobileAccountDeletionResult> {
+    return this.request('/api/mobile/v1/account/deletion-request/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ requestId }),
+    });
+  }
+
   getInvitation(token: string): Promise<MobileInvitation> {
     return this.request(`/api/mobile/v1/invitations/${encodeURIComponent(token)}`);
   }

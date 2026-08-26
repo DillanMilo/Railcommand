@@ -368,6 +368,8 @@ export async function middleware(request: NextRequest) {
     pathname === '/client' ||
     pathname === '/admin/clients' ||
     pathname === '/privacy' ||
+    pathname === '/support' ||
+    pathname === '/account-deletion' ||
     pathname === '/terms' ||
     pathname === GEO_RESTRICTED_PAGE ||
     pathname.startsWith('/auth/') ||

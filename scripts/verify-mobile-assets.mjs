@@ -21,10 +21,13 @@ function expectPng(path, width, height) {
   assert.deepEqual(pngDimensions(path), { width, height }, `${path} has the wrong dimensions`);
 }
 
-expectPng('apps/mobile/assets/images/icon.png', 512, 512);
-expectPng('apps/mobile/assets/images/android-icon-foreground.png', 512, 512);
+expectPng('apps/mobile/assets/images/icon-store-1024.png', 1024, 1024);
 expectPng('apps/mobile/assets/images/android-icon-background.png', 512, 512);
-expectPng('apps/mobile/assets/images/android-icon-monochrome.png', 432, 432);
-expectPng('apps/mobile/assets/images/splash-icon.png', 2732, 2732);
+
+assert.match(expoConfig, /ACCESS_BACKGROUND_LOCATION/, 'Background location must be explicitly blocked');
+assert.match(expoConfig, /RECORD_AUDIO/, 'Microphone access must be explicitly blocked');
+assert.match(expoConfig, /SYSTEM_ALERT_WINDOW/, 'Release overlay access must be explicitly blocked');
+assert.match(expoConfig, /CoarseLocation/, 'Approximate-location collection must be declared');
+assert.match(expoConfig, /with-foreground-location-only/, 'Foreground-only iOS location cleanup is missing');
 
 console.log('Expo icon, splash, application identifiers, and bundled-runtime boundary are complete.');

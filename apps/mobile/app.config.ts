@@ -36,7 +36,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     orientation: 'portrait',
     scheme: 'railcommand',
     userInterfaceStyle: 'light',
-    icon: './assets/images/icon.png',
+    icon: './assets/images/icon-store-1024.png',
     ios: {
       bundleIdentifier: profile.identifier,
       buildNumber,
@@ -44,6 +44,43 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: true,
       associatedDomains: [`applinks:${profile.linkHost}`],
       config: { usesNonExemptEncryption: false },
+      privacyManifests: {
+        NSPrivacyTracking: false,
+        NSPrivacyTrackingDomains: [],
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+            NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+          },
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+            NSPrivacyAccessedAPITypeReasons: ['C617.1', '0A2A.1', '3B52.1'],
+          },
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+            NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+          },
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+            NSPrivacyAccessedAPITypeReasons: ['E174.1', '85F4.1'],
+          },
+        ],
+        NSPrivacyCollectedDataTypes: [
+          'Name',
+          'EmailAddress',
+          'PhotosorVideos',
+          'PreciseLocation',
+          'CoarseLocation',
+          'UserID',
+          'DeviceID',
+          'OtherUserContent',
+        ].map((suffix) => ({
+          NSPrivacyCollectedDataType: `NSPrivacyCollectedDataType${suffix}`,
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+        })),
+      },
       infoPlist: {
         NSCameraUsageDescription: 'RailCommand uses the camera only when you attach a field photo to a record.',
         NSLocationWhenInUseUsageDescription: 'RailCommand attaches your location only when you request it for a field record.',
@@ -53,9 +90,14 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     android: {
       package: profile.identifier,
       versionCode: Number(buildNumber),
+      blockedPermissions: [
+        'android.permission.ACCESS_BACKGROUND_LOCATION',
+        'android.permission.RECORD_AUDIO',
+        'android.permission.SYSTEM_ALERT_WINDOW',
+      ],
       adaptiveIcon: {
         backgroundColor: '#111827',
-        foregroundImage: './assets/images/android-icon-foreground.png',
+        foregroundImage: './assets/images/icon-store-1024.png',
       },
       intentFilters: [
         {
@@ -76,6 +118,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
         photosPermission: 'RailCommand lets you choose field photos to attach to a record.',
         microphonePermission: false,
       }],
+      './plugins/with-foreground-location-only',
       ['expo-location', {
         locationWhenInUsePermission: 'RailCommand attaches your location only when you request it for a field record.',
         isIosBackgroundLocationEnabled: false,
@@ -83,7 +126,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       }],
       ['expo-splash-screen', {
         backgroundColor: '#111827',
-        image: './assets/images/splash-icon.png',
+        image: './assets/images/icon-store-1024.png',
         imageWidth: 180,
       }],
     ],

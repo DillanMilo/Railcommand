@@ -726,20 +726,21 @@ export default function ProfilePage() {
               Delete Account
             </DialogTitle>
             <DialogDescription>
-              Account deletion requires manual processing for data safety.
+              RailCommand protects unsynchronized work and provides a 30-day recovery period.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-rc-border bg-muted/40 dark:bg-muted/15 p-4 text-sm text-muted-foreground leading-relaxed">
-            To delete your account and all associated data, please contact support
-            at{' '}
-            <span className="font-medium text-foreground">support@railcommand.io</span>{' '}
-            or reach out to your organization administrator. This ensures all project
-            data is properly transferred or archived before removal.
+            Continue to the deletion page to review local drafts and queued work,
+            confirm your current password, and see which personal data is deleted
+            versus which organization-owned records are retained or anonymized.
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Close</Button>
             </DialogClose>
+            <Button variant="destructive" asChild>
+              <Link href="/settings/account-deletion">Continue</Link>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

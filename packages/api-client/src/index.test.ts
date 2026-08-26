@@ -87,12 +87,19 @@ describe('MobileApiClient', () => {
       },
     });
     await client.registerPushDevice({ expoPushToken: 'ExponentPushToken[test]', platform: 'ios', appProfile: 'development', deviceName: 'iPhone' });
-    await client.requestAccountDeletion({ clientRequestId: '11111111-1111-4111-8111-111111111111' });
+    await client.requestAccountDeletion({
+      clientRequestId: '11111111-1111-4111-8111-111111111111',
+      localWork: { drafts: 0, outbox: 0, photos: 0 },
+    });
+    await client.getAccountDeletionRequest();
+    await client.cancelAccountDeletion('request-a');
     await client.getInvitation('a'.repeat(64));
     await client.acceptInvitation('a'.repeat(64));
     assert.deepEqual(requests, [
       { path: '/api/mobile/v1/devices/push-token', method: 'POST' },
       { path: '/api/mobile/v1/account/deletion-request', method: 'POST' },
+      { path: '/api/mobile/v1/account/deletion-request', method: 'GET' },
+      { path: '/api/mobile/v1/account/deletion-request/cancel', method: 'POST' },
       { path: `/api/mobile/v1/invitations/${'a'.repeat(64)}`, method: 'GET' },
       { path: `/api/mobile/v1/invitations/${'a'.repeat(64)}`, method: 'POST' },
     ]);

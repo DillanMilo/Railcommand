@@ -53,5 +53,19 @@ private keys, recovery codes, or passwords in either copy.
 - Synthetic QA account owner:
 - Last A -> B -> A isolation test:
 
+## Store review access and final release tests
+
+- Permanent synthetic reviewer email (do not put password here):
+- Reviewer password secret-manager reference:
+- Reviewer organization/project names:
+- Reviewer account expiry/MFA check:
+- Reviewer backend availability owner:
+- Reviewer verification command/date (`npm run verify:store:reviewer`):
+- Reviewer walkthrough-video private URL:
+- Password-recovery staging inbox owner:
+- Password-recovery delivery/expiry/one-use test date:
+- Physical iPhone deletion-flow test date/build:
+- Physical Android exception or test date/build:
+
 Store only non-secret identifiers here. Reference the approved secret manager for
 credential locations; never paste credential values into this file.

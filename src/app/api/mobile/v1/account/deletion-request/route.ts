@@ -1,8 +1,19 @@
-import type { MobileAccountDeletionRequest, MobileAccountDeletionResult } from '@railcommand/domain';
+import type { MobileAccountDeletionRequest } from '@railcommand/domain';
+import { accountDeletionHttpStatus, getActiveAccountDeletion, submitAccountDeletion } from '@/lib/account-deletion';
 import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
 
 export const dynamic = 'force-dynamic';
 export const OPTIONS = mobileOptions;
+
+export async function GET(request: Request): Promise<Response> {
+  const context = await authenticateMobileRequest(request);
+  if (!context) return mobileJson({ error: 'Not authenticated' }, 401);
+  try {
+    return mobileJson(await getActiveAccountDeletion(context.supabase, context.user.id));
+  } catch {
+    return mobileJson({ error: 'Could not load the account deletion request' }, 500);
+  }
+}
 
 export async function POST(request: Request): Promise<Response> {
   const context = await authenticateMobileRequest(request);
@@ -11,23 +22,20 @@ export async function POST(request: Request): Promise<Response> {
   if (!body?.clientRequestId || !/^[0-9a-f-]{36}$/i.test(body.clientRequestId)) {
     return mobileJson({ error: 'Invalid deletion request identifier' }, 400);
   }
-
-  const { data: existing } = await context.supabase.from('account_deletion_requests')
-    .select('id, status, requested_at, scheduled_for')
-    .eq('profile_id', context.user.id).in('status', ['pending', 'reviewing']).maybeSingle();
-  if (existing) {
-    const result: MobileAccountDeletionResult = { id: existing.id, status: existing.status,
-      requestedAt: existing.requested_at, scheduledFor: existing.scheduled_for, duplicate: true };
-    return mobileJson(result);
+  const counts = body.localWork;
+  if (!counts || ![counts.drafts, counts.outbox, counts.photos]
+    .every((count) => Number.isSafeInteger(count) && count >= 0)) {
+    return mobileJson({ error: 'Invalid device-work attestation' }, 400);
   }
-
-  const { data, error } = await context.supabase.from('account_deletion_requests').insert({
-    profile_id: context.user.id,
-    client_request_id: body.clientRequestId,
-    status: 'pending',
-  }).select('id, status, requested_at, scheduled_for').single();
-  if (error || !data) return mobileJson({ error: 'Could not create the account deletion request' }, 500);
-  const result: MobileAccountDeletionResult = { id: data.id, status: data.status,
-    requestedAt: data.requested_at, scheduledFor: data.scheduled_for, duplicate: false };
-  return mobileJson(result, 201);
+  try {
+    return mobileJson(await submitAccountDeletion(
+      context.supabase,
+      context.accessToken,
+      body as MobileAccountDeletionRequest,
+      'mobile',
+    ), 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not process the account deletion request';
+    return mobileJson({ error: message }, accountDeletionHttpStatus(message));
+  }
 }

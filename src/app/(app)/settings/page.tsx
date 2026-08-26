@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
@@ -558,7 +559,6 @@ export default function SettingsPage() {
   );
 
   // Danger zone
-  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -950,40 +950,10 @@ export default function SettingsPage() {
                 removed.
               </div>
             </div>
-            <Button
-              className="bg-rc-red hover:bg-rc-red/90 text-white shrink-0"
-              onClick={() => setShowDeleteWarning(true)}
-            >
-              Delete Account
+            <Button className="bg-rc-red hover:bg-rc-red/90 text-white shrink-0" asChild>
+              <Link href="/settings/account-deletion">Delete Account</Link>
             </Button>
           </div>
-
-          {/* Inline delete warning */}
-          {showDeleteWarning && (
-            <div className="rounded-lg border border-rc-red/20 bg-rc-red/5 p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="size-5 text-rc-red shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-foreground">
-                    Account deletion is restricted
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Contact your administrator to delete your account. This
-                    ensures all project data and records are properly handled.
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteWarning(false)}
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

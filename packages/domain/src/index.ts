@@ -150,14 +150,20 @@ export interface MobilePushRegistration {
 
 export interface MobileAccountDeletionRequest {
   clientRequestId: string;
+  localWork: {
+    drafts: number;
+    outbox: number;
+    photos: number;
+  };
 }
 
 export interface MobileAccountDeletionResult {
   id: string;
-  status: 'pending' | 'reviewing';
+  status: 'pending' | 'reviewing' | 'processing' | 'failed' | 'canceled';
   requestedAt: string;
   scheduledFor: string;
-  duplicate: boolean;
+  duplicate?: boolean;
+  sessionsRevoked?: boolean;
 }
 
 export interface MobileInvitation {

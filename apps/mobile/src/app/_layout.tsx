@@ -40,6 +40,7 @@ function Routes() {
       <Stack.Screen name="daily-log/[id]" />
       <Stack.Screen name="projects/[id]" />
       <Stack.Screen name="team" />
+      <Stack.Screen name="account-deletion" />
     </Stack.Protected>
   </Stack>;
 }

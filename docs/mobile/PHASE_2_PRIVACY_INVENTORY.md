@@ -49,7 +49,9 @@ random installation/session diagnostic ID that is not an authorization identity.
 
 ## Store disclosure follow-up
 
-Before TestFlight, internal Play testing, or store submission, reconcile this inventory
-against Apple's App Privacy answers, Google's Data Safety form, the US-only availability
-decision, and the approved 30-day account-deletion/record-retention policy. Any new SDK
-or device permission reopens this review.
+Phase 4 reconciles this inventory in `APPLE_STORE_SUBMISSION.md` and
+`GOOGLE_PLAY_SUBMISSION.md`. The v1 client adds no crash-reporting, analytics,
+advertising, microphone, contacts, or background-location SDK or permission. It adds
+an Apple privacy manifest containing the approved linked/app-functionality data types
+and required-reason APIs from the exact Expo dependency set. Any new SDK or device
+permission reopens this review before TestFlight, Play testing, or submission.

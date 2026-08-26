@@ -1,4 +1,3 @@
-import * as Crypto from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -82,23 +81,6 @@ export default function AccountScreen() {
     void registerPush(true);
   }, [online, qaPush, registerPush, userId]);
 
-  const requestDeletion = () => {
-    if (!online) { setStatus('Account deletion requests require connectivity. No request was lost or submitted.'); return; }
-    Alert.alert('Request account deletion?', 'RailCommand will create a reviewable request. The approved 30-day retention period applies; this does not immediately erase records.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Continue', style: 'destructive', onPress: () => Alert.alert('Confirm deletion request', 'Submit this request for account deletion and retention review?', [
-        { text: 'Keep account', style: 'cancel' },
-        { text: 'Submit request', style: 'destructive', onPress: async () => {
-          setBusy(true);
-          try { const result = await mobileApi.requestAccountDeletion({ clientRequestId: Crypto.randomUUID() });
-            setStatus(`Deletion request ${result.duplicate ? 'already exists' : 'submitted'}. Scheduled review date: ${new Date(result.scheduledFor).toLocaleDateString()}.`); }
-          catch (error) { setStatus(error instanceof Error ? error.message : 'Could not submit the deletion request.'); }
-          finally { setBusy(false); }
-        } },
-      ]) },
-    ]);
-  };
-
   return <Screen>
     <BrandHeader eyebrow="PROFILE & PRIVACY" title="Account" right={<StatusPill online={online} />} />
     <Card><SectionTitle>{session?.user.email ?? 'Signed-in user'}</SectionTitle><Text style={styles.status}>{status}</Text></Card>
@@ -109,7 +91,7 @@ export default function AccountScreen() {
     <Card><SectionTitle>Help and privacy</SectionTitle>
       <SecondaryButton title="Privacy policy" onPress={() => void Linking.openURL('https://railcommand.io/privacy')} />
       <SecondaryButton title="Contact support" onPress={() => void Linking.openURL('mailto:support@railcommand.io?subject=RailCommand%20mobile%20support')} />
-      <SecondaryButton title="Request account deletion" disabled={!online || busy} onPress={requestDeletion} />
+      <SecondaryButton title="Request account deletion" disabled={busy} onPress={() => router.push('/account-deletion')} />
       {!online ? <Text style={styles.offline}>Deletion requests are online-only and will never be silently queued.</Text> : null}
     </Card>
     <PrimaryButton title="Safe sign-out" tone="danger" busy={busy} onPress={() => void beginSignOut()} />

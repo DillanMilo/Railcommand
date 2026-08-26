@@ -14,6 +14,12 @@ Start here:
 - [Phase 2 privacy inventory](./PHASE_2_PRIVACY_INVENTORY.md)
 - [Phase 2 device acceptance](./PHASE_2_DEVICE_ACCEPTANCE.md)
 - [Phase 3 Expo v1 field workflows](./PHASE_3_EXPO_V1.md)
+- [Phase 4 store compliance](./PHASE_4_STORE_COMPLIANCE.md)
+- [Apple submission answers](./APPLE_STORE_SUBMISSION.md)
+- [Google Play submission answers](./GOOGLE_PLAY_SUBMISSION.md)
+- [Store metadata](./STORE_METADATA.md)
+- [Reviewer notes](./REVIEWER_NOTES.md)
+- [Store asset plan](./STORE_ASSET_PLAN.md)
 
 No native mobile project may connect to the production backend during Phase 0
 or the architecture spike. Phase 1 starts only after the blocking items in both
