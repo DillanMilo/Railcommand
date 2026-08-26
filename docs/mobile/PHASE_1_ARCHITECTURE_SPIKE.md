@@ -74,7 +74,7 @@ This spike is a mixed **offline read-only** and **offline draft/queue** feature.
   upgrade is deliberately deferred to a separately reviewed change rather than
   expanding the mobile spike into an unplanned framework upgrade.
 
-Staging API: `https://railcommand-mobile-staging.vercel.app`
+Staging API: `https://mobile-staging.railcommand.io`
 
 ## Remaining gate work
 

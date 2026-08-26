@@ -1,4 +1,4 @@
-const STAGING_HOST = 'railcommand-mobile-staging.vercel.app';
+const STAGING_HOST = 'mobile-staging.railcommand.io';
 const PRODUCTION_HOSTS = new Set(['railcommand.io', 'www.railcommand.io']);
 const APPLE_TEAM_ID = 'PQAGLH9L66';
 const ANDROID_DEVELOPMENT_SHA256 =

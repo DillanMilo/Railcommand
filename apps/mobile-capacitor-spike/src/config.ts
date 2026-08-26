@@ -1,7 +1,7 @@
 export type MobileEnvironment = 'development' | 'staging' | 'production';
 
-const STAGING_SUPABASE_REF = 'cyacardivfzrsravqjto';
-const STAGING_API_HOST = 'railcommand-mobile-staging.vercel.app';
+const STAGING_SUPABASE_REF = 'rxuvchdqbzvovqijvfhx';
+const STAGING_API_HOST = 'mobile-staging.railcommand.io';
 const PROFILE_APP_IDS: Record<MobileEnvironment, string> = {
   development: 'io.railcommand.app.dev',
   staging: 'io.railcommand.app.staging',

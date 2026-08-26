@@ -2,17 +2,18 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const EAS_OWNER = 'creative-currents';
 const EAS_PROJECT_ID = 'dda86dca-ca12-4efa-a556-6fd8411485d5';
+const STAGING_LINK_HOST = 'mobile-staging.railcommand.io';
 
 const profiles = {
   development: {
     name: 'RailCommand Development',
     identifier: 'io.railcommand.app.dev',
-    linkHost: 'railcommand-mobile-staging.vercel.app',
+    linkHost: STAGING_LINK_HOST,
   },
   staging: {
     name: 'RailCommand Staging',
     identifier: 'io.railcommand.app.staging',
-    linkHost: 'railcommand-mobile-staging.vercel.app',
+    linkHost: STAGING_LINK_HOST,
   },
   production: {
     name: 'RailCommand',

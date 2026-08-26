@@ -9,7 +9,7 @@ contains the private `mobile_staging.fixture_manifest` marker created for the
 RailCommand Mobile Staging project. The script contains no customer or production
 data.
 
-Apply only after verifying the linked project is `cyacardivfzrsravqjto`:
+Apply only after verifying the linked project is `rxuvchdqbzvovqijvfhx`:
 
 ```sh
 supabase projects list

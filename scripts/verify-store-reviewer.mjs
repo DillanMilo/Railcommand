@@ -47,7 +47,10 @@ const bootstrapResponse = await fetch(`${apiBaseUrl}/api/mobile/v1/bootstrap`, {
   headers: { authorization: `Bearer ${refresh.data.session.access_token}` },
 });
 if (!bootstrapResponse.ok) {
-  throw new Error(`Reviewer bootstrap failed with ${bootstrapResponse.status}`);
+  const detail = (await bootstrapResponse.text()).slice(0, 300).replaceAll(/\s+/g, ' ').trim();
+  throw new Error(
+    `Reviewer bootstrap failed with ${bootstrapResponse.status}${detail ? `: ${detail}` : ''}`,
+  );
 }
 if (bootstrapResponse.headers.get('cache-control') !== 'no-store, max-age=0') {
   throw new Error('Reviewer bootstrap is not explicitly no-store');

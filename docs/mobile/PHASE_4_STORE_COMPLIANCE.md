@@ -50,6 +50,25 @@ account-deletion request can be sent.
   screen. A separate validated 512px Play icon and 1024 × 500 Play feature graphic
   are also checked in. No runtime store artwork download is used.
 
+## Isolated mobile staging environment
+
+- Supabase organization **RailCommand Mobile Staging** owns the non-production project
+  `rxuvchdqbzvovqijvfhx` in `us-east-2`. Its owner login uses the controlled
+  `mobile-staging@railcommand.io` alias; the password is never committed.
+- The reduced mobile schema and additive Phase 2–4 migrations are applied only to that
+  project. Private tables have RLS enabled, mobile photo buckets are private, and the
+  synthetic reviewer belongs only to **Synthetic US Track Renewal**.
+- The staging web origin is `https://mobile-staging.railcommand.io`. Cloudflare DNS
+  maps it to a Vercel **preview** deployment in `railcommand-mobile-staging`; other
+  preview URLs remain deployment-protected. No production promotion occurred.
+- Supabase Auth accepts `railcommand://**` and
+  `https://mobile-staging.railcommand.io/**` callbacks. A real recovery message reached
+  the controlled catch-all inbox, opened the custom-scheme callback once, and rejected
+  a second use as expired. No token or password is retained in this document.
+- The staging verifier confirms reviewer sign-in, session refresh, one authorized
+  synthetic project, and password-reset request acceptance. Production Supabase and
+  customer data were not queried or changed.
+
 ## Release gate
 
 Before submission, all automated/native builds must pass; the additive migration and
@@ -111,44 +130,40 @@ checks and are recorded only in the gitignored private runbook.
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
   microphone, release overlay, advertising ID, and all-files access from the declared
   release posture.
-- An authorized deployment of the verified artifact is `READY` on a unique,
-  deployment-protected URL in the `railcommand-mobile-staging` Vercel project with
-  target `preview`. Authenticated verification returns `200` for `/`, `/privacy`,
-  `/support`, `/account-deletion`, and `/terms`. No `--prod` flag, alias promotion,
-  staging migration, production mutation, or customer-data access occurred. The two
-  association routes intentionally return `404` on the unique hostname because mobile
-  trust is restricted to the fixed staging and production hosts.
+- An authorized deployment of the verified artifact is `READY` at the unique preview
+  `railcommand-mobile-staging-rjfouzl5a-dillans-projects-f662840b.vercel.app`, deployment
+  `dpl_656ghyzWiZnRDCLmcEZhBq7AyFqJ`. The public custom staging alias points directly to
+  that preview without promoting it to production. Health, policy, deletion, support,
+  and both association routes return direct `200` responses on the custom host. No
+  `--prod` flag, production mutation, or customer-data access occurred.
 - With explicit release-owner authorization, Google Play now holds saved drafts for
   the privacy URL, no-ads posture, non-government declaration, no financial or health
   features, Business category, support contact/HTTPS website, and external marketing
-  OFF. The corrected 50-response Data Safety CSV was imported, reviewed through the
-  store-listing preview, and saved as a draft. The US-English short and full listing
-  descriptions were also saved as a draft. Nothing was sent for review or published,
-  and no Android bundle was uploaded.
+  OFF. The permanent synthetic reviewer sign-in details, 18-and-over target audience,
+  and corrected 50-response Data Safety declaration were reviewed and saved as drafts.
+  Optional trusted-partner credential testing is OFF. The US-English short and full
+  listing descriptions were also saved as a draft. The dashboard shows 10 of 11 setup
+  tasks complete; final screenshots are the remaining listing blocker. Nothing was
+  sent for review or published, and no Android bundle was uploaded.
 
 ## Remaining external evidence
 
-- Apply the additive migration and routes to isolated staging, then exercise request,
-  cancellation, 30-day-time simulation, identity anonymization/deletion, completion
-  email, and failure retry. Do not apply these changes to production from this branch.
-- Provision the permanent non-customer reviewer inbox/account in the approved release
-  backend and run `npm run verify:store:reviewer`.
-- Complete the real password-recovery inbox/deep-link/expiry/one-use test requested for
-  final testing.
+- Exercise the Phase 4 deletion request, cancellation, 30-day-time simulation,
+  identity anonymization/deletion, completion email, and failure retry in isolated
+  staging. Do not apply these changes to production from this branch.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
-  6 of 11 tasks complete. Data Safety remains a saved draft until target-audience
-  content is complete; reviewer sign-in details require the permanent reviewer
-  account. The IARC questionnaire is complete using the verified routed support
+  10 of 11 tasks complete. The permanent reviewer sign-in details, adult-only target
+  audience, and Data Safety declaration are saved drafts. The IARC questionnaire is
+  complete using the verified routed support
   address; it produced an ESRB Teen rating for North America and 12+/parental-guidance
   equivalents elsewhere because invited organization users share field content and
   optional location. This completed the rating questionnaire only and did not send the
   app for review. The validated 512px icon and 1024 × 500
   feature graphic were uploaded and attached to the US-English listing on August 26,
   2026, then saved as a draft without publishing or sending the app for review. The
-  store-listing task remains incomplete until final screenshots are uploaded. Target
-  Audience cannot start until reviewer sign-in details are complete. No
+  store-listing task remains incomplete until final screenshots are uploaded. No
   Android emulator is currently installed for honest Android screenshot capture.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently

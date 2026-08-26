@@ -2,8 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-const STAGING_REF = 'cyacardivfzrsravqjto';
-const STAGING_API = 'https://railcommand-mobile-staging.vercel.app';
+const STAGING_REF = 'rxuvchdqbzvovqijvfhx';
+const STAGING_API = 'https://mobile-staging.railcommand.io';
 const QA_EMAIL = 'railcommand-mobile-automation@creativecurrents.test';
 const FIXTURE_PROJECT_ID = '20000000-0000-4000-8000-000000000001';
 
@@ -14,11 +14,16 @@ function required(name) {
 }
 
 function runStagingSql(sql) {
-  execFileSync('supabase', ['db', 'query', '--linked', sql], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  try {
+    execFileSync('supabase', ['db', 'query', '--linked', sql], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (error) {
+    const stderr = String(error?.stderr ?? '').trim();
+    throw new Error(`Staging SQL command failed${stderr ? `: ${stderr}` : ''}`);
+  }
 }
 
 const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL');

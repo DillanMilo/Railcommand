@@ -2,7 +2,7 @@
   "privacyPolicyUrl": "https://railcommand.io/privacy",
   "appAccess": {
     "restricted": true,
-    "reviewerCredentials": "STORE_CONSOLE_ONLY_PENDING",
+    "reviewerCredentials": "STORE_CONSOLE_ONLY_SAVED",
     "instructions": "Sign in with the permanent synthetic RailCommand organization account supplied in Play Console. Select Synthetic US Track Renewal. The account has daily-log permission, contains no customer data, does not expire, and does not require MFA. Existing records are read-only offline. Create a new daily log and optional photo/location offline, then reconnect and use Sync Center to synchronize."
   },
   "accountProvisioning": {
@@ -100,7 +100,7 @@
     "contactEmail": "support@railcommand.io",
     "phone": null,
     "website": "https://railcommand.io/",
-    "externalMarketing": "PENDING_RELEASE_OWNER"
+    "externalMarketing": "OFF"
   },
   "storeListingSource": "docs/mobile/store-listing.en-US.json",
   "assetSources": {

@@ -122,11 +122,16 @@ on conflict (project_id, profile_id) do update set
   can_edit = excluded.can_edit;
 `;
 
-execFileSync('supabase', ['db', 'query', '--linked', sql], {
-  cwd: supabaseWorkdir,
-  encoding: 'utf8',
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
+try {
+  execFileSync('supabase', ['db', 'query', '--linked', sql], {
+    cwd: supabaseWorkdir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+} catch (error) {
+  const stderr = String(error?.stderr ?? '').trim();
+  throw new Error(`Staging QA provisioning failed${stderr ? `: ${stderr}` : ''}`);
+}
 
 const credentials = {
   warning: 'Synthetic staging credentials only. Never use these for production.',

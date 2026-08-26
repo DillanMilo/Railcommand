@@ -6,13 +6,15 @@ merged release manifest and current SDK inventory before production submission.
 The field-by-field console payload is also recorded in
 `docs/mobile/google-play-console-draft.en-US.json`. It deliberately contains no
 credentials. Run `npm run verify:store:declarations` before entering or saving the
-questionnaire; reviewer credentials and questionnaire-generated results remain in
-Play Console and the gitignored private runbook only.
+questionnaire. The permanent reviewer credentials and questionnaire-generated results
+remain in Play Console and the gitignored private runbook only.
 
-Google's current Console calls App access **Sign in details**. A read-only audit on
-2026-08-26 confirmed the RailCommand record still has 0 of 11 initial setup tasks
-complete and that Target audience remains locked until Ads and Sign in details are
-saved. No Console answer was changed during that audit.
+Google's current Console calls App access **Sign in details**. On 2026-08-26 the
+permanent synthetic reviewer account was saved there, optional trusted-partner device
+testing was turned off, and the 18-and-over Target audience and Data Safety preview
+were saved as drafts. The dashboard then showed 10 of 11 initial setup tasks complete;
+the remaining store-listing task requires the final screenshot set. Nothing was sent
+for review or published.
 
 The current blank Data Safety CSV can be populated without touching Play Console:
 

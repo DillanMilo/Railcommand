@@ -9,7 +9,7 @@ const valid = {
   apiBaseUrl: 'https://mobile-stage.example.com',
   expectedSupabaseProjectRef: 'stage-ref',
   expectedApiHost: 'mobile-stage.example.com',
-  linkHost: 'railcommand-mobile-staging.vercel.app',
+  linkHost: 'mobile-staging.railcommand.io',
   blockedSupabaseProjectRefs: 'production-ref',
   blockedApiHosts: 'railcommand.io',
 };

@@ -20,9 +20,9 @@ assert.equal(draft.ads.containsAds, listing.google.containsAds);
 assert.equal(draft.storeSettings.category, listing.google.category);
 assert.equal(draft.storeSettings.contactEmail, listing.google.contactEmail);
 assert.equal(draft.storeSettings.website, listing.urls.marketing);
-assert.equal(draft.storeSettings.externalMarketing, 'PENDING_RELEASE_OWNER');
+assert.equal(draft.storeSettings.externalMarketing, 'OFF');
 assert.equal(draft.appAccess.restricted, true);
-assert.equal(draft.appAccess.reviewerCredentials, 'STORE_CONSOLE_ONLY_PENDING');
+assert.equal(draft.appAccess.reviewerCredentials, 'STORE_CONSOLE_ONLY_SAVED');
 assert.equal(draft.accountProvisioning.inAppAccountCreation, false);
 assert.equal(draft.accountProvisioning.outsideAppAccounts, true);
 assert.equal(draft.accountProvisioning.outsideAppAccountType, 'employment_or_enterprise');
@@ -91,7 +91,5 @@ console.log(JSON.stringify({
   encryptedInTransit: draft.dataSafety.encryptedInTransit,
   targetAudience: draft.targetAudience.ages,
   northAmericaContentRating: draft.contentRating.finalResult.northAmerica,
-  pendingExternalDecisions: [
-    'reviewer credentials',
-  ],
+  pendingExternalDecisions: [],
 }, null, 2));

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const STAGING_REF = 'cyacardivfzrsravqjto';
+const STAGING_REF = 'rxuvchdqbzvovqijvfhx';
 const STAGING_PROJECT_ID = 'prj_JWLbG1P1z06rCpN1bDI2DuugVpCy';
 const ENV_FILE = '.env.mobile.local';
 

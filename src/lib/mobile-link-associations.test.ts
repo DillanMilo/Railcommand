@@ -7,8 +7,8 @@ const middleware = readFileSync('src/middleware.ts', 'utf8');
 
 describe('mobile link associations', () => {
   it('isolates development associations to the staging host', () => {
-    const apple = appleAppSiteAssociation('railcommand-mobile-staging.vercel.app');
-    const android = androidAssetLinks('railcommand-mobile-staging.vercel.app');
+    const apple = appleAppSiteAssociation('mobile-staging.railcommand.io');
+    const android = androidAssetLinks('mobile-staging.railcommand.io');
     assert.deepEqual(apple?.applinks.details[0].appIDs, [
       'PQAGLH9L66.io.railcommand.app.dev',
       'PQAGLH9L66.io.railcommand.app.staging',

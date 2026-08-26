@@ -42,7 +42,7 @@ export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
   }
   const approvedLinkHost = profile === 'production'
     ? 'railcommand.io'
-    : 'railcommand-mobile-staging.vercel.app';
+    : 'mobile-staging.railcommand.io';
   if (linkHost !== approvedLinkHost) {
     throw new Error('RailCommand mobile link host does not match the build profile');
   }

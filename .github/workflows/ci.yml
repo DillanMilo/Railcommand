@@ -5,25 +5,25 @@ on:
 
 env:
   EXPO_PUBLIC_BUILD_PROFILE: development
-  EXPO_PUBLIC_SUPABASE_URL: https://cyacardivfzrsravqjto.supabase.co
+  EXPO_PUBLIC_SUPABASE_URL: https://rxuvchdqbzvovqijvfhx.supabase.co
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key-placeholder
-  EXPO_PUBLIC_API_BASE_URL: https://railcommand-mobile-staging.vercel.app
-  EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: cyacardivfzrsravqjto
-  EXPO_PUBLIC_EXPECTED_API_HOST: railcommand-mobile-staging.vercel.app
+  EXPO_PUBLIC_API_BASE_URL: https://mobile-staging.railcommand.io
+  EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: rxuvchdqbzvovqijvfhx
+  EXPO_PUBLIC_EXPECTED_API_HOST: mobile-staging.railcommand.io
   EXPO_PUBLIC_BLOCKED_SUPABASE_PROJECT_REFS: production-placeholder
   EXPO_PUBLIC_BLOCKED_API_HOSTS: railcommand.io
   MOBILE_BUILD_PROFILE: development
   MOBILE_APP_ID: io.railcommand.app.dev
   MOBILE_EXPECTED_APP_ID: io.railcommand.app.dev
-  MOBILE_EXPECTED_SUPABASE_PROJECT_REF: cyacardivfzrsravqjto
+  MOBILE_EXPECTED_SUPABASE_PROJECT_REF: rxuvchdqbzvovqijvfhx
   MOBILE_BLOCKED_SUPABASE_PROJECT_REFS: production-placeholder
-  MOBILE_EXPECTED_APP_HOST: railcommand-mobile-staging.vercel.app
+  MOBILE_EXPECTED_APP_HOST: mobile-staging.railcommand.io
   MOBILE_BLOCKED_APP_HOSTS: railcommand.io
   MOBILE_APP_VERSION: 0.3.0
   MOBILE_BUILD_NUMBER: "300001"
-  NEXT_PUBLIC_SUPABASE_URL: https://cyacardivfzrsravqjto.supabase.co
+  NEXT_PUBLIC_SUPABASE_URL: https://rxuvchdqbzvovqijvfhx.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-publishable-key-placeholder
-  NEXT_PUBLIC_APP_URL: https://railcommand-mobile-staging.vercel.app
+  NEXT_PUBLIC_APP_URL: https://mobile-staging.railcommand.io
 
 jobs:
   checks:
