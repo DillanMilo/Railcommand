@@ -98,6 +98,10 @@ checks and are recorded only in the gitignored private runbook.
   rejects missing machine-readable questions, stale selected data types, required
   blanks, and divergence between the declaration payload and usage answers. Nothing
   was imported or saved in Play Console.
+- The private reviewer-video recorder and verifier enforce a portrait H.264/HEVC file,
+  1080px-or-better width, and a 45–240 second duration. The approved three-minute
+  script starts after authentication, uses only synthetic records, exercises one
+  offline log/photo through exactly-once sync, and never submits account deletion.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,

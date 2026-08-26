@@ -28,6 +28,8 @@
     "verify:store:declarations": "node scripts/verify-store-declarations.mjs",
     "verify:store:android-release": "node scripts/verify-android-release-manifest.mjs",
     "generate:store:data-safety": "node scripts/generate-google-play-data-safety-csv.mjs",
+    "record:store:reviewer-video": "node scripts/record-ios-reviewer-video.mjs",
+    "verify:store:reviewer-video": "node scripts/verify-reviewer-video.mjs",
     "provision:mobile:device-qa": "node --env-file=.env.mobile.local scripts/provision-mobile-device-qa.mjs",
     "mobile:env:check": "node scripts/mobile-environment-guard.mjs",
     "mobile:build": "npm run export --workspace @railcommand/mobile",

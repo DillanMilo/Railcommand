@@ -44,3 +44,21 @@ backend available until review completes.
 5. Reconnect; synchronize; show zero queued items and two synchronized history items.
 6. Open Privacy, Support, and Account Deletion; show the offline block and local-work safeguard without submitting deletion.
 7. End on Account with the build number visible. Do not reveal credentials, tokens, GPS coordinates, or real project/customer information.
+
+Record from an authenticated synthetic session so the password is never captured. For
+an iOS Simulator release candidate, run:
+
+```sh
+npm run record:store:reviewer-video -- \
+  --device <booted-simulator-udid> \
+  --duration 180
+```
+
+The recorder writes only to the gitignored `docs/mobile/private` directory and rejects
+wrong orientation, sub-1080px output, unsupported codecs, and videos outside 45–240
+seconds. A physical-iPhone recording may instead be copied into that private directory
+and checked with `npm run verify:store:reviewer-video -- <video.mp4>`.
+
+The automated check cannot detect sensitive content. Before sharing, watch the entire
+video at normal speed and confirm there is no password, token, precise coordinate,
+customer information, debug-only control, notification preview, or unrelated device UI.
