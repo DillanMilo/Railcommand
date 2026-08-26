@@ -57,7 +57,10 @@ Google reference: <https://support.google.com/googleplay/android-developer/answe
   SMS, all-files access, advertising ID, exact alarm, accessibility service.
 
 No background-location declaration or permission video is required. Confirm this from
-the final AAB's merged manifest in Play Console before answering.
+the final AAB's merged manifest in Play Console before answering. A local generated
+release can be checked with `npm run verify:store:android-release`; that command also
+rejects Expo development-client callbacks and other development-only manifest surface.
+The local release remains diagnostic until it is signed with the approved upload key.
 
 ## Content rating proposal
 

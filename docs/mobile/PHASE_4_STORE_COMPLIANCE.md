@@ -74,6 +74,12 @@ checks and are recorded only in the gitignored private runbook.
   database/container is removed after the synthetic test.
 - `npm run build`, iOS and Android Hermes exports, Expo Doctor (21/21), a clean Android
   debug APK/release-manifest build, and an unsigned iOS release simulator build pass.
+- A local Android `bundleRelease` produced a diagnostic 1.0.0 AAB for
+  `io.railcommand.app` with version code `300001`, min SDK 24, and target SDK 36.
+  The release-manifest gate rejects background location, microphone, overlay,
+  all-files, advertising-ID, Expo development-client callbacks, or development-menu
+  surfaces. This locally generated AAB is debug-signed and must never be uploaded;
+  the final Play artifact must use the approved upload key and Play App Signing.
 - The isolated production build returns direct `200` responses for `/privacy`,
   `/support`, `/account-deletion`, and both `/.well-known` association routes; the
   association responses use `application/json` and do not redirect to authentication.
