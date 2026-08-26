@@ -102,6 +102,11 @@ checks and are recorded only in the gitignored private runbook.
   1080px-or-better width, and a 45–240 second duration. The approved three-minute
   script starts after authentication, uses only synthetic records, exercises one
   offline log/photo through exactly-once sync, and never submits account deletion.
+- A read-only EAS check confirms the `creative-currents` organization owns the
+  `@creative-currents/railcommand` build project. No production EAS build or signing
+  request was started. The Mac currently has no valid Apple signing identity and no
+  RailCommand distribution profile, so an App Store archive remains correctly blocked
+  until the organization team and credentials are verified in App Store Connect.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
