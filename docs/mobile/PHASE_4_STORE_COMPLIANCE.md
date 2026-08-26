@@ -148,6 +148,18 @@ checks and are recorded only in the gitignored private runbook.
 
 ## Remaining external evidence
 
+- Resolve the staging ownership inventory before release operations. The app and
+  authenticated browser session use `rxuvchdqbzvovqijvfhx`, while the currently
+  authenticated Supabase CLI profile can see a different project named **RailCommand
+  Mobile Staging** with ref `cyacardivfzrsravqjto`. The CLI project was not linked or
+  changed. Confirm the canonical owner account and rename/archive the duplicate only
+  with explicit approval; never redirect the mobile environment by inference.
+- The isolated Phase 4 deletion QA identity still authenticates against `rxuv…`, but
+  currently has no project membership and no pending invitation. It remains suitable
+  only for deletion lifecycle testing. Final screenshots and reviewer walkthroughs
+  require the permanent synthetic reviewer to have verified membership in **Synthetic
+  US Track Renewal**; do not bypass RLS or use the no-project account as marketing
+  evidence.
 - Exercise the Phase 4 deletion request, cancellation, 30-day-time simulation,
   identity anonymization/deletion, completion email, and failure retry in isolated
   staging. A fail-closed verifier now covers the zero-local-work gate, request

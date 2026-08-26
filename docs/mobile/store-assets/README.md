@@ -66,6 +66,22 @@ connected emulator, force-stops any prior process, and launches `MainActivity` w
 Metro. Its local debug-key signature is for simulator validation only and must never be
 uploaded to Google Play.
 
+The permanent synthetic reviewer can be entered without printing its private values:
+
+```sh
+env ANDROID_HOME="$HOME/Library/Android/sdk" \
+  MOBILE_BUILD_PROFILE=staging \
+  MOBILE_APP_ID=io.railcommand.app.staging \
+  MOBILE_EXPECTED_APP_ID=io.railcommand.app.staging \
+  node --env-file=<private-reviewer-env> \
+  scripts/sign-in-android-store-reviewer.mjs <emulator-id>
+```
+
+The private file supplies `STORE_REVIEWER_EMAIL` and `STORE_REVIEWER_PASSWORD`. The
+helper accepts only a controlled `@railcommand.io` inbox, refuses production and
+physical devices, locates the native accessibility controls, sends punctuation as
+explicit Android key events, and reports only a boolean sign-in result.
+
 Before Google capture, set the emulator's logical size to the matching approved frame:
 
 ```sh
