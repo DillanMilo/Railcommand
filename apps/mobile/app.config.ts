@@ -32,7 +32,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     name: profile.name,
     slug: 'railcommand',
     owner: EAS_OWNER,
-    version: '0.3.0',
+    version: '1.0.0',
     orientation: 'portrait',
     scheme: 'railcommand',
     userInterfaceStyle: 'light',

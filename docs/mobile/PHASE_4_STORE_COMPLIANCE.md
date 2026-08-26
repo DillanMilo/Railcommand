@@ -47,7 +47,8 @@ account-deletion request can be sent.
   point-of-use camera/photo/foreground-location behavior, contains an Apple privacy
   manifest (including approximate-location fallback), and sets the export-compliance flag.
 - A final 1024px store icon is reused by the adaptive Android foreground and splash
-  screen. No runtime icon or splash download is used.
+  screen. A separate validated 512px Play icon and 1024 × 500 Play feature graphic
+  are also checked in. No runtime store artwork download is used.
 
 ## Release gate
 
@@ -76,6 +77,12 @@ checks and are recorded only in the gitignored private runbook.
 - The isolated production build returns direct `200` responses for `/privacy`,
   `/support`, `/account-deletion`, and both `/.well-known` association routes; the
   association responses use `application/json` and do not redirect to authentication.
+- The public mobile marketing version is `1.0.0`. Installed iPhone 17 Pro Max and
+  iPad Pro 13-inch simulators produce the accepted `1320 × 2868` and `2064 × 2752`
+  screenshot dimensions, and the capture gate rejects incomplete or malformed sets.
+- A read-only Google Play Console check confirmed the Creative Currents organization
+  owns a draft RailCommand record for `io.railcommand.app`. Its initial setup remains
+  0 of 11 tasks complete; no console fields were changed or submitted during the check.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
@@ -93,6 +100,13 @@ checks and are recorded only in the gitignored private runbook.
   final testing.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
+- Complete the 11 Google Play initial setup declarations/listing tasks. The approved
+  answers and copy are prepared locally, but saving them is an external store-console
+  change and requires release-owner authorization. No Android emulator is currently
+  installed for honest Android screenshot capture.
+- Authenticate App Store Connect and verify the seller, agreements, app record,
+  distribution, roles, and review fields; the available browser sessions currently
+  stop at Apple's sign-in screen.
 - Validate production Apple/Android association files and Play signing fingerprints.
   Both `/.well-known` routes must return direct `200 application/json` responses
   without authentication or redirects after the approved release deployment.

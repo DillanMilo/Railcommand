@@ -7,11 +7,17 @@ debug/QA controls.
 ## Final icon and splash source
 
 - Verified 1024px RGB store icon: `apps/mobile/assets/images/icon-store-1024.png`.
+- Verified Google Play 512px icon: `apps/mobile/assets/images/google-play-icon-512.png`.
+- Verified Google Play 1024 × 500 JPEG feature graphic:
+  `apps/mobile/assets/images/google-play-feature-1024x500.jpg`.
 - The app icon, Android adaptive foreground, and splash screen all reference that same
   checked-in asset; no artwork is downloaded at runtime.
 - The source was created with the built-in image generator using a prompt for a crisp,
   professional square RailCommand mark: deep navy background, high-contrast white
   rail/forward motif, minimal geometry, no words, no mockup, and no transparency.
+- The feature graphic reuses the approved mark on a navy rail-grid field with a
+  restrained safety-orange accent. It contains no text, claims, screenshots, people,
+  customer data, or transparency.
 - Re-run `npm run verify:mobile:assets` after any artwork change. New artwork reopens
   screenshot and store-listing review.
 
@@ -44,3 +50,7 @@ and <https://support.google.com/googleplay/android-developer/answer/9866151>.
 Use the same honest UI sequence for Apple, Google, and the private reviewer video.
 App Store preview video is optional; the short private walkthrough is review support,
 not marketing material.
+
+The checked-in capture and verification commands are documented in
+`docs/mobile/store-assets/README.md`. The strict release check requires all six states
+for Apple iPhone/iPad and Google phone/tablet, for 24 validated screenshots total.

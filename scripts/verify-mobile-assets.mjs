@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readImageDimensions } from './store-media.mjs';
 
 const expoConfig = readFileSync(
   new URL('../apps/mobile/app.config.ts', import.meta.url),
@@ -9,6 +10,13 @@ assert.doesNotMatch(expoConfig, /server\s*:/, 'Expo must bundle its application 
 assert.match(expoConfig, /io\.railcommand\.app\.dev/, 'Development app identifier is missing');
 assert.match(expoConfig, /io\.railcommand\.app\.staging/, 'Staging app identifier is missing');
 assert.match(expoConfig, /io\.railcommand\.app['"]/, 'Production app identifier is missing');
+assert.match(expoConfig, /version:\s*['"]1\.0\.0['"]/, 'Store marketing version must be 1.0.0');
+
+const mobilePackage = JSON.parse(readFileSync(
+  new URL('../apps/mobile/package.json', import.meta.url),
+  'utf8',
+));
+assert.equal(mobilePackage.version, '1.0.0', 'Mobile package and store marketing versions must agree');
 
 function pngDimensions(path) {
   const bytes = readFileSync(new URL(`../${path}`, import.meta.url));
@@ -23,6 +31,19 @@ function expectPng(path, width, height) {
 
 expectPng('apps/mobile/assets/images/icon-store-1024.png', 1024, 1024);
 expectPng('apps/mobile/assets/images/android-icon-background.png', 512, 512);
+expectPng('apps/mobile/assets/images/google-play-icon-512.png', 512, 512);
+
+const featureGraphic = new URL(
+  '../apps/mobile/assets/images/google-play-feature-1024x500.jpg',
+  import.meta.url,
+);
+assert.ok(existsSync(featureGraphic), 'Google Play feature graphic is missing');
+assert.deepEqual(
+  readImageDimensions(featureGraphic),
+  { format: 'jpg', width: 1024, height: 500, hasAlpha: false },
+  'Google Play feature graphic must be a 1024 × 500 JPEG without alpha',
+);
+assert.ok(statSync(featureGraphic).size <= 15 * 1024 * 1024, 'Google Play feature graphic exceeds 15 MB');
 
 assert.match(expoConfig, /ACCESS_BACKGROUND_LOCATION/, 'Background location must be explicitly blocked');
 assert.match(expoConfig, /RECORD_AUDIO/, 'Microphone access must be explicitly blocked');

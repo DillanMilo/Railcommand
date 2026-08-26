@@ -1,5 +1,7 @@
 # RailCommand store metadata — US English
 
+Release version: `1.0.0`
+
 ## Shared positioning
 
 RailCommand is a private mobile field companion for authorized rail and construction

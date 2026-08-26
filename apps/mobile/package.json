@@ -1,7 +1,7 @@
 {
   "name": "@railcommand/mobile",
   "main": "expo-router/entry",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "dependencies": {
     "@railcommand/api-client": "0.1.0",
     "@railcommand/domain": "0.1.0",
