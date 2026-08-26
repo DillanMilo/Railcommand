@@ -219,7 +219,7 @@ async function isUnlocked(): Promise<boolean> {
   return safeCompare(stored, signature);
 }
 
-export async function unlockClientDashboard(formData: FormData) {
+async function unlockClientDashboard(formData: FormData) {
   'use server';
 
   const password = getDashboardPassword();
@@ -248,7 +248,7 @@ export async function unlockClientDashboard(formData: FormData) {
   redirect('/client');
 }
 
-export async function lockClientDashboard() {
+async function lockClientDashboard() {
   'use server';
 
   (await cookies()).set(CLIENT_DASHBOARD_COOKIE, '', {
