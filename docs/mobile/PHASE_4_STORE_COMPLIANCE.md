@@ -172,8 +172,8 @@ checks and are recorded only in the gitignored private runbook.
   2026, then saved as a draft without publishing or sending the app for review. The
   store-listing task remains incomplete until final screenshots are uploaded. Android
   API 36 phone/tablet emulator profiles are now installed, and the self-contained
-  staging Release has passed online and offline cold launch on the phone profile; the
-  six final synthetic-data stories and tablet capture remain outstanding.
+  staging Release has passed online and offline cold launch on both profiles. The
+  six final authenticated synthetic-data stories remain outstanding.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently
   stop at Apple's sign-in screen.
@@ -196,10 +196,16 @@ checks and are recorded only in the gitignored private runbook.
 - Android API 36 phone and tablet emulator profiles are installed locally. A guarded
   staging Release APK for `io.railcommand.app.staging` now rebuilds its embedded
   JavaScript whenever the mobile environment changes, installs without Metro, and
-  cold-launches on the phone emulator both online and with airplane mode plus Wi-Fi
-  and mobile data disabled. The app remained foregrounded and Android logs contained
-  no fatal JavaScript/native exception. This is emulator evidence only; the physical
-  Android hardware exception remains open.
+  cold-launches on the phone and tablet emulators both online and with airplane mode
+  plus Wi-Fi and mobile data disabled. The tablet uses its adaptive centered layout;
+  both apps remained foregrounded and their process-filtered logs contained no fatal
+  JavaScript/native exception. This is emulator evidence only; the physical Android
+  hardware exception remains open.
+- The Google capture tool resolves the selected Android SDK explicitly, requires the
+  approved logical emulator size, removes only framebuffer letterboxing, preserves
+  aspect ratio, and produces a validated JPEG. An end-to-end temporary tablet capture
+  passed at `1920 × 1080`; it was not added to the final story set because the frame
+  was intentionally unauthenticated.
 - Validate production Apple/Android association files and Play signing fingerprints.
   Both `/.well-known` routes must return direct `200 application/json` responses
   without authentication or redirects after the approved release deployment.

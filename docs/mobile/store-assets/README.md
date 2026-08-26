@@ -66,6 +66,19 @@ connected emulator, force-stops any prior process, and launches `MainActivity` w
 Metro. Its local debug-key signature is for simulator validation only and must never be
 uploaded to Google Play.
 
+Before Google capture, set the emulator's logical size to the matching approved frame:
+
+```sh
+adb -s <phone-emulator-id> shell wm size 1080x1920
+adb -s <tablet-emulator-id> shell wm size 1920x1080
+```
+
+The capture command requires that override, removes only the physical framebuffer's
+letterbox area, preserves the logical aspect ratio, and writes the approved JPEG size.
+It fails instead of stretching a frame or silently accepting a different layout. After
+the six captures are complete, restore the emulator with
+`adb -s <emulator-id> shell wm size reset`.
+
 Valid targets are `apple-iphone`, `apple-ipad`, `google-phone`, and `google-tablet`.
 Valid story slugs are `field-dashboard`, `daily-log-draft`, `offline-protection`,
 `sync-center`, `synchronized-history`, and `privacy-controls`.

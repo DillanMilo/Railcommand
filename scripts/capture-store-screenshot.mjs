@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -7,8 +7,10 @@ import {
   STORE_STORIES,
   STORE_TARGETS,
   expectedFileName,
+  readImageDimensions,
   validateStoreImage,
 } from './store-media.mjs';
+import { calculateCenteredCrop, selectTargetDimensions } from './android-store-capture.mjs';
 
 const { values } = parseArgs({
   options: {
@@ -45,6 +47,9 @@ if (!story) throw new Error(`--story must be one of: ${STORE_STORIES.map(({ slug
 const outputDirectory = resolve('docs/mobile/store-assets/screenshots', definition.directory);
 mkdirSync(outputDirectory, { recursive: true });
 const outputPath = join(outputDirectory, expectedFileName(target, story));
+const adb = process.env.ANDROID_HOME?.trim()
+  ? join(process.env.ANDROID_HOME.trim(), 'platform-tools', 'adb')
+  : 'adb';
 if (existsSync(outputPath) && !values.replace) {
   throw new Error(`${outputPath} already exists; inspect it or pass --replace intentionally`);
 }
@@ -61,12 +66,44 @@ if (target.startsWith('apple-')) {
   run('xcrun', ['simctl', 'io', device, 'screenshot', '--type=png', outputPath]);
 } else {
   const temporaryPng = join(tmpdir(), `railcommand-store-${process.pid}.png`);
-  const screenshot = run('adb', ['-s', device, 'exec-out', 'screencap', '-p']);
+  const croppedPng = join(tmpdir(), `railcommand-store-cropped-${process.pid}.png`);
+  const temporaryJpeg = join(outputDirectory, `.railcommand-store-${process.pid}.jpg`);
+  const screenshot = run(adb, ['-s', device, 'exec-out', 'screencap', '-p']);
   writeFileSync(temporaryPng, screenshot.stdout);
   try {
-    run('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95', temporaryPng, '--out', outputPath]);
+    const source = readImageDimensions(temporaryPng);
+    const targetSize = selectTargetDimensions(definition.dimensions, source.width, source.height);
+    const logicalSize = run(adb, ['-s', device, 'shell', 'wm', 'size']).stdout.toString();
+    if (!logicalSize.includes(`Override size: ${targetSize.dimensions}`)) {
+      throw new Error(
+        `Android emulator must use logical size ${targetSize.dimensions} before capture; `
+        + `run: adb -s ${device} shell wm size ${targetSize.dimensions}`,
+      );
+    }
+    const crop = calculateCenteredCrop(
+      source.width,
+      source.height,
+      targetSize.width,
+      targetSize.height,
+    );
+    run('sips', [
+      '-c', String(crop.height), String(crop.width),
+      temporaryPng,
+      '--out', croppedPng,
+    ]);
+    run('sips', [
+      '-z', String(targetSize.height), String(targetSize.width),
+      '-s', 'format', 'jpeg',
+      '-s', 'formatOptions', '95',
+      croppedPng,
+      '--out', temporaryJpeg,
+    ]);
+    validateStoreImage(temporaryJpeg, target);
+    renameSync(temporaryJpeg, outputPath);
   } finally {
     unlinkSync(temporaryPng);
+    if (existsSync(croppedPng)) unlinkSync(croppedPng);
+    if (existsSync(temporaryJpeg)) unlinkSync(temporaryJpeg);
   }
 }
 
