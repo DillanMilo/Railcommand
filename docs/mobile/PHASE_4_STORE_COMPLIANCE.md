@@ -170,8 +170,10 @@ checks and are recorded only in the gitignored private runbook.
   app for review. The validated 512px icon and 1024 × 500
   feature graphic were uploaded and attached to the US-English listing on August 26,
   2026, then saved as a draft without publishing or sending the app for review. The
-  store-listing task remains incomplete until final screenshots are uploaded. No
-  Android emulator is currently installed for honest Android screenshot capture.
+  store-listing task remains incomplete until final screenshots are uploaded. Android
+  API 36 phone/tablet emulator profiles are now installed, and the self-contained
+  staging Release has passed online and offline cold launch on the phone profile; the
+  six final synthetic-data stories and tablet capture remain outstanding.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently
   stop at Apple's sign-in screen.
@@ -191,6 +193,13 @@ checks and are recorded only in the gitignored private runbook.
   simulator signing so Keychain/SecureStore entitlements function; it creates no Apple
   distribution identity or profile. The separate unsigned simulator build remains the
   CI structural gate and is not used for authenticated runtime acceptance.
+- Android API 36 phone and tablet emulator profiles are installed locally. A guarded
+  staging Release APK for `io.railcommand.app.staging` now rebuilds its embedded
+  JavaScript whenever the mobile environment changes, installs without Metro, and
+  cold-launches on the phone emulator both online and with airplane mode plus Wi-Fi
+  and mobile data disabled. The app remained foregrounded and Android logs contained
+  no fatal JavaScript/native exception. This is emulator evidence only; the physical
+  Android hardware exception remains open.
 - Validate production Apple/Android association files and Play signing fingerprints.
   Both `/.well-known` routes must return direct `200 application/json` responses
   without authentication or redirects after the approved release deployment.

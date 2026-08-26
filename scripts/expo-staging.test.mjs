@@ -77,3 +77,15 @@ test('launches simulator releases without a Metro or development-client URL', ()
   assert.match(helperSource, /'simctl', 'launch'/);
   assert.doesNotMatch(helperSource, /'expo', 'run:ios'.*'configuration', 'Release'/s);
 });
+
+test('builds and launches a self-contained Android release for emulator validation', () => {
+  assert.match(helperSource, /'build-android-release'.*app:testReleaseUnitTest.*app:assembleRelease/s);
+  assert.match(helperSource, /'run-android-emulator'/);
+  assert.match(helperSource, /\['install', '-r', androidReleaseApk\]/);
+  assert.match(helperSource, /'force-stop', validated\.appId/);
+  assert.match(helperSource, /`\$\{validated\.appId\}\/\.MainActivity`/);
+  assert.match(helperSource, /EXPO_PUBLIC_BUILD_PROFILE: validated\.profile/);
+  assert.match(helperSource, /run-android-emulator requires ANDROID_HOME/);
+  assert.match(helperSource, /build\/generated\/assets\/react\/release/);
+  assert.match(helperSource, /build\/generated\/sourcemaps\/react\/release/);
+});

@@ -46,6 +46,26 @@ env MOBILE_BUILD_PROFILE=staging \
 authenticated screenshot work because unsigned simulator apps cannot access the
 Keychain entitlements required by SecureStore.
 
+For Android emulator acceptance, use JDK 21 and the generated staging native project.
+The helper deliberately removes only generated release JavaScript outputs before the
+build because Gradle does not otherwise treat `EXPO_PUBLIC_*` profile values as task
+inputs. This prevents a development or stale staging bundle from being reused:
+
+```sh
+env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
+  ANDROID_HOME="$HOME/Library/Android/sdk" \
+  MOBILE_BUILD_PROFILE=staging \
+  MOBILE_APP_ID=io.railcommand.app.staging \
+  MOBILE_EXPECTED_APP_ID=io.railcommand.app.staging \
+  node --env-file=.env.mobile.local scripts/expo-staging.mjs \
+  run-android-emulator
+```
+
+`run-android-emulator` creates a self-contained Release APK, installs it on the
+connected emulator, force-stops any prior process, and launches `MainActivity` without
+Metro. Its local debug-key signature is for simulator validation only and must never be
+uploaded to Google Play.
+
 Valid targets are `apple-iphone`, `apple-ipad`, `google-phone`, and `google-tablet`.
 Valid story slugs are `field-dashboard`, `daily-log-draft`, `offline-protection`,
 `sync-center`, `synchronized-history`, and `privacy-controls`.

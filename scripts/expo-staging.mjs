@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { delimiter } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { validateMobileEnvironment } from './mobile-environment-guard.mjs';
 
 const validated = validateMobileEnvironment(process.env);
@@ -44,6 +45,12 @@ const nativeTarget = {
 }[validated.profile];
 const simulatorDerivedData = `/private/tmp/railcommand-expo-${validated.profile}-simulator`;
 const simulatorApp = `${simulatorDerivedData}/Build/Products/Release-iphonesimulator/${nativeTarget}.app`;
+const androidReleaseApk = `${mobileRoot}android/app/build/outputs/apk/release/app-release.apk`;
+const androidHome = process.env.ANDROID_HOME?.trim();
+if (action === 'run-android-emulator' && !androidHome) {
+  throw new Error('run-android-emulator requires ANDROID_HOME');
+}
+const adb = androidHome ? join(androidHome, 'platform-tools', 'adb') : 'adb';
 const simulatorBuildArguments = [
   '-workspace', `${mobileRoot}ios/${nativeTarget}.xcworkspace`,
   '-scheme', nativeTarget,
@@ -84,7 +91,15 @@ const commands = {
     'build',
   ]],
   'build-android-debug': ['./android/gradlew', ['-p', 'android', 'app:testDebugUnitTest', 'app:assembleDebug']],
+  'build-android-release': ['./android/gradlew', ['-p', 'android', 'app:testReleaseUnitTest', 'app:assembleRelease']],
 };
+
+if (action === 'build-android-release' || action === 'run-android-emulator') {
+  // Gradle does not treat EXPO_PUBLIC_* values as bundle task inputs. Remove only
+  // generated JS outputs so a profile switch cannot reuse a bundle from another environment.
+  rmSync(`${mobileRoot}android/app/build/generated/assets/react/release`, { recursive: true, force: true });
+  rmSync(`${mobileRoot}android/app/build/generated/sourcemaps/react/release`, { recursive: true, force: true });
+}
 
 const command = commands[action];
 const commandSequence = action === 'run-ios-simulator'
@@ -93,11 +108,18 @@ const commandSequence = action === 'run-ios-simulator'
       ['xcrun', ['simctl', 'install', argument, simulatorApp]],
       ['xcrun', ['simctl', 'launch', argument, validated.appId]],
     ]
+  : action === 'run-android-emulator'
+    ? [
+        commands['build-android-release'],
+        [adb, ['install', '-r', androidReleaseApk]],
+        [adb, ['shell', 'am', 'force-stop', validated.appId]],
+        [adb, ['shell', 'am', 'start', '-n', `${validated.appId}/.MainActivity`]],
+      ]
   : command
     ? [command]
     : null;
 if (!commandSequence) {
-  throw new Error('Use config, prebuild-ios, prebuild-android, run-ios <device-id>, build-ios-simulator <simulator-udid>, run-ios-simulator <simulator-udid>, build-ios-release <device-udid>, build-android-debug, or start');
+  throw new Error('Use config, prebuild-ios, prebuild-android, run-ios <device-id>, build-ios-simulator <simulator-udid>, run-ios-simulator <simulator-udid>, build-ios-release <device-udid>, build-android-debug, build-android-release, run-android-emulator, or start');
 }
 
 for (const step of commandSequence) {
