@@ -79,6 +79,13 @@ files and Play signing fingerprints must be approved; and the complete real
 password-recovery email flow must pass with a non-customer inbox. Physical Android
 acceptance remains a named hardware exception until a device is available.
 
+`npm run verify:phase4:status` reports the exact checked-in local and external gate
+inventory without failing while work is in progress. `npm run verify:phase4:release`
+is the fail-closed final command: it remains red until every required gate is verified,
+all 24 authenticated store frames exist, and any physical Android exception has a dated
+release-owner acceptance. The manifest explicitly records that this branch carries no
+production-mutation authorization.
+
 `npm run verify:store:reviewer` performs a read-only sign-in/session/bootstrap check
 against an explicitly confirmed backend and rejects `.test`/`.invalid` inboxes. Setting
 `STORE_REVIEW_SEND_PASSWORD_RESET=true` deliberately sends the one final recovery

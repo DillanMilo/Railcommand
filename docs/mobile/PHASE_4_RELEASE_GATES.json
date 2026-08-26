@@ -1,0 +1,76 @@
+{
+  "releaseVersion": "1.0.0",
+  "scope": "store-submission-readiness",
+  "productionMutationAuthorized": false,
+  "gates": [
+    {
+      "id": "local-compliance-suite",
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "Phase 4 local validation commands and docs/mobile/PHASE_4_STORE_COMPLIANCE.md"
+    },
+    {
+      "id": "isolated-preview-deployment",
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "Vercel preview deployment dpl_2xU6TLtrJKs27gAS6wdET57amMTi"
+    },
+    {
+      "id": "google-play-drafts",
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "Saved Google Play drafts recorded in docs/mobile/PHASE_4_STORE_COMPLIANCE.md; not submitted or published"
+    },
+    {
+      "id": "password-recovery-delivery",
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "Controlled staging inbox delivery and one-use callback recorded in the private runbook"
+    },
+    {
+      "id": "canonical-staging-backend",
+      "status": "pending",
+      "evidence": "Confirm ownership of rxuvchdqbzvovqijvfhx and resolve the duplicate cyacardivfzrsravqjto inventory"
+    },
+    {
+      "id": "staging-deletion-lifecycle",
+      "status": "pending",
+      "evidence": "Requires Preview-only server credentials and separate approval for irreversible synthetic finalization"
+    },
+    {
+      "id": "app-store-connect",
+      "status": "pending",
+      "evidence": "Verify seller, agreements, app record, US availability, roles, and review fields read-only"
+    },
+    {
+      "id": "apple-distribution-signing",
+      "status": "pending",
+      "evidence": "No valid Apple signing identity or RailCommand distribution profile is installed"
+    },
+    {
+      "id": "authenticated-store-media",
+      "status": "pending",
+      "evidence": "All 24 authenticated synthetic-data frames must pass verify:store:media:strict"
+    },
+    {
+      "id": "reviewer-walkthrough",
+      "status": "pending",
+      "evidence": "Capture and validate the private reviewer video from the archived release candidate"
+    },
+    {
+      "id": "production-association-files",
+      "status": "pending",
+      "evidence": "Validate production Apple/Android associations and approved Play signing fingerprints after authorized deployment"
+    },
+    {
+      "id": "physical-iphone-deletion",
+      "status": "pending",
+      "evidence": "Run the final account-deletion acceptance flow on a physical iPhone"
+    },
+    {
+      "id": "physical-android-acceptance",
+      "status": "pending",
+      "evidence": "A physical Android device is unavailable; any release exception requires explicit owner acceptance"
+    }
+  ]
+}
