@@ -131,8 +131,8 @@ checks and are recorded only in the gitignored private runbook.
   microphone, release overlay, advertising ID, and all-files access from the declared
   release posture.
 - An authorized deployment of the verified artifact is `READY` at the unique preview
-  `railcommand-mobile-staging-rjfouzl5a-dillans-projects-f662840b.vercel.app`, deployment
-  `dpl_656ghyzWiZnRDCLmcEZhBq7AyFqJ`. The public custom staging alias points directly to
+  `railcommand-mobile-staging-hq5bemnbh-dillans-projects-f662840b.vercel.app`, deployment
+  `dpl_2xU6TLtrJKs27gAS6wdET57amMTi`. The public custom staging alias points directly to
   that preview without promoting it to production. Health, policy, deletion, support,
   and both association routes return direct `200` responses on the custom host. No
   `--prod` flag, production mutation, or customer-data access occurred.
@@ -150,7 +150,14 @@ checks and are recorded only in the gitignored private runbook.
 
 - Exercise the Phase 4 deletion request, cancellation, 30-day-time simulation,
   identity anonymization/deletion, completion email, and failure retry in isolated
-  staging. Do not apply these changes to production from this branch.
+  staging. A fail-closed verifier now covers the zero-local-work gate, request
+  idempotency, session revocation, cancellation, and preparation of one explicitly
+  identified pending synthetic request. Its first live run correctly stopped because
+  the Preview deployment has no server-only Supabase credential; the partially created
+  request was canceled immediately. Add the staging-only service credential and cron
+  secret to Vercel Preview only after release-owner confirmation, then run irreversible
+  finalization only after a second confirmation naming the synthetic account. Do not
+  apply these changes to production from this branch.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
@@ -168,6 +175,13 @@ checks and are recorded only in the gitignored private runbook.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently
   stop at Apple's sign-in screen.
+- The checked-in Expo configuration and EAS project agree on
+  `@creative-currents/railcommand` (`dda86dca-ca12-4efa-a556-6fd8411485d5`), and the
+  authenticated EAS account confirms Creative Currents ownership. This Mac still has
+  zero valid Apple code-signing identities. Its only installed distribution profile is
+  for `com.creativecurrents.pawpal`, not RailCommand, so no RailCommand archive can be
+  signed accidentally. The profile does independently confirm Apple team
+  `PQAGLH9L66` / Creative Currents LLC.
 - Validate production Apple/Android association files and Play signing fingerprints.
   Both `/.well-known` routes must return direct `200 application/json` responses
   without authentication or redirects after the approved release deployment.
