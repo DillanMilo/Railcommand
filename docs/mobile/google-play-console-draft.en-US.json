@@ -1,0 +1,93 @@
+{
+  "privacyPolicyUrl": "https://railcommand.io/privacy",
+  "appAccess": {
+    "restricted": true,
+    "reviewerCredentials": "STORE_CONSOLE_ONLY_PENDING",
+    "instructions": "Sign in with the permanent synthetic RailCommand organization account supplied in Play Console. Select Synthetic US Track Renewal. The account has daily-log permission, contains no customer data, does not expire, and does not require MFA. Existing records are read-only offline. Create a new daily log and optional photo/location offline, then reconnect and use Sync Center to synchronize."
+  },
+  "ads": {
+    "containsAds": false
+  },
+  "contentRating": {
+    "appType": "business_productivity",
+    "violence": false,
+    "sexualContent": false,
+    "profanity": false,
+    "controlledSubstances": false,
+    "gambling": false,
+    "publicSocialInteraction": false,
+    "proposedResult": "Everyone",
+    "finalResult": "QUESTIONNAIRE_GENERATED_PENDING"
+  },
+  "targetAudience": {
+    "designedForChildren": false,
+    "ages": ["18+"]
+  },
+  "dataSafety": {
+    "collectsData": true,
+    "sharesData": false,
+    "encryptedInTransit": true,
+    "accountDeletionAvailable": true,
+    "accountDeletionUrl": "https://railcommand.io/account-deletion",
+    "dataTypes": [
+      {
+        "category": "Personal info",
+        "types": ["Name", "Email address", "User IDs"],
+        "required": true,
+        "purposes": ["App functionality", "Account management"]
+      },
+      {
+        "category": "Photos and videos",
+        "types": ["Photos"],
+        "required": false,
+        "purposes": ["App functionality"]
+      },
+      {
+        "category": "Location",
+        "types": ["Approximate location", "Precise location"],
+        "required": false,
+        "purposes": ["App functionality"]
+      },
+      {
+        "category": "App activity",
+        "types": ["Other user-generated content"],
+        "required": true,
+        "purposes": ["App functionality"]
+      },
+      {
+        "category": "Device or other IDs",
+        "types": ["Device or other IDs"],
+        "required": false,
+        "purposes": ["App functionality"]
+      }
+    ],
+    "notCollected": [
+      "Contacts",
+      "Health and fitness",
+      "Financial info",
+      "Audio files",
+      "Browsing history",
+      "Search history",
+      "Crash logs",
+      "Diagnostics",
+      "Advertising ID"
+    ]
+  },
+  "governmentApp": false,
+  "financialFeatures": [],
+  "healthFeatures": [],
+  "storeSettings": {
+    "appOrGame": "App",
+    "category": "Business",
+    "contactEmail": "support@railcommand.io",
+    "phone": null,
+    "website": "https://railcommand.io/",
+    "externalMarketing": "PENDING_RELEASE_OWNER"
+  },
+  "storeListingSource": "docs/mobile/store-listing.en-US.json",
+  "assetSources": {
+    "icon": "apps/mobile/assets/images/google-play-icon-512.png",
+    "featureGraphic": "apps/mobile/assets/images/google-play-feature-1024x500.jpg",
+    "screenshots": "docs/mobile/store-assets/screenshots/google"
+  }
+}

@@ -2,6 +2,11 @@
 
 Release version: `1.0.0`
 
+The console-ready source of truth is `docs/mobile/store-listing.en-US.json`. Run
+`npm run verify:store:metadata` before copying or saving any listing field. The check
+enforces both stores' character limits, the US-only scope, approved URLs, matching
+version/name/description values, and the claims prohibited below.
+
 ## Shared positioning
 
 RailCommand is a private mobile field companion for authorized rail and construction

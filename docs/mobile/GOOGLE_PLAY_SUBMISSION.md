@@ -3,6 +3,12 @@
 Use this as the reviewed source of truth for Play Console. Reconcile it with the final
 merged release manifest and current SDK inventory before production submission.
 
+The field-by-field console payload is also recorded in
+`docs/mobile/google-play-console-draft.en-US.json`. It deliberately contains no
+credentials. Run `npm run verify:store:declarations` before entering or saving the
+questionnaire; reviewer credentials and questionnaire-generated results remain in
+Play Console and the gitignored private runbook only.
+
 ## Store and policy declarations
 
 - App name: **RailCommand**

@@ -83,6 +83,10 @@ checks and are recorded only in the gitignored private runbook.
 - A read-only Google Play Console check confirmed the Creative Currents organization
   owns a draft RailCommand record for `io.railcommand.app`. Its initial setup remains
   0 of 11 tasks complete; no console fields were changed or submitted during the check.
+- The console-ready US-English listing and Google declaration payloads are structured,
+  credential-free, and cross-checked against the 1.0 binary privacy manifest. Metadata
+  limits, URLs, US-only scope, eight disclosed data types, no-sharing/no-ads posture,
+  encryption, target audience, and asset paths pass automated verification.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,

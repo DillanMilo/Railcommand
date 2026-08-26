@@ -1,0 +1,28 @@
+{
+  "releaseVersion": "1.0.0",
+  "locale": "en-US",
+  "countries": ["US"],
+  "urls": {
+    "marketing": "https://railcommand.io/",
+    "privacy": "https://railcommand.io/privacy",
+    "support": "https://railcommand.io/support",
+    "accountDeletion": "https://railcommand.io/account-deletion"
+  },
+  "apple": {
+    "name": "RailCommand",
+    "subtitle": "Offline rail field logs",
+    "promotionalText": "Capture daily field logs, photos, and optional location even when connectivity drops, then synchronize safely when service returns.",
+    "keywords": "rail,construction,daily log,field report,project control,offline,safety,photos,crew",
+    "description": "RailCommand gives authorized rail and construction teams a focused mobile workflow for daily field reporting.\n\nUse your organization-issued RailCommand account to select a project, review cached project and team information, create a daily log, attach field photos and optional location, and monitor synchronization status.\n\nScoped offline support protects new daily-log drafts and photos when connectivity drops. Reconnect to synchronize each queued item safely. Existing records remain read-only offline, and administrative modules remain available in the connected web application.\n\nRailCommand is licensed directly to organizations. The mobile app contains no ads, in-app purchases, or public account registration.",
+    "whatsNew": "Initial RailCommand mobile release with organization sign-in, project selection, cached field references, offline daily-log drafts, photo and optional location capture, durable synchronization, Sync Center, notifications, privacy controls, and account-deletion initiation."
+  },
+  "google": {
+    "appName": "RailCommand",
+    "shortDescription": "Create rail field logs and photos, even when connectivity drops.",
+    "fullDescription": "RailCommand gives authorized rail and construction teams a focused mobile workflow for daily field reporting.\n\nUse your organization-issued RailCommand account to select a project, review cached project and team information, create a daily log, attach field photos and optional location, and monitor synchronization status.\n\nScoped offline support protects new daily-log drafts and photos when connectivity drops. Reconnect to synchronize each queued item safely. Existing records remain read-only offline, and administrative modules remain available in the connected web application.\n\nRailCommand is licensed directly to organizations. The mobile app contains no ads, in-app purchases, or public account registration.",
+    "category": "Business",
+    "contactEmail": "support@railcommand.io",
+    "containsAds": false,
+    "externalMarketingDecision": "pending_release_owner"
+  }
+}

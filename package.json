@@ -24,6 +24,8 @@
     "verify:store:reviewer": "node --env-file=.env.mobile.local scripts/verify-store-reviewer.mjs",
     "verify:store:media": "node scripts/verify-store-media.mjs",
     "verify:store:media:strict": "node scripts/verify-store-media.mjs --strict",
+    "verify:store:metadata": "node scripts/verify-store-metadata.mjs",
+    "verify:store:declarations": "node scripts/verify-store-declarations.mjs",
     "provision:mobile:device-qa": "node --env-file=.env.mobile.local scripts/provision-mobile-device-qa.mjs",
     "mobile:env:check": "node scripts/mobile-environment-guard.mjs",
     "mobile:build": "npm run export --workspace @railcommand/mobile",
