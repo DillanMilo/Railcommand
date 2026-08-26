@@ -142,9 +142,13 @@ checks and are recorded only in the gitignored private runbook.
   content is complete; reviewer sign-in details require the permanent reviewer
   account; content rating remains pending; and the store-listing task remains
   incomplete until the prepared icon/feature graphic and final screenshots are
-  uploaded. Chrome asset upload currently requires enabling the ChatGPT extension's
-  **Allow access to file URLs** setting. No Android emulator is currently installed for
-  honest Android screenshot capture.
+  uploaded. Chrome's **Allow access to file URLs** setting is confirmed enabled, but
+  the Play media-library picker still does not expose its native chooser to browser
+  automation, so those assets require a manual picker action or a separately approved
+  upload channel. Content rating also requires an IARC contact email and explicit
+  acceptance of IARC's Terms of Use. Target Audience cannot start until reviewer sign-in
+  details are complete. No Android emulator is currently installed for honest Android
+  screenshot capture.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently
   stop at Apple's sign-in screen.

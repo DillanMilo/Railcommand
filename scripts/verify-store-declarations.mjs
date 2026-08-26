@@ -85,5 +85,9 @@ console.log(JSON.stringify({
   sharesData: draft.dataSafety.sharesData,
   encryptedInTransit: draft.dataSafety.encryptedInTransit,
   targetAudience: draft.targetAudience.ages,
-  pendingExternalDecisions: ['reviewer credentials', 'questionnaire-generated rating'],
+  pendingExternalDecisions: [
+    'reviewer credentials',
+    'IARC contact and Terms acceptance',
+    'questionnaire-generated rating',
+  ],
 }, null, 2));
