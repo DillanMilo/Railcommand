@@ -5,6 +5,11 @@
     "reviewerCredentials": "STORE_CONSOLE_ONLY_PENDING",
     "instructions": "Sign in with the permanent synthetic RailCommand organization account supplied in Play Console. Select Synthetic US Track Renewal. The account has daily-log permission, contains no customer data, does not expire, and does not require MFA. Existing records are read-only offline. Create a new daily log and optional photo/location offline, then reconnect and use Sync Center to synchronize."
   },
+  "accountProvisioning": {
+    "inAppAccountCreation": false,
+    "outsideAppAccounts": true,
+    "outsideAppAccountType": "employment_or_enterprise"
+  },
   "ads": {
     "containsAds": false
   },
@@ -51,7 +56,7 @@
       {
         "category": "App activity",
         "types": ["Other user-generated content"],
-        "required": true,
+        "required": false,
         "purposes": ["App functionality"]
       },
       {

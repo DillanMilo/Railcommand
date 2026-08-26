@@ -93,6 +93,11 @@ checks and are recorded only in the gitignored private runbook.
   credential-free, and cross-checked against the 1.0 binary privacy manifest. Metadata
   limits, URLs, US-only scope, eight disclosed data types, no-sharing/no-ads posture,
   encryption, target audience, and asset paths pass automated verification.
+- Google's live 782-row Data Safety CSV schema was exported read-only and converted
+  into a deterministic private import draft with 51 reviewed responses. The generator
+  rejects missing machine-readable questions, stale selected data types, required
+  blanks, and divergence between the declaration payload and usage answers. Nothing
+  was imported or saved in Play Console.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,

@@ -9,6 +9,25 @@ credentials. Run `npm run verify:store:declarations` before entering or saving t
 questionnaire; reviewer credentials and questionnaire-generated results remain in
 Play Console and the gitignored private runbook only.
 
+Google's current Console calls App access **Sign in details**. A read-only audit on
+2026-08-26 confirmed the RailCommand record still has 0 of 11 initial setup tasks
+complete and that Target audience remains locked until Ads and Sign in details are
+saved. No Console answer was changed during that audit.
+
+The current blank Data Safety CSV can be populated without touching Play Console:
+
+```sh
+npm run generate:store:data-safety -- \
+  /path/to/data_safety_export.csv \
+  docs/mobile/private/google-play-data-safety-import.csv
+```
+
+The generator clears every pre-existing response, fills only the reviewed RailCommand
+answers, verifies every machine-readable question against the freshly exported
+template, and keeps the import file in the gitignored private runbook directory.
+Importing the result is an **online-only release-owner action** that overwrites existing
+Console answers and therefore requires explicit approval and a final preview review.
+
 ## Store and policy declarations
 
 - App name: **RailCommand**

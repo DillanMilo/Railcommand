@@ -23,6 +23,9 @@ assert.equal(draft.storeSettings.website, listing.urls.marketing);
 assert.equal(draft.storeSettings.externalMarketing, 'PENDING_RELEASE_OWNER');
 assert.equal(draft.appAccess.restricted, true);
 assert.equal(draft.appAccess.reviewerCredentials, 'STORE_CONSOLE_ONLY_PENDING');
+assert.equal(draft.accountProvisioning.inAppAccountCreation, false);
+assert.equal(draft.accountProvisioning.outsideAppAccounts, true);
+assert.equal(draft.accountProvisioning.outsideAppAccountType, 'employment_or_enterprise');
 assert.doesNotMatch(JSON.stringify(draft), /password|access[_ -]?token|service[_ -]?role/i, 'Draft must not contain credentials');
 
 assert.equal(draft.dataSafety.collectsData, true);
@@ -36,6 +39,21 @@ assert.deepEqual(draft.financialFeatures, []);
 assert.deepEqual(draft.healthFeatures, []);
 
 const disclosedTypes = new Set(draft.dataSafety.dataTypes.flatMap(({ types }) => types));
+const dataTypeRequirements = new Map(
+  draft.dataSafety.dataTypes.flatMap(({ types, required }) => types.map((type) => [type, required])),
+);
+assert.equal(dataTypeRequirements.get('Name'), true);
+assert.equal(dataTypeRequirements.get('Email address'), true);
+assert.equal(dataTypeRequirements.get('User IDs'), true);
+for (const optionalType of [
+  'Photos',
+  'Approximate location',
+  'Precise location',
+  'Other user-generated content',
+  'Device or other IDs',
+]) {
+  assert.equal(dataTypeRequirements.get(optionalType), false, `${optionalType} must remain user-optional`);
+}
 const nativePrivacyMappings = new Map([
   ['Name', 'Name'],
   ['Email address', 'EmailAddress'],
