@@ -173,10 +173,13 @@ checks and are recorded only in the gitignored private runbook.
   idempotency, session revocation, cancellation, and preparation of one explicitly
   identified pending synthetic request. Its first live run correctly stopped because
   the Preview deployment has no server-only Supabase credential; the partially created
-  request was canceled immediately. Add the staging-only service credential and cron
-  secret to Vercel Preview only after release-owner confirmation, then run irreversible
-  finalization only after a second confirmation naming the synthetic account. Do not
-  apply these changes to production from this branch.
+  request was canceled immediately. After explicit release-owner authorization,
+  `CRON_SECRET` was saved as an encrypted Vercel **Preview-only** variable on August 26,
+  2026. `SUPABASE_SERVICE_ROLE_KEY` remains absent: the authenticated CLI profile gets
+  a `403` for the canonical `rxuv…` key inventory, so owner access must be restored in
+  the Supabase dashboard rather than bypassed or inferred from the duplicate project.
+  Run irreversible finalization only after a second confirmation naming the synthetic
+  account. Do not apply these changes to production from this branch.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
@@ -194,8 +197,11 @@ checks and are recorded only in the gitignored private runbook.
   staging Release has passed online and offline cold launch on both profiles. The
   six final authenticated synthetic-data stories remain outstanding.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
-  distribution, roles, and review fields; the available browser sessions currently
-  stop at Apple's sign-in screen.
+  distribution, roles, and review fields. The signed-in Chrome tabs are visible, but
+  the Chrome control extension did not complete its required session handshake even
+  after an authorized fresh Profile 2 window and successful installation/native-host
+  diagnostics. Reconnect or reinstall the Browser plugin before retrying; do not bypass
+  the signed-in Chrome session with another automation surface.
 - The checked-in Expo configuration and EAS project agree on
   `@creative-currents/railcommand` (`dda86dca-ca12-4efa-a556-6fd8411485d5`), and the
   authenticated EAS account confirms Creative Currents ownership. This Mac still has

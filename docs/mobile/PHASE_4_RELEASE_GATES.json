@@ -35,12 +35,12 @@
     {
       "id": "staging-deletion-lifecycle",
       "status": "pending",
-      "evidence": "Requires Preview-only server credentials and separate approval for irreversible synthetic finalization"
+      "evidence": "CRON_SECRET is saved as an encrypted Preview-only Vercel variable; SUPABASE_SERVICE_ROLE_KEY still requires canonical rxuv project-owner access, followed by separate approval for irreversible synthetic finalization"
     },
     {
       "id": "app-store-connect",
       "status": "pending",
-      "evidence": "Verify seller, agreements, app record, US availability, roles, and review fields read-only"
+      "evidence": "Verify seller, agreements, app record, US availability, roles, and review fields read-only after the Chrome control extension is reconnected"
     },
     {
       "id": "apple-distribution-signing",
