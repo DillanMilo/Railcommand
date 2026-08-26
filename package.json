@@ -14,6 +14,7 @@
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:offline": "mocha --require tsx \"src/lib/offline/*.test.ts\"",
     "test:mobile-env": "node --test scripts/mobile-environment-guard.test.mjs",
+    "test:expo-staging": "node --test scripts/expo-staging.test.mjs",
     "test:mobile": "npm run test --workspace @railcommand/domain && npm run test --workspace @railcommand/offline && npm run test --workspace @railcommand/api-client && npm run test --workspace @railcommand/mobile && npm run test:mobile-api && npm run test:mobile-links",
     "test:mobile:capacitor-spike": "npm run test --workspace @railcommand/mobile-capacitor-spike",
     "test:mobile-api": "mocha --require tsx \"src/lib/mobile-api/*.test.ts\"",

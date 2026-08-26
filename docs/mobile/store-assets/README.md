@@ -24,6 +24,28 @@ node scripts/capture-store-screenshot.mjs \
   --story field-dashboard
 ```
 
+Before capture, generate and launch an isolated staging Release bundle. The helper
+validates the staging backend and app identifier, refuses production, embeds the
+JavaScript bundle, avoids Metro/development-client callbacks, and uses local simulator
+signing only so SecureStore works:
+
+```sh
+env MOBILE_BUILD_PROFILE=staging \
+  MOBILE_APP_ID=io.railcommand.app.staging \
+  MOBILE_EXPECTED_APP_ID=io.railcommand.app.staging \
+  node --env-file=.env.mobile.local scripts/expo-staging.mjs prebuild-ios
+
+env MOBILE_BUILD_PROFILE=staging \
+  MOBILE_APP_ID=io.railcommand.app.staging \
+  MOBILE_EXPECTED_APP_ID=io.railcommand.app.staging \
+  node --env-file=.env.mobile.local scripts/expo-staging.mjs \
+  run-ios-simulator <simulator-udid>
+```
+
+`build-ios-simulator` remains the unsigned CI-equivalent build. Do not install it for
+authenticated screenshot work because unsigned simulator apps cannot access the
+Keychain entitlements required by SecureStore.
+
 Valid targets are `apple-iphone`, `apple-ipad`, `google-phone`, and `google-tablet`.
 Valid story slugs are `field-dashboard`, `daily-log-draft`, `offline-protection`,
 `sync-center`, `synchronized-history`, and `privacy-controls`.

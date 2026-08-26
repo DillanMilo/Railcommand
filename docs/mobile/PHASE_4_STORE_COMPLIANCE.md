@@ -182,6 +182,15 @@ checks and are recorded only in the gitignored private runbook.
   for `com.creativecurrents.pawpal`, not RailCommand, so no RailCommand archive can be
   signed accidentally. The profile does independently confirm Apple team
   `PQAGLH9L66` / Creative Currents LLC.
+- A clean Expo CNG prebuild with the staging profile resolves to
+  `io.railcommand.app.staging`, `mobile-staging.railcommand.io`, and the isolated
+  Supabase project. A Release bundle now builds, installs, and launches directly—no
+  Metro server or development-client callback—on the local iPhone 17 Pro Max and iPad
+  Pro 13-inch simulators. Their captured frames are the accepted `1320 × 2868` and
+  `2064 × 2752` dimensions. The runnable simulator build uses only local ad-hoc
+  simulator signing so Keychain/SecureStore entitlements function; it creates no Apple
+  distribution identity or profile. The separate unsigned simulator build remains the
+  CI structural gate and is not used for authenticated runtime acceptance.
 - Validate production Apple/Android association files and Play signing fingerprints.
   Both `/.well-known` routes must return direct `200 application/json` responses
   without authentication or redirects after the approved release deployment.
