@@ -34,6 +34,11 @@ assert.equal(draft.dataSafety.encryptedInTransit, true);
 assert.equal(draft.dataSafety.accountDeletionAvailable, true);
 assert.equal(draft.targetAudience.designedForChildren, false);
 assert.deepEqual(draft.targetAudience.ages, ['18+']);
+assert.equal(draft.contentRating.finalResult.northAmerica, 'Teen');
+assert.equal(draft.contentRating.finalResult.restOfWorld, '12+');
+assert.equal(draft.contentRating.contactEmail, listing.google.contactEmail);
+assert.equal(draft.contentRating.publicSocialInteraction, false);
+assert.equal(draft.contentRating.interactionsLimitedToInvitedUsers, true);
 assert.equal(draft.governmentApp, false);
 assert.deepEqual(draft.financialFeatures, []);
 assert.deepEqual(draft.healthFeatures, []);
@@ -85,9 +90,8 @@ console.log(JSON.stringify({
   sharesData: draft.dataSafety.sharesData,
   encryptedInTransit: draft.dataSafety.encryptedInTransit,
   targetAudience: draft.targetAudience.ages,
+  northAmericaContentRating: draft.contentRating.finalResult.northAmerica,
   pendingExternalDecisions: [
     'reviewer credentials',
-    'IARC contact and Terms acceptance',
-    'questionnaire-generated rating',
   ],
 }, null, 2));

@@ -140,12 +140,15 @@ checks and are recorded only in the gitignored private runbook.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
   6 of 11 tasks complete. Data Safety remains a saved draft until target-audience
   content is complete; reviewer sign-in details require the permanent reviewer
-  account; and content rating remains pending. The validated 512px icon and 1024 × 500
+  account. The IARC questionnaire is complete using the verified routed support
+  address; it produced an ESRB Teen rating for North America and 12+/parental-guidance
+  equivalents elsewhere because invited organization users share field content and
+  optional location. This completed the rating questionnaire only and did not send the
+  app for review. The validated 512px icon and 1024 × 500
   feature graphic were uploaded and attached to the US-English listing on August 26,
   2026, then saved as a draft without publishing or sending the app for review. The
-  store-listing task remains incomplete until final screenshots are uploaded. Content
-  rating also requires an IARC contact email and explicit acceptance of IARC's Terms of
-  Use. Target Audience cannot start until reviewer sign-in details are complete. No
+  store-listing task remains incomplete until final screenshots are uploaded. Target
+  Audience cannot start until reviewer sign-in details are complete. No
   Android emulator is currently installed for honest Android screenshot capture.
 - Authenticate App Store Connect and verify the seller, agreements, app record,
   distribution, roles, and review fields; the available browser sessions currently

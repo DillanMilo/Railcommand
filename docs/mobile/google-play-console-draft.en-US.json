@@ -21,8 +21,21 @@
     "controlledSubstances": false,
     "gambling": false,
     "publicSocialInteraction": false,
-    "proposedResult": "Everyone",
-    "finalResult": "QUESTIONNAIRE_GENERATED_PENDING"
+    "restrictedOrganizationUserContentSharing": true,
+    "userGeneratedContentIsPrimary": true,
+    "interactionsLimitedToInvitedUsers": true,
+    "preciseLocationSharedWithAuthorizedUsers": true,
+    "finalResult": {
+      "northAmerica": "Teen",
+      "brazil": "12+",
+      "europe": "Parental guidance",
+      "germany": "USK 12+",
+      "restOfWorld": "12+",
+      "russia": "12+",
+      "southKorea": "12+"
+    },
+    "questionnaireCompletedAt": "2026-08-26T12:58:00-05:00",
+    "contactEmail": "support@railcommand.io"
   },
   "targetAudience": {
     "designedForChildren": false,
