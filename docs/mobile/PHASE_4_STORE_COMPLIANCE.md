@@ -188,6 +188,16 @@ checks and are recorded only in the gitignored private runbook.
 
 ## Additional validation completed on 2026-08-27
 
+- A physical iPhone 17 Pro Max running the development application verified the
+  account-deletion zero-work inspection and the local-work safeguard with a single
+  synthetic draft named `PHASE 4 DELETION SAFEGUARD TEST — SAFE TO DISCARD`. The
+  deletion request stayed disabled while the draft existed. After the release owner
+  explicitly approved disposal of that exact synthetic item, both confirmation stages
+  were exercised and the device returned to `0 draft(s) · 0 queued item(s) · 0 photo(s)`.
+  The UI confirmed that server records were not changed, and no account-deletion request
+  was submitted. The remaining device-side acceptance step is the online-only block
+  while Airplane Mode and Wi-Fi are off; iPhone Mirroring intentionally would not apply
+  that connectivity-setting change, so the gate remains pending rather than inferred.
 - After authenticated store-media capture, the temporary deletion-QA project membership
   was removed from `rxuv…` with an exact one-row guard. A follow-up query verified zero
   matching memberships and one retained staging Auth identity. Five local temporary
@@ -215,6 +225,11 @@ checks and are recorded only in the gitignored private runbook.
 
 ## Remaining external evidence
 
+- The production `https://railcommand.io/.well-known/apple-app-site-association` and
+  `https://railcommand.io/.well-known/assetlinks.json` endpoints were checked read-only
+  on 2026-08-27. Both currently return `307` to `/login`, so the production association
+  gate remains correctly blocked. No deployment, middleware change, or other production
+  mutation was performed.
 - The canonical mobile staging backend is confirmed as `rxuvchdqbzvovqijvfhx` through
   its authenticated dashboard, current API keys, Preview health route, and deletion
   lifecycle. A different project named **RailCommand Mobile Staging** with ref

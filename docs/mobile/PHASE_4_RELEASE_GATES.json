@@ -69,7 +69,7 @@
     {
       "id": "physical-iphone-deletion",
       "status": "pending",
-      "evidence": "Run the final account-deletion acceptance flow on a physical iPhone"
+      "evidence": "Physical iPhone verified the online zero-work gate, a one-draft local-work block, both permanent-discard confirmations, return to 0 drafts/0 queued items/0 photos, and no server-record mutation or deletion submission on 2026-08-27. The final offline online-only block still requires a device-side Airplane Mode/Wi-Fi toggle because iPhone Mirroring intentionally cannot complete that network-setting change."
     },
     {
       "id": "physical-android-acceptance",
