@@ -208,6 +208,11 @@ checks and are recorded only in the gitignored private runbook.
   attached in the approved story order. The console confirmed **Your changes have been
   saved** and **Draft saved** on 2026-08-27. The listing remains a draft; it was not
   submitted, reviewed, or published.
+- The staging-only `app-review@railcommand.io` reviewer password was directly reset and
+  independently verified against staging Auth after the recovery-email rate limit was
+  reached. Google Play **Sign in details** was updated with the verified credential and
+  confirmed **“Change saved. Send for review in Publishing overview.”** The password is
+  not stored in Git, and no review, submission, or publication action was taken.
 - On 2026-08-27 the release owner explicitly accepted the named physical Android
   hardware exception based on the completed API 36 phone and tablet emulator evidence.
   A physical Android pass remains a tracked post-Phase-4 follow-up when hardware is
