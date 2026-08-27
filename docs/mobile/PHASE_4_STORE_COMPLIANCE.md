@@ -61,6 +61,10 @@ account-deletion request can be sent.
 - The staging web origin is `https://mobile-staging.railcommand.io`. Cloudflare DNS
   maps it to a Vercel **preview** deployment in `railcommand-mobile-staging`; other
   preview URLs remain deployment-protected. No production promotion occurred.
+- The Preview environment uses the modern Supabase publishable key in the client and
+  a separately generated modern secret key only in server-side functions. Both server
+  secrets are encrypted and scoped to Preview; neither Production nor Development was
+  selected. The staging project's legacy JWT-based API keys are disabled.
 - Supabase Auth accepts `railcommand://**` and
   `https://mobile-staging.railcommand.io/**` callbacks. A real recovery message reached
   the controlled catch-all inbox, opened the custom-scheme callback once, and rejected
@@ -138,11 +142,24 @@ checks and are recorded only in the gitignored private runbook.
   microphone, release overlay, advertising ID, and all-files access from the declared
   release posture.
 - An authorized deployment of the verified artifact is `READY` at the unique preview
-  `railcommand-mobile-staging-hq5bemnbh-dillans-projects-f662840b.vercel.app`, deployment
-  `dpl_2xU6TLtrJKs27gAS6wdET57amMTi`. The public custom staging alias points directly to
+  `railcommand-mobile-staging-cxjh1ftoq-dillans-projects-f662840b.vercel.app`, deployment
+  `dpl_Dx3zCQHYbhzja2wft185211QcDdp`. The public custom staging alias points directly to
   that preview without promoting it to production. Health, policy, deletion, support,
   and both association routes return direct `200` responses on the custom host. No
   `--prod` flag, production mutation, or customer-data access occurred.
+- The canonical staging database received one additive least-privilege migration that
+  grants the trusted server role only `SELECT`/`UPDATE` on deletion requests and
+  `SELECT`/`INSERT` on deletion audit events. A modern-secret REST probe returned `200`.
+  The live reversible lifecycle then verified the unsynchronized-work rejection,
+  idempotent request creation, session revocation, duplicate handling, cancellation,
+  and a clean end state with no pending request. The permanent synthetic-account
+  finalizer was not run and still requires a separate action-time confirmation.
+- The staging Security Advisor reports zero errors. Its two function warnings are the
+  intentional, authenticated-only `SECURITY DEFINER` deletion RPCs: each has an empty
+  search path, rejects missing identity, validates recent password authentication and
+  request ownership, revokes `PUBLIC`/`anon`, and grants only `authenticated` execute.
+  The remaining leaked-password-protection warning is a Free-plan limitation; Supabase
+  documents that protection as Pro-plan-and-above functionality.
 - With explicit release-owner authorization, Google Play now holds saved drafts for
   the privacy URL, no-ads posture, non-government declaration, no financial or health
   features, Business category, support contact/HTTPS website, and external marketing
@@ -155,31 +172,23 @@ checks and are recorded only in the gitignored private runbook.
 
 ## Remaining external evidence
 
-- Resolve the staging ownership inventory before release operations. The app and
-  authenticated browser session use `rxuvchdqbzvovqijvfhx`, while the currently
-  authenticated Supabase CLI profile can see a different project named **RailCommand
-  Mobile Staging** with ref `cyacardivfzrsravqjto`. The CLI project was not linked or
-  changed. Confirm the canonical owner account and rename/archive the duplicate only
-  with explicit approval; never redirect the mobile environment by inference.
+- The canonical mobile staging backend is confirmed as `rxuvchdqbzvovqijvfhx` through
+  its authenticated dashboard, current API keys, Preview health route, and deletion
+  lifecycle. A different project named **RailCommand Mobile Staging** with ref
+  `cyacardivfzrsravqjto` remains a separate inventory item. It was not linked, renamed,
+  archived, or mutated; never redirect the mobile environment to it by inference.
 - The isolated Phase 4 deletion QA identity still authenticates against `rxuv…`, but
   currently has no project membership and no pending invitation. It remains suitable
   only for deletion lifecycle testing. Final screenshots and reviewer walkthroughs
   require the permanent synthetic reviewer to have verified membership in **Synthetic
   US Track Renewal**; do not bypass RLS or use the no-project account as marketing
   evidence.
-- Exercise the Phase 4 deletion request, cancellation, 30-day-time simulation,
-  identity anonymization/deletion, completion email, and failure retry in isolated
-  staging. A fail-closed verifier now covers the zero-local-work gate, request
-  idempotency, session revocation, cancellation, and preparation of one explicitly
-  identified pending synthetic request. Its first live run correctly stopped because
-  the Preview deployment has no server-only Supabase credential; the partially created
-  request was canceled immediately. After explicit release-owner authorization,
-  `CRON_SECRET` was saved as an encrypted Vercel **Preview-only** variable on August 26,
-  2026. `SUPABASE_SERVICE_ROLE_KEY` remains absent: the authenticated CLI profile gets
-  a `403` for the canonical `rxuv…` key inventory, so owner access must be restored in
-  the Supabase dashboard rather than bypassed or inferred from the duplicate project.
-  Run irreversible finalization only after a second confirmation naming the synthetic
-  account. Do not apply these changes to production from this branch.
+- The reversible Phase 4 deletion lifecycle now passes in isolated staging with modern
+  keys and least-privilege server grants. A 30-day-time simulation that permanently
+  anonymizes/deletes the named synthetic identity, verifies the completion email, and
+  exercises finalizer retry is still intentionally outstanding. Run that irreversible
+  step only after a separate confirmation naming the synthetic account. Do not apply
+  these changes to production from this branch.
 - Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
   reviewer walkthrough from the archived release candidate using synthetic data.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
@@ -196,12 +205,16 @@ checks and are recorded only in the gitignored private runbook.
   API 36 phone/tablet emulator profiles are now installed, and the self-contained
   staging Release has passed online and offline cold launch on both profiles. The
   six final authenticated synthetic-data stories remain outstanding.
-- Authenticate App Store Connect and verify the seller, agreements, app record,
-  distribution, roles, and review fields. The signed-in Chrome tabs are visible, but
-  the Chrome control extension did not complete its required session handshake even
-  after an authorized fresh Profile 2 window and successful installation/native-host
-  diagnostics. Reconnect or reinstall the Browser plugin before retrying; do not bypass
-  the signed-in Chrome session with another automation surface.
+- A read-only App Store Connect audit verified **Creative Currents LLC**, app ID
+  `6803576049`, bundle ID `io.railcommand.app`, SKU `railcommand-ios-1`, iOS version
+  1.0 in **Prepare for Submission**, public discoverable distribution, and United
+  States-only availability (1 territory available, 174 unavailable). Dillan has
+  Account Holder/Admin access to all apps, and the Free Apps Agreement is active from
+  August 18, 2026 through July 20, 2027. The Paid Apps Agreement is unsigned, which is
+  not a blocker for the approved free/no-IAP v1 posture. Before submission, change
+  automatic release to manual and complete the missing screenshots, description,
+  keywords, URLs, copyright, subtitle/category/content-rights/age-rating answers,
+  privacy-policy questionnaire, reviewer contact/credentials/notes, and build.
 - The checked-in Expo configuration and EAS project agree on
   `@creative-currents/railcommand` (`dda86dca-ca12-4efa-a556-6fd8411485d5`), and the
   authenticated EAS account confirms Creative Currents ownership. This Mac still has

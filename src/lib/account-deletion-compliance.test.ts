@@ -7,6 +7,10 @@ const migration = readFileSync(
   'supabase/migrations/20260826123325_phase4_account_deletion_compliance.sql',
   'utf8',
 );
+const serviceRoleMigration = readFileSync(
+  'supabase/migrations/20260827005620_phase4_account_deletion_service_role_grants.sql',
+  'utf8',
+);
 const finalizer = readFileSync('src/lib/account-deletion-finalizer.ts', 'utf8');
 const mobileScreen = readFileSync('apps/mobile/src/app/account-deletion.tsx', 'utf8');
 const middleware = readFileSync('src/middleware.ts', 'utf8');
@@ -47,6 +51,18 @@ describe('Phase 4 account-deletion compliance', () => {
     assert.match(finalizer, /completion_recipient: null/);
     assert.match(finalizer, /retryable_finalization_failure/);
     assert.doesNotMatch(finalizer, /metadata:\s*\{\s*code:\s*finalizationError/);
+  });
+
+  it('grants only the deletion-table operations required by the trusted server path', () => {
+    assert.match(
+      serviceRoleMigration,
+      /grant select, update on table public\.account_deletion_requests to service_role/,
+    );
+    assert.match(
+      serviceRoleMigration,
+      /grant select, insert on table public\.account_deletion_audit to service_role/,
+    );
+    assert.doesNotMatch(serviceRoleMigration, /grant all/i);
   });
 
   it('never queues deletion offline and preserves the existing device work gate', () => {

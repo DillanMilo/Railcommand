@@ -13,7 +13,7 @@
       "id": "isolated-preview-deployment",
       "status": "verified",
       "verifiedAt": "2026-08-26",
-      "evidence": "Vercel preview deployment dpl_2xU6TLtrJKs27gAS6wdET57amMTi"
+      "evidence": "Vercel Preview deployment dpl_Dx3zCQHYbhzja2wft185211QcDdp from codex/mobile-phase-4-compliance; mobile-staging.railcommand.io health verified after modern-key rotation; no production promotion"
     },
     {
       "id": "google-play-drafts",
@@ -29,18 +29,21 @@
     },
     {
       "id": "canonical-staging-backend",
-      "status": "pending",
-      "evidence": "Confirm ownership of rxuvchdqbzvovqijvfhx and resolve the duplicate cyacardivfzrsravqjto inventory"
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "RailCommand Mobile Staging project rxuvchdqbzvovqijvfhx verified through its authenticated dashboard, modern publishable/secret keys, Vercel Preview health, and staging deletion API. The separate cyacardivfzrsravqjto inventory was not linked or mutated."
     },
     {
       "id": "staging-deletion-lifecycle",
-      "status": "pending",
-      "evidence": "CRON_SECRET is saved as an encrypted Preview-only Vercel variable; SUPABASE_SERVICE_ROLE_KEY still requires canonical rxuv project-owner access, followed by separate approval for irreversible synthetic finalization"
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "CRON_SECRET and the modern Supabase secret are encrypted Preview-only variables; legacy staging keys are disabled; the zero-local-work rejection, idempotent request, session revocation, duplicate response, cancellation, and clean no-pending end state passed against staging. Irreversible synthetic finalization was deliberately not invoked."
     },
     {
       "id": "app-store-connect",
-      "status": "pending",
-      "evidence": "Verify seller, agreements, app record, US availability, roles, and review fields read-only after the Chrome control extension is reconnected"
+      "status": "verified",
+      "verifiedAt": "2026-08-26",
+      "evidence": "Read-only App Store Connect audit verified Creative Currents LLC, app 6803576049, io.railcommand.app, US-only public availability, Account Holder/Admin access, and the active Free Apps Agreement. Missing submission content remains tracked by the media, walkthrough, and signing gates."
     },
     {
       "id": "apple-distribution-signing",

@@ -50,6 +50,7 @@ create policy "Users can create their own account deletion request"
 grant select, insert on public.account_deletion_requests to authenticated;
 
 \ir ../migrations/20260826123325_phase4_account_deletion_compliance.sql
+\ir ../migrations/20260827005620_phase4_account_deletion_service_role_grants.sql
 
 insert into public.organizations values ('10000000-0000-4000-8000-000000000001', 'Synthetic Review Organization');
 insert into public.profiles (id, email, full_name, role, organization_id) values
@@ -138,6 +139,20 @@ begin
     'EXECUTE'
   ) then
     raise exception 'authenticated cannot execute guarded request RPC';
+  end if;
+  if not has_table_privilege(
+    'service_role',
+    'public.account_deletion_requests',
+    'SELECT,UPDATE'
+  ) then
+    raise exception 'service_role cannot process account deletion requests';
+  end if;
+  if not has_table_privilege(
+    'service_role',
+    'public.account_deletion_audit',
+    'SELECT,INSERT'
+  ) then
+    raise exception 'service_role cannot record account deletion audit events';
   end if;
   if not exists (
     select 1 from public.account_deletion_audit
