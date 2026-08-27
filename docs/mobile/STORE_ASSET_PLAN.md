@@ -47,10 +47,14 @@ and <https://support.google.com/googleplay/android-developer/answer/9866151>.
 5. **Synchronized history** — zero queue and exactly two successful items.
 6. **Privacy controls** — Account screen with privacy/support/deletion controls.
 
-Use the same honest UI sequence for Apple, Google, and the private reviewer video.
-App Store preview video is optional; the short private walkthrough is review support,
-not marketing material.
+Use all six states for Google and the private reviewer walkthrough. For Apple, use a
+lean three-image set per supported device class: field dashboard, daily-log draft,
+and privacy controls. The Apple listing does not need to repeat the full acceptance
+test in screenshots; the offline/reconnect sequence remains covered by device
+acceptance evidence and the private reviewer walkthrough. App Store preview video is
+optional; the short private walkthrough is review support, not marketing material.
 
 The checked-in capture and verification commands are documented in
-`docs/mobile/store-assets/README.md`. The strict release check requires all six states
-for Apple iPhone/iPad and Google phone/tablet, for 24 validated screenshots total.
+`docs/mobile/store-assets/README.md`. The strict release check requires three Apple
+iPhone screenshots, three Apple iPad screenshots, and all six Google phone/tablet
+states, for 18 validated screenshots total.

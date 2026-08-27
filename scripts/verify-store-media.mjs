@@ -2,9 +2,9 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
-  STORE_STORIES,
   STORE_TARGETS,
   expectedFileName,
+  requiredStoriesForTarget,
   validateStoreImage,
 } from './store-media.mjs';
 
@@ -15,7 +15,7 @@ const { values } = parseArgs({
 const missing = [];
 const verified = [];
 for (const [target, definition] of Object.entries(STORE_TARGETS)) {
-  for (const story of STORE_STORIES) {
+  for (const story of requiredStoriesForTarget(target)) {
     const path = resolve(
       'docs/mobile/store-assets/screenshots',
       definition.directory,
@@ -33,7 +33,8 @@ for (const [target, definition] of Object.entries(STORE_TARGETS)) {
 console.log(JSON.stringify({
   releaseVersion: '1.0.0',
   verifiedCount: verified.length,
-  requiredCount: Object.keys(STORE_TARGETS).length * STORE_STORIES.length,
+  requiredCount: Object.keys(STORE_TARGETS)
+    .reduce((count, target) => count + requiredStoriesForTarget(target).length, 0),
   missingCount: missing.length,
   verified,
   missing,

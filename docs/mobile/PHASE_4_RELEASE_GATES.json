@@ -52,8 +52,9 @@
     },
     {
       "id": "authenticated-store-media",
-      "status": "pending",
-      "evidence": "All 24 authenticated synthetic-data frames must pass verify:store:media:strict"
+      "status": "verified",
+      "verifiedAt": "2026-08-27",
+      "evidence": "All 18 required authenticated synthetic-data frames pass verify:store:media:strict: three lean Apple states for iPhone and iPad plus six complete Google offline/reconnect states for phone and tablet"
     },
     {
       "id": "reviewer-walkthrough",

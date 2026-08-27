@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   REQUIRED_PHASE_4_GATES,
+  countMissingStoreFrames,
   evaluatePhase4ReleaseGates,
 } from './verify-phase-4-release-gates.mjs';
 
@@ -26,6 +27,10 @@ test('reports a complete release only when every gate and store frame is verifie
   assert.equal(result.productionMutationAuthorized, false);
 });
 
+test('counts only the approved target-specific store frames', () => {
+  assert.equal(countMissingStoreFrames(), 0);
+});
+
 test('fails closed when an external gate or authenticated frame remains pending', () => {
   const value = manifest();
   const gate = value.gates.find(({ id }) => id === 'app-store-connect');
@@ -34,13 +39,13 @@ test('fails closed when an external gate or authenticated frame remains pending'
   const mediaGate = value.gates.find(({ id }) => id === 'authenticated-store-media');
   mediaGate.status = 'pending';
   delete mediaGate.verifiedAt;
-  const result = evaluatePhase4ReleaseGates(value, { missingStoreFrames: 24 });
+  const result = evaluatePhase4ReleaseGates(value, { missingStoreFrames: 18 });
   assert.equal(result.ready, false);
   assert.deepEqual(result.pending.map(({ id }) => id), [
     'app-store-connect',
     'authenticated-store-media',
   ]);
-  assert.equal(result.missingStoreFrames, 24);
+  assert.equal(result.missingStoreFrames, 18);
 });
 
 test('does not accept store media evidence while frames are missing', () => {

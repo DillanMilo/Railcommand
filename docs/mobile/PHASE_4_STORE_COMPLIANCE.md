@@ -91,7 +91,7 @@ acceptance remains a named hardware exception until a device is available.
 `npm run verify:phase4:status` reports the exact checked-in local and external gate
 inventory without failing while work is in progress. `npm run verify:phase4:release`
 is the fail-closed final command: it remains red until every required gate is verified,
-all 24 authenticated store frames exist, and any physical Android exception has a dated
+all 18 required authenticated store frames exist, and any physical Android exception has a dated
 release-owner acceptance. The manifest explicitly records that this branch carries no
 production-mutation authorization.
 
@@ -177,8 +177,31 @@ checks and are recorded only in the gitignored private runbook.
   and corrected 50-response Data Safety declaration were reviewed and saved as drafts.
   Optional trusted-partner credential testing is OFF. The US-English short and full
   listing descriptions were also saved as a draft. The dashboard shows 10 of 11 setup
-  tasks complete; final screenshots are the remaining listing blocker. Nothing was
+  tasks complete; uploading the completed screenshots is the remaining listing blocker. Nothing was
   sent for review or published, and no Android bundle was uploaded.
+- The final checked-in store-media set now contains three authenticated synthetic-data
+  screenshots for each supported Apple device class and the complete six-state
+  offline/reconnect story for both Google phone and tablet. All 18 files pass strict
+  format and dimension validation. This intentionally lean Apple set avoids duplicating
+  the acceptance walkthrough while still showing the dashboard, saved daily-log draft,
+  and privacy controls.
+
+## Additional validation completed on 2026-08-27
+
+- The complete mobile test suite, root TypeScript check, store-media capture tests,
+  Phase 4 release-gate tests, asset validation, store metadata validation, and store
+  declaration validation pass.
+- The strict media gate validates all 18 required files with zero missing frames. The
+  higher-level Phase 4 gate now consumes the same target-specific requirements and
+  remains fail-closed for the five external release items below.
+- A full Next.js 16.3.3 production build passes through the supported Webpack builder.
+  Turbopack could not start its local CSS helper process in the managed runner because
+  temporary port binding was denied; the failure occurred before application code
+  compilation and did not require a Mac restart or an app change.
+- The Android release-manifest verifier was not rerun because this media-only worktree
+  does not contain a generated release AAB. The previously recorded clean AAB/manifest
+  result remains the applicable binary evidence; a fresh final AAB will be regenerated
+  and verified at the signing/archive gate.
 
 ## Remaining external evidence
 
@@ -187,20 +210,20 @@ checks and are recorded only in the gitignored private runbook.
   lifecycle. A different project named **RailCommand Mobile Staging** with ref
   `cyacardivfzrsravqjto` remains a separate inventory item. It was not linked, renamed,
   archived, or mutated; never redirect the mobile environment to it by inference.
-- The isolated Phase 4 deletion QA identity still authenticates against `rxuv…`, but
-  currently has no project membership and no pending invitation. It remains suitable
-  only for deletion lifecycle testing. Final screenshots and reviewer walkthroughs
-  require the permanent synthetic reviewer to have verified membership in **Synthetic
-  US Track Renewal**; do not bypass RLS or use the no-project account as marketing
-  evidence.
+- The isolated Phase 4 deletion QA identity still authenticates against `rxuv…` and
+  has a temporary, authorized membership in **Synthetic US Track Renewal** solely for
+  authenticated store-media capture. The screenshots use only synthetic records and
+  normal RLS-backed access. Remove this temporary membership after capture with a fresh
+  action-time confirmation; do not retain it as a production or customer-data path.
 - The reversible Phase 4 deletion lifecycle now passes in isolated staging with modern
   keys and least-privilege server grants. A 30-day-time simulation that permanently
   anonymizes/deletes the named synthetic identity, verifies the completion email, and
   exercises finalizer retry is still intentionally outstanding. Run that irreversible
   step only after a separate confirmation naming the synthetic account. Do not apply
   these changes to production from this branch.
-- Capture final iPhone/iPad and Android phone/tablet screenshots plus the private
-  reviewer walkthrough from the archived release candidate using synthetic data.
+- Upload the completed iPhone/iPad and Android phone/tablet screenshots, then capture
+  the private reviewer walkthrough from the archived release candidate using synthetic
+  data.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
   10 of 11 tasks complete. The permanent reviewer sign-in details, adult-only target
   audience, and Data Safety declaration are saved drafts. The IARC questionnaire is
@@ -211,10 +234,11 @@ checks and are recorded only in the gitignored private runbook.
   app for review. The validated 512px icon and 1024 × 500
   feature graphic were uploaded and attached to the US-English listing on August 26,
   2026, then saved as a draft without publishing or sending the app for review. The
-  store-listing task remains incomplete until final screenshots are uploaded. Android
-  API 36 phone/tablet emulator profiles are now installed, and the self-contained
-  staging Release has passed online and offline cold launch on both profiles. The
-  six final authenticated synthetic-data stories remain outstanding.
+  store-listing task remains incomplete until the completed screenshots are uploaded.
+  Android API 36 phone/tablet emulator profiles are now installed, and the
+  self-contained staging Release has passed online and offline cold launch on both
+  profiles. The six final authenticated synthetic-data stories for each form factor
+  are checked in and pass strict media validation.
 - A read-only App Store Connect audit verified **Creative Currents LLC**, app ID
   `6803576049`, bundle ID `io.railcommand.app`, SKU `railcommand-ios-1`, iOS version
   1.0 in **Prepare for Submission**, public discoverable distribution, and United
@@ -249,8 +273,9 @@ checks and are recorded only in the gitignored private runbook.
   cold-launches on the phone and tablet emulators both online and with airplane mode
   plus Wi-Fi and mobile data disabled. The tablet uses its adaptive centered layout;
   both apps remained foregrounded and their process-filtered logs contained no fatal
-  JavaScript/native exception. This is emulator evidence only; the physical Android
-  hardware exception remains open.
+  JavaScript/native exception. The six authenticated synthetic-data screenshots for
+  each Android form factor are now checked in and validated. This remains emulator
+  evidence only; the physical Android hardware exception remains open.
 - The Google capture tool resolves the selected Android SDK explicitly, requires the
   approved logical emulator size, removes only framebuffer letterboxing, preserves
   aspect ratio, and produces a validated JPEG. An end-to-end temporary tablet capture

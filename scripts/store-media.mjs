@@ -14,23 +14,33 @@ export const STORE_TARGETS = {
     directory: 'apple/iphone-6.9',
     extension: 'png',
     dimensions: new Set(['1320x2868', '1290x2796', '1260x2736']),
+    requiredStories: new Set(['field-dashboard', 'daily-log-draft', 'privacy-controls']),
   },
   'apple-ipad': {
     directory: 'apple/ipad-13',
     extension: 'png',
     dimensions: new Set(['2064x2752', '2048x2732']),
+    requiredStories: new Set(['field-dashboard', 'daily-log-draft', 'privacy-controls']),
   },
   'google-phone': {
     directory: 'google/phone',
     extension: 'jpg',
     dimensions: new Set(['1080x1920']),
+    requiredStories: new Set(STORE_STORIES.map((story) => story.slug)),
   },
   'google-tablet': {
     directory: 'google/tablet',
     extension: 'jpg',
     dimensions: new Set(['1080x1920', '1920x1080']),
+    requiredStories: new Set(STORE_STORIES.map((story) => story.slug)),
   },
 };
+
+export function requiredStoriesForTarget(target) {
+  const definition = STORE_TARGETS[target];
+  if (!definition) throw new Error(`Unknown store target: ${target}`);
+  return STORE_STORIES.filter((story) => definition.requiredStories.has(story.slug));
+}
 
 export function expectedFileName(target, story) {
   const definition = STORE_TARGETS[target];

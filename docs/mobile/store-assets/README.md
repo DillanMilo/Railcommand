@@ -13,9 +13,9 @@ in these files.
 - Google tablet: Android emulator configured to `1080 × 1920` portrait or
   `1920 × 1080` landscape.
 
-Capture the six approved storyboard states from `../STORE_ASSET_PLAN.md`. The capture
-command normalizes the iOS status bar, prevents accidental overwrite, and rejects the
-wrong image size or format:
+Capture the three approved Apple states or all six approved Google states from
+`../STORE_ASSET_PLAN.md`. The capture command normalizes the iOS status bar, prevents
+accidental overwrite, and rejects the wrong image size or format:
 
 ```sh
 node scripts/capture-store-screenshot.mjs \
@@ -100,5 +100,5 @@ Valid story slugs are `field-dashboard`, `daily-log-draft`, `offline-protection`
 `sync-center`, `synchronized-history`, and `privacy-controls`.
 
 Run `npm run verify:store:media` for a non-failing inventory while work is in progress.
-Run `npm run verify:store:media:strict` on the archived release candidate; all 24
+Run `npm run verify:store:media:strict` on the archived release candidate; all 18
 required files must exist and pass format/dimension validation before submission.

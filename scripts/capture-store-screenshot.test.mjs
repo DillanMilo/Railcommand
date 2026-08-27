@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { requiredStoriesForTarget } from './store-media.mjs';
 
 const source = readFileSync(new URL('./capture-store-screenshot.mjs', import.meta.url), 'utf8');
 
@@ -20,4 +21,14 @@ test('keeps Android capture as a JPEG without overwriting by default', () => {
   assert.match(source, /renameSync\(temporaryJpeg, outputPath\)/);
   assert.match(source, /outputPath already exists|already exists; inspect it/);
   assert.match(source, /validateStoreImage\(outputPath, target\)/);
+});
+
+test('uses a lean Apple set and the complete Google offline story', () => {
+  assert.deepEqual(
+    requiredStoriesForTarget('apple-iphone').map((story) => story.slug),
+    ['field-dashboard', 'daily-log-draft', 'privacy-controls'],
+  );
+  assert.equal(requiredStoriesForTarget('apple-ipad').length, 3);
+  assert.equal(requiredStoriesForTarget('google-phone').length, 6);
+  assert.equal(requiredStoriesForTarget('google-tablet').length, 6);
 });

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { STORE_STORIES, STORE_TARGETS, expectedFileName } from './store-media.mjs';
+import { STORE_TARGETS, expectedFileName, requiredStoriesForTarget } from './store-media.mjs';
 
 export const REQUIRED_PHASE_4_GATES = [
   'local-compliance-suite',
@@ -26,7 +26,7 @@ const ALLOWED_STATUSES = new Set(['verified', 'pending', 'accepted_exception']);
 export function countMissingStoreFrames(root = process.cwd()) {
   let missing = 0;
   for (const [target, definition] of Object.entries(STORE_TARGETS)) {
-    for (const story of STORE_STORIES) {
+    for (const story of requiredStoriesForTarget(target)) {
       const file = resolve(
         root,
         'docs/mobile/store-assets/screenshots',
