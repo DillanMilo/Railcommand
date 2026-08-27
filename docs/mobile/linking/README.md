@@ -36,9 +36,10 @@ fingerprint used by the verified APK at:
 
 Google's Digital Asset Links API independently resolved the previous staging host on
 2026-08-25. The replacement isolated host must be rechecked. Production intentionally
-returns no Android association unless
-`MOBILE_ANDROID_PRODUCTION_SHA256` contains one or more approved SHA-256 Play App
-Signing certificate fingerprints. The eventual production endpoint is:
+returns no Android association unless `MOBILE_ANDROID_PRODUCTION_SHA256` contains the
+approved SHA-256 Play App Signing certificate fingerprint. Google Play's App signing
+page supplied the production fingerprint on 2026-08-27, and it is recorded in
+`assetlinks.template.json`. The eventual production endpoint is:
 
 - `https://railcommand.io/.well-known/assetlinks.json`
 

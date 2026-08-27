@@ -20,7 +20,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "io.railcommand.app",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_PLAY_APP_SIGNING_SHA256_CERT_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["1E:40:D5:E3:33:68:F6:EB:9D:28:33:FF:C2:48:48:85:BD:2F:70:69:43:A6:26:9F:E4:1A:56:78:2F:7D:A4:B2"]
     }
   }
 ]

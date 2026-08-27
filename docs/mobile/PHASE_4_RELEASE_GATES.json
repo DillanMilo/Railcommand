@@ -64,7 +64,7 @@
     {
       "id": "production-association-files",
       "status": "pending",
-      "evidence": "Validate production Apple/Android associations and approved Play signing fingerprints after authorized deployment"
+      "evidence": "Google Play's App signing page verified the io.railcommand.app Play App Signing SHA-256 certificate fingerprint on 2026-08-27 and the checked-in production template now uses it. The live Apple and Android association URLs still redirect to login; validate both after a separately authorized production deployment."
     },
     {
       "id": "physical-iphone-deletion",

@@ -229,7 +229,10 @@ checks and are recorded only in the gitignored private runbook.
   `https://railcommand.io/.well-known/assetlinks.json` endpoints were checked read-only
   on 2026-08-27. Both currently return `307` to `/login`, so the production association
   gate remains correctly blocked. No deployment, middleware change, or other production
-  mutation was performed.
+  mutation was performed. Google Play's App signing page independently reports that
+  Play App Signing is in use for `io.railcommand.app` and supplied the exact public
+  SHA-256 fingerprint now recorded in `docs/mobile/linking/assetlinks.template.json`;
+  the upload-key fingerprint remains unavailable until the first bundle is uploaded.
 - The canonical mobile staging backend is confirmed as `rxuvchdqbzvovqijvfhx` through
   its authenticated dashboard, current API keys, Preview health route, and deletion
   lifecycle. A different project named **RailCommand Mobile Staging** with ref
