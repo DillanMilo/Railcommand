@@ -200,8 +200,9 @@ checks and are recorded only in the gitignored private runbook.
   that connectivity-setting change, so the gate remains pending rather than inferred.
 - With Airplane Mode enabled and Wi-Fi disabled on that physical iPhone, the release
   owner subsequently observed the exact warning **“Account deletion is online only and
-  is never silently queued.”** The final physical evidence item is confirmation that
-  the request control remained disabled; no request was submitted.
+  is never silently queued.”** The release owner then confirmed that the request control
+  remained disabled. No deletion intent was queued and no request was submitted. This
+  completes the physical-iPhone offline account-deletion block evidence.
 - Google Play's US-English default listing now has six authenticated synthetic phone
   screenshots, six 7-inch tablet screenshots, and six 10-inch tablet screenshots
   attached in the approved story order. The console confirmed **Your changes have been
@@ -347,5 +348,5 @@ checks and are recorded only in the gitignored private runbook.
   has not been deployed; `/privacy` is already public. Recheck all five public URLs
   after an approved non-production deployment and again from the archived release
   candidate. This branch does not authorize a production deployment.
-- Run the final physical iPhone deletion flow; physical Android remains a documented
-  hardware exception until a device is available.
+- Physical Android remains a documented hardware exception until a device is available;
+  the physical iPhone deletion safeguards and offline submission block are complete.
