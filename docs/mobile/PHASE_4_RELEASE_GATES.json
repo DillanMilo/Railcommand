@@ -18,14 +18,14 @@
     {
       "id": "google-play-drafts",
       "status": "verified",
-      "verifiedAt": "2026-08-26",
-      "evidence": "Saved Google Play drafts recorded in docs/mobile/PHASE_4_STORE_COMPLIANCE.md; not submitted or published"
+      "verifiedAt": "2026-08-27",
+      "evidence": "Saved Google Play declarations, reviewer credentials, and authenticated phone/tablet store-media drafts recorded in docs/mobile/PHASE_4_STORE_COMPLIANCE.md; not submitted or published"
     },
     {
       "id": "password-recovery-delivery",
       "status": "verified",
-      "verifiedAt": "2026-08-26",
-      "evidence": "Controlled staging inbox delivery and one-use callback recorded in the private runbook"
+      "verifiedAt": "2026-08-27",
+      "evidence": "Controlled staging inbox delivery, one-use callback, reviewer password update, fresh password-grant verification, recovery-session global revocation, and temporary credential-file cleanup completed against rxuvchdqbzvovqijvfhx"
     },
     {
       "id": "canonical-staging-backend",

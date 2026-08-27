@@ -233,9 +233,16 @@ checks and are recorded only in the gitignored private runbook.
   exercises finalizer retry is still intentionally outstanding. Run that irreversible
   step only after a separate confirmation naming the synthetic account. Do not apply
   these changes to production from this branch.
-- Upload the completed iPhone/iPad and Android phone/tablet screenshots, then capture
-  the private reviewer walkthrough from the archived release candidate using synthetic
-  data.
+- On August 27, 2026, the permanent `app-review@railcommand.io` staging reviewer
+  password was changed through the delivered one-use recovery callback. A fresh
+  password-grant sign-in succeeded against `rxuvchdqbzvovqijvfhx` and its verification
+  session was closed immediately. The recovery session was revoked globally because
+  its callback had appeared in private diagnostic output, and the two temporary local
+  recovery files were permanently removed. The new credential was saved in Google
+  Play's reviewer-access draft; it was not submitted or published.
+- The completed iPhone/iPad and Android phone/tablet screenshots are attached to their
+  Google Play draft slots. Capture and manually validate the private reviewer
+  walkthrough from the archived release candidate using synthetic data.
 - Complete the remaining Google Play initial setup work. The dashboard currently shows
   10 of 11 tasks complete. The permanent reviewer sign-in details, adult-only target
   audience, and Data Safety declaration are saved drafts. The IARC questionnaire is
@@ -246,7 +253,8 @@ checks and are recorded only in the gitignored private runbook.
   app for review. The validated 512px icon and 1024 × 500
   feature graphic were uploaded and attached to the US-English listing on August 26,
   2026, then saved as a draft without publishing or sending the app for review. The
-  store-listing task remains incomplete until the completed screenshots are uploaded.
+  store-listing task still remains in Google's initial-setup checklist even though the
+  completed authenticated screenshots are attached and the listing draft is saved.
   Android API 36 phone/tablet emulator profiles are now installed, and the
   self-contained staging Release has passed online and offline cold launch on both
   profiles. The six final authenticated synthetic-data stories for each form factor
