@@ -188,6 +188,16 @@ checks and are recorded only in the gitignored private runbook.
 
 ## Additional validation completed on 2026-08-27
 
+- After authenticated store-media capture, the temporary deletion-QA project membership
+  was removed from `rxuv…` with an exact one-row guard. A follow-up query verified zero
+  matching memberships and one retained staging Auth identity. Five local temporary
+  credential/environment files were permanently removed, and the worktree remained clean.
+- The root TypeScript check, complete mobile suite, Phase 4 gate tests, deletion suites,
+  strict 18-frame media check, asset/metadata/declaration validation, and a Webpack
+  production build were rerun successfully after cleanup. The authorized Vercel deployment
+  remains a `READY` Preview, and all five public routes on `mobile-staging.railcommand.io`
+  still return direct `200` responses with both association files served as
+  `application/json`.
 - The complete mobile test suite, root TypeScript check, store-media capture tests,
   Phase 4 release-gate tests, asset validation, store metadata validation, and store
   declaration validation pass.
@@ -210,11 +220,13 @@ checks and are recorded only in the gitignored private runbook.
   lifecycle. A different project named **RailCommand Mobile Staging** with ref
   `cyacardivfzrsravqjto` remains a separate inventory item. It was not linked, renamed,
   archived, or mutated; never redirect the mobile environment to it by inference.
-- The isolated Phase 4 deletion QA identity still authenticates against `rxuv…` and
-  has a temporary, authorized membership in **Synthetic US Track Renewal** solely for
-  authenticated store-media capture. The screenshots use only synthetic records and
-  normal RLS-backed access. Remove this temporary membership after capture with a fresh
-  action-time confirmation; do not retain it as a production or customer-data path.
+- The isolated Phase 4 deletion QA identity remains in staging Auth, but its temporary
+  **Synthetic US Track Renewal** project membership was permanently removed after
+  authenticated store-media capture on 2026-08-27. A guarded staging-only deletion
+  returned exactly one membership row; the follow-up verification reported zero matching
+  memberships and one retained Auth identity. The five local temporary environment and
+  credential files used for the cleanup were also removed, and the branch worktree stayed
+  clean. No production or customer-data path was created or retained.
 - The reversible Phase 4 deletion lifecycle now passes in isolated staging with modern
   keys and least-privilege server grants. A 30-day-time simulation that permanently
   anonymizes/deletes the named synthetic identity, verifies the completion email, and
