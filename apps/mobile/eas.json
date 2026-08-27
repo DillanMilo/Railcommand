@@ -13,6 +13,13 @@
         "EXPO_PUBLIC_BUILD_PROFILE": "development"
       }
     },
+    "reviewer": {
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "development"
+      }
+    },
     "staging": {
       "distribution": "internal",
       "environment": "preview",

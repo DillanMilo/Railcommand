@@ -60,7 +60,7 @@
     {
       "id": "reviewer-walkthrough",
       "status": "pending",
-      "evidence": "Capture and validate the private reviewer video from the archived release candidate"
+      "evidence": "A guarded, self-contained staging reviewer build for io.railcommand.app.dev was signed with the existing Creative Currents Apple Distribution certificate, provisioned only for the named physical iPhone, installed, and launched on 2026-08-27. Capture and manually validate the private reviewer video before marking this gate verified. No build was uploaded or submitted."
     },
     {
       "id": "production-association-files",

@@ -15,14 +15,22 @@ const expectedProfiles = {
   development: {
     identifier: 'io.railcommand.app.dev',
     environment: 'development',
+    publicProfile: 'development',
+  },
+  reviewer: {
+    identifier: 'io.railcommand.app.dev',
+    environment: 'development',
+    publicProfile: 'development',
   },
   staging: {
     identifier: 'io.railcommand.app.staging',
     environment: 'preview',
+    publicProfile: 'staging',
   },
   production: {
     identifier: 'io.railcommand.app',
     environment: 'production',
+    publicProfile: 'production',
   },
 };
 
@@ -42,16 +50,16 @@ test('every EAS profile pins the matching public build profile', () => {
   for (const [profile, expected] of Object.entries(expectedProfiles)) {
     const buildProfile = easConfig.build[profile];
     assert.equal(buildProfile.environment, expected.environment);
-    assert.equal(buildProfile.env.EXPO_PUBLIC_BUILD_PROFILE, profile);
+    assert.equal(buildProfile.env.EXPO_PUBLIC_BUILD_PROFILE, expected.publicProfile);
   }
 });
 
 test('each explicit profile resolves the expected iOS and Android identifiers', () => {
   for (const [profile, expected] of Object.entries(expectedProfiles)) {
-    const result = runExpoConfig(profile);
+    const result = runExpoConfig(expected.publicProfile);
     assert.equal(result.status, 0, result.stderr);
     const config = JSON.parse(result.stdout);
-    assert.equal(config.extra.buildProfile, profile);
+    assert.equal(config.extra.buildProfile, expected.publicProfile);
     assert.equal(config.ios.bundleIdentifier, expected.identifier);
     assert.equal(config.android.package, expected.identifier);
   }

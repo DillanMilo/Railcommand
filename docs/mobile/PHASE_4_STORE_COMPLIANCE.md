@@ -321,6 +321,15 @@ checks and are recorded only in the gitignored private runbook.
   `io.railcommand.app` and team `PQAGLH9L66` / Creative Currents LLC. EAS reported all
   required build credentials ready, while no production build or store upload was
   started.
+- With explicit owner authorization, the physical staging iPhone was registered under
+  Creative Currents LLC and an internal reviewer build profile was added for the
+  development identity `io.railcommand.app.dev`. EAS created one device-scoped ad-hoc
+  provisioning profile using the existing Apple Distribution certificate; no second
+  certificate was created. A guarded, self-contained Release build passed the staging
+  environment boundary, installed on the registered iPhone, and launched without
+  Metro. The local temporary certificate, provisioning profile, isolated signing
+  Keychain, and credential export were then removed. No app build was uploaded,
+  submitted, promoted, or released, and production was not changed.
 - A clean Expo CNG prebuild with the staging profile resolves to
   `io.railcommand.app.staging`, `mobile-staging.railcommand.io`, and the isolated
   Supabase project. A Release bundle now builds, installs, and launches directly—no
