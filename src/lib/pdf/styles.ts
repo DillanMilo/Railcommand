@@ -201,6 +201,30 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  photoCard: {
+    width: '48%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 3,
+    padding: 4,
+  },
+  photoImage: {
+    width: '100%',
+    height: 170,
+    objectFit: 'cover',
+  },
+  photoCaption: {
+    fontSize: 7,
+    color: colors.secondary,
+    marginTop: 3,
+  },
+
   // Text styles
   heading: {
     fontSize: 14,

@@ -42,9 +42,9 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
   const [temp, setTemp] = useState<number | ''>('');
   const [conditions, setConditions] = useState('');
   const [wind, setWind] = useState('');
-  const [personnel, setPersonnel] = useState<PersonnelRow[]>([{ role: '', headcount: 0, company: '' }]);
-  const [equipment, setEquipment] = useState<EquipmentRow[]>([{ type: '', count: 0, notes: '' }]);
-  const [workItems, setWorkItems] = useState<WorkItemRow[]>([{ description: '', quantity: 0, unit: '', location: '' }]);
+  const [personnel, setPersonnel] = useState<PersonnelRow[]>([]);
+  const [equipment, setEquipment] = useState<EquipmentRow[]>([]);
+  const [workItems, setWorkItems] = useState<WorkItemRow[]>([]);
   const [workSummary, setWorkSummary] = useState('');
   const [safetyNotes, setSafetyNotes] = useState('');
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
@@ -161,18 +161,29 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Work Performed</CardTitle>
+          <p className="text-sm text-muted-foreground">Use plain language for ad hoc or quantity-based work.</p>
+        </CardHeader>
+        <CardContent>
+          <Textarea rows={5} placeholder="Describe the work performed and where it occurred..." value={workSummary} onChange={(e) => setWorkSummary(e.target.value)} />
+        </CardContent>
+      </Card>
+
       {/* Personnel */}
       <Card>
-        <CardHeader><CardTitle>Personnel</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Personnel <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle>
+          <p className="text-sm text-muted-foreground">Use when headcounts are required, such as time-and-materials work.</p>
+        </CardHeader>
         <CardContent className="space-y-3">
+          {personnel.length === 0 && <p className="text-sm text-muted-foreground">No personnel counts recorded.</p>}
           {personnel.map((p, i) => (
             <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_44px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Role</label>
-                <Select value={p.role} onValueChange={(v) => updateRow(personnel, i, { role: v }, setPersonnel)}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input list="daily-log-edit-roles" placeholder="e.g. Concrete crew" value={p.role} onChange={(e) => updateRow(personnel, i, { role: e.target.value }, setPersonnel)} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Count</label>
@@ -182,7 +193,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
                 <label className="text-xs font-medium text-muted-foreground">Company</label>
                 <Input placeholder="Company" value={p.company} onChange={(e) => updateRow(personnel, i, { company: e.target.value }, setPersonnel)} />
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(personnel, i, setPersonnel)} disabled={personnel.length === 1}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(personnel, i, setPersonnel)} aria-label="Remove personnel row">
                 <Trash2 className="size-4" />
               </Button>
             </div>
@@ -190,13 +201,18 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
           <Button variant="outline" size="sm" onClick={() => setPersonnel([...personnel, { role: '', headcount: 0, company: '' }])}>
             <Plus className="mr-1 size-4" />Add Personnel
           </Button>
+          <datalist id="daily-log-edit-roles">{ROLES.map((role) => <option key={role} value={role} />)}</datalist>
         </CardContent>
       </Card>
 
       {/* Equipment */}
       <Card>
-        <CardHeader><CardTitle>Equipment</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Equipment <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle>
+          <p className="text-sm text-muted-foreground">Use only when individual equipment counts are required.</p>
+        </CardHeader>
         <CardContent className="space-y-3">
+          {equipment.length === 0 && <p className="text-sm text-muted-foreground">No equipment counts recorded.</p>}
           {equipment.map((e, i) => (
             <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_44px] items-end">
               <div>
@@ -211,7 +227,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
                 <label className="text-xs font-medium text-muted-foreground">Notes</label>
                 <Input placeholder="Notes" value={e.notes} onChange={(ev) => updateRow(equipment, i, { notes: ev.target.value }, setEquipment)} />
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(equipment, i, setEquipment)} disabled={equipment.length === 1}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(equipment, i, setEquipment)} aria-label="Remove equipment row">
                 <Trash2 className="size-4" />
               </Button>
             </div>
@@ -224,8 +240,9 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
 
       {/* Work Items */}
       <Card>
-        <CardHeader><CardTitle>Work Items</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Measured Quantities <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          {workItems.length === 0 && <p className="text-sm text-muted-foreground">No measured quantities recorded.</p>}
           {workItems.map((w, i) => (
             <div key={i} className="grid gap-2 grid-cols-2 sm:grid-cols-[1fr_80px_100px_1fr_44px] items-end">
               <div>
@@ -247,22 +264,18 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
                 <label className="text-xs font-medium text-muted-foreground">Location</label>
                 <Input placeholder="Location" value={w.location} onChange={(e) => updateRow(workItems, i, { location: e.target.value }, setWorkItems)} />
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(workItems, i, setWorkItems)} disabled={workItems.length === 1}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(workItems, i, setWorkItems)} aria-label="Remove measured quantity row">
                 <Trash2 className="size-4" />
               </Button>
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={() => setWorkItems([...workItems, { description: '', quantity: 0, unit: '', location: '' }])}>
-            <Plus className="mr-1 size-4" />Add Work Item
+            <Plus className="mr-1 size-4" />Add Measured Quantity
           </Button>
         </CardContent>
       </Card>
 
-      {/* Work Summary & Safety Notes */}
-      <Card>
-        <CardHeader><CardTitle>Work Summary</CardTitle></CardHeader>
-        <CardContent><Textarea rows={4} placeholder="Describe overall work completed today..." value={workSummary} onChange={(e) => setWorkSummary(e.target.value)} /></CardContent>
-      </Card>
+      {/* Safety Notes */}
       <Card>
         <CardHeader><CardTitle>Safety Notes</CardTitle></CardHeader>
         <CardContent><Textarea rows={3} placeholder="Any safety observations, incidents, or notes..." value={safetyNotes} onChange={(e) => setSafetyNotes(e.target.value)} /></CardContent>

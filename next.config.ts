@@ -8,7 +8,9 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  // React PDF reads in-memory image and WASM resources through fetch while
+  // generating a local document. These schemes do not add a remote endpoint.
+  "connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co",
   "frame-src 'self' https://share.earthcam.net https://*.earthcam.net",
   "media-src 'self' blob: data: https://*.supabase.co",
   "worker-src 'self' blob:",

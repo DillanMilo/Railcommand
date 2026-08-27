@@ -18,6 +18,7 @@ import { useDailyLogDetail } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
 import { getAttachmentsWithSignedUrls } from '@/lib/actions/attachments';
 import type { DailyLog, Attachment } from '@/lib/types';
+import { loadDailyLogPdfPhotos } from '@/lib/pdf/daily-log-photos';
 
 function weatherIcon(conditions: string) {
   const c = conditions.toLowerCase();
@@ -90,9 +91,15 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
           <ExportPDFButton
             getDocument={async () => {
               const { default: DailyLogPDF } = await import('@/lib/pdf/DailyLogPDF');
-              return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} />;
+              const refreshed = isDemo
+                ? { data: attachments }
+                : await getAttachmentsWithSignedUrls('daily_log', logId);
+              const pdfPhotos = await loadDailyLogPdfPhotos(refreshed.data ?? attachments);
+              return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} photos={pdfPhotos} />;
             }}
             fileName={`daily-log-${log.log_date}-${projectId}`}
+            allowShare
+            shareTitle={`${currentProject?.name ?? 'Project'} daily log — ${dateLabel}`}
           />
           {can(ACTIONS.DAILY_LOG_UPDATE) && (
             <Button asChild variant="outline" size="sm">
@@ -120,7 +127,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       </Card>
 
       {/* Personnel */}
-      <Card>
+      {(log.personnel ?? []).length > 0 && <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Users className="size-5" />Personnel</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-lg border border-rc-border overflow-x-auto">
@@ -135,10 +142,10 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
             </Table>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Equipment */}
-      <Card>
+      {(log.equipment ?? []).length > 0 && <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Wrench className="size-5" />Equipment</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-lg border border-rc-border overflow-x-auto">
@@ -152,10 +159,10 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
             </Table>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Work Items */}
-      <Card>
+      {(log.work_items ?? []).length > 0 && <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="size-5" />Work Items</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-lg border border-rc-border overflow-x-auto">
@@ -169,7 +176,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
             </Table>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Work Summary */}
       <Card>

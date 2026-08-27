@@ -1,12 +1,14 @@
 import React from 'react';
-import { Document, Page, Text, View } from '@react-pdf/renderer';
-import styles, { colors } from './styles';
+import { Document, Image, Page, Text, View } from '@react-pdf/renderer';
+import styles from './styles';
 import type { DailyLog } from '@/lib/types';
+import type { DailyLogPdfPhoto } from './daily-log-photos';
 
 interface DailyLogPDFProps {
   log: DailyLog;
   projectName: string;
   generatedBy: string;
+  photos?: DailyLogPdfPhoto[];
 }
 
 const formatDate = (d: string | null): string => {
@@ -14,7 +16,7 @@ const formatDate = (d: string | null): string => {
   return d.split('T')[0];
 };
 
-const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy }) => {
+const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy, photos = [] }) => {
   const now = new Date().toISOString().split('T')[0];
 
   return (
@@ -141,6 +143,22 @@ const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy
           <>
             <Text style={styles.sectionTitle}>Safety Notes</Text>
             <Text style={styles.sectionBody}>{log.safety_notes}</Text>
+          </>
+        )}
+
+        {photos.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Photos</Text>
+            <View style={styles.photoGrid}>
+              {photos.map((photo, index) => (
+                <View key={`${photo.caption}-${index}`} style={styles.photoCard} wrap={false}>
+                  {/* react-pdf's Image does not expose the DOM alt attribute. */}
+                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                  <Image src={photo.source} style={styles.photoImage} />
+                  <Text style={styles.photoCaption}>{photo.caption}</Text>
+                </View>
+              ))}
+            </View>
           </>
         )}
 

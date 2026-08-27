@@ -11,11 +11,13 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
+import PhotoLibraryPicker from '@/components/daily-logs/PhotoLibraryPicker';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { addDailyLog, addAttachment } from '@/lib/store';
 import { createDailyLog as serverCreateDailyLog } from '@/lib/actions/daily-logs';
 import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
 import { getLocalDateString } from '@/lib/date-utils';
@@ -29,20 +31,30 @@ type PersonnelRow = { role: string; headcount: number; company: string };
 type EquipmentRow = { type: string; count: number; notes: string };
 type WorkItemRow = { description: string; quantity: number; unit: string; location: string };
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read photo'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function NewDailyLogPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id: projectId } = use(params);
   use(searchParams);
   const router = useRouter();
   const { isDemo } = useProject();
+  const { isOffline } = usePWA();
   const { can } = usePermissions(projectId);
 
   const [date, setDate] = useState(getLocalDateString);
   const [temp, setTemp] = useState<number | ''>('');
   const [conditions, setConditions] = useState('');
   const [wind, setWind] = useState('');
-  const [personnel, setPersonnel] = useState<PersonnelRow[]>([{ role: '', headcount: 0, company: '' }]);
-  const [equipment, setEquipment] = useState<EquipmentRow[]>([{ type: '', count: 0, notes: '' }]);
-  const [workItems, setWorkItems] = useState<WorkItemRow[]>([{ description: '', quantity: 0, unit: '', location: '' }]);
+  const [personnel, setPersonnel] = useState<PersonnelRow[]>([]);
+  const [equipment, setEquipment] = useState<EquipmentRow[]>([]);
+  const [workItems, setWorkItems] = useState<WorkItemRow[]>([]);
   const [workSummary, setWorkSummary] = useState('');
   const [safetyNotes, setSafetyNotes] = useState('');
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
@@ -88,6 +100,15 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
       <h1 className="font-heading text-2xl font-bold">New Daily Log</h1>
 
+      {isOffline && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <AlertTitle className="text-amber-900">You are offline</AlertTitle>
+          <AlertDescription className="text-amber-800">
+            Keep this form open to preserve your entries, then reconnect before submitting. Existing RailCommand photos cannot be selected while offline.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Date */}
       <Card>
         <CardHeader><CardTitle>Date</CardTitle></CardHeader>
@@ -116,18 +137,37 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         </CardContent>
       </Card>
 
+      {/* Narrative work description is the primary path for ad hoc/quantity work. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Work Performed</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Describe the day in plain language. This is usually all you need for ad hoc or quantity-based work.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            rows={5}
+            placeholder="Example: Road Builders had a concrete crew placing concrete at Track 805 and a demolition crew breaking out damaged concrete at the Flip Area."
+            value={workSummary}
+            onChange={(e) => setWorkSummary(e.target.value)}
+          />
+        </CardContent>
+      </Card>
+
       {/* Personnel */}
       <Card>
-        <CardHeader><CardTitle>Personnel</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Personnel <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle>
+          <p className="text-sm text-muted-foreground">Add headcounts when the contract or a time-and-materials record requires them.</p>
+        </CardHeader>
         <CardContent className="space-y-3">
+          {personnel.length === 0 && <p className="text-sm text-muted-foreground">No personnel counts recorded.</p>}
           {personnel.map((p, i) => (
             <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_44px] items-end">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Role</label>
-                <Select value={p.role} onValueChange={(v) => updateRow(personnel, i, { role: v }, setPersonnel)}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
+                <Input list="daily-log-roles" placeholder="e.g. Concrete crew" value={p.role} onChange={(e) => updateRow(personnel, i, { role: e.target.value }, setPersonnel)} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Count</label>
@@ -137,7 +177,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                 <label className="text-xs font-medium text-muted-foreground">Company</label>
                 <Input placeholder="Company" value={p.company} onChange={(e) => updateRow(personnel, i, { company: e.target.value }, setPersonnel)} />
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(personnel, i, setPersonnel)} disabled={personnel.length === 1}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(personnel, i, setPersonnel)} aria-label="Remove personnel row">
                 <Trash2 className="size-4" />
               </Button>
             </div>
@@ -145,13 +185,18 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
           <Button variant="outline" size="sm" onClick={() => setPersonnel([...personnel, { role: '', headcount: 0, company: '' }])}>
             <Plus className="mr-1 size-4" />Add Personnel
           </Button>
+          <datalist id="daily-log-roles">{ROLES.map((role) => <option key={role} value={role} />)}</datalist>
         </CardContent>
       </Card>
 
       {/* Equipment */}
       <Card>
-        <CardHeader><CardTitle>Equipment</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Equipment <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle>
+          <p className="text-sm text-muted-foreground">Add individual equipment counts only when the project or payment method requires them.</p>
+        </CardHeader>
         <CardContent className="space-y-3">
+          {equipment.length === 0 && <p className="text-sm text-muted-foreground">No equipment counts recorded.</p>}
           {equipment.map((e, i) => (
             <div key={i} className="grid gap-2 grid-cols-[1fr_80px] sm:grid-cols-[1fr_80px_1fr_44px] items-end">
               <div>
@@ -166,7 +211,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                 <label className="text-xs font-medium text-muted-foreground">Notes</label>
                 <Input placeholder="Notes" value={e.notes} onChange={(ev) => updateRow(equipment, i, { notes: ev.target.value }, setEquipment)} />
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(equipment, i, setEquipment)} disabled={equipment.length === 1}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(equipment, i, setEquipment)} aria-label="Remove equipment row">
                 <Trash2 className="size-4" />
               </Button>
             </div>
@@ -179,8 +224,12 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
       {/* Work Items */}
       <Card>
-        <CardHeader><CardTitle>Work Items</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Measured Quantities <span className="text-sm font-normal text-muted-foreground">(optional)</span></CardTitle>
+          <p className="text-sm text-muted-foreground">Use structured quantities when they are useful for pay items or production tracking.</p>
+        </CardHeader>
         <CardContent className="space-y-3">
+          {workItems.length === 0 && <p className="text-sm text-muted-foreground">No measured quantities recorded.</p>}
           {workItems.map((w, i) => (
             <div key={i} className="grid gap-2 grid-cols-2 sm:grid-cols-[1fr_80px_100px_1fr_44px] items-end">
               <div>
@@ -202,22 +251,18 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                 <label className="text-xs font-medium text-muted-foreground">Location</label>
                 <Input placeholder="Location" value={w.location} onChange={(e) => updateRow(workItems, i, { location: e.target.value }, setWorkItems)} />
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(workItems, i, setWorkItems)} disabled={workItems.length === 1}>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeRow(workItems, i, setWorkItems)} aria-label="Remove measured quantity row">
                 <Trash2 className="size-4" />
               </Button>
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={() => setWorkItems([...workItems, { description: '', quantity: 0, unit: '', location: '' }])}>
-            <Plus className="mr-1 size-4" />Add Work Item
+            <Plus className="mr-1 size-4" />Add Measured Quantity
           </Button>
         </CardContent>
       </Card>
 
-      {/* Work Summary & Safety Notes */}
-      <Card>
-        <CardHeader><CardTitle>Work Summary</CardTitle></CardHeader>
-        <CardContent><Textarea rows={4} placeholder="Describe overall work completed today..." value={workSummary} onChange={(e) => setWorkSummary(e.target.value)} /></CardContent>
-      </Card>
+      {/* Safety Notes */}
       <Card>
         <CardHeader><CardTitle>Safety Notes</CardTitle></CardHeader>
         <CardContent><Textarea rows={3} placeholder="Any safety observations, incidents, or notes..." value={safetyNotes} onChange={(e) => setSafetyNotes(e.target.value)} /></CardContent>
@@ -231,8 +276,21 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         </CardContent>
       </Card>
 
-      {/* Photo Upload */}
-      <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+      <PhotoLibraryPicker
+        projectId={projectId}
+        logDate={date}
+        photos={photos}
+        onPhotosChange={setPhotos}
+        isOffline={isOffline}
+      />
+
+      {/* New photos from the phone camera or photo library. */}
+      <div className="space-y-2">
+        <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+        <p className="text-xs text-muted-foreground">
+          Tap the upload area on a phone to choose Camera or Photo Library.
+        </p>
+      </div>
 
       {errorMsg && (
         <Alert className="border-red-300 bg-red-50">
@@ -274,11 +332,14 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
               // Save photo attachments (demo)
               for (const photo of photos) {
+                // Data URLs remain readable across client-side navigation to
+                // the detail/PDF screen; blob URLs may be revoked on unmount.
+                const demoFileUrl = await fileToDataUrl(photo.file);
                 addAttachment({
                   entity_type: 'daily_log',
                   entity_id: log.id,
                   file_name: photo.file.name,
-                  file_url: photo.preview,
+                  file_url: demoFileUrl,
                   file_type: photo.file.type,
                   file_size: photo.file.size,
                   photo_category: photo.category,

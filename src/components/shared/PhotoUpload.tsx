@@ -20,6 +20,8 @@ export interface PhotoFile {
   uploading?: boolean;
   uploadError?: string;
   originalSize?: number;
+  capturedAt?: string;
+  sourceAttachmentId?: string;
 }
 
 interface PhotoUploadProps {
