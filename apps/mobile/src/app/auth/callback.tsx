@@ -1,23 +1,57 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { useAuth } from '@/providers/auth-provider';
+import { consumeAuthCallback } from '@/lib/deep-links';
 
 export default function CallbackScreen() {
-  const { session, loading } = useAuth();
-  const leaveCallback = useCallback(() => router.replace(session ? '/(tabs)' : '/sign-in'), [session]);
+  const params = useLocalSearchParams<{
+    code?: string | string[];
+    token_hash?: string | string[];
+    type?: string | string[];
+    next?: string | string[];
+    access_token?: string | string[];
+    refresh_token?: string | string[];
+  }>();
+  const started = useRef(false);
+  const [error, setError] = useState<string | null>(null);
+  const first = useCallback((value: string | string[] | undefined) =>
+    Array.isArray(value) ? value[0] : value, []);
+  const callbackUrl = useMemo(() => {
+    const url = new URL('railcommand://auth/callback');
+    for (const key of ['code', 'token_hash', 'type', 'next'] as const) {
+      const value = first(params[key]);
+      if (value) url.searchParams.set(key, value);
+    }
+    const accessToken = first(params.access_token);
+    const refreshToken = first(params.refresh_token);
+    if (accessToken && refreshToken) {
+      url.hash = new URLSearchParams({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        ...(first(params.type) ? { type: first(params.type)! } : {}),
+      }).toString();
+    }
+    return url.toString();
+  }, [first, params]);
+  const leaveCallback = useCallback(() => router.replace('/sign-in'), []);
 
   useEffect(() => {
-    if (loading) return;
-    const fallback = setTimeout(leaveCallback, 8000);
-    return () => clearTimeout(fallback);
-  }, [leaveCallback, loading]);
+    if (started.current) return;
+    started.current = true;
+    void consumeAuthCallback(callbackUrl)
+      .then((result) => {
+        if (result === 'password-reset') router.replace('/reset-password');
+        else if (result === 'authenticated') router.replace('/(tabs)');
+        else setError('This RailCommand link is not supported.');
+      })
+      .catch(() => setError('This password reset link is invalid, expired, or has already been used.'));
+  }, [callbackUrl]);
 
   return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
-    <ActivityIndicator />
-    <Text>Verifying your RailCommand link…</Text>
-    <Pressable accessibilityRole="button" onPress={leaveCallback} style={{ padding: 14 }}>
-      <Text style={{ fontWeight: '700' }}>Return to RailCommand</Text>
-    </Pressable>
+    {!error ? <ActivityIndicator /> : null}
+    <Text>{error ?? 'Verifying your RailCommand link…'}</Text>
+    {error ? <Pressable accessibilityRole="button" onPress={leaveCallback} style={{ padding: 14 }}>
+      <Text style={{ fontWeight: '700' }}>Request a new reset link</Text>
+    </Pressable> : null}
   </View>;
 }

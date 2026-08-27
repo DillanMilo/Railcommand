@@ -79,8 +79,10 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(nativeIntent, /segments\.join/);
     assert.match(nativeIntent, /segments\[0\] === 'invite'/);
     assert.match(nativeIntent, /`\/invitation\/\$\{segments\[1\]\}/);
-    assert.match(callback, /Return to RailCommand/);
-    assert.match(callback, /setTimeout/);
+    assert.match(callback, /consumeAuthCallback\(callbackUrl\)/);
+    assert.match(callback, /router\.replace\('\/reset-password'\)/);
+    assert.match(callback, /invalid, expired, or has already been used/);
+    assert.match(callback, /Request a new reset link/);
     const invitation = source('../app/invitation/[token].tsx');
     assert.match(invitation, /sign-in\?inviteToken=/);
     assert.match(invitation, /if \(!session\)/);

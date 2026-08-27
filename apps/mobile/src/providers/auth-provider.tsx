@@ -2,7 +2,6 @@ import type { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
-import { consumeAuthCallback } from '@/lib/deep-links';
 import { parseMobileDeepLink } from '@railcommand/domain';
 import { supabase } from '@/lib/supabase';
 import { mobileConfig } from '@/lib/config';
@@ -41,9 +40,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
           else router.replace({ pathname: '/sign-in', params: { inviteToken: link.token } });
           return;
         }
-        const result = await consumeAuthCallback(url);
-        if (result === 'password-reset') router.replace('/reset-password');
-        else if (result === 'authenticated') router.replace('/');
+        // Expo Router owns auth-callback navigation. The callback screen
+        // performs the one-time exchange so cold starts cannot race a second
+        // listener and consume the same PKCE code twice.
+        if (link.kind === 'auth_callback') return;
       } catch {
         router.replace({ pathname: '/sign-in', params: { error: 'That sign-in link is invalid or expired.' } });
       }
