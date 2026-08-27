@@ -19,7 +19,7 @@
       "id": "google-play-drafts",
       "status": "verified",
       "verifiedAt": "2026-08-27",
-      "evidence": "Saved Google Play declarations, reviewer credentials, and authenticated phone/tablet store-media drafts recorded in docs/mobile/PHASE_4_STORE_COMPLIANCE.md; not submitted or published"
+      "evidence": "Saved Google Play declarations, reviewer credentials, and the completed listing with six phone, six 7-inch tablet, and six 10-inch tablet authenticated synthetic screenshots; console confirmed Draft saved on 2026-08-27; not submitted or published"
     },
     {
       "id": "password-recovery-delivery",
@@ -69,12 +69,13 @@
     {
       "id": "physical-iphone-deletion",
       "status": "pending",
-      "evidence": "Physical iPhone verified the online zero-work gate, a one-draft local-work block, both permanent-discard confirmations, return to 0 drafts/0 queued items/0 photos, and no server-record mutation or deletion submission on 2026-08-27. The final offline online-only block still requires a device-side Airplane Mode/Wi-Fi toggle because iPhone Mirroring intentionally cannot complete that network-setting change."
+      "evidence": "Physical iPhone verified the online zero-work gate, a one-draft local-work block, both permanent-discard confirmations, return to 0 drafts/0 queued items/0 photos, and no server-record mutation or deletion submission. With Airplane Mode on and Wi-Fi off, the owner observed the exact warning 'Account deletion is online only and is never silently queued.' on 2026-08-27. Final confirmation that the request control remained disabled is still required."
     },
     {
       "id": "physical-android-acceptance",
-      "status": "pending",
-      "evidence": "A physical Android device is unavailable; any release exception requires explicit owner acceptance"
+      "status": "accepted_exception",
+      "ownerAcceptedAt": "2026-08-27",
+      "evidence": "Release owner explicitly accepted the physical Android hardware exception on 2026-08-27 based on completed API 36 phone and tablet emulator evidence; physical-device verification remains a post-Phase-4 follow-up when hardware is available"
     }
   ]
 }

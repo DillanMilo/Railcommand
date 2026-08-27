@@ -198,6 +198,19 @@ checks and are recorded only in the gitignored private runbook.
   was submitted. The remaining device-side acceptance step is the online-only block
   while Airplane Mode and Wi-Fi are off; iPhone Mirroring intentionally would not apply
   that connectivity-setting change, so the gate remains pending rather than inferred.
+- With Airplane Mode enabled and Wi-Fi disabled on that physical iPhone, the release
+  owner subsequently observed the exact warning **“Account deletion is online only and
+  is never silently queued.”** The final physical evidence item is confirmation that
+  the request control remained disabled; no request was submitted.
+- Google Play's US-English default listing now has six authenticated synthetic phone
+  screenshots, six 7-inch tablet screenshots, and six 10-inch tablet screenshots
+  attached in the approved story order. The console confirmed **Your changes have been
+  saved** and **Draft saved** on 2026-08-27. The listing remains a draft; it was not
+  submitted, reviewed, or published.
+- On 2026-08-27 the release owner explicitly accepted the named physical Android
+  hardware exception based on the completed API 36 phone and tablet emulator evidence.
+  A physical Android pass remains a tracked post-Phase-4 follow-up when hardware is
+  available and is not misrepresented as completed device testing.
 - After authenticated store-media capture, the temporary deletion-QA project membership
   was removed from `rxuv…` with an exact one-row guard. A follow-up query verified zero
   matching memberships and one retained staging Auth identity. Five local temporary
