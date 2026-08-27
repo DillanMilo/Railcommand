@@ -47,8 +47,9 @@
     },
     {
       "id": "apple-distribution-signing",
-      "status": "pending",
-      "evidence": "Production profile resolution is fail-closed and a read-only EAS check resolves io.railcommand.app, but no valid Apple signing identity or RailCommand distribution profile is configured; no certificate or profile was created"
+      "status": "verified",
+      "verifiedAt": "2026-08-27",
+      "evidence": "With explicit owner authorization, EAS created exactly one Apple Distribution certificate and one active App Store provisioning profile for io.railcommand.app under Creative Currents LLC team PQAGLH9L66. EAS reported all credentials ready to build; both expire 2027-08-27. No push key, App Store Connect API key, build, upload, submission, or release was created or started."
     },
     {
       "id": "authenticated-store-media",

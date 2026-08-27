@@ -137,15 +137,17 @@ checks and are recorded only in the gitignored private runbook.
   script starts after authentication, uses only synthetic records, exercises one
   offline log/photo through exactly-once sync, and never submits account deletion.
 - A read-only EAS check confirms the `creative-currents` organization owns the
-  `@creative-currents/railcommand` build project. No production EAS build or signing
-  request was started. The Mac currently has no valid Apple signing identity and no
-  RailCommand distribution profile, so an App Store archive remains correctly blocked
-  until the organization team and credentials are verified in App Store Connect.
+  `@creative-currents/railcommand` build project. No production EAS build was started.
+  With explicit owner authorization on August 27, EAS subsequently created exactly one
+  Apple Distribution certificate and one active App Store provisioning profile for
+  `io.railcommand.app` under Creative Currents LLC team `PQAGLH9L66`. Both expire
+  August 27, 2027. No push key, App Store Connect API key, build, upload, submission,
+  or release was created or started.
 - Each EAS build profile now pins its matching application profile while Expo config
-  fails closed when no profile is supplied. A read-only production credential check
-  resolves exactly to `io.railcommand.app`; it still reports no credentials configured,
-  and the session was exited before generating a certificate, provisioning profile,
-  push key, or App Store Connect key.
+  fails closed when no profile is supplied. The production credential workflow resolved
+  exactly to `io.railcommand.app`, and EAS reported that all required build credentials
+  are ready after creating the authorized certificate and profile. No push key or App
+  Store Connect key was created.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
@@ -176,8 +178,10 @@ checks and are recorded only in the gitignored private runbook.
   OFF. The permanent synthetic reviewer sign-in details, 18-and-over target audience,
   and corrected 50-response Data Safety declaration were reviewed and saved as drafts.
   Optional trusted-partner credential testing is OFF. The US-English short and full
-  listing descriptions were also saved as a draft. The dashboard shows 10 of 11 setup
-  tasks complete; uploading the completed screenshots is the remaining listing blocker. Nothing was
+  listing descriptions were also saved as a draft. All initial setup tasks are now
+  complete: the final listing includes the authenticated screenshot sets, and Google’s
+  AI-asset declaration labels only the generated app icon and feature graphic as created
+  or edited using AI. The real application screenshots are not AI-labeled. Nothing was
   sent for review or published, and no Android bundle was uploaded.
 - The final checked-in store-media set now contains three authenticated synthetic-data
   screenshots for each supported Apple device class and the complete six-state
@@ -280,18 +284,20 @@ checks and are recorded only in the gitignored private runbook.
 - The completed iPhone/iPad and Android phone/tablet screenshots are attached to their
   Google Play draft slots. Capture and manually validate the private reviewer
   walkthrough from the archived release candidate using synthetic data.
-- Complete the remaining Google Play initial setup work. The dashboard currently shows
-  10 of 11 tasks complete. The permanent reviewer sign-in details, adult-only target
-  audience, and Data Safety declaration are saved drafts. The IARC questionnaire is
+- Google Play initial setup is complete in saved-draft state. The permanent reviewer
+  sign-in details, adult-only target audience, and Data Safety declaration are saved
+  drafts. The IARC questionnaire is
   complete using the verified routed support
   address; it produced an ESRB Teen rating for North America and 12+/parental-guidance
   equivalents elsewhere because invited organization users share field content and
   optional location. This completed the rating questionnaire only and did not send the
   app for review. The validated 512px icon and 1024 × 500
   feature graphic were uploaded and attached to the US-English listing on August 26,
-  2026, then saved as a draft without publishing or sending the app for review. The
-  store-listing task still remains in Google's initial-setup checklist even though the
-  completed authenticated screenshots are attached and the listing draft is saved.
+  2026, then saved as a draft without publishing or sending the app for review. On
+  August 27, the required AI-asset declaration was saved accurately for those two
+  generated assets only; the authenticated application screenshots were left
+  unselected. Google then marked the default listing ready to send for review and
+  removed the initial-setup checklist from the dashboard.
   Android API 36 phone/tablet emulator profiles are now installed, and the
   self-contained staging Release has passed online and offline cold launch on both
   profiles. The six final authenticated synthetic-data stories for each form factor
@@ -308,13 +314,13 @@ checks and are recorded only in the gitignored private runbook.
   privacy-policy questionnaire, reviewer contact/credentials/notes, and build.
 - The checked-in Expo configuration and EAS project agree on
   `@creative-currents/railcommand` (`dda86dca-ca12-4efa-a556-6fd8411485d5`), and the
-  authenticated EAS account confirms Creative Currents ownership. This Mac still has
-  zero valid Apple code-signing identities. Its only installed distribution profile is
-  for `com.creativecurrents.pawpal`, not RailCommand, so no RailCommand archive can be
-  signed accidentally. The profile does independently confirm Apple team
-  `PQAGLH9L66` / Creative Currents LLC. The production EAS credential inventory was
-  rechecked with an explicitly selected profile and correctly resolved
-  `io.railcommand.app`; no persistent Apple credential was created.
+  authenticated EAS account confirms Creative Currents ownership. The local Mac still
+  has zero valid Apple distribution signing identities; the RailCommand distribution
+  certificate and active App Store profile are EAS-managed credentials rather than
+  locally installed credentials. The production workflow correctly resolves
+  `io.railcommand.app` and team `PQAGLH9L66` / Creative Currents LLC. EAS reported all
+  required build credentials ready, while no production build or store upload was
+  started.
 - A clean Expo CNG prebuild with the staging profile resolves to
   `io.railcommand.app.staging`, `mobile-staging.railcommand.io`, and the isolated
   Supabase project. A Release bundle now builds, installs, and launches directly—no
