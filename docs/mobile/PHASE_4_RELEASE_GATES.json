@@ -68,8 +68,9 @@
     },
     {
       "id": "physical-iphone-deletion",
-      "status": "pending",
-      "evidence": "Physical iPhone verified the online zero-work gate, a one-draft local-work block, both permanent-discard confirmations, return to 0 drafts/0 queued items/0 photos, and no server-record mutation or deletion submission. With Airplane Mode on and Wi-Fi off, the owner observed the exact warning 'Account deletion is online only and is never silently queued.' on 2026-08-27. Final confirmation that the request control remained disabled is still required."
+      "status": "verified",
+      "verifiedAt": "2026-08-27",
+      "evidence": "Physical iPhone verified the online zero-work gate, a one-draft local-work block, both permanent-discard confirmations, return to 0 drafts/0 queued items/0 photos, and no server-record mutation or deletion submission. With Airplane Mode on and Wi-Fi off, the owner observed the exact warning 'Account deletion is online only and is never silently queued.' and confirmed the request control remained disabled on 2026-08-27."
     },
     {
       "id": "physical-android-acceptance",
