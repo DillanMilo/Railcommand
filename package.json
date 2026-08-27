@@ -15,6 +15,7 @@
     "test:offline": "mocha --require tsx \"src/lib/offline/*.test.ts\"",
     "test:mobile-env": "node --test scripts/mobile-environment-guard.test.mjs",
     "test:expo-staging": "node --test scripts/expo-staging.test.mjs",
+    "test:expo-build-profiles": "node --test scripts/expo-build-profiles.test.mjs",
     "test:store-media-capture": "node --test scripts/android-store-capture.test.mjs scripts/capture-store-screenshot.test.mjs",
     "test:android-emulator-input": "node --test scripts/android-emulator-input.test.mjs scripts/sign-in-android-store-reviewer.test.mjs",
     "test:phase4-release-gates": "node --test scripts/verify-phase-4-release-gates.test.mjs",

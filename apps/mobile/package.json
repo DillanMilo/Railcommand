@@ -45,15 +45,15 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start --dev-client",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
+    "start": "EXPO_PUBLIC_BUILD_PROFILE=development expo start --dev-client",
+    "android": "EXPO_PUBLIC_BUILD_PROFILE=development expo run:android",
+    "ios": "EXPO_PUBLIC_BUILD_PROFILE=development expo run:ios",
+    "web": "EXPO_PUBLIC_BUILD_PROFILE=development expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "mocha --require tsx \"src/**/*.test.ts\"",
-    "export": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
-    "prebuild:native": "expo prebuild --no-install --clean"
+    "export": "EXPO_PUBLIC_BUILD_PROFILE=development expo export --platform ios --output-dir dist/ios && EXPO_PUBLIC_BUILD_PROFILE=development expo export --platform android --output-dir dist/android",
+    "prebuild:native": "EXPO_PUBLIC_BUILD_PROFILE=development expo prebuild --no-install --clean"
   },
   "private": true
 }

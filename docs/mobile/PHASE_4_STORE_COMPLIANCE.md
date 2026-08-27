@@ -29,6 +29,11 @@ legal or identity operation. Daily-log drafts/outbox/photos remain **offline
 draft/queue** and must be synchronized, reopened, or explicitly discarded before an
 account-deletion request can be sent.
 
+Store signing and build-profile selection are **online-only release tooling**. They do
+not read, alter, or replace the native user-scoped draft/outbox database, so the
+existing offline field workflow and foreground synchronization guarantees are
+unchanged.
+
 ## Implemented evidence
 
 - Mobile and authenticated web deletion flows inspect user-partitioned device work,
@@ -136,6 +141,11 @@ checks and are recorded only in the gitignored private runbook.
   request was started. The Mac currently has no valid Apple signing identity and no
   RailCommand distribution profile, so an App Store archive remains correctly blocked
   until the organization team and credentials are verified in App Store Connect.
+- Each EAS build profile now pins its matching application profile while Expo config
+  fails closed when no profile is supplied. A read-only production credential check
+  resolves exactly to `io.railcommand.app`; it still reports no credentials configured,
+  and the session was exited before generating a certificate, provisioning profile,
+  push key, or App Store Connect key.
 - The generated native privacy files contain precise and coarse foreground location,
   no tracking, no microphone usage string, no background-location usage string, and
   `ITSAppUsesNonExemptEncryption = false`. Android removes background location,
@@ -221,7 +231,9 @@ checks and are recorded only in the gitignored private runbook.
   zero valid Apple code-signing identities. Its only installed distribution profile is
   for `com.creativecurrents.pawpal`, not RailCommand, so no RailCommand archive can be
   signed accidentally. The profile does independently confirm Apple team
-  `PQAGLH9L66` / Creative Currents LLC.
+  `PQAGLH9L66` / Creative Currents LLC. The production EAS credential inventory was
+  rechecked with an explicitly selected profile and correctly resolved
+  `io.railcommand.app`; no persistent Apple credential was created.
 - A clean Expo CNG prebuild with the staging profile resolves to
   `io.railcommand.app.staging`, `mobile-staging.railcommand.io`, and the isolated
   Supabase project. A Release bundle now builds, installs, and launches directly—no

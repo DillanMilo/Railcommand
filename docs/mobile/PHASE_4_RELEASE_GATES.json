@@ -48,7 +48,7 @@
     {
       "id": "apple-distribution-signing",
       "status": "pending",
-      "evidence": "No valid Apple signing identity or RailCommand distribution profile is installed"
+      "evidence": "Production profile resolution is fail-closed and a read-only EAS check resolves io.railcommand.app, but no valid Apple signing identity or RailCommand distribution profile is configured; no certificate or profile was created"
     },
     {
       "id": "authenticated-store-media",

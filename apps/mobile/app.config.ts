@@ -23,7 +23,12 @@ const profiles = {
 } as const;
 
 const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
-  const profileName = process.env.EXPO_PUBLIC_BUILD_PROFILE ?? 'development';
+  const profileName = process.env.EXPO_PUBLIC_BUILD_PROFILE;
+  if (!profileName) {
+    throw new Error(
+      'EXPO_PUBLIC_BUILD_PROFILE is required; use development, staging, or production explicitly',
+    );
+  }
   if (!(profileName in profiles)) throw new Error('Invalid Expo build profile');
   const profile = profiles[profileName as keyof typeof profiles];
   const buildNumber = process.env.MOBILE_BUILD_NUMBER ?? '300001';
