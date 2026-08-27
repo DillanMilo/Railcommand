@@ -61,8 +61,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return error?.message ?? null;
     },
     requestPasswordReset: async (email) => {
-      const redirectTo = Linking.createURL('/auth/callback', { queryParams: { next: '/reset-password' } });
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+      const redirectTo = new URL('/auth/callback', `https://${mobileConfig.linkHost}`);
+      redirectTo.searchParams.set('type', 'recovery');
+      redirectTo.searchParams.set('next', '/reset-password');
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectTo.toString(),
+      });
       return error?.message ?? null;
     },
     signOut: async () => {

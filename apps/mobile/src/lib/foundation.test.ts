@@ -99,6 +99,19 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     );
   });
 
+  it('keeps password recovery on the verified staging link and preserves legacy root callbacks', () => {
+    const authProvider = source('../providers/auth-provider.tsx');
+    const nativeIntent = source('../app/+native-intent.tsx');
+    const deepLinks = source('./deep-links.ts');
+    assert.match(authProvider, /new URL\('\/auth\/callback', `https:\/\/\$\{mobileConfig\.linkHost\}`\)/);
+    assert.match(authProvider, /searchParams\.set\('type', 'recovery'\)/);
+    assert.match(authProvider, /searchParams\.set\('next', '\/reset-password'\)/);
+    assert.match(nativeIntent, /url\.pathname === '\/' && url\.searchParams\.has\('code'\)/);
+    assert.match(nativeIntent, /url\.pathname = '\/auth\/callback'/);
+    assert.match(deepLinks, /url\.searchParams\.get\('type'\) \?\? hash\.get\('type'\)/);
+    assert.match(deepLinks, /type === 'recovery' \|\| next === '\/reset-password'/);
+  });
+
   it('keeps physical permission QA development-only and verifies the SQLite draft survives denial', () => {
     const screen = source('../app/daily-log/new.tsx');
     assert.match(screen, /mobileConfig\.profile !== 'development'/);

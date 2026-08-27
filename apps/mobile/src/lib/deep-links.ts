@@ -8,8 +8,9 @@ export async function consumeAuthCallback(rawUrl: string): Promise<'authenticate
   const parsedLink = parseMobileDeepLink(rawUrl, [mobileConfig.linkHost]);
   const code = url.searchParams.get('code');
   const tokenHash = url.searchParams.get('token_hash');
-  const type = url.searchParams.get('type') as EmailOtpType | null;
   const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const type = (url.searchParams.get('type') ?? hash.get('type')) as EmailOtpType | null;
+  const next = url.searchParams.get('next') ?? hash.get('next');
   const accessToken = hash.get('access_token');
   const refreshToken = hash.get('refresh_token');
   if (code) {
@@ -26,7 +27,7 @@ export async function consumeAuthCallback(rawUrl: string): Promise<'authenticate
   } else {
     throw new Error('Authentication callback is missing credentials');
   }
-  return type === 'recovery' || url.searchParams.get('next') === '/reset-password'
+  return type === 'recovery' || next === '/reset-password'
     ? 'password-reset'
     : 'authenticated';
 }
