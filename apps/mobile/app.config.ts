@@ -112,6 +112,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     android: {
       package: profile.identifier,
       versionCode: Number(buildNumber),
+      allowBackup: false,
       blockedPermissions: [
         'android.permission.ACCESS_BACKGROUND_LOCATION',
         'android.permission.RECORD_AUDIO',

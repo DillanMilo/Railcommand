@@ -107,11 +107,25 @@ remotely or uploaded until separately authorized.
 ## Automated evidence — 2026-08-28
 
 - Expo lint and the Expo mobile TypeScript check pass.
-- The full focused mobile suite passes: 62 domain, offline, API-client, Expo,
+- The full focused mobile suite passes: 63 domain, offline, API-client, Expo,
   authenticated mobile-API, and link-association checks.
 - The existing Next.js production build and repository TypeScript check pass.
 - iOS and Android Expo exports pass and contain the bundled RailCommand mark,
   six cross-platform TTF font assets, and native tab symbols.
+- A local Android native compile also passes for both debug and release variants
+  using the installed Android SDK: build tools 36.0.0, compile/target SDK 36,
+  minimum SDK 24, NDK 27.1.12297006, and all four generated ABIs. The isolated
+  development package is `io.railcommand.app.dev`, version `1.0.0` build `300001`.
+  The release manifest excludes background location, microphone, overlay, debug,
+  and cleartext-traffic allowances; its verified HTTPS app link is limited to
+  `mobile-staging.railcommand.io`. A bundle scan finds only the staging project ref
+  and staging host, no secret-key/server-environment/cron/JWT marker. The word
+  `service_role` remains only in the guard that rejects privileged keys.
+- Android automatic cloud backup is now disabled in the Expo source configuration.
+  A regenerated release manifest independently records `android:allowBackup="false"`,
+  preventing cached field data from entering ordinary Android app backups. This
+  compile/manifest evidence is not represented as physical Android acceptance and
+  no APK was uploaded or distributed.
 - The exports were repeated after the accessibility and network-loss hardening at
   commit `4416273`. Both Hermes bundles contain only the isolated staging project ref
   and `mobile-staging.railcommand.io` runtime identity. A generated-bundle scan found
@@ -196,8 +210,9 @@ ingestion is not claimed by this Phase 5 evidence; it requires a separately scop
 lossless-file workflow before it may be advertised as supported.
 
 The corrected Release app is installed and cold-launch/persistence evidence passes on
-the physical iPhone, but the hands-on workflow/VoiceOver/app-switcher checks remain
-open. Physical iPad and Android acceptance, beta distribution, and refreshed
+the physical iPhone, and the Android native project now compiles with the intended
+release security boundary. The hands-on iPhone workflow/VoiceOver/app-switcher checks
+remain open. Physical iPad and Android acceptance, beta distribution, and refreshed
 post-alignment store screenshots also remain open.
 
 ## Gate

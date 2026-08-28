@@ -178,6 +178,11 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(source('./config-guard.ts'), /protocol !== 'https:'/);
   });
 
+  it('prevents Android cloud backup from copying private offline field data', () => {
+    const appConfig = source('../../app.config.ts');
+    assert.match(appConfig, /allowBackup: false/);
+  });
+
   it('uses the store app identifier with the staging runtime for controlled beta builds', () => {
     const appConfig = source('../../app.config.ts');
     const eas = source('../../eas.json');
