@@ -92,13 +92,17 @@ is not required.
 ## Beta progression
 
 1. Local simulator/emulator and tethered development builds.
-2. TestFlight internal and Google Play internal testing using staging services.
+2. TestFlight internal and Google Play internal testing using the dedicated `beta`
+   distribution target: store identifier `io.railcommand.app`, staging runtime profile,
+   staging backend, and `mobile-staging.railcommand.io` links.
 3. Small external/closed tester group after the critical acceptance scenarios pass.
 4. Release-candidate regression with production configuration validation, without
    promoting or releasing until Phase 6 approval.
 
 No Phase 5 activity merges to `main`, promotes a Vercel deployment, publishes a
 store listing, or touches production customer data without separate authorization.
+The beta profile may be configured and validated locally, but it must not be built
+remotely or uploaded until separately authorized.
 
 ## Automated evidence — 2026-08-28
 

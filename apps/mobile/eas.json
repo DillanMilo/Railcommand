@@ -28,6 +28,16 @@
         "EXPO_PUBLIC_BUILD_PROFILE": "staging"
       }
     },
+    "beta": {
+      "distribution": "store",
+      "environment": "preview",
+      "channel": "beta",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "staging",
+        "MOBILE_DISTRIBUTION_TARGET": "beta"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "environment": "production",

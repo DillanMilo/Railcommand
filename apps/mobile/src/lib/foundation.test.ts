@@ -161,4 +161,16 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.doesNotMatch(nativeBoundary, /console\.(?:log|debug|info|warn|error)/);
     assert.match(source('./config-guard.ts'), /protocol !== 'https:'/);
   });
+
+  it('uses the store app identifier with the staging runtime for controlled beta builds', () => {
+    const appConfig = source('../../app.config.ts');
+    const eas = source('../../eas.json');
+    assert.match(appConfig, /name: 'RailCommand Beta'/);
+    assert.match(appConfig, /identifier: 'io\.railcommand\.app'/);
+    assert.match(appConfig, /distributionTarget === 'beta' && profileName !== 'staging'/);
+    assert.match(eas, /"beta"/);
+    assert.match(eas, /"distribution": "store"/);
+    assert.match(eas, /"EXPO_PUBLIC_BUILD_PROFILE": "staging"/);
+    assert.match(eas, /"MOBILE_DISTRIBUTION_TARGET": "beta"/);
+  });
 });

@@ -15,6 +15,11 @@ const profiles = {
     identifier: 'io.railcommand.app.staging',
     linkHost: STAGING_LINK_HOST,
   },
+  beta: {
+    name: 'RailCommand Beta',
+    identifier: 'io.railcommand.app',
+    linkHost: STAGING_LINK_HOST,
+  },
   production: {
     name: 'RailCommand',
     identifier: 'io.railcommand.app',
@@ -29,8 +34,19 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       'EXPO_PUBLIC_BUILD_PROFILE is required; use development, staging, or production explicitly',
     );
   }
-  if (!(profileName in profiles)) throw new Error('Invalid Expo build profile');
-  const profile = profiles[profileName as keyof typeof profiles];
+  if (profileName !== 'development' && profileName !== 'staging' && profileName !== 'production') {
+    throw new Error('Invalid Expo build profile');
+  }
+  const distributionTarget = process.env.MOBILE_DISTRIBUTION_TARGET;
+  if (distributionTarget && distributionTarget !== 'beta') {
+    throw new Error('Invalid RailCommand mobile distribution target');
+  }
+  if (distributionTarget === 'beta' && profileName !== 'staging') {
+    throw new Error('RailCommand beta distribution must use the staging runtime profile');
+  }
+  const profile = distributionTarget === 'beta'
+    ? profiles.beta
+    : profiles[profileName];
   const buildNumber = process.env.MOBILE_BUILD_NUMBER ?? '300001';
 
   return {
@@ -139,6 +155,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     experiments: { typedRoutes: true, reactCompiler: true },
     extra: {
       buildProfile: profileName,
+      distributionTarget: distributionTarget ?? 'local',
       linkHost: profile.linkHost,
       eas: { projectId: EAS_PROJECT_ID },
     },
