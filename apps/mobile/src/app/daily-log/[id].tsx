@@ -3,7 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { BrandHeader, Card, EmptyState, Screen, SecondaryButton, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { shareDailyLogSummary } from '@/lib/device';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 export default function DailyLogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,4 +23,8 @@ export default function DailyLogDetailScreen() {
   </Screen>;
 }
 
-const styles = StyleSheet.create({ label: { color: colors.muted, fontWeight: '800', fontSize: 12, textTransform: 'uppercase' }, value: { color: colors.ink, fontSize: 16, lineHeight: 23, marginBottom: 8 }, notice: { color: colors.warning, fontWeight: '800' } });
+const styles = StyleSheet.create({
+  label: { color: colors.muted, fontFamily: fonts.mono, fontSize: 10, lineHeight: 15, textTransform: 'uppercase' },
+  value: { color: colors.ink, fontFamily: fonts.body, fontSize: 16, lineHeight: 23, marginBottom: 8 },
+  notice: { color: colors.warning, fontFamily: fonts.bodyBold },
+});

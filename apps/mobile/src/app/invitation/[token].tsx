@@ -6,7 +6,7 @@ import { BrandHeader, Card, PrimaryButton, Screen, SectionTitle, uiStyles } from
 import { mobileApi } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 export default function InvitationScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -51,4 +51,7 @@ export default function InvitationScreen() {
   </Screen>;
 }
 
-const styles = StyleSheet.create({ role: { color: colors.orange, textTransform: 'capitalize', fontWeight: '900' }, message: { color: colors.muted, lineHeight: 20 } });
+const styles = StyleSheet.create({
+  role: { color: colors.orange, textTransform: 'capitalize', fontFamily: fonts.bodyBold },
+  message: { color: colors.muted, fontFamily: fonts.body, lineHeight: 20 },
+});

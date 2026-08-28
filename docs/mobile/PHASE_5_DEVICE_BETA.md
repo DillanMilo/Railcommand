@@ -1,0 +1,121 @@
+# Phase 5 — visual alignment, device acceptance, and beta distribution
+
+Last updated: 2026-08-28
+
+## Goal
+
+Prove the native field app on representative real devices, preserve the accepted
+offline/security behavior, and distribute controlled betas. Phase 5 begins with
+a focused RailCommand visual-alignment pass so device and accessibility testing
+validate the intended interface rather than a disposable scaffold.
+
+This is deliberately a lean release matrix. It does not require owning every
+screen size or testing every possible OS/device combination.
+
+## Visual baseline
+
+The native app uses the same core identity as the RailCommand web app:
+
+- `#0F172A` navy, `#F97316` orange, and the warm command-shell background;
+- the existing RailCommand track mark rather than a substitute monogram;
+- bundled Plus Jakarta Sans headings, DM Sans body copy, and JetBrains Mono
+  operational labels;
+- sharp cards, restrained offset shadows, compact status badges, and a persistent
+  field-work navigation bar;
+- mobile-native screen structure and controls rather than a desktop layout
+  squeezed into a phone viewport.
+
+The visual pass covers sign-in, dashboard/project selection, daily logs, Sync
+Center, Account/privacy, invitations, password recovery, and supporting cached
+record screens. Material visual changes require replacement store screenshots
+before submission.
+
+## Offline classification
+
+The visual foundation is **offline-capable presentation**. Its fonts, logo, icons,
+colors, and layout assets are bundled in the installed application. It adds no
+network dependency and does not change the accepted SQLite draft/outbox or secure
+session contracts.
+
+Existing workflow classifications remain:
+
+- cached projects, team, and recent logs: **offline read-only**;
+- new daily-log fields, location, and photos: **offline draft/queue**;
+- foreground reconnect synchronization: **offline-capable** with authenticated,
+  idempotent server delivery;
+- notification registration, invitation acceptance, password recovery, and
+  account deletion: **online-only** with explicit messaging and no silent queue.
+
+## Lean device matrix
+
+| Target | Required evidence | Coverage approach |
+| --- | --- | --- |
+| Current physical iPhone | Required | Clean/update install, offline launch, force-close/restart, network loss/reconnect, camera/location, sign-out/user switch, large text, VoiceOver smoke test |
+| iPad | Required while tablet support remains enabled | Adaptive layout, keyboard obstruction, rotation, large text, offline draft/reconnect smoke test |
+| Current physical Android phone | Required before public release | Same critical field workflow, TalkBack smoke test, permission revocation, offline restart/reconnect |
+| Small/older-supported Android | Required without separate hardware | API 24+ emulator for install/layout/token-expiry and permission checks |
+| Large/foldable Android | Required without separate hardware | API 36 tablet/foldable emulator for adaptive layout and keyboard checks |
+| Small/large iPhone sizes | Required without separate hardware | iOS simulator layout, text scaling, and screenshot checks |
+
+The dated physical-Android exception accepted for Phase 4 store drafting does
+not replace the Phase 5 physical Android release gate. A borrowed device or a
+small external tester pool is sufficient; purchasing a device fleet is not.
+
+## Critical acceptance scenarios
+
+1. Install or update the isolated beta and sign in with a staging-only account.
+2. Open cached project/log data after losing connectivity.
+3. Create one daily log with location and one photo while offline.
+4. Force-close and reopen; verify the draft/outbox and photo remain.
+5. Reconnect and synchronize exactly one log and one photo.
+6. Revoke camera/location access; verify the denial is explained and saved input
+   remains intact.
+7. Expire/refresh the session, switch users A → B → A, and verify local isolation.
+8. Verify sign-out safeguards with pending work.
+9. Run large text plus VoiceOver/TalkBack focus-order and target-size checks.
+10. Confirm sensitive content is obscured in the app switcher/background state
+    before beta promotion.
+
+Low-storage and large/thermal-photo tests may use deterministic development
+fixtures plus one constrained-device check; repeatedly filling personal hardware
+is not required.
+
+## Beta progression
+
+1. Local simulator/emulator and tethered development builds.
+2. TestFlight internal and Google Play internal testing using staging services.
+3. Small external/closed tester group after the critical acceptance scenarios pass.
+4. Release-candidate regression with production configuration validation, without
+   promoting or releasing until Phase 6 approval.
+
+No Phase 5 activity merges to `main`, promotes a Vercel deployment, publishes a
+store listing, or touches production customer data without separate authorization.
+
+## Automated evidence — 2026-08-28
+
+- Expo lint and the Expo mobile TypeScript check pass.
+- The full focused mobile suite passes: 43 domain, offline, API-client, Expo,
+  authenticated mobile-API, and link-association checks.
+- The existing Next.js production build and repository TypeScript check pass.
+- iOS and Android Expo exports pass and contain the bundled RailCommand mark,
+  six cross-platform TTF font assets, and native tab symbols.
+- Local sign-in rendering at 390 × 844 and 1024 × 1366 shows meaningful content,
+  no framework error overlay, and no horizontal overflow.
+- The browser visual-QA path uses memory-only session storage and skips unavailable
+  notification callbacks. Native builds continue to use Keychain/Keystore and the
+  existing notification/deep-link lifecycle.
+
+Physical iPhone/iPad acceptance, physical Android acceptance, beta distribution,
+and refreshed post-alignment store screenshots remain open.
+
+## Gate
+
+- `npm run build` passes for the existing web application.
+- `npx tsc --noEmit` and the Expo mobile typecheck pass.
+- focused offline/mobile/security tests pass.
+- iOS and Android bundled exports pass without server-loaded UI assets.
+- physical iPhone/iPad evidence passes.
+- physical Android evidence passes before public release, or remains the one
+  explicit open gate while internal iOS beta work continues.
+- no dead controls, lost field input, private public-cache data, debug secrets,
+  logged tokens, or claims of full offline project editing.

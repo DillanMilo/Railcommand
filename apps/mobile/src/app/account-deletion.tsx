@@ -19,7 +19,7 @@ import { inspectExpoUnsynced, purgeExpoUser } from '@/lib/offline-store';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 type LocalWork = { drafts: number; outbox: number; photos: number };
 const EMPTY_LOCAL_WORK: LocalWork = { drafts: 0, outbox: 0, photos: 0 };
@@ -194,8 +194,8 @@ export default function AccountDeletionScreen() {
 }
 
 const styles = StyleSheet.create({
-  copy: { color: colors.ink, lineHeight: 20 },
-  status: { color: colors.muted, lineHeight: 20 },
-  warning: { color: colors.warning, fontWeight: '700', lineHeight: 20 },
-  ready: { color: colors.success, fontWeight: '700', lineHeight: 20 },
+  copy: { color: colors.ink, fontFamily: fonts.body, lineHeight: 20 },
+  status: { color: colors.muted, fontFamily: fonts.body, lineHeight: 20 },
+  warning: { color: colors.warning, fontFamily: fonts.bodyBold, lineHeight: 20 },
+  ready: { color: colors.success, fontFamily: fonts.bodyBold, lineHeight: 20 },
 });

@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, EmptyState, PrimaryButton, Screen, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 const labels = { pending: 'Pending', retrying: 'Retrying', failed: 'Failed', conflicted: 'Conflicted', synchronized: 'Synchronized' } as const;
 
@@ -33,8 +33,9 @@ export default function SyncScreen() {
 }
 
 const styles = StyleSheet.create({
-  summary: { color: colors.ink, fontWeight: '800', textAlign: 'center' },
+  summary: { color: colors.ink, fontFamily: fonts.mono, fontSize: 11, lineHeight: 17 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.line },
-  label: { color: colors.ink, fontWeight: '800', marginBottom: 4 }, state: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+  label: { color: colors.ink, fontFamily: fonts.heading, fontSize: 14, lineHeight: 19, marginBottom: 4 },
+  state: { fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, textTransform: 'uppercase' },
   pending: { color: colors.warning }, retrying: { color: colors.info }, failed: { color: colors.danger }, conflicted: { color: colors.danger }, synchronized: { color: colors.success },
 });

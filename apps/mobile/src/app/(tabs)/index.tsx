@@ -2,7 +2,7 @@ import { Link, router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, PrimaryButton, Screen, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 export default function OverviewScreen() {
   const { bootstrap, activeProjectId, loading, message, online, selectProject } = useMobileData();
@@ -39,10 +39,15 @@ export default function OverviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  project: { borderWidth: 1, borderColor: colors.line, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  projectActive: { borderColor: colors.orange, backgroundColor: '#fff8f2' }, projectName: { color: colors.ink, fontSize: 15, fontWeight: '800' },
-  projectState: { color: colors.orange, fontWeight: '900', fontSize: 10, letterSpacing: 1 }, status: { color: colors.success, fontSize: 12, fontWeight: '700' },
-  metric: { color: colors.ink, fontSize: 38, fontWeight: '900' }, warning: { color: colors.warning, lineHeight: 19 },
-  row: { flexDirection: 'row', gap: 12 }, linkCard: { flex: 1, minHeight: 100, padding: 14, backgroundColor: colors.ink, justifyContent: 'space-between' },
-  linkTitle: { color: '#fff', fontWeight: '900', fontSize: 15 }, linkDetail: { color: '#cbd5e1', fontSize: 12 },
+  project: { minHeight: 76, borderWidth: 1, borderColor: colors.line, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.white },
+  projectActive: { borderWidth: 2, borderColor: colors.orange, backgroundColor: '#FFF8F2' },
+  projectName: { color: colors.ink, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
+  projectState: { color: colors.orange, fontFamily: fonts.mono, fontSize: 9, lineHeight: 12, letterSpacing: 1 },
+  status: { color: colors.success, fontFamily: fonts.bodyBold, fontSize: 12, lineHeight: 17 },
+  metric: { color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 40, lineHeight: 48 },
+  warning: { color: colors.warning, fontFamily: fonts.bodyMedium, lineHeight: 19 },
+  row: { flexDirection: 'row', gap: 12 },
+  linkCard: { flex: 1, minHeight: 104, padding: 14, backgroundColor: colors.ink, justifyContent: 'space-between', shadowColor: colors.orange, shadowOpacity: 1, shadowRadius: 0, shadowOffset: { width: 3, height: 3 }, elevation: 2 },
+  linkTitle: { color: colors.white, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
+  linkDetail: { color: '#CBD5E1', fontFamily: fonts.body, fontSize: 12, lineHeight: 17 },
 });

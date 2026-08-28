@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text } from 'react-native';
+import { BrandHeader, Card, Screen, SecondaryButton, uiStyles } from '@/components/ui';
 import { consumeAuthCallback } from '@/lib/deep-links';
 
 export default function CallbackScreen() {
@@ -47,11 +48,12 @@ export default function CallbackScreen() {
       .catch(() => setError('This password reset link is invalid, expired, or has already been used.'));
   }, [callbackUrl]);
 
-  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
+  return <Screen>
+    <BrandHeader eyebrow="SECURE LINK" title="RailCommand" />
+    <Card>
     {!error ? <ActivityIndicator /> : null}
-    <Text>{error ?? 'Verifying your RailCommand link…'}</Text>
-    {error ? <Pressable accessibilityRole="button" onPress={leaveCallback} style={{ padding: 14 }}>
-      <Text style={{ fontWeight: '700' }}>Request a new reset link</Text>
-    </Pressable> : null}
-  </View>;
+    <Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{error ?? 'Verifying your RailCommand link…'}</Text>
+    {error ? <SecondaryButton title="Request a new reset link" onPress={leaveCallback} /> : null}
+    </Card>
+  </Screen>;
 }

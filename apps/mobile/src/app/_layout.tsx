@@ -1,19 +1,31 @@
 import { Stack } from 'expo-router';
 import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { parseMobileDeepLink } from '@railcommand/domain';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 import { MobileDataProvider } from '@/providers/mobile-data-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { mobileConfig } from '@/lib/config';
+import dmSansRegular from '../../assets/fonts/DMSans_400Regular.ttf';
+import dmSansMedium from '../../assets/fonts/DMSans_500Medium.ttf';
+import dmSansBold from '../../assets/fonts/DMSans_700Bold.ttf';
+import plusJakartaBold from '../../assets/fonts/PlusJakartaSans_700Bold.ttf';
+import plusJakartaExtraBold from '../../assets/fonts/PlusJakartaSans_800ExtraBold.ttf';
+import jetBrainsMonoSemiBold from '../../assets/fonts/JetBrainsMono_600SemiBold.ttf';
+
+void SplashScreen.preventAutoHideAsync();
 
 function Routes() {
   const { session } = useAuth();
   const { selectProject } = useMobileData();
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const open = async (url: unknown) => {
       if (typeof url !== 'string') return;
       const link = parseMobileDeepLink(url, [mobileConfig.linkHost]);
@@ -46,5 +58,19 @@ function Routes() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    DMSans_400Regular: dmSansRegular,
+    DMSans_500Medium: dmSansMedium,
+    DMSans_700Bold: dmSansBold,
+    PlusJakartaSans_700Bold: plusJakartaBold,
+    PlusJakartaSans_800ExtraBold: plusJakartaExtraBold,
+    JetBrainsMono_600SemiBold: jetBrainsMonoSemiBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) void SplashScreen.hideAsync();
+  }, [fontError, fontsLoaded]);
+
+  if (!fontsLoaded && !fontError) return null;
   return <SafeAreaProvider><AuthProvider><MobileDataProvider><StatusBar style="dark" /><Routes /></MobileDataProvider></AuthProvider></SafeAreaProvider>;
 }

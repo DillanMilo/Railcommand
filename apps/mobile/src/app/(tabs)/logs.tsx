@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, EmptyState, PrimaryButton, Screen, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 export default function LogsScreen() {
   const { bootstrap, activeProjectId, online } = useMobileData();
@@ -24,5 +24,7 @@ export default function LogsScreen() {
 
 const styles = StyleSheet.create({
   log: { flexDirection: 'row', gap: 10, borderBottomWidth: 1, borderBottomColor: colors.line, paddingVertical: 13, alignItems: 'center' },
-  date: { color: colors.ink, fontWeight: '900' }, summary: { color: colors.muted, marginTop: 4 }, open: { color: colors.orange, fontWeight: '900', fontSize: 10, letterSpacing: 1 },
+  date: { color: colors.ink, fontFamily: fonts.heading, fontSize: 14, lineHeight: 19 },
+  summary: { color: colors.muted, fontFamily: fonts.body, lineHeight: 19, marginTop: 4 },
+  open: { color: colors.orange, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1 },
 });

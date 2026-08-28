@@ -9,7 +9,7 @@ import { registerForFieldNotifications } from '@/lib/device';
 import { inspectExpoUnsynced, purgeExpoUser } from '@/lib/offline-store';
 import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 export default function AccountScreen() {
   const { qaPush } = useLocalSearchParams<{ qaPush?: string }>();
@@ -98,4 +98,7 @@ export default function AccountScreen() {
   </Screen>;
 }
 
-const styles = StyleSheet.create({ status: { color: colors.ink, lineHeight: 20 }, offline: { color: colors.warning, fontWeight: '700', lineHeight: 19 } });
+const styles = StyleSheet.create({
+  status: { color: colors.ink, fontFamily: fonts.body, lineHeight: 20 },
+  offline: { color: colors.warning, fontFamily: fonts.bodyBold, lineHeight: 19 },
+});

@@ -11,7 +11,7 @@ import { mobileConfig } from '@/lib/config';
 import { listExpoPhotos, queueExpoDraft, readExpoDraft, saveExpoDraft, saveExpoPhoto, type ExpoStoredPhoto } from '@/lib/offline-store';
 import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 function today() { return new Date().toISOString().slice(0, 10); }
 
@@ -151,4 +151,8 @@ export default function NewDailyLogScreen() {
   </Screen>;
 }
 
-const styles = StyleSheet.create({ status: { color: colors.success, fontWeight: '700', lineHeight: 20 }, actions: { gap: 10 }, evidence: { color: colors.ink, fontSize: 12, fontWeight: '700' } });
+const styles = StyleSheet.create({
+  status: { color: colors.success, fontFamily: fonts.bodyBold, lineHeight: 20 },
+  actions: { gap: 10 },
+  evidence: { color: colors.ink, fontFamily: fonts.mono, fontSize: 11, lineHeight: 17 },
+});

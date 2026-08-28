@@ -102,7 +102,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.SYSTEM_ALERT_WINDOW',
       ],
       adaptiveIcon: {
-        backgroundColor: '#111827',
+        backgroundColor: '#0F172A',
         foregroundImage: './assets/images/icon-store-1024.png',
       },
       intentFilters: [
@@ -118,7 +118,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       'expo-router',
       'expo-secure-store',
       'expo-sqlite',
-      ['expo-notifications', { color: '#ff6b00' }],
+      ['expo-notifications', { color: '#F97316' }],
       ['expo-image-picker', {
         cameraPermission: 'RailCommand uses the camera only when you attach a field photo to a record.',
         photosPermission: 'RailCommand lets you choose field photos to attach to a record.',
@@ -131,7 +131,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
         isAndroidBackgroundLocationEnabled: false,
       }],
       ['expo-splash-screen', {
-        backgroundColor: '#111827',
+        backgroundColor: '#0F172A',
         image: './assets/images/icon-store-1024.png',
         imageWidth: 180,
       }],
