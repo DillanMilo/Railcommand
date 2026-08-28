@@ -126,6 +126,11 @@ remotely or uploaded until separately authorized.
   preventing cached field data from entering ordinary Android app backups. This
   compile/manifest evidence is not represented as physical Android acceptance and
   no APK was uploaded or distributed.
+- A current public-config evaluation of the controlled `beta` target resolves to
+  `io.railcommand.app` on both stores while retaining the `staging` runtime,
+  `mobile-staging.railcommand.io` Universal/App Links, build `300001`, blocked
+  background-location/microphone/overlay permissions, and Android backup disabled.
+  This evaluation did not start an EAS build or contact either store.
 - The exports were repeated after the accessibility and network-loss hardening at
   commit `4416273`. Both Hermes bundles contain only the isolated staging project ref
   and `mobile-staging.railcommand.io` runtime identity. A generated-bundle scan found
@@ -214,6 +219,11 @@ the physical iPhone, and the Android native project now compiles with the intend
 release security boundary. The hands-on iPhone workflow/VoiceOver/app-switcher checks
 remain open. Physical iPad and Android acceptance, beta distribution, and refreshed
 post-alignment store screenshots also remain open.
+
+The local Android inventory contains the already-used API 36 phone and tablet AVD
+definitions but no installed API 24 system image. Installing that large additional
+SDK image is deferred until explicitly approved; minimum-SDK compilation is proven,
+but older-OS runtime acceptance remains open.
 
 ## Gate
 
