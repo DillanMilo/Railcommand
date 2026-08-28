@@ -51,6 +51,17 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.doesNotMatch(ui, /<TextInput[^>]*allowFontScaling=\{false\}/s);
   });
 
+  it('conceals field content whenever the native app is inactive or backgrounded', () => {
+    const shield = source('../components/privacy-shield.tsx');
+    const layout = source('../app/_layout.tsx');
+    assert.match(shield, /AppState\.addEventListener\('change'/);
+    assert.match(shield, /setConcealed\(state !== 'active'\)/);
+    assert.match(shield, /position: 'absolute'/);
+    assert.match(shield, /inset: 0/);
+    assert.match(shield, /importantForAccessibility="no-hide-descendants"/);
+    assert.match(layout, /<PrivacyShield \/>/);
+  });
+
   it('keeps browser visual QA memory-only while native auth remains in Keychain or Keystore', () => {
     const auth = source('./supabase.ts');
     const layout = source('../app/_layout.tsx');

@@ -18,6 +18,7 @@ import dmSansBold from '../../assets/fonts/DMSans_700Bold.ttf';
 import plusJakartaBold from '../../assets/fonts/PlusJakartaSans_700Bold.ttf';
 import plusJakartaExtraBold from '../../assets/fonts/PlusJakartaSans_800ExtraBold.ttf';
 import jetBrainsMonoSemiBold from '../../assets/fonts/JetBrainsMono_600SemiBold.ttf';
+import { PrivacyShield } from '@/components/privacy-shield';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -72,5 +73,13 @@ export default function RootLayout() {
   }, [fontError, fontsLoaded]);
 
   if (!fontsLoaded && !fontError) return null;
-  return <SafeAreaProvider><AuthProvider><MobileDataProvider><StatusBar style="dark" /><Routes /></MobileDataProvider></AuthProvider></SafeAreaProvider>;
+  return <SafeAreaProvider>
+    <AuthProvider>
+      <MobileDataProvider>
+        <StatusBar style="dark" />
+        <Routes />
+        <PrivacyShield />
+      </MobileDataProvider>
+    </AuthProvider>
+  </SafeAreaProvider>;
 }

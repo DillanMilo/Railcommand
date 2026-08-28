@@ -35,7 +35,9 @@ before submission.
 The visual foundation is **offline-capable presentation**. Its fonts, logo, icons,
 colors, and layout assets are bundled in the installed application. It adds no
 network dependency and does not change the accepted SQLite draft/outbox or secure
-session contracts.
+session contracts. The native app-switcher privacy shield is also offline-capable:
+it covers the route tree whenever the app becomes inactive or backgrounded without
+reading, transmitting, or changing field data.
 
 Existing workflow classifications remain:
 
@@ -117,7 +119,15 @@ store listing, or touches production customer data without separate authorizatio
   heading. The heading and eyebrow now cap only their decorative display scaling while
   body copy, form labels, and inputs retain Dynamic Type. A repeated runtime screenshot
   confirmed the RailCommand heading remains intact and the enlarged form remains
-  vertically scrollable. The focused visual-foundation suite now has 21 passing checks.
+  vertically scrollable. The focused visual-foundation suite now has 22 passing checks.
+- A native app-state privacy shield now replaces visible project content with a
+  bundled neutral RailCommand cover while the app is inactive or backgrounded. It
+  does not disable ordinary screenshots while the user is actively working and does
+  not add a network or storage dependency. After RailCommand was backgrounded on the
+  iPhone 16e simulator, the exact iOS SplashBoard app-switcher snapshot was extracted
+  and rendered: it contained only the navy RailCommand mark and “Field work protected”
+  cover. A fresh signed build containing this control was then installed on the paired
+  physical iPhone.
 
 The corrected Release app is installed on the physical iPhone, but the hands-on
 workflow/VoiceOver/app-switcher checks remain open. Physical iPad and Android acceptance,
