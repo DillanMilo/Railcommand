@@ -112,6 +112,12 @@ remotely or uploaded until separately authorized.
 - The existing Next.js production build and repository TypeScript check pass.
 - iOS and Android Expo exports pass and contain the bundled RailCommand mark,
   six cross-platform TTF font assets, and native tab symbols.
+- The exports were repeated after the accessibility and network-loss hardening at
+  commit `4416273`. Both Hermes bundles contain only the isolated staging project ref
+  and `mobile-staging.railcommand.io` runtime identity. A generated-bundle scan found
+  no `sb_secret_`, server environment-variable name, cron-secret marker, or JWT-like
+  token. The literal `service_role` word is present only in the bundled runtime guard
+  that rejects any publishable key containing `service_role` or `secret`.
 - Local sign-in rendering at 390 × 844 and 1024 × 1366 shows meaningful content,
   no framework error overlay, and no horizontal overflow.
 - The browser visual-QA path uses memory-only session storage and skips unavailable
