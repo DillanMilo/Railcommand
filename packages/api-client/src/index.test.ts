@@ -40,6 +40,58 @@ describe('MobileApiClient', () => {
     });
   });
 
+  it('refreshes an expired session once and replays the same request', async () => {
+    const authorizations: string[] = [];
+    let refreshes = 0;
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com',
+      getAccessToken: async () => 'expired-token',
+      refreshAccessToken: async () => {
+        refreshes += 1;
+        return 'refreshed-token';
+      },
+      fetch: async (_input, init) => {
+        const authorization = new Headers(init?.headers).get('authorization') ?? '';
+        authorizations.push(authorization);
+        return authorization === 'Bearer refreshed-token'
+          ? Response.json({
+            userId: 'user-a', projects: [], activeProjectId: null,
+            dailyLogs: [], team: [], synchronizedAt: '2026-08-20T12:00:00Z',
+          })
+          : Response.json({ error: 'Expired access token' }, { status: 401 });
+      },
+    });
+
+    await client.getBootstrap();
+    assert.equal(refreshes, 1);
+    assert.deepEqual(authorizations, ['Bearer expired-token', 'Bearer refreshed-token']);
+  });
+
+  it('does not loop when a refreshed session is still unauthorized', async () => {
+    let requests = 0;
+    let refreshes = 0;
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com',
+      getAccessToken: async () => 'expired-token',
+      refreshAccessToken: async () => {
+        refreshes += 1;
+        return 'rejected-refreshed-token';
+      },
+      fetch: async () => {
+        requests += 1;
+        return Response.json({ error: 'Not authenticated' }, { status: 401 });
+      },
+    });
+
+    await assert.rejects(() => client.getBootstrap(), (error: unknown) => {
+      assert.ok(error instanceof MobileApiError);
+      assert.equal(error.retryable, false);
+      return true;
+    });
+    assert.equal(refreshes, 1);
+    assert.equal(requests, 2);
+  });
+
   it('uses authenticated JSON routes for photo prepare and finalize', async () => {
     const paths: string[] = [];
     const client = new MobileApiClient({

@@ -107,7 +107,7 @@ remotely or uploaded until separately authorized.
 ## Automated evidence — 2026-08-28
 
 - Expo lint and the Expo mobile TypeScript check pass.
-- The full focused mobile suite passes: 57 domain, offline, API-client, Expo,
+- The full focused mobile suite passes: 59 domain, offline, API-client, Expo,
   authenticated mobile-API, and link-association checks.
 - The existing Next.js production build and repository TypeScript check pass.
 - iOS and Android Expo exports pass and contain the bundled RailCommand mark,
@@ -157,6 +157,11 @@ remotely or uploaded until separately authorized.
   Supabase and the authenticated JSON API. A native-boundary regression check confirms
   the bundled shell has no WebView/server URL, arbitrary-load or cleartext override,
   and no console logging path for session or bearer credentials.
+- An authenticated request that reaches staging with an expired access token now asks
+  Supabase for one refreshed session and replays that same request at most once. The
+  daily-log and photo operations retain their original idempotency keys. A failed or
+  unavailable refresh leaves queued field work on the device in a visible failed or
+  retrying state; it never drops or duplicates the operation.
 - CoreDevice inspection on the paired iPhone recorded the installed staging identity
   as `io.railcommand.app.dev`, version `1.0.0` and build `300001`. With the app stopped,
   its app-owned Documents container still contained the user-partitioned SQLite files,

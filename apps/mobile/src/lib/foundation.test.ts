@@ -18,10 +18,13 @@ describe('Expo Phase 3 security and offline boundaries', () => {
 
   it('stores sessions in platform secure storage and refreshes them with app lifecycle', () => {
     const auth = source('./supabase.ts');
+    const api = source('./api.ts');
     assert.match(auth, /expo-secure-store/);
     assert.match(auth, /WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
     assert.match(auth, /startAutoRefresh/);
     assert.match(auth, /stopAutoRefresh/);
+    assert.match(api, /refreshAccessToken/);
+    assert.match(api, /supabase\.auth\.refreshSession\(\)/);
   });
 
   it('removes both the user database and app-owned photo files during safe sign-out', () => {

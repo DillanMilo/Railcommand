@@ -5,4 +5,8 @@ import { supabase } from './supabase';
 export const mobileApi = new MobileApiClient({
   baseUrl: mobileConfig.apiBaseUrl,
   getAccessToken: async () => (await supabase.auth.getSession()).data.session?.access_token ?? null,
+  refreshAccessToken: async () => {
+    const { data, error } = await supabase.auth.refreshSession();
+    return error ? null : data.session?.access_token ?? null;
+  },
 });

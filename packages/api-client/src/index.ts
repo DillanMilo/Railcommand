@@ -24,12 +24,14 @@ export class MobileApiError extends Error {
 export interface MobileApiClientOptions {
   baseUrl: string;
   getAccessToken: () => Promise<string | null>;
+  refreshAccessToken?: () => Promise<string | null>;
   fetch?: typeof globalThis.fetch;
 }
 
 export class MobileApiClient {
   private readonly baseUrl: URL;
   private readonly getAccessToken: () => Promise<string | null>;
+  private readonly refreshAccessToken?: () => Promise<string | null>;
   private readonly fetcher: typeof globalThis.fetch;
 
   constructor(options: MobileApiClientOptions) {
@@ -38,22 +40,31 @@ export class MobileApiClient {
       throw new Error('The mobile API must use HTTPS');
     }
     this.getAccessToken = options.getAccessToken;
+    this.refreshAccessToken = options.refreshAccessToken;
     this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const accessToken = await this.getAccessToken();
+    let accessToken = await this.getAccessToken();
     if (!accessToken) throw new MobileApiError('Not authenticated', 401, false);
-    const response = await this.fetcher(new URL(path, this.baseUrl), {
+    const execute = (token: string) => this.fetcher(new URL(path, this.baseUrl), {
       ...init,
       cache: 'no-store',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
         ...init.headers,
       },
     });
+    let response = await execute(accessToken);
+    if (response.status === 401 && this.refreshAccessToken) {
+      const refreshedToken = await this.refreshAccessToken();
+      if (refreshedToken) {
+        accessToken = refreshedToken;
+        response = await execute(accessToken);
+      }
+    }
     const body = await response.json().catch(() => ({})) as { error?: string } & T;
     if (!response.ok) {
       throw new MobileApiError(
