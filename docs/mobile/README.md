@@ -15,6 +15,7 @@ Start here:
 - [Phase 2 device acceptance](./PHASE_2_DEVICE_ACCEPTANCE.md)
 - [Phase 3 Expo v1 field workflows](./PHASE_3_EXPO_V1.md)
 - [Phase 4 store compliance](./PHASE_4_STORE_COMPLIANCE.md)
+- [Phase 6 release prerequisites](./PHASE_6_RELEASE_PREREQUISITES.md)
 - [Apple submission answers](./APPLE_STORE_SUBMISSION.md)
 - [Google Play submission answers](./GOOGLE_PLAY_SUBMISSION.md)
 - [Store metadata](./STORE_METADATA.md)

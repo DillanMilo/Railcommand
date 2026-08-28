@@ -16,7 +16,6 @@ export const REQUIRED_PHASE_4_GATES = [
   'apple-distribution-signing',
   'authenticated-store-media',
   'reviewer-walkthrough',
-  'production-association-files',
   'physical-iphone-deletion',
   'physical-android-acceptance',
 ];

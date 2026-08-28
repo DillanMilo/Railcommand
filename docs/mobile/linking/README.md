@@ -19,8 +19,10 @@ Staging publishes the development and staging Apple application identifiers with
 
 The previous staging host was accepted by Apple's association CDN on 2026-08-25. The
 replacement isolated host must be rechecked after this branch is deployed. The
-production route is coded to emit only the production identifier, but it must not be
-deployed to the live site until release approval. Its eventual endpoint is:
+production route is coded to emit only the production identifier, but it is a Phase 6
+prerequisite and must not be deployed to the live site until the release candidate
+completes Phase 5 and receives action-time production approval. Its eventual endpoint
+is:
 
 - `https://railcommand.io/.well-known/apple-app-site-association`
 
@@ -39,7 +41,8 @@ Google's Digital Asset Links API independently resolved the previous staging hos
 returns no Android association unless `MOBILE_ANDROID_PRODUCTION_SHA256` contains the
 approved SHA-256 Play App Signing certificate fingerprint. Google Play's App signing
 page supplied the production fingerprint on 2026-08-27, and it is recorded in
-`assetlinks.template.json`. The eventual production endpoint is:
+`assetlinks.template.json`. Publishing it is a Phase 6 prerequisite. The eventual
+production endpoint is:
 
 - `https://railcommand.io/.well-known/assetlinks.json`
 

@@ -64,11 +64,6 @@
       "evidence": "A guarded, self-contained staging reviewer build for io.railcommand.app.dev was installed on the named physical iPhone. The release owner completed the written reviewer sequence on 2026-08-27: authenticated synthetic dashboard online, offline transition, one synthetic daily log/photo queued, force-close/reopen with pending work restored, reconnect, exactly-once synchronization, and clean synchronized state. A private video is optional reviewer support and is not a Phase 4 requirement; no video was accepted as release evidence. No build was uploaded or submitted."
     },
     {
-      "id": "production-association-files",
-      "status": "pending",
-      "evidence": "Google Play's App signing page verified the io.railcommand.app Play App Signing SHA-256 certificate fingerprint on 2026-08-27 and the checked-in production template now uses it. The live Apple and Android association URLs still redirect to login; validate both after a separately authorized production deployment."
-    },
-    {
       "id": "physical-iphone-deletion",
       "status": "verified",
       "verifiedAt": "2026-08-27",

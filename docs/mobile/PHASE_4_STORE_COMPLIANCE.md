@@ -1,7 +1,8 @@
 # Phase 4 — store compliance and review package
 
-Status: **implementation and documentation in progress on the isolated
-`codex/mobile-phase-4-compliance` branch. Nothing in this phase authorizes a
+Status: **complete on the isolated `codex/mobile-phase-4-compliance` branch as of
+2026-08-27, with the dated physical-Android hardware exception accepted by the release
+owner. Nothing in this phase authorizes a
 production deploy, production migration, customer-data access, or store release.**
 
 ## Decisions
@@ -89,14 +90,19 @@ draft/queue behavior.
 Before submission, all automated/native builds must pass; the additive migration and
 routes must be exercised only in isolated staging; a private permanent reviewer
 account must complete the written scripted walkthrough; final phone/tablet screenshots
-must use synthetic data; production association
-files and Play signing fingerprints must be approved; and the complete real
+must use synthetic data; Play signing fingerprints must be recorded; and the complete real
 password-recovery email flow must pass with a non-customer inbox. Physical Android
 acceptance remains a named hardware exception until a device is available.
 
 A private reviewer video is optional supporting material, not a release gate. Create
 one only if Apple or Google requests it or the release owner separately determines it
 would materially help review.
+
+Publishing the production Apple/Android association files is intentionally deferred to
+the Phase 6 release prerequisites. Their isolated patch is prepared and preview-built,
+but it must not merge into `main` or deploy to `railcommand.io` until the mobile release
+candidate has completed Phase 5 and the release owner gives action-time production
+authorization.
 
 `npm run verify:phase4:status` reports the exact checked-in local and external gate
 inventory without failing while work is in progress. `npm run verify:phase4:release`
@@ -366,9 +372,10 @@ checks and are recorded only in the gitignored private runbook.
   aspect ratio, and produces a validated JPEG. An end-to-end temporary tablet capture
   passed at `1920 × 1080`; it was not added to the final story set because the frame
   was intentionally unauthenticated.
-- Validate production Apple/Android association files and Play signing fingerprints.
-  Both `/.well-known` routes must return direct `200 application/json` responses
-  without authentication or redirects after the approved release deployment.
+- In Phase 6, validate the production Apple/Android association files. Both
+  `/.well-known` routes must return direct `200 application/json` responses without
+  authentication or redirects after the separately approved release deployment. The
+  current live redirects remain expected until then.
 - Formally review the remaining production dependency audit before the release
   archive. After upgrading Next.js to 16.3.3 and applying compatible transitive
   overrides, the audit reports 0 critical, 0 high, and 11 moderate advisories. The
