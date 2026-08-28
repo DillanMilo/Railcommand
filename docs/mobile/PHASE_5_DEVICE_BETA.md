@@ -104,9 +104,24 @@ store listing, or touches production customer data without separate authorizatio
 - The browser visual-QA path uses memory-only session storage and skips unavailable
   notification callbacks. Native builds continue to use Keychain/Keystore and the
   existing notification/deep-link lifecycle.
+- A self-contained signed Release build for `io.railcommand.app.dev` passed Xcode's
+  bundle validation and was installed on the paired iPhone 17 Pro Max running iOS
+  26.6. The environment guard recorded only the isolated staging Supabase project
+  `rxuvchdqbzvovqijvfhx` and `mobile-staging.railcommand.io`; no server secret was
+  copied into the mobile configuration.
+- The same Release bundle launched on an iPhone 16e simulator and an iPad (A16)
+  simulator. The compact phone sign-in screen had no horizontal overflow or safe-area
+  clipping. On iPad, the complete sign-in form and both actions remained visible with
+  the software keyboard open.
+- The largest iOS accessibility text setting exposed an oversized decorative brand
+  heading. The heading and eyebrow now cap only their decorative display scaling while
+  body copy, form labels, and inputs retain Dynamic Type. A repeated runtime screenshot
+  confirmed the RailCommand heading remains intact and the enlarged form remains
+  vertically scrollable. The focused visual-foundation suite now has 21 passing checks.
 
-Physical iPhone/iPad acceptance, physical Android acceptance, beta distribution,
-and refreshed post-alignment store screenshots remain open.
+The corrected Release app is installed on the physical iPhone, but the hands-on
+workflow/VoiceOver/app-switcher checks remain open. Physical iPad and Android acceptance,
+beta distribution, and refreshed post-alignment store screenshots also remain open.
 
 ## Gate
 

@@ -47,8 +47,10 @@ export function BrandHeader({ eyebrow, title, right }: { eyebrow?: string; title
       accessibilityIgnoresInvertColors
     />
     <View style={styles.headerText}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      <Text style={styles.title}>{title}</Text>
+      {eyebrow ? (
+        <Text maxFontSizeMultiplier={1.5} style={styles.eyebrow}>{eyebrow}</Text>
+      ) : null}
+      <Text maxFontSizeMultiplier={1.4} numberOfLines={2} style={styles.title}>{title}</Text>
     </View>
     {right}
   </View>;

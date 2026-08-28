@@ -44,6 +44,13 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.match(tabs, /tabBarAccessibilityLabel: 'Sync Center'/);
   });
 
+  it('caps decorative brand typography while leaving field content available to Dynamic Type', () => {
+    const ui = source('../components/ui.tsx');
+    assert.match(ui, /maxFontSizeMultiplier=\{1\.5\}[^>]*style=\{styles\.eyebrow\}/s);
+    assert.match(ui, /maxFontSizeMultiplier=\{1\.4\}[^>]*numberOfLines=\{2\}[^>]*style=\{styles\.title\}/s);
+    assert.doesNotMatch(ui, /<TextInput[^>]*allowFontScaling=\{false\}/s);
+  });
+
   it('keeps browser visual QA memory-only while native auth remains in Keychain or Keystore', () => {
     const auth = source('./supabase.ts');
     const layout = source('../app/_layout.tsx');
