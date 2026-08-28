@@ -40,7 +40,7 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     const parent = sync.indexOf('syncDailyLog(operation)');
     const photo = sync.indexOf('prepareDailyLogPhoto');
     const complete = sync.indexOf('await completeExpoSync');
-    const remove = sync.indexOf('file.delete()', complete);
+    const remove = sync.indexOf('deleteOwnedFieldPhoto(userId, photo)', complete);
     assert.ok(parent >= 0 && parent < photo && photo < complete && complete < remove);
   });
 

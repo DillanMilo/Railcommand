@@ -107,7 +107,7 @@ remotely or uploaded until separately authorized.
 ## Automated evidence — 2026-08-28
 
 - Expo lint and the Expo mobile TypeScript check pass.
-- The full focused mobile suite passes: 59 domain, offline, API-client, Expo,
+- The full focused mobile suite passes: 60 domain, offline, API-client, Expo,
   authenticated mobile-API, and link-association checks.
 - The existing Next.js production build and repository TypeScript check pass.
 - iOS and Android Expo exports pass and contain the bundled RailCommand mark,
@@ -153,6 +153,12 @@ remotely or uploaded until separately authorized.
   project/parent/operation path and revalidates membership, ownership, MIME metadata,
   and exact bucket/path equality before finalization. Oversized or locally unwriteable
   photos never enter the outbox, and their daily-log draft remains saved.
+- Local photo deletion now accepts only the exact app-owned
+  `Documents/railcommand/<user>/<project>/photos/<photo UUID>.<safe extension>` path.
+  A SQLite/storage-pressure failure after a successful file copy removes that exact
+  unqueued copy and keeps the draft. Post-sync cleanup is best-effort after the atomic
+  database completion, so a filesystem cleanup error cannot turn an already
+  synchronized server operation back into a duplicate retry.
 - The mobile environment guard now has direct cleartext rejection coverage for both
   Supabase and the authenticated JSON API. A native-boundary regression check confirms
   the bundled shell has no WebView/server URL, arbitrary-load or cleartext override,

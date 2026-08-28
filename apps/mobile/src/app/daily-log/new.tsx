@@ -6,9 +6,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, Field, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
-import { attachCurrentLocation, captureFieldPhoto, confirmHaptic, importFieldPhoto } from '@/lib/device';
+import { attachCurrentLocation, captureFieldPhoto, confirmHaptic, deleteOwnedFieldPhoto, importFieldPhoto } from '@/lib/device';
 import { mobileConfig } from '@/lib/config';
 import { listExpoPhotos, queueExpoDraft, readExpoDraft, saveExpoDraft, saveExpoPhoto, type ExpoStoredPhoto } from '@/lib/offline-store';
+import { PHOTO_STORAGE_MESSAGE } from '@/lib/photo-files';
 import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
@@ -99,7 +100,9 @@ export default function NewDailyLogScreen() {
         ? await captureFieldPhoto(userId, draft.projectId, draft.clientId, draft.geoTag)
         : await importFieldPhoto(userId, draft.projectId, draft.clientId, draft.geoTag);
       if (!photo) { setStatus('Photo selection canceled. Your draft remains saved.'); return; }
-      await saveExpoPhoto(userId, photo); setPhotos((current) => [...current, photo]); setStatus('Photo persisted on this device'); await confirmHaptic();
+      try { await saveExpoPhoto(userId, photo); }
+      catch { deleteOwnedFieldPhoto(userId, photo); throw new Error(PHOTO_STORAGE_MESSAGE); }
+      setPhotos((current) => [...current, photo]); setStatus('Photo persisted on this device'); await confirmHaptic();
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Photo unavailable. Your draft remains saved.'); }
     finally { setBusy(false); }
   };

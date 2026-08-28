@@ -20,6 +20,7 @@ const MIME_EXTENSIONS: Record<string, string> = {
 };
 
 const SAFE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'tif', 'tiff', 'dng']);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function safePhotoExtension(
   fileName: string | null | undefined,
@@ -57,5 +58,31 @@ export function safePhotoFileName(
 export function assertFieldPhotoSize(size: number | null | undefined) {
   if (typeof size === 'number' && size > MAX_FIELD_PHOTO_BYTES) {
     throw new Error(PHOTO_TOO_LARGE_MESSAGE);
+  }
+}
+
+export function isOwnedFieldPhotoUri(
+  documentUri: string,
+  userId: string,
+  projectId: string,
+  photoId: string,
+  uri: string,
+) {
+  if (![userId, projectId, photoId].every((value) => UUID_PATTERN.test(value))) return false;
+  try {
+    const documentRoot = new URL(documentUri.endsWith('/') ? documentUri : `${documentUri}/`);
+    const candidate = new URL(uri);
+    if (documentRoot.protocol !== 'file:' || candidate.protocol !== 'file:') return false;
+    if (candidate.search || candidate.hash) return false;
+
+    const expectedDirectory = new URL(`railcommand/${userId}/${projectId}/photos/`, documentRoot);
+    const encodedLeaf = candidate.pathname.split('/').pop() ?? '';
+    const leaf = decodeURIComponent(encodedLeaf);
+    const match = leaf.match(new RegExp(`^${photoId}\\.(jpg|png|heic|heif|webp|tif|dng)$`, 'i'));
+    if (!match) return false;
+
+    return candidate.href === new URL(leaf, expectedDirectory).href;
+  } catch {
+    return false;
   }
 }

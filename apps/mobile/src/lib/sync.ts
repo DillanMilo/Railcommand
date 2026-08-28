@@ -3,6 +3,7 @@ import { MobileApiError } from '@railcommand/api-client';
 import type { MobileDailyLogPhotoSyncOperation } from '@railcommand/domain';
 import { mobileApi } from './api';
 import { completeExpoSync, listExpoOutbox, listExpoPhotos, markExpoOutbox, markExpoPhoto, type ExpoDailyLogSyncOperation, type ExpoStoredPhoto } from './offline-store';
+import { deleteOwnedFieldPhoto } from './device';
 import { supabase } from './supabase';
 
 function photoOperation(userId: string, photo: ExpoStoredPhoto, parentEntityId: string): MobileDailyLogPhotoSyncOperation {
@@ -46,10 +47,7 @@ async function synchronizeOne(userId: string, operation: ExpoDailyLogSyncOperati
       await mobileApi.finalizeDailyLogPhoto(child, storage);
     }
     await completeExpoSync(userId, operation, photos);
-    for (const photo of photos) {
-      const file = new File(photo.uri);
-      if (file.exists) file.delete();
-    }
+    for (const photo of photos) deleteOwnedFieldPhoto(userId, photo);
     return 1 + photos.length;
   } catch (error) {
     const state = failureState(error);

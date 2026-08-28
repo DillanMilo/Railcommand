@@ -14,6 +14,7 @@ import {
   MAX_FIELD_PHOTO_BYTES,
   PHOTO_STORAGE_MESSAGE,
   PHOTO_TOO_LARGE_MESSAGE,
+  isOwnedFieldPhotoUri,
   safePhotoExtension,
   safePhotoFileName,
 } from './photo-files';
@@ -75,6 +76,17 @@ export async function importFieldPhoto(userId: string, projectId: string, parent
     allowsEditing: false, allowsMultipleSelection: false });
   if (result.canceled || !result.assets[0]) return null;
   return persistPickedPhoto(userId, projectId, parentClientId, result.assets[0], geoTag);
+}
+
+export function deleteOwnedFieldPhoto(userId: string, photo: ExpoStoredPhoto) {
+  if (!isOwnedFieldPhotoUri(Paths.document.uri, userId, photo.projectId, photo.photoId, photo.uri)) return false;
+  try {
+    const file = new File(photo.uri);
+    if (file.exists) file.delete();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function shareDailyLogSummary(summary: string) {

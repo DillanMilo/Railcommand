@@ -4,6 +4,7 @@ import {
   assertFieldPhotoSize,
   MAX_FIELD_PHOTO_BYTES,
   PHOTO_TOO_LARGE_MESSAGE,
+  isOwnedFieldPhotoUri,
   safePhotoExtension,
   safePhotoFileName,
 } from './photo-files';
@@ -41,5 +42,20 @@ describe('field photo file boundary', () => {
       () => assertFieldPhotoSize(MAX_FIELD_PHOTO_BYTES + 1),
       (error: unknown) => error instanceof Error && error.message === PHOTO_TOO_LARGE_MESSAGE,
     );
+  });
+
+  it('allows deletion only for the exact user/project/photo file under app Documents', () => {
+    const documentUri = 'file:///app/Documents/';
+    const userId = '11111111-1111-4111-8111-111111111111';
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    const photoId = '33333333-3333-4333-8333-333333333333';
+    const exact = `${documentUri}railcommand/${userId}/${projectId}/photos/${photoId}.jpg`;
+
+    assert.equal(isOwnedFieldPhotoUri(documentUri, userId, projectId, photoId, exact), true);
+    assert.equal(isOwnedFieldPhotoUri(documentUri, userId, projectId, photoId, `${exact}?replace=1`), false);
+    assert.equal(isOwnedFieldPhotoUri(documentUri, userId, projectId, photoId, exact.replace(userId, '44444444-4444-4444-8444-444444444444')), false);
+    assert.equal(isOwnedFieldPhotoUri(documentUri, userId, projectId, photoId, exact.replace(photoId, '55555555-5555-4555-8555-555555555555')), false);
+    assert.equal(isOwnedFieldPhotoUri(documentUri, userId, projectId, photoId, 'file:///app/Documents/railcommand/../private.jpg'), false);
+    assert.equal(isOwnedFieldPhotoUri(documentUri, userId, projectId, photoId, 'https://example.com/photo.jpg'), false);
   });
 });
