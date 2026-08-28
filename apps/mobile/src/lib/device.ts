@@ -9,6 +9,14 @@ import * as Device from 'expo-device';
 import { Platform, Share } from 'react-native';
 import { mobileConfig } from './config';
 import type { ExpoStoredPhoto } from './offline-store';
+import {
+  assertFieldPhotoSize,
+  MAX_FIELD_PHOTO_BYTES,
+  PHOTO_STORAGE_MESSAGE,
+  PHOTO_TOO_LARGE_MESSAGE,
+  safePhotoExtension,
+  safePhotoFileName,
+} from './photo-files';
 
 export async function attachCurrentLocation(): Promise<MobileGeoTag> {
   const permission = await Location.requestForegroundPermissionsAsync();
@@ -26,15 +34,31 @@ async function persistPickedPhoto(
   asset: ImagePicker.ImagePickerAsset,
   geoTag: MobileGeoTag | null,
 ): Promise<ExpoStoredPhoto> {
+  assertFieldPhotoSize(asset.fileSize);
   const photoId = Crypto.randomUUID();
   const directory = new Directory(Paths.document, 'railcommand', userId, projectId, 'photos');
-  directory.create({ idempotent: true, intermediates: true });
-  const extension = asset.fileName?.split('.').pop()?.toLowerCase() || 'jpg';
+  const extension = safePhotoExtension(asset.fileName, asset.mimeType);
   const destination = new File(directory, `${photoId}.${extension}`);
-  new File(asset.uri).copy(destination);
+  let copiedSize: number;
+  try {
+    directory.create({ idempotent: true, intermediates: true });
+    new File(asset.uri).copy(destination);
+    copiedSize = destination.size;
+  } catch {
+    try { destination.delete(); } catch { /* A partial app-owned copy is never queued. */ }
+    throw new Error(PHOTO_STORAGE_MESSAGE);
+  }
+  if (copiedSize <= 0) {
+    try { destination.delete(); } catch { /* An unreadable app-owned copy is never queued. */ }
+    throw new Error(PHOTO_STORAGE_MESSAGE);
+  }
+  if (copiedSize > MAX_FIELD_PHOTO_BYTES) {
+    try { destination.delete(); } catch { /* The failed copy remains app-scoped and is never queued. */ }
+    throw new Error(PHOTO_TOO_LARGE_MESSAGE);
+  }
   return { photoId, projectId, parentClientId, uri: destination.uri,
-    fileName: asset.fileName || `field-photo-${photoId}.${extension}`,
-    fileType: asset.mimeType || 'image/jpeg', size: asset.fileSize || destination.size,
+    fileName: safePhotoFileName(asset.fileName, photoId, extension),
+    fileType: asset.mimeType || 'image/jpeg', size: copiedSize,
     capturedAt: new Date().toISOString(), geoTag, status: 'pending', lastError: null };
 }
 

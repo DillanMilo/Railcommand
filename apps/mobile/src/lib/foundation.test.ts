@@ -59,6 +59,16 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.doesNotMatch(device, /const photoId = crypto\.randomUUID/);
   });
 
+  it('validates photo size before copying and never queues an unsafe provider filename', () => {
+    const device = source('./device.ts');
+    assert.ok(device.indexOf('assertFieldPhotoSize(asset.fileSize)') < device.indexOf('new File(asset.uri).copy(destination)'));
+    assert.match(device, /safePhotoExtension\(asset\.fileName, asset\.mimeType\)/);
+    assert.match(device, /safePhotoFileName\(asset\.fileName, photoId, extension\)/);
+    assert.match(device, /destination\.delete\(\)/);
+    assert.match(device, /PHOTO_STORAGE_MESSAGE/);
+    assert.match(device, /PHOTO_TOO_LARGE_MESSAGE/);
+  });
+
   it('refreshes the Sync Center on focus and exposes queued daily-log and photo counts', () => {
     const screen = source('../app/(tabs)/sync.tsx');
     assert.match(screen, /useFocusEffect/);

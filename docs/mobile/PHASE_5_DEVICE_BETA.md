@@ -48,6 +48,13 @@ Existing workflow classifications remain:
 - notification registration, invitation acceptance, password recovery, and
   account deletion: **online-only** with explicit messaging and no silent queue.
 
+Photo attachment hardening is **offline draft/queue** behavior. A selected image is
+given an app-owned UUID path with a whitelisted extension before it enters SQLite,
+while its user-visible name is reduced to a safe final filename. The app rejects
+files larger than the server's 25 MB limit before queuing them and explains that the
+daily-log draft remains saved. A device-copy or storage failure likewise leaves the
+form and draft intact and creates no partial outbox operation.
+
 ## Lean device matrix
 
 | Target | Required evidence | Coverage approach |
@@ -128,6 +135,16 @@ store listing, or touches production customer data without separate authorizatio
   and rendered: it contained only the navy RailCommand mark and “Field work protected”
   cover. A fresh signed build containing this control was then installed on the paired
   physical iPhone.
+- Deterministic client tests now cover path-like Android provider names, unsafe or
+  mismatched extensions, control/Unicode characters, bounded display names, and the
+  exact 25 MB attachment limit. The server independently reconstructs the authorized
+  project/parent/operation path and revalidates membership, ownership, MIME metadata,
+  and exact bucket/path equality before finalization. Oversized or locally unwriteable
+  photos never enter the outbox, and their daily-log draft remains saved.
+
+The v1 picker is verified for standard raster field photos. Thermal/radiometric file
+ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped
+lossless-file workflow before it may be advertised as supported.
 
 The corrected Release app is installed on the physical iPhone, but the hands-on
 workflow/VoiceOver/app-switcher checks remain open. Physical iPad and Android acceptance,
