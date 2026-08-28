@@ -28,8 +28,8 @@ export default function OverviewScreen() {
       {!active?.canEdit && active ? <Text style={styles.warning}>Your project role is read-only. Daily-log creation is unavailable.</Text> : null}
     </Card>
     <View style={styles.row}>
-      <Link href="/team" asChild><Pressable style={styles.linkCard}><Text style={styles.linkTitle}>Project team</Text><Text style={styles.linkDetail}>{bootstrap?.team.length ?? 0} cached members</Text></Pressable></Link>
-      <Link href="/(tabs)/sync" asChild><Pressable style={styles.linkCard}><Text style={styles.linkTitle}>Sync Center</Text><Text style={styles.linkDetail}>Review device work</Text></Pressable></Link>
+      <Link href="/team" asChild><Pressable accessibilityRole="link" accessibilityLabel={`Project team, ${bootstrap?.team.length ?? 0} cached members`} style={styles.linkCard}><Text style={styles.linkTitle}>Project team</Text><Text style={styles.linkDetail}>{bootstrap?.team.length ?? 0} cached members</Text></Pressable></Link>
+      <Link href="/(tabs)/sync" asChild><Pressable accessibilityRole="link" accessibilityLabel="Sync Center, review device work" style={styles.linkCard}><Text style={styles.linkTitle}>Sync Center</Text><Text style={styles.linkDetail}>Review device work</Text></Pressable></Link>
     </View>
     <Card>
       <SectionTitle>Desktop-only in v1</SectionTitle>

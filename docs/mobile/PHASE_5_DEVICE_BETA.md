@@ -107,7 +107,7 @@ remotely or uploaded until separately authorized.
 ## Automated evidence — 2026-08-28
 
 - Expo lint and the Expo mobile TypeScript check pass.
-- The full focused mobile suite passes: 61 domain, offline, API-client, Expo,
+- The full focused mobile suite passes: 62 domain, offline, API-client, Expo,
   authenticated mobile-API, and link-association checks.
 - The existing Next.js production build and repository TypeScript check pass.
 - iOS and Android Expo exports pass and contain the bundled RailCommand mark,
@@ -139,6 +139,10 @@ remotely or uploaded until separately authorized.
   secondary, field, and tab targets remain at least 48 points. The app adds no custom
   motion layer; native navigation can follow the operating system's reduced-motion
   behavior.
+- Dashboard navigation cards and cached daily-log rows now expose explicit link/button
+  roles, complete spoken labels, selected-project state, and a log-opening hint in
+  source-order focus. These deterministic semantics support—but do not replace—the
+  remaining physical VoiceOver and TalkBack smoke tests.
 - A native app-state privacy shield now replaces visible project content with a
   bundled neutral RailCommand cover while the app is inactive or backgrounded. It
   does not disable ordinary screenshots while the user is actively working and does

@@ -88,6 +88,16 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.doesNotMatch(mobileSources, /Animated|withTiming|withSpring|react-native-reanimated/);
   });
 
+  it('gives dashboard links and cached-log rows explicit spoken navigation semantics', () => {
+    const overview = source('../app/(tabs)/index.tsx');
+    const logs = source('../app/(tabs)/logs.tsx');
+    assert.match(overview, /accessibilityRole="link" accessibilityLabel=\{`Project team/);
+    assert.match(overview, /accessibilityRole="link" accessibilityLabel="Sync Center, review device work"/);
+    assert.match(logs, /accessibilityRole="button"/);
+    assert.match(logs, /accessibilityLabel=\{`Daily log,/);
+    assert.match(logs, /accessibilityHint="Opens the cached daily log"/);
+  });
+
   it('conceals field content whenever the native app is inactive or backgrounded', () => {
     const shield = source('../components/privacy-shield.tsx');
     const layout = source('../app/_layout.tsx');

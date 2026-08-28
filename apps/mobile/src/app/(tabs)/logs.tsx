@@ -7,6 +7,7 @@ import { colors, fonts } from '@/theme';
 export default function LogsScreen() {
   const { bootstrap, activeProjectId, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
+  const spokenDate = (logDate: string) => new Date(`${logDate}T12:00:00`).toLocaleDateString();
   return <Screen>
     <BrandHeader eyebrow="OFFLINE READ-ONLY CACHE" title="Daily logs" right={<StatusPill online={online} />} />
     <Card><SectionTitle>{project?.name ?? 'No active project'}</SectionTitle>
@@ -14,8 +15,12 @@ export default function LogsScreen() {
       <PrimaryButton title="New daily log" disabled={!project?.canEdit} onPress={() => router.push('/daily-log/new')} />
     </Card>
     <Card>
-      {bootstrap?.dailyLogs.length ? bootstrap.dailyLogs.map((log) => <Pressable key={log.id} onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.log}>
-        <View style={{ flex: 1 }}><Text style={styles.date}>{new Date(`${log.logDate}T12:00:00`).toLocaleDateString()}</Text>
+      {bootstrap?.dailyLogs.length ? bootstrap.dailyLogs.map((log) => <Pressable key={log.id}
+        accessibilityRole="button"
+        accessibilityLabel={`Daily log, ${spokenDate(log.logDate)}, ${log.workSummary || 'no work summary recorded'}`}
+        accessibilityHint="Opens the cached daily log"
+        onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.log}>
+        <View style={{ flex: 1 }}><Text style={styles.date}>{spokenDate(log.logDate)}</Text>
           <Text numberOfLines={2} style={styles.summary}>{log.workSummary || 'No work summary recorded'}</Text></View><Text style={styles.open}>OPEN</Text>
       </Pressable>) : <EmptyState title="No cached logs" detail="Connect once to synchronize recent daily logs for this project." />}
     </Card>
