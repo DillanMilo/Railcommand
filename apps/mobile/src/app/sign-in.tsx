@@ -11,19 +11,38 @@ export default function SignInScreen() {
   const passwordRef = useRef<TextInput>(null);
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [message, setMessage] = useState(params.error ?? 'Use your approved RailCommand organization account.');
-  const [busy, setBusy] = useState(false);
-  const submit = async () => { setBusy(true); const error = await signIn(email, password); setBusy(false);
-    if (error) setMessage(error); else if (params.inviteToken) router.replace(`/invitation/${params.inviteToken}`); else router.replace('/'); };
-  const reset = async () => { if (!email.trim()) { setMessage('Enter your email first.'); return; }
-    const error = await requestPasswordReset(email); setMessage(error ?? 'Password-reset instructions were sent if the account exists.'); };
+  const [pending, setPending] = useState<'sign-in' | 'reset' | null>(null);
+  const submit = async () => {
+    if (pending) return;
+    setPending('sign-in');
+    try {
+      const error = await signIn(email, password);
+      if (error) setMessage(error);
+      else if (params.inviteToken) router.replace(`/invitation/${params.inviteToken}`);
+      else router.replace('/');
+    } catch {
+      setMessage('Sign-in could not reach RailCommand. Check connectivity and try again.');
+    } finally { setPending(null); }
+  };
+  const reset = async () => {
+    if (pending) return;
+    if (!email.trim()) { setMessage('Enter your email first.'); return; }
+    setPending('reset'); setMessage('Requesting password-reset instructions…');
+    try {
+      const error = await requestPasswordReset(email);
+      setMessage(error ?? 'Password-reset instructions were sent if the account exists.');
+    } catch {
+      setMessage('Password recovery could not reach RailCommand. Check connectivity and try again.');
+    } finally { setPending(null); }
+  };
   return <Screen><BrandHeader eyebrow="FIELD APPLICATION" title="RailCommand" />
     <Card><Text accessibilityLiveRegion="polite" style={styles.message}>{message}</Text>
       <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email"
         autoFocus returnKeyType="next" blurOnSubmit={false} onSubmitEditing={() => passwordRef.current?.focus()} />
       <Field ref={passwordRef} label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password"
-        returnKeyType="go" onSubmitEditing={() => { if (email && password && !busy) void submit(); }} />
-      <PrimaryButton title="Sign in" onPress={() => void submit()} busy={busy} disabled={!email || !password} />
-      <SecondaryButton title="Send password-reset link" onPress={() => void reset()} /></Card>
+        returnKeyType="go" onSubmitEditing={() => { if (email && password && !pending) void submit(); }} />
+      <PrimaryButton title="Sign in" onPress={() => void submit()} busy={pending === 'sign-in'} disabled={!email || !password || pending !== null} />
+      <SecondaryButton title={pending === 'reset' ? 'Requesting reset link…' : 'Send password-reset link'} disabled={pending !== null} onPress={() => void reset()} /></Card>
     <Text style={styles.detail}>Invitations and password-reset links return securely through railcommand:// or verified railcommand.io links.</Text>
   </Screen>;
 }

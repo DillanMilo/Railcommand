@@ -6,8 +6,17 @@ import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordScreen() {
   const [password, setPassword] = useState(''); const [message, setMessage] = useState('Choose a new password for your organization account.');
-  const submit = async () => { const { error } = await supabase.auth.updateUser({ password });
-    if (error) setMessage(error.message); else router.replace('/'); };
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true); setMessage('Updating your password…');
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) setMessage(error.message); else router.replace('/');
+    } catch {
+      setMessage('Password update could not reach RailCommand. Check connectivity and try again.');
+    } finally { setBusy(false); }
+  };
   return <Screen><BrandHeader eyebrow="ACCOUNT RECOVERY" title="Reset password" /><Card><Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{message}</Text><Field label="New password" value={password} onChangeText={setPassword} secureTextEntry />
-    <PrimaryButton title="Update password" onPress={() => void submit()} disabled={password.length < 8} /></Card></Screen>;
+    <PrimaryButton title="Update password" onPress={() => void submit()} busy={busy} disabled={password.length < 8} /></Card></Screen>;
 }

@@ -147,6 +147,19 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.doesNotMatch(screen, /expoPushToken: registration\.expoPushToken/);
   });
 
+  it('keeps authentication and external-link controls recoverable during network loss', () => {
+    const signIn = source('../app/sign-in.tsx');
+    const reset = source('../app/reset-password.tsx');
+    const account = source('../app/(tabs)/account.tsx');
+    assert.match(signIn, /pending.*'sign-in'.*'reset'/);
+    assert.match(signIn, /finally \{ setPending\(null\); \}/);
+    assert.match(signIn, /Password recovery could not reach RailCommand/);
+    assert.match(reset, /finally \{ setBusy\(false\); \}/);
+    assert.match(reset, /Password update could not reach RailCommand/);
+    assert.match(account, /requiresOnline && !online/);
+    assert.match(account, /catch \{ setStatus\(`/);
+  });
+
   it('ships a TLS-only native shell without WebView escape hatches or credential logging', () => {
     const nativeBoundary = [
       source('../../app.config.ts'),

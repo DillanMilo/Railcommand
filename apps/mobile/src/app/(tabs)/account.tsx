@@ -81,16 +81,25 @@ export default function AccountScreen() {
     void registerPush(true);
   }, [online, qaPush, registerPush, userId]);
 
+  const openExternal = async (url: string, label: string, requiresOnline = false) => {
+    if (requiresOnline && !online) {
+      setStatus(`${label} is online-only. Reconnect and try again.`);
+      return;
+    }
+    try { await Linking.openURL(url); }
+    catch { setStatus(`${label} could not be opened on this device. Contact support@railcommand.io if the problem continues.`); }
+  };
+
   return <Screen>
     <BrandHeader eyebrow="PROFILE & PRIVACY" title="Account" right={<StatusPill online={online} />} />
-    <Card><SectionTitle>{session?.user.email ?? 'Signed-in user'}</SectionTitle><Text style={styles.status}>{status}</Text></Card>
+    <Card><SectionTitle>{session?.user.email ?? 'Signed-in user'}</SectionTitle><Text accessibilityLiveRegion="polite" style={styles.status}>{status}</Text></Card>
     <Card><SectionTitle>Field notifications</SectionTitle>
       <Text style={uiStyles.muted}>RailCommand will ask before enabling alerts. Registration requires connectivity and a physical device; denial leaves the rest of the app usable.</Text>
       <PrimaryButton title="Enable field notifications" disabled={!online} busy={busy} onPress={() => void registerPush()} />
     </Card>
     <Card><SectionTitle>Help and privacy</SectionTitle>
-      <SecondaryButton title="Privacy policy" onPress={() => void Linking.openURL('https://railcommand.io/privacy')} />
-      <SecondaryButton title="Contact support" onPress={() => void Linking.openURL('mailto:support@railcommand.io?subject=RailCommand%20mobile%20support')} />
+      <SecondaryButton title="Privacy policy" onPress={() => void openExternal('https://railcommand.io/privacy', 'Privacy policy', true)} />
+      <SecondaryButton title="Contact support" onPress={() => void openExternal('mailto:support@railcommand.io?subject=RailCommand%20mobile%20support', 'Support email')} />
       <SecondaryButton title="Request account deletion" disabled={busy} onPress={() => router.push('/account-deletion')} />
       {!online ? <Text style={styles.offline}>Deletion requests are online-only and will never be silently queued.</Text> : null}
     </Card>
