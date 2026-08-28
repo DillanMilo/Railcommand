@@ -15,7 +15,7 @@ function TabIcon({ name, color }: { name: keyof typeof tabSymbols; color: ColorV
 }
 
 export default function TabsLayout() {
-  return <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.orange, tabBarInactiveTintColor: colors.muted,
+  return <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.orangeText, tabBarInactiveTintColor: colors.muted,
     tabBarHideOnKeyboard: true,
     tabBarLabelStyle: styles.label,
     tabBarItemStyle: styles.item,

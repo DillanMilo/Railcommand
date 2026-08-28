@@ -52,6 +52,6 @@ export default function InvitationScreen() {
 }
 
 const styles = StyleSheet.create({
-  role: { color: colors.orange, textTransform: 'capitalize', fontFamily: fonts.bodyBold },
+  role: { color: colors.orangeText, textTransform: 'capitalize', fontFamily: fonts.bodyBold },
   message: { color: colors.muted, fontFamily: fonts.body, lineHeight: 20 },
 });

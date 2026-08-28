@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   project: { minHeight: 76, borderWidth: 1, borderColor: colors.line, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.white },
   projectActive: { borderWidth: 2, borderColor: colors.orange, backgroundColor: '#FFF8F2' },
   projectName: { color: colors.ink, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
-  projectState: { color: colors.orange, fontFamily: fonts.mono, fontSize: 9, lineHeight: 12, letterSpacing: 1 },
+  projectState: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 12, letterSpacing: 1 },
   status: { color: colors.success, fontFamily: fonts.bodyBold, fontSize: 12, lineHeight: 17 },
   metric: { color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 40, lineHeight: 48 },
   warning: { color: colors.warning, fontFamily: fonts.bodyMedium, lineHeight: 19 },

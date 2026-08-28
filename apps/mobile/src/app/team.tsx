@@ -26,5 +26,5 @@ const styles = StyleSheet.create({
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   initial: { color: colors.white, fontFamily: fonts.heading },
   name: { color: colors.ink, fontFamily: fonts.bodyBold },
-  role: { color: colors.orange, fontFamily: fonts.mono, fontSize: 9, textTransform: 'uppercase' },
+  role: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, textTransform: 'uppercase' },
 });

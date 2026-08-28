@@ -71,6 +71,7 @@ export function PrimaryButton({ title, onPress, disabled, busy, tone = 'orange' 
   busy?: boolean;
   tone?: 'orange' | 'dark' | 'danger';
 }) {
+  const foreground = tone === 'orange' ? colors.ink : colors.white;
   return <Pressable
     accessibilityRole="button"
     accessibilityState={{ disabled: Boolean(disabled || busy), busy: Boolean(busy) }}
@@ -84,7 +85,9 @@ export function PrimaryButton({ title, onPress, disabled, busy, tone = 'orange' 
       pressed && styles.buttonPressed,
     ]}
   >
-    {busy ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>{title}</Text>}
+    {busy ? <ActivityIndicator color={foreground} /> : (
+      <Text style={[styles.buttonText, tone !== 'orange' && styles.buttonTextLight]}>{title}</Text>
+    )}
   </Pressable>;
 }
 
@@ -111,7 +114,7 @@ export const Field = forwardRef<TextInput, TextInputProps & { label: string }>(f
       {...props}
       multiline={multiline}
       accessibilityLabel={props.accessibilityLabel ?? label}
-      placeholderTextColor="#8B8F97"
+      placeholderTextColor={colors.muted}
       style={[styles.input, multiline && styles.multiline]}
     />
   </View>;
@@ -155,7 +158,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58 },
   brandMark: { width: 48, height: 48, backgroundColor: colors.ink },
   headerText: { flex: 1, minWidth: 0 },
-  eyebrow: { fontFamily: fonts.mono, fontSize: 10, lineHeight: 14, letterSpacing: 1.35, color: colors.orange },
+  eyebrow: { fontFamily: fonts.mono, fontSize: 10, lineHeight: 14, letterSpacing: 1.35, color: colors.orangeText },
   title: { color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 23, lineHeight: 29, letterSpacing: -0.45 },
   card: {
     backgroundColor: colors.paper,
@@ -190,7 +193,8 @@ const styles = StyleSheet.create({
   buttonDanger: { backgroundColor: colors.danger, borderColor: '#991B1B' },
   buttonDisabled: { opacity: 0.42, shadowOpacity: 0, elevation: 0 },
   buttonPressed: { opacity: 0.78, transform: [{ translateX: 1 }, { translateY: 1 }] },
-  buttonText: { color: colors.white, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
+  buttonText: { color: colors.ink, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
+  buttonTextLight: { color: colors.white },
   secondary: {
     minHeight: 48,
     borderWidth: 1,
@@ -207,7 +211,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 50,
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.controlLine,
     borderRadius: radii.control,
     backgroundColor: colors.white,
     color: colors.ink,

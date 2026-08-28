@@ -26,5 +26,5 @@ const styles = StyleSheet.create({
   log: { flexDirection: 'row', gap: 10, borderBottomWidth: 1, borderBottomColor: colors.line, paddingVertical: 13, alignItems: 'center' },
   date: { color: colors.ink, fontFamily: fonts.heading, fontSize: 14, lineHeight: 19 },
   summary: { color: colors.muted, fontFamily: fonts.body, lineHeight: 19, marginTop: 4 },
-  open: { color: colors.orange, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1 },
+  open: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1 },
 });
