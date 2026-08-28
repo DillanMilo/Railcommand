@@ -27,6 +27,17 @@ describe('Expo mobile environment boundary', () => {
     }));
   });
 
+  it('rejects cleartext Supabase and mobile API services', () => {
+    assert.throws(() => validateExpoMobileConfig({
+      ...valid,
+      apiBaseUrl: 'http://mobile-stage.example.com',
+    }));
+    assert.throws(() => validateExpoMobileConfig({
+      ...valid,
+      supabaseUrl: 'http://stage-ref.supabase.co',
+    }));
+  });
+
   it('rejects server credentials', () => {
     assert.throws(() => validateExpoMobileConfig({ ...valid, publishableKey: 'service_role_secret' }));
   });

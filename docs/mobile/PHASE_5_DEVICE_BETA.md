@@ -141,6 +141,10 @@ store listing, or touches production customer data without separate authorizatio
   project/parent/operation path and revalidates membership, ownership, MIME metadata,
   and exact bucket/path equality before finalization. Oversized or locally unwriteable
   photos never enter the outbox, and their daily-log draft remains saved.
+- The mobile environment guard now has direct cleartext rejection coverage for both
+  Supabase and the authenticated JSON API. A native-boundary regression check confirms
+  the bundled shell has no WebView/server URL, arbitrary-load or cleartext override,
+  and no console logging path for session or bearer credentials.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped

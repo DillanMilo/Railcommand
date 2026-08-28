@@ -143,4 +143,22 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(screen, /push-result\.json/);
     assert.doesNotMatch(screen, /expoPushToken: registration\.expoPushToken/);
   });
+
+  it('ships a TLS-only native shell without WebView escape hatches or credential logging', () => {
+    const nativeBoundary = [
+      source('../../app.config.ts'),
+      source('./api.ts'),
+      source('./config.ts'),
+      source('./deep-links.ts'),
+      source('./device.ts'),
+      source('./supabase.ts'),
+      source('./sync.ts'),
+      source('../providers/auth-provider.tsx'),
+      source('../providers/mobile-data-provider.tsx'),
+    ].join('\n');
+    assert.doesNotMatch(nativeBoundary, /react-native-webview|<WebView|server\.url/);
+    assert.doesNotMatch(nativeBoundary, /NSAllowsArbitraryLoads|usesCleartextTraffic|networkSecurityConfig/);
+    assert.doesNotMatch(nativeBoundary, /console\.(?:log|debug|info|warn|error)/);
+    assert.match(source('./config-guard.ts'), /protocol !== 'https:'/);
+  });
 });
