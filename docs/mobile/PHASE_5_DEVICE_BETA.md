@@ -145,14 +145,22 @@ store listing, or touches production customer data without separate authorizatio
   Supabase and the authenticated JSON API. A native-boundary regression check confirms
   the bundled shell has no WebView/server URL, arbitrary-load or cleartext override,
   and no console logging path for session or bearer credentials.
+- CoreDevice inspection on the paired iPhone recorded the installed staging identity
+  as `io.railcommand.app.dev`, version `1.0.0` and build `300001`. With the app stopped,
+  its app-owned Documents container still contained the user-partitioned SQLite files,
+  while the completed photo directory was empty after synchronization. A controlled
+  cold launch succeeded and the RailCommand process remained alive on the follow-up
+  check. No database contents were opened, and temporary process inventories were
+  deleted after verification.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped
 lossless-file workflow before it may be advertised as supported.
 
-The corrected Release app is installed on the physical iPhone, but the hands-on
-workflow/VoiceOver/app-switcher checks remain open. Physical iPad and Android acceptance,
-beta distribution, and refreshed post-alignment store screenshots also remain open.
+The corrected Release app is installed and cold-launch/persistence evidence passes on
+the physical iPhone, but the hands-on workflow/VoiceOver/app-switcher checks remain
+open. Physical iPad and Android acceptance, beta distribution, and refreshed
+post-alignment store screenshots also remain open.
 
 ## Gate
 
