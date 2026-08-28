@@ -1,4 +1,4 @@
-# Store reviewer notes and walkthrough
+# Store reviewer notes and written walkthrough
 
 ## Copy into reviewer notes
 
@@ -35,7 +35,12 @@ The permanent account must not expire, require MFA, contain customer data, or be
 with ordinary QA. Verify it immediately before submission and keep the staging/review
 backend available until review completes.
 
-## Three-minute reviewer video script
+## Optional video script — use only if a reviewer requests it
+
+The reviewer video is not a default Phase 4 deliverable. The permanent synthetic
+account, written steps, validated screenshots, and physical-device acceptance evidence
+are the primary review package. Record the following only if a store reviewer asks for
+a video or the release owner separately approves it as useful supporting material.
 
 1. Show the app version/build and synthetic account sign-in (hide the password).
 2. Show the synthetic project list, online badge, cached recent logs, and Sync Center at zero.

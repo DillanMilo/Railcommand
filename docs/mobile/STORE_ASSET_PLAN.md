@@ -1,4 +1,4 @@
-# Store screenshot and reviewer-video plan
+# Store screenshot and optional reviewer-support plan
 
 Use synthetic staging data only. Screens must depict the archived release candidate,
 not a mockup. Hide passwords, precise coordinates, notification tokens, and internal
@@ -47,12 +47,13 @@ and <https://support.google.com/googleplay/android-developer/answer/9866151>.
 5. **Synchronized history** — zero queue and exactly two successful items.
 6. **Privacy controls** — Account screen with privacy/support/deletion controls.
 
-Use all six states for Google and the private reviewer walkthrough. For Apple, use a
+Use all six states for Google and the written reviewer walkthrough. For Apple, use a
 lean three-image set per supported device class: field dashboard, daily-log draft,
 and privacy controls. The Apple listing does not need to repeat the full acceptance
 test in screenshots; the offline/reconnect sequence remains covered by device
-acceptance evidence and the private reviewer walkthrough. App Store preview video is
-optional; the short private walkthrough is review support, not marketing material.
+acceptance evidence and written reviewer instructions. App Store preview video is
+optional. Do not create a private walkthrough video unless Apple or Google requests
+one or the release owner separately decides it would materially help review.
 
 The checked-in capture and verification commands are documented in
 `docs/mobile/store-assets/README.md`. The strict release check requires three Apple

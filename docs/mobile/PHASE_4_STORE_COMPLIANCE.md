@@ -34,6 +34,12 @@ not read, alter, or replace the native user-scoped draft/outbox database, so the
 existing offline field workflow and foreground synchronization guarantees are
 unchanged.
 
+Store-review instructions, screenshots, and any optional reviewer video are
+**online-only submission support**. The video is not required for Phase 4 because the
+ordinary camera/location workflow is reproducible with the permanent synthetic account
+and written steps. This documentation decision does not change the app's offline
+draft/queue behavior.
+
 ## Implemented evidence
 
 - Mobile and authenticated web deletion flows inspect user-partitioned device work,
@@ -82,11 +88,15 @@ unchanged.
 
 Before submission, all automated/native builds must pass; the additive migration and
 routes must be exercised only in isolated staging; a private permanent reviewer
-account must complete the scripted walkthrough; final phone/tablet screenshots and a
-short reviewer video must be captured with synthetic data; production association
+account must complete the written scripted walkthrough; final phone/tablet screenshots
+must use synthetic data; production association
 files and Play signing fingerprints must be approved; and the complete real
 password-recovery email flow must pass with a non-customer inbox. Physical Android
 acceptance remains a named hardware exception until a device is available.
+
+A private reviewer video is optional supporting material, not a release gate. Create
+one only if Apple or Google requests it or the release owner separately determines it
+would materially help review.
 
 `npm run verify:phase4:status` reports the exact checked-in local and external gate
 inventory without failing while work is in progress. `npm run verify:phase4:release`
@@ -132,10 +142,12 @@ checks and are recorded only in the gitignored private runbook.
   into a deterministic private import draft with 50 reviewed responses. The generator
   rejects missing machine-readable questions, stale selected data types, required
   blanks, and divergence between the declaration payload and usage answers.
-- The private reviewer-video recorder and verifier enforce a portrait H.264/HEVC file,
+- The optional private reviewer-video recorder and verifier enforce a portrait H.264/HEVC file,
   1080px-or-better width, and a 45–240 second duration. The approved three-minute
   script starts after authentication, uses only synthetic records, exercises one
   offline log/photo through exactly-once sync, and never submits account deletion.
+  These tools remain available if a store reviewer later requests a video; no video is
+  required for the checked-in Phase 4 release gate.
 - A read-only EAS check confirms the `creative-currents` organization owns the
   `@creative-currents/railcommand` build project. No production EAS build was started.
   With explicit owner authorization on August 27, EAS subsequently created exactly one
@@ -282,8 +294,9 @@ checks and are recorded only in the gitignored private runbook.
   recovery files were permanently removed. The new credential was saved in Google
   Play's reviewer-access draft; it was not submitted or published.
 - The completed iPhone/iPad and Android phone/tablet screenshots are attached to their
-  Google Play draft slots. Capture and manually validate the private reviewer
-  walkthrough from the archived release candidate using synthetic data.
+  Google Play draft slots. The written reviewer walkthrough and physical-iPhone
+  acceptance use the same synthetic data; a private video is not required unless a
+  store reviewer later asks for one.
 - Google Play initial setup is complete in saved-draft state. The permanent reviewer
   sign-in details, adult-only target audience, and Data Safety declaration are saved
   drafts. The IARC questionnaire is
@@ -370,3 +383,13 @@ checks and are recorded only in the gitignored private runbook.
   candidate. This branch does not authorize a production deployment.
 - Physical Android remains a documented hardware exception until a device is available;
   the physical iPhone deletion safeguards and offline submission block are complete.
+- On August 27, 2026, the release owner completed the full written reviewer walkthrough
+  on the guarded staging-only physical-iPhone build: online authenticated dashboard,
+  offline transition, one synthetic daily log/photo queued, force-close/reopen with the
+  pending work restored, reconnect, and successful exactly-once synchronization. This
+  verifies the reviewer-walkthrough gate. A QuickTime capture did not preserve the
+  interaction and was not accepted as evidence; no reviewer video is part of the
+  release package. Any incomplete local recording may be removed separately after an
+  explicit cleanup authorization. The release owner approved treating video as
+  optional support rather than a Phase 4
+  requirement.

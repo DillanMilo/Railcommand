@@ -43,7 +43,7 @@
       "id": "app-store-connect",
       "status": "verified",
       "verifiedAt": "2026-08-26",
-      "evidence": "Read-only App Store Connect audit verified Creative Currents LLC, app 6803576049, io.railcommand.app, US-only public availability, Account Holder/Admin access, and the active Free Apps Agreement. Missing submission content remains tracked by the media, walkthrough, and signing gates."
+      "evidence": "Read-only App Store Connect audit verified Creative Currents LLC, app 6803576049, io.railcommand.app, US-only public availability, Account Holder/Admin access, and the active Free Apps Agreement. Remaining submission dependencies are tracked by their dedicated release gates."
     },
     {
       "id": "apple-distribution-signing",
@@ -59,8 +59,9 @@
     },
     {
       "id": "reviewer-walkthrough",
-      "status": "pending",
-      "evidence": "A guarded, self-contained staging reviewer build for io.railcommand.app.dev was signed with the existing Creative Currents Apple Distribution certificate, provisioned only for the named physical iPhone, installed, and launched on 2026-08-27. Capture and manually validate the private reviewer video before marking this gate verified. No build was uploaded or submitted."
+      "status": "verified",
+      "verifiedAt": "2026-08-27",
+      "evidence": "A guarded, self-contained staging reviewer build for io.railcommand.app.dev was installed on the named physical iPhone. The release owner completed the written reviewer sequence on 2026-08-27: authenticated synthetic dashboard online, offline transition, one synthetic daily log/photo queued, force-close/reopen with pending work restored, reconnect, exactly-once synchronization, and clean synchronized state. A private video is optional reviewer support and is not a Phase 4 requirement; no video was accepted as release evidence. No build was uploaded or submitted."
     },
     {
       "id": "production-association-files",
