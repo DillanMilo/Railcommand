@@ -1,6 +1,6 @@
 # Phase 5 — visual alignment, device acceptance, and beta distribution
 
-Last updated: 2026-08-28
+Last updated: 2026-08-29
 
 ## Goal
 
@@ -209,16 +209,36 @@ remotely or uploaded until separately authorized.
   cold launch succeeded and the RailCommand process remained alive on the follow-up
   check. No database contents were opened, and temporary process inventories were
   deleted after verification.
+- The post-accessibility recovery run confirmed that VoiceOver was disabled again,
+  ordinary swipe/unlock gestures returned, and the user could reopen RailCommand
+  normally. The temporary VoiceOver smoke test is not counted as accepted evidence:
+  it changed the user's unlock gestures and was stopped. Future physical screen-reader
+  checks require an explicitly supervised exit path; until then, deterministic roles,
+  labels, focus order, contrast, target-size, and Dynamic Type coverage remain the
+  recorded accessibility evidence.
+- The current physical iPhone opened the Overview, Logs, Sync Center, and Account tabs
+  with the staging-only synthetic project. Offline daily-log/photo persistence,
+  force-close restoration, exact-once reconnect synchronization, session restoration,
+  location/photo permission handling, sign-out safeguards, and the native app-switcher
+  privacy cover were exercised without production data. No primary navigation control
+  remained dead during the accepted run.
+- A fresh 2026-08-29 release-gate run passed all 63 focused mobile tests, Expo lint,
+  the Expo and repository TypeScript checks, and both iOS and Android bundled exports.
+  The complete Next.js production build passed through the supported Webpack builder.
+  The managed runner prevented Turbopack from binding its internal loopback port, so
+  that environmental failure is not represented as a source-code or application
+  failure.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped
 lossless-file workflow before it may be advertised as supported.
 
-The corrected Release app is installed and cold-launch/persistence evidence passes on
-the physical iPhone, and the Android native project now compiles with the intended
-release security boundary. The hands-on iPhone workflow/VoiceOver/app-switcher checks
-remain open. Physical iPad and Android acceptance, beta distribution, and refreshed
-post-alignment store screenshots also remain open.
+The corrected Release app is installed and the critical workflow,
+cold-launch/persistence, exact-once reconnect, primary-navigation, and app-switcher
+evidence pass on the physical iPhone. The Android native project compiles with the
+intended release security boundary. A supervised physical VoiceOver acceptance run,
+physical iPad and Android acceptance, beta distribution, and refreshed post-alignment
+store screenshots remain open.
 
 The local Android inventory contains the already-used API 36 phone and tablet AVD
 definitions but no installed API 24 system image. Installing that large additional
