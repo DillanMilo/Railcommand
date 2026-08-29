@@ -60,7 +60,7 @@ form and draft intact and creates no partial outbox operation.
 | Target | Required evidence | Coverage approach |
 | --- | --- | --- |
 | Current physical iPhone | Required | Clean/update install, offline launch, force-close/restart, network loss/reconnect, camera/location, sign-out/user switch, large text, VoiceOver smoke test |
-| iPad | Required while tablet support remains enabled | Adaptive layout, keyboard obstruction, rotation, large text, offline draft/reconnect smoke test |
+| iPad | Required while tablet support remains enabled | Portrait adaptive layout, keyboard obstruction, large text, offline draft/reconnect smoke test |
 | Current physical Android phone | Required before public release | Same critical field workflow, TalkBack smoke test, permission revocation, offline restart/reconnect |
 | Small/older-supported Android | Required without separate hardware | API 24+ emulator for install/layout/token-expiry and permission checks |
 | Large/foldable Android | Required without separate hardware | API 36 tablet/foldable emulator for adaptive layout and keyboard checks |
@@ -228,6 +228,29 @@ remotely or uploaded until separately authorized.
   The managed runner prevented Turbopack from binding its internal loopback port, so
   that environmental failure is not represented as a source-code or application
   failure.
+- A physical iPad Pro (12.9-inch, 5th generation) was registered against a newly
+  recreated staging-only ad-hoc profile for `io.railcommand.app.dev`. The existing
+  Apple Distribution certificate was retained. Device crash evidence caught that the
+  first manual archive had omitted EAS's public development variables during Metro
+  bundling; the runtime guard rejected its empty Supabase URL before any request was
+  made. That archive was discarded. A replacement Release archive embeds only the
+  expected staging project and API host, contains no server-secret, cron-secret, or
+  JWT-like marker, passes strict code-signature verification, and is installed on the
+  iPad as version `1.0.0` build `400001`. CoreDevice launched the corrected app and
+  confirmed its process remained alive. A live, non-recording QuickTime preview showed
+  the physical iPad sign-in screen with the software keyboard open: the complete form,
+  primary sign-in action, password-reset action, and supporting copy remained visible
+  without clipping, overlap, or keyboard obstruction. No build was uploaded, no store
+  record was changed, and production was not accessed.
+- The signed-in physical iPad then completed the staging-only offline draft/queue
+  smoke test with synthetic data. While fully offline, one daily log was queued with
+  zero photos and the Sync Center reported that it was waiting for connectivity. The
+  app was force-closed and reopened while still offline; the same single pending log
+  was restored without lost input or duplication. After connectivity returned, one
+  explicit synchronization cleared the device queue and daily-log count to zero and
+  recorded exactly one synchronized daily log. This evidence covers the iPad's
+  offline-draft persistence and foreground reconnect path; it does not claim full
+  offline project editing.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped
@@ -236,9 +259,10 @@ lossless-file workflow before it may be advertised as supported.
 The corrected Release app is installed and the critical workflow,
 cold-launch/persistence, exact-once reconnect, primary-navigation, and app-switcher
 evidence pass on the physical iPhone. The Android native project compiles with the
-intended release security boundary. A supervised physical VoiceOver acceptance run,
-physical iPad and Android acceptance, beta distribution, and refreshed post-alignment
-store screenshots remain open.
+intended release security boundary. Physical iPad portrait layout, keyboard, offline
+force-close restoration, and exact-once reconnect evidence also pass. A supervised
+physical VoiceOver acceptance run, physical Android acceptance, beta distribution,
+and refreshed post-alignment store screenshots remain open.
 
 The local Android inventory contains the already-used API 36 phone and tablet AVD
 definitions but no installed API 24 system image. Installing that large additional
