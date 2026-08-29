@@ -70,6 +70,19 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.match(tabs, /tabBarAccessibilityLabel: 'Sync Center'/);
   });
 
+  it('carries the web command-shell hierarchy into native sign-in and dashboard screens', () => {
+    const signIn = source('../app/sign-in.tsx');
+    const dashboard = source('../app/(tabs)/index.tsx');
+    const tabs = source('../app/(tabs)/_layout.tsx');
+    assert.match(signIn, /SECURE PROJECT ACCESS/);
+    assert.match(signIn, /Welcome back/);
+    assert.match(signIn, /Sign in to continue to your projects/);
+    assert.match(dashboard, /PROJECT CONTROL \/ FIELD OVERVIEW/);
+    assert.match(dashboard, /Submittals.*RFIs.*Punch list.*Safety.*Documents.*Schedule/s);
+    assert.match(dashboard, /ONLINE-ONLY/);
+    assert.match(tabs, /title: 'Dashboard'/);
+  });
+
   it('caps decorative brand typography while leaving field content available to Dynamic Type', () => {
     const ui = source('../components/ui.tsx');
     assert.match(ui, /maxFontSizeMultiplier=\{1\.5\}[^>]*style=\{styles\.eyebrow\}/s);

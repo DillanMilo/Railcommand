@@ -251,6 +251,13 @@ remotely or uploaded until separately authorized.
   recorded exactly one synchronized daily log. This evidence covers the iPad's
   offline-draft persistence and foreground reconnect path; it does not claim full
   offline project editing.
+- The first native/web visual-parity slice now carries the authoritative RailCommand
+  web command-shell hierarchy into the shared native header, sign-in screen,
+  dashboard, project status/KPI treatment, and Dashboard navigation label. The native
+  dashboard names the remaining web project modules but marks their absent native
+  workflows `ONLINE-ONLY`; it does not add dead controls or claim that RFIs,
+  submittals, or full project editing are implemented. The route-by-route contract and
+  remaining work are tracked in `docs/mobile/WEB_VISUAL_PARITY.md`.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped
@@ -262,7 +269,8 @@ evidence pass on the physical iPhone. The Android native project compiles with t
 intended release security boundary. Physical iPad portrait layout, keyboard, offline
 force-close restoration, and exact-once reconnect evidence also pass. A supervised
 physical VoiceOver acceptance run, physical Android acceptance, beta distribution,
-and refreshed post-alignment store screenshots remain open.
+full route-by-route visual parity, and refreshed post-alignment store screenshots
+remain open.
 
 The local Android inventory contains the already-used API 36 phone and tablet AVD
 definitions but no installed API 24 system image. Installing that large additional

@@ -20,7 +20,7 @@ export default function TabsLayout() {
     tabBarLabelStyle: styles.label,
     tabBarItemStyle: styles.item,
     tabBarStyle: styles.bar }}>
-    <Tabs.Screen name="index" options={{ title: 'Overview', tabBarAccessibilityLabel: 'Overview', tabBarIcon: ({ color }) => <TabIcon name="index" color={color} /> }} />
+    <Tabs.Screen name="index" options={{ title: 'Dashboard', tabBarAccessibilityLabel: 'Dashboard', tabBarIcon: ({ color }) => <TabIcon name="index" color={color} /> }} />
     <Tabs.Screen name="logs" options={{ title: 'Logs', tabBarAccessibilityLabel: 'Daily logs', tabBarIcon: ({ color }) => <TabIcon name="logs" color={color} /> }} />
     <Tabs.Screen name="sync" options={{ title: 'Sync', tabBarAccessibilityLabel: 'Sync Center', tabBarIcon: ({ color }) => <TabIcon name="sync" color={color} /> }} />
     <Tabs.Screen name="account" options={{ title: 'Account', tabBarAccessibilityLabel: 'Account', tabBarIcon: ({ color }) => <TabIcon name="account" color={color} /> }} />
