@@ -12,6 +12,25 @@ validate the intended interface rather than a disposable scaffold.
 This is deliberately a lean release matrix. It does not require owning every
 screen size or testing every possible OS/device combination.
 
+## Current decision status
+
+The internally executable Phase 5 foundation is complete on the isolated feature
+branch: the scoped native workflows use the RailCommand visual system, the physical
+iPhone and iPad critical paths pass, Android phone/tablet builds and emulator evidence
+pass, and all source, bundle, offline, security, and web-build gates are green.
+
+Phase 5 is **ready for controlled beta work, but not fully accepted for public
+release**. The remaining gates are deliberately narrow:
+
+1. physical Android critical-path acceptance on one representative phone;
+2. a supervised physical VoiceOver/TalkBack smoke test with an explicit exit path;
+3. separately authorized TestFlight/Google Play internal distribution and the
+   resulting beta regression;
+4. refreshed store screenshots after the visual-alignment work.
+
+None of those open gates justifies expanding the scoped v1 into native RFI,
+submittal, administration, billing, or full-project offline workflows.
+
 ## Visual baseline
 
 The native app uses the same core identity as the RailCommand web app:
@@ -26,9 +45,9 @@ The native app uses the same core identity as the RailCommand web app:
   squeezed into a phone viewport.
 
 The visual pass covers sign-in, dashboard/project selection, daily logs, Sync
-Center, Account/privacy, invitations, password recovery, and supporting cached
-record screens. Material visual changes require replacement store screenshots
-before submission.
+Center, Account/privacy, invitations, password recovery, supporting cached record
+screens, and honest Submittal/RFI module-status routes. Material visual changes
+require replacement store screenshots before submission.
 
 ## Offline classification
 
