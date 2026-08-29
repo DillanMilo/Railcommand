@@ -36,8 +36,14 @@ export function Screen({ children, scroll = true }: PropsWithChildren<{ scroll?:
   </SafeAreaView>;
 }
 
-export function BrandHeader({ eyebrow, title, right }: { eyebrow?: string; title: string; right?: ReactNode }) {
-  return <View style={styles.header}>
+export function BrandHeader({ eyebrow, title, right, onPress, expanded }: {
+  eyebrow?: string;
+  title: string;
+  right?: ReactNode;
+  onPress?: () => void;
+  expanded?: boolean;
+}) {
+  const projectControl = <>
     <Image
       source={railCommandMark}
       style={styles.brandMark}
@@ -47,12 +53,24 @@ export function BrandHeader({ eyebrow, title, right }: { eyebrow?: string; title
       accessibilityIgnoresInvertColors
     />
     <View style={styles.headerText}>
-      {eyebrow ? (
-        <Text maxFontSizeMultiplier={1.5} style={styles.eyebrow}>{eyebrow}</Text>
-      ) : null}
-      <Text maxFontSizeMultiplier={1.4} numberOfLines={2} style={styles.title}>{title}</Text>
+      {eyebrow ? <Text maxFontSizeMultiplier={1.5} style={styles.eyebrow}>{eyebrow}</Text> : null}
+      <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={styles.title}>{title}</Text>
     </View>
-    {right}
+    {onPress ? <Text accessible={false} style={styles.projectChevron}>⌄</Text> : null}
+  </>;
+
+  return <View style={styles.header}>
+    {onPress ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        accessibilityLabel={`Active project: ${title}`}
+        accessibilityHint="Shows available RailCommand projects"
+        onPress={onPress}
+        style={({ pressed }) => [styles.projectControl, pressed && styles.projectControlPressed]}
+      >{projectControl}</Pressable>
+    ) : <View style={styles.projectControl}>{projectControl}</View>}
+    <View style={styles.headerActions}>{right}</View>
   </View>;
 }
 
@@ -71,6 +89,11 @@ export function PageHeading({ eyebrow, title, detail, badge }: {
   badge?: string;
 }) {
   return <View style={styles.pageHeading}>
+    <View style={styles.breadcrumb}>
+      <Text style={styles.breadcrumbRoot}>RailCommand</Text>
+      <Text style={styles.breadcrumbDivider}>›</Text>
+      <Text numberOfLines={1} style={styles.breadcrumbCurrent}>{title}</Text>
+    </View>
     <Text maxFontSizeMultiplier={1.5} style={styles.pageEyebrow}>{eyebrow}</Text>
     <View style={styles.pageTitleRow}>
       <Text accessibilityRole="header" maxFontSizeMultiplier={1.5} style={styles.pageTitle}>{title}</Text>
@@ -106,10 +129,19 @@ export function StatusBanner({ title, detail, tone = 'neutral' }: {
   </View>;
 }
 
-export function MetricTile({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+export function MetricTile({ label, value, detail, icon, trend }: {
+  label: string;
+  value: string | number;
+  detail: string;
+  icon?: ReactNode;
+  trend?: string;
+}) {
   return <View style={styles.metricTile}>
-    <Text style={styles.metricLabel}>{label}</Text>
-    <Text style={styles.metricValue}>{value}</Text>
+    <View style={styles.metricTop}><Text style={styles.metricLabel}>{label}</Text>{icon}</View>
+    <View style={styles.metricBody}>
+      <Text style={styles.metricValue}>{value}</Text>
+      {trend ? <Text style={styles.metricTrend}>{trend}</Text> : null}
+    </View>
     <Text style={styles.metricDetail}>{detail}</Text>
   </View>;
 }
@@ -199,27 +231,45 @@ const styles = StyleSheet.create({
     maxWidth: 760,
     alignSelf: 'center',
     flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    paddingHorizontal: 12,
+    paddingTop: 12,
     paddingBottom: spacing.xxl,
-    gap: spacing.md,
+    gap: 20,
   },
-  contentWide: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.lg },
+  contentWide: { paddingHorizontal: 12, paddingTop: 12, gap: spacing.lg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 62,
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-    backgroundColor: colors.ink,
-    borderWidth: 1,
-    borderColor: colors.ink,
+    justifyContent: 'space-between',
+    gap: 8,
+    minHeight: 66,
+    marginHorizontal: -12,
+    marginTop: -12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.paper,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  brandMark: { width: 40, height: 40, backgroundColor: colors.inkSoft },
+  projectControl: {
+    minWidth: 0,
+    maxWidth: 210,
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: colors.ink,
+  },
+  projectControlPressed: { opacity: 0.82 },
+  brandMark: { width: 20, height: 20, borderRadius: 2, backgroundColor: colors.inkSoft },
   headerText: { flex: 1, minWidth: 0 },
-  eyebrow: { fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1.35, color: colors.orange },
-  title: { color: colors.white, fontFamily: fonts.heading, fontSize: 17, lineHeight: 22, letterSpacing: -0.35 },
+  eyebrow: { fontFamily: fonts.mono, fontSize: 7, lineHeight: 9, letterSpacing: 0.8, color: '#CBD5E1' },
+  title: { color: colors.white, fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 17, letterSpacing: -0.1 },
+  projectChevron: { color: '#CBD5E1', fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 16, marginTop: -3 },
+  headerActions: { minHeight: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
   card: {
     backgroundColor: colors.paper,
     borderWidth: 1,
@@ -228,17 +278,21 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 12,
     shadowColor: colors.ink,
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.045,
     shadowRadius: 0,
     shadowOffset: { width: 3, height: 3 },
     elevation: 2,
   },
   sectionTitle: { color: colors.ink, fontFamily: fonts.heading, fontSize: 17, lineHeight: 23, letterSpacing: -0.25 },
-  pageHeading: { gap: 7, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+  pageHeading: { gap: 7, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.line },
+  breadcrumb: { minHeight: 18, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 7 },
+  breadcrumbRoot: { color: colors.muted, fontFamily: fonts.body, fontSize: 11, lineHeight: 16 },
+  breadcrumbDivider: { color: colors.muted, fontFamily: fonts.body, fontSize: 13, lineHeight: 16 },
+  breadcrumbCurrent: { flexShrink: 1, color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 11, lineHeight: 16 },
   pageEyebrow: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1.35 },
   pageTitleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 },
-  pageTitle: { flexShrink: 1, color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 28, lineHeight: 33, letterSpacing: -1.15 },
-  pageBadge: { color: colors.success, backgroundColor: '#E8F8F1', borderWidth: 1, borderColor: '#9BD8C5', paddingHorizontal: 8, paddingVertical: 5, fontFamily: fonts.mono, fontSize: 8, lineHeight: 11, letterSpacing: 1.1 },
+  pageTitle: { flexShrink: 1, color: colors.ink, fontFamily: fonts.heading, fontSize: 28, lineHeight: 34, letterSpacing: -1.2 },
+  pageBadge: { color: colors.success, backgroundColor: '#E8F8F1', paddingHorizontal: 8, paddingVertical: 5, fontFamily: fonts.mono, fontSize: 8, lineHeight: 11, letterSpacing: 1.1 },
   pageDetail: { color: colors.muted, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
   statusBanner: { gap: 4, padding: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper },
   statusBannerSuccess: { borderColor: '#9BD8C5', backgroundColor: '#EFFBF7' },
@@ -249,9 +303,12 @@ const styles = StyleSheet.create({
   statusBannerTitleWarning: { color: colors.warning },
   statusBannerTitleDanger: { color: colors.danger },
   statusBannerDetail: { color: colors.muted, fontFamily: fonts.body, fontSize: 12, lineHeight: 18 },
-  metricTile: { flex: 1, minHeight: 132, justifyContent: 'space-between', padding: 14, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink, shadowOpacity: 0.05, shadowRadius: 0, shadowOffset: { width: 3, height: 3 }, elevation: 1 },
+  metricTile: { width: '48%', minHeight: 148, justifyContent: 'space-between', padding: 13, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink, shadowOpacity: 0.045, shadowRadius: 0, shadowOffset: { width: 3, height: 3 }, elevation: 1 },
+  metricTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  metricBody: { flex: 1, justifyContent: 'center', alignItems: 'flex-start' },
   metricLabel: { color: colors.muted, fontFamily: fonts.mono, fontSize: 8, lineHeight: 12, letterSpacing: 1.15 },
-  metricValue: { color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 34, lineHeight: 41, letterSpacing: -1.2 },
+  metricValue: { color: colors.ink, fontFamily: fonts.heading, fontSize: 26, lineHeight: 32, letterSpacing: -1.15 },
+  metricTrend: { color: colors.success, fontFamily: fonts.bodyMedium, fontSize: 10, lineHeight: 14 },
   metricDetail: { color: colors.muted, fontFamily: fonts.body, fontSize: 11, lineHeight: 16 },
   button: {
     minHeight: 52,

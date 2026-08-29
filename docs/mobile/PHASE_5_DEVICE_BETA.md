@@ -44,6 +44,14 @@ The native app uses the same core identity as the RailCommand web app:
 - mobile-native screen structure and controls rather than a desktop layout
   squeezed into a phone viewport.
 
+On 2026-08-29 the signed-in web shell was measured read-only at 390 × 844,
+768 × 1024, and desktop width in Safari Responsive Design Mode. The native shell now
+uses the same white 66-point top bar with compact navy project control, breadcrumb and
+project-heading sequence, two-column six-card dashboard grid, restrained card shadow,
+and 64-point five-item bottom navigation. This is a presentation-only change: it does
+not add a network dependency or change cached data, drafts, photos, authentication, or
+outbox synchronization.
+
 The visual pass covers sign-in, dashboard/project selection, daily logs, Sync
 Center, Account/privacy, invitations, password recovery, supporting cached record
 screens, and honest Submittal/RFI module-status routes. Material visual changes
@@ -126,7 +134,7 @@ remotely or uploaded until separately authorized.
 ## Automated evidence — 2026-08-28
 
 - Expo lint and the Expo mobile TypeScript check pass.
-- The full focused mobile suite passes: 63 domain, offline, API-client, Expo,
+- The full focused mobile suite passes: 67 domain, offline, API-client, Expo,
   authenticated mobile-API, and link-association checks.
 - The existing Next.js production build and repository TypeScript check pass.
 - iOS and Android Expo exports pass and contain the bundled RailCommand mark,
@@ -294,6 +302,18 @@ remotely or uploaded until separately authorized.
   Deferred project modules remain non-interactive and clearly labeled online-only.
   This navigation work changes no draft, outbox, authentication, or production data
   contract.
+- The measured parity slice used the user-authorized signed-in Safari session read-only
+  at 390 × 844, 768 × 1024, and desktop width. It corrected the shared native shell to
+  the web app's white 66-point top utility bar, compact navy project selector,
+  breadcrumb/title sequence, six-card two-column KPI grid, Recent Activity/Quick
+  Actions composition, and 64-point bottom navigation. A staging-only iPhone 17 Pro
+  Max simulator build (`io.railcommand.app.staging`, build `500004`) rendered the
+  signed-in synthetic project with the same hierarchy and no clipping or horizontal
+  overflow. Unsupported Budget, Schedule, Submittal, RFI, and Punch List values remain
+  shown as unavailable/web-only; Daily Logs uses the real cached count. The subsequent
+  67-test mobile gate, Expo lint/typecheck, repository TypeScript, iOS/Android staging
+  exports, and Webpack production compile all pass. No store upload, production
+  deployment, or customer-data change occurred.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped

@@ -94,7 +94,7 @@ export default function AccountScreen() {
   const sessionTone = /could not|failed|unavailable/i.test(status) ? 'danger' : online ? 'success' : 'warning';
 
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="SETTINGS / PROFILE & PRIVACY" title="Account" detail="Manage this device session, support, privacy, and notifications." />
     <Card><Text style={styles.eyebrow}>SIGNED-IN USER</Text><View style={styles.identity}>
       <View style={styles.avatar}><Text style={styles.initial}>{email.charAt(0).toUpperCase()}</Text></View>

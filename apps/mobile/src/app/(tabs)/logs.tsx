@@ -9,7 +9,7 @@ export default function LogsScreen() {
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const spokenDate = (logDate: string) => new Date(`${logDate}T12:00:00`).toLocaleDateString();
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="FIELD RECORDS / DAILY LOGS" title="Daily Logs"
       badge={`${bootstrap?.dailyLogs.length ?? 0} CACHED`} detail="Review recent field records or start today’s durable device draft." />
     <StatusBanner tone={online ? 'success' : 'warning'}

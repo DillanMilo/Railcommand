@@ -7,7 +7,7 @@ export default function SubmittalsScreen() {
   const { activeProjectId, bootstrap, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="PROJECT CONTROL / SUBMITTALS" title="Submittals" badge="WEB WORKFLOW"
       detail="Track packages, review status, due dates, and responses using RailCommand’s project record structure." />
     <StatusBanner tone={online ? 'neutral' : 'warning'}

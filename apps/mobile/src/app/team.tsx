@@ -9,7 +9,7 @@ export default function TeamScreen() {
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const getInitials = (name: string) => name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2);
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="PROJECT ACCESS / TEAM" title="Project Team"
       badge={`${bootstrap?.team.length ?? 0} CACHED`} detail="People and field roles synchronized for this project." />
     <SecondaryButton title="Back" onPress={() => router.back()} />

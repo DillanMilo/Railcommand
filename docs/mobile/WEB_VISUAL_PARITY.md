@@ -10,9 +10,9 @@ not a generic Expo starter or a separate mobile brand.
   system as `src/app/globals.css`.
 - Use the bundled Plus Jakarta Sans, DM Sans, and JetBrains Mono families that mirror
   the web typography roles. Native UI must not load fonts from the network.
-- Preserve the web hierarchy: dark project-control top bar, mono uppercase eyebrow,
-  strong editorial page title, sharp bordered cards, orange primary action, and
-  compact status badges.
+- Preserve the web hierarchy: a full-width white 66-point utility bar containing a
+  compact navy project selector, mono uppercase eyebrow, strong editorial page title,
+  sharp bordered cards, orange primary action, and compact status badges.
 - Keep native controls at least 48 points tall and retain Dynamic Type. Visual parity
   does not justify copying inaccessible web sizing or contrast.
 - Reuse the RailCommand rail mark. Do not introduce an unrelated Expo or mobile-only
@@ -23,7 +23,7 @@ not a generic Expo starter or a separate mobile brand.
 | Web surface | Native route | Current parity state | Offline classification |
 | --- | --- | --- | --- |
 | Sign in | `/sign-in` | Shared brand, wording, hierarchy, fields, primary action, recovery action, and US-access treatment aligned | Online-only; failed requests remain recoverable |
-| Dashboard | `/(tabs)` | Project-control header, project title/status, KPI-card language, quick action, and module hierarchy aligned for the scoped field data | Cached project/log/team data is offline read-only; new logs are offline draft/queue |
+| Dashboard | `/(tabs)` | Measured white utility bar/navy project control, breadcrumb/title/status, six-card two-column KPI composition, recent activity, and quick actions aligned; unsupported counts remain visibly unavailable instead of fabricated | Cached project/log/team data is offline read-only; new logs are offline draft/queue |
 | Daily logs list/detail | `/(tabs)/logs`, `/daily-log/[id]` | Project header, page title/status, cached-record notice, web-style record cards, weather metadata, and detail sections aligned for the available mobile data | Offline read-only |
 | New daily log | `/daily-log/new` | Durable workflow uses the web report-details, weather, field-activity, safety, evidence, and autosave hierarchy; richer personnel/equipment/work-item fields require separate mobile contracts | Offline draft/queue |
 | Project team | `/team` | Project header, cached-state notice, roster heading, member cards, initials, email, and role treatment aligned | Offline read-only |
@@ -50,6 +50,25 @@ Full route-by-route parity is product work, not store metadata work. It must con
 before release-candidate sign-off, but it must not weaken the accepted offline or
 security invariants and must not invent dead controls for modules whose mobile API and
 workflow do not yet exist.
+
+## Measured signed-in reference — 2026-08-29
+
+The signed-in production web shell was inspected read-only in Safari Responsive
+Design Mode at 390 × 844, 768 × 1024, and desktop width. No record was created,
+edited, submitted, or downloaded during this inspection.
+
+- Both measured phone and tablet widths retain the mobile shell: full-width 66-pixel
+  utility bar, navy 36-pixel project selector, two-column KPI cards, and fixed
+  Dashboard / Submittals / RFIs / Logs / More navigation.
+- The dashboard content uses 12-pixel phone gutters, a breadcrumb above the orange
+  command eyebrow, a 28-pixel project title, a divider, and six 148-pixel KPI cards.
+- Cards use the warm paper surface, one-pixel neutral border, two-pixel corner radius,
+  and restrained three-pixel offset shadow from the web command-shell stylesheet.
+- The desktop-only dark sidebar appears only beyond the measured tablet shell.
+- Native data remains truthful: Budget, Schedule, Submittal, RFI, and Punch List KPI
+  positions preserve the web composition but say that their data/workflow is on web
+  or online-only. Daily Logs shows the real cached mobile count. No synthetic count or
+  dead record action is introduced for visual parity.
 
 ## Acceptance for each later screen
 

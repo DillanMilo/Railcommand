@@ -19,7 +19,7 @@ export default function SyncScreen() {
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const problemCount = syncRows.filter((row) => row.state === 'failed' || row.state === 'conflicted').length;
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="DEVICE OUTBOX / FIELD SYNCHRONIZATION" title="Sync Center"
       badge={queuedRows.length ? `${queuedRows.length} PENDING` : 'CLEAR'} detail="Review device work, retry failures, and confirm exactly-once delivery." />
     <View style={styles.metrics}>

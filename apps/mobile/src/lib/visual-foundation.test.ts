@@ -102,10 +102,27 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.match(signIn, /SECURE PROJECT ACCESS/);
     assert.match(signIn, /Welcome back/);
     assert.match(signIn, /Sign in to continue to your projects/);
-    assert.match(dashboard, /PROJECT CONTROL \/ FIELD OVERVIEW/);
-    assert.match(dashboard, /Submittals.*RFIs.*Punch list.*Safety.*Documents.*Schedule/s);
-    assert.match(dashboard, /ONLINE-ONLY/);
+    assert.match(dashboard, /PROJECT CONTROL \/ LIVE OVERVIEW/);
+    assert.match(dashboard, /label="BUDGET"/);
+    assert.match(dashboard, /label="SCHEDULE"/);
+    assert.match(dashboard, /label="SUBMITTALS"/);
+    assert.match(dashboard, /label="OPEN RFIS"/);
+    assert.match(dashboard, /label="PUNCH LIST"/);
+    assert.match(dashboard, /label="DAILY LOGS"/);
+    assert.match(dashboard, /Online-only in this field release/);
     assert.match(tabs, /title: 'Dashboard'/);
+  });
+
+  it('matches the measured web phone and tablet shell proportions', () => {
+    const ui = source('../components/ui.tsx');
+    const dashboard = source('../app/(tabs)/index.tsx');
+    const tabs = source('../app/(tabs)/_layout.tsx');
+    assert.match(ui, /header: \{[\s\S]*?minHeight: 66/);
+    assert.match(ui, /projectControl: \{[\s\S]*?minHeight: 36/);
+    assert.match(ui, /breadcrumbRoot/);
+    assert.match(ui, /metricTile: \{[\s\S]*?width: '48%'[\s\S]*?minHeight: 148/);
+    assert.match(dashboard, /metrics: \{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 \}/);
+    assert.match(tabs, /bar: \{ minHeight: 64/);
   });
 
   it('reuses the web-style hierarchy across every implemented field workflow', () => {
@@ -130,7 +147,7 @@ describe('Phase 5 RailCommand visual foundation', () => {
   it('caps decorative brand typography while leaving field content available to Dynamic Type', () => {
     const ui = source('../components/ui.tsx');
     assert.match(ui, /maxFontSizeMultiplier=\{1\.5\}[^>]*style=\{styles\.eyebrow\}/s);
-    assert.match(ui, /maxFontSizeMultiplier=\{1\.4\}[^>]*numberOfLines=\{2\}[^>]*style=\{styles\.title\}/s);
+    assert.match(ui, /maxFontSizeMultiplier=\{1\.4\}[^>]*numberOfLines=\{1\}[^>]*style=\{styles\.title\}/s);
     assert.doesNotMatch(ui, /<TextInput[^>]*allowFontScaling=\{false\}/s);
   });
 
@@ -141,7 +158,7 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.match(ui, /button: \{[\s\S]*?minHeight: 52/);
     assert.match(ui, /secondary: \{[\s\S]*?minHeight: 48/);
     assert.match(ui, /input: \{[\s\S]*?minHeight: 50/);
-    assert.match(tabs, /item: \{ minHeight: 54 \}/);
+    assert.match(tabs, /item: \{ minHeight: 56 \}/);
     assert.doesNotMatch(mobileSources, /Animated|withTiming|withSpring|react-native-reanimated/);
   });
 

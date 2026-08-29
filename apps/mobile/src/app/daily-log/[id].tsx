@@ -12,7 +12,7 @@ export default function DailyLogDetailScreen() {
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const displayDate = log ? new Date(`${log.logDate}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }) : 'Daily Log';
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="FIELD RECORD / DAILY LOG" title={displayDate}
       badge={log ? 'READ ONLY' : undefined} detail="Synchronized project record cached for field reference." />
     <SecondaryButton title="Back to logs" onPress={() => router.back()} />

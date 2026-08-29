@@ -10,7 +10,7 @@ export default function MoreScreen() {
   const { activeProjectId, bootstrap, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="RAILCOMMAND / MORE" title="More" detail="Device operations, project reference data, profile, privacy, and deferred web modules." />
     <View style={styles.links}>
       <Link href="/(tabs)/sync" asChild><Pressable accessibilityRole="link" style={styles.link}><Text style={styles.linkTitle}>Sync Center</Text><Text style={styles.linkDetail}>Review pending, failed, and synchronized device work</Text><Text style={styles.open}>OPEN</Text></Pressable></Link>

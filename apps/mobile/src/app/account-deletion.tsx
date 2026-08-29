@@ -150,7 +150,7 @@ export default function AccountDeletionScreen() {
       : 'Deletion request pending';
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="SETTINGS / PRIVACY CONTROL" title="Delete Account" badge="30-DAY RECOVERY"
       detail="Review organization records, device work, identity verification, and the recovery period before submitting." />
     <StatusBanner tone={!online ? 'warning' : activeRequest?.status === 'failed' ? 'danger' : 'neutral'}

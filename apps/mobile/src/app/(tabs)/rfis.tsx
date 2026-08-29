@@ -7,7 +7,7 @@ export default function RfisScreen() {
   const { activeProjectId, bootstrap, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="PROJECT CONTROL / RFIS" title="RFIs" badge="WEB WORKFLOW"
       detail="Keep project questions, assignments, due dates, responses, and status history in one controlled record." />
     <StatusBanner tone={online ? 'neutral' : 'warning'}

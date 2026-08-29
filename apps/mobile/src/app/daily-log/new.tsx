@@ -133,7 +133,7 @@ export default function NewDailyLogScreen() {
 
   if (!draft || !project) return <Screen><BrandHeader title="New daily log" /><Card><Text style={uiStyles.muted}>{project ? status : 'Select an editable project before creating a daily log.'}</Text></Card><SecondaryButton title="Back" onPress={() => router.back()} /></Screen>;
   return <Screen>
-    <BrandHeader eyebrow="ACTIVE PROJECT" title={project.name} right={<StatusPill online={online} />} />
+    <BrandHeader title={project.name} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="FIELD RECORD / DAILY LOG" title="New Daily Log" badge="AUTOSAVED"
       detail="Capture today’s project activity. Every field remains on this device until synchronization succeeds." />
     <SecondaryButton title="Back to logs" onPress={() => router.back()} />

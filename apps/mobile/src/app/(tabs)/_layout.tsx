@@ -34,8 +34,8 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  bar: { minHeight: 68, paddingTop: 7, paddingBottom: 7, backgroundColor: colors.paper, borderTopWidth: 1, borderTopColor: colors.line, shadowColor: colors.ink, shadowOpacity: 0.08, shadowRadius: 0, shadowOffset: { width: 0, height: -2 }, elevation: 5 },
-  item: { minHeight: 54 },
-  label: { fontFamily: fonts.bodyBold, fontSize: 10, lineHeight: 14 },
-  symbol: { width: 22, height: 22 },
+  bar: { minHeight: 64, paddingTop: 6, paddingBottom: 5, backgroundColor: colors.paper, borderTopWidth: 1, borderTopColor: colors.line, shadowOpacity: 0, elevation: 0 },
+  item: { minHeight: 56 },
+  label: { fontFamily: fonts.bodyMedium, fontSize: 10, lineHeight: 13 },
+  symbol: { width: 24, height: 24 },
 });
