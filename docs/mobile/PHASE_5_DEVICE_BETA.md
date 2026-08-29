@@ -267,6 +267,14 @@ remotely or uploaded until separately authorized.
   deletion/invitation/recovery actions remain explicitly online-only. Focused mobile
   tests, Expo lint and TypeScript, repository TypeScript, both native bundled exports,
   and the Webpack production build pass after this slice.
+- The third parity slice aligns the visible native navigation with RailCommand web:
+  Dashboard, Submittals, RFIs, Logs, and More. Sync Center, Project Team, and Account
+  remain functional under More. Submittals and RFIs deliberately render web-aligned
+  module context plus an explicit online-only release boundary; they do not display
+  invented records, dead actions, or a claim that their native workflows exist.
+  Deferred project modules remain non-interactive and clearly labeled online-only.
+  This navigation work changes no draft, outbox, authentication, or production data
+  contract.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped

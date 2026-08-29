@@ -66,8 +66,33 @@ describe('Phase 5 RailCommand visual foundation', () => {
     const tabs = source('../app/(tabs)/_layout.tsx');
     assert.match(ui, /assets\/images\/icon\.png/);
     assert.match(ui, /accessibilityLabel=\{`Connectivity:/);
+    assert.match(tabs, /tabBarAccessibilityLabel: 'Dashboard'/);
+    assert.match(tabs, /tabBarAccessibilityLabel: 'Submittals'/);
+    assert.match(tabs, /tabBarAccessibilityLabel: 'RFIs'/);
     assert.match(tabs, /tabBarAccessibilityLabel: 'Daily logs'/);
-    assert.match(tabs, /tabBarAccessibilityLabel: 'Sync Center'/);
+    assert.match(tabs, /tabBarAccessibilityLabel: 'More RailCommand modules'/);
+  });
+
+  it('matches the web navigation hierarchy without exposing incomplete record controls', () => {
+    const tabs = source('../app/(tabs)/_layout.tsx');
+    const submittals = source('../app/(tabs)/submittals.tsx');
+    const rfis = source('../app/(tabs)/rfis.tsx');
+    const more = source('../app/(tabs)/more.tsx');
+    assert.ok(tabs.indexOf('name="index"') < tabs.indexOf('name="submittals"'));
+    assert.ok(tabs.indexOf('name="submittals"') < tabs.indexOf('name="rfis"'));
+    assert.ok(tabs.indexOf('name="rfis"') < tabs.indexOf('name="logs"'));
+    assert.ok(tabs.indexOf('name="logs"') < tabs.indexOf('name="more"'));
+    assert.match(tabs, /name="sync" options=\{\{ href: null \}\}/);
+    assert.match(tabs, /name="account" options=\{\{ href: null \}\}/);
+    assert.match(submittals, /Online-only in this Release/);
+    assert.match(submittals, /without presenting a dead or incomplete record control/);
+    assert.match(rfis, /Online-only in this Release/);
+    assert.match(rfis, /without claiming that native RFI records are available/);
+    assert.doesNotMatch(`${submittals}\n${rfis}`, /<Pressable|<PrimaryButton|<SecondaryButton/);
+    assert.match(more, /href="\/\(tabs\)\/sync"/);
+    assert.match(more, /href="\/team"/);
+    assert.match(more, /href="\/\(tabs\)\/account"/);
+    assert.match(more, /The field app does not claim full offline project work/);
   });
 
   it('carries the web command-shell hierarchy into native sign-in and dashboard screens', () => {

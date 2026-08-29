@@ -31,8 +31,9 @@ not a generic Expo starter or a separate mobile brand.
 | Profile/privacy/support | `/(tabs)/account` | Identity, session state, device services, support/compliance, and safe-sign-out sections aligned to the web settings hierarchy | Mixed; deletion and remote links are explicitly online-only |
 | Invitation, recovery, and secure callback | `/invitation/[token]`, `/reset-password`, `/auth/callback` | Shared secure-access hierarchy and live verification/recovery status treatment aligned | Online-only; failed requests remain recoverable |
 | Account deletion | `/account-deletion` | Privacy heading, 30-day recovery status, retention explanation, local-work inventory, and identity confirmation aligned | Online-only request; local work is never silently discarded or queued |
-| Submittals | Not yet a native workflow | Named in the native project-module hierarchy without a false working control | Online-only/unavailable in the scoped field release |
-| RFIs | Not yet a native workflow | Named in the native project-module hierarchy without a false working control | Online-only/unavailable in the scoped field release |
+| Submittals | `/(tabs)/submittals` | Web-aligned module heading and release-status explanation; no false record list, count, or action is shown | Online-only/unavailable in the scoped field release |
+| RFIs | `/(tabs)/rfis` | Web-aligned module heading and release-status explanation; no false record list, count, or action is shown | Online-only/unavailable in the scoped field release |
+| More/navigation | `/(tabs)/more` | The visible native navigation now mirrors the web priority order: Dashboard, Submittals, RFIs, Logs, More. Functional Sync Center, Team, and Account routes remain available under More | Mixed: local Sync Center is offline-capable, Team is cached read-only, Account remote actions are explicitly online-only |
 | Punch list, safety, QC/QA, documents, photos, reports, schedule | Not yet native workflows | Preserve web information architecture; implement only with real data endpoints and complete states | Online-only/unavailable until separately implemented |
 | Administration, billing, EarthCam admin, RailBot voice | Intentionally deferred | Must stay clearly unavailable in the field release | Online-only/unavailable |
 
@@ -40,9 +41,10 @@ not a generic Expo starter or a separate mobile brand.
 
 Phase 5 proves the shared native shell, accessibility/security behavior, and physical
 device reliability. The implemented parity slices now cover sign-in, dashboard,
-top-level navigation labeling, daily-log list/form/detail, team, Sync Center, account,
-account deletion, invitation, recovery, callback, and the shared components later
-screens inherit.
+the Dashboard/Submittals/RFIs/Logs/More navigation structure, daily-log
+list/form/detail, team, Sync Center, account, account deletion, invitation, recovery,
+callback, and the shared components later screens inherit. Submittals and RFIs are
+honest information routes in this release, not simulated record workflows.
 
 Full route-by-route parity is product work, not store metadata work. It must continue
 before release-candidate sign-off, but it must not weaken the accepted offline or
