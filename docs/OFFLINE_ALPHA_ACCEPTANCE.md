@@ -66,6 +66,7 @@ emulation is useful layout coverage but is not physical-device evidence.
 - Offline edits: add `updated_at` or server-version baselines and an explicit
   conflict-resolution workflow before permitting queued edits.
 - Safety and QC reports: extend after daily-log, punch-list, and RFI acceptance.
-- Documents, scheduling, RailBot, EarthCam, and administration remain
-  online-only initially and must preserve any entered input if connectivity is
-  lost.
+- Documents, scheduling, RailBot, EarthCam live video/administration, and other
+  deferred mutations remain online-only and must preserve any entered input if
+  connectivity is lost. Project-authorized EarthCam feed names may be cached for
+  offline reference, but the app never presents cached footage as live.

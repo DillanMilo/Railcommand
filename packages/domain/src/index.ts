@@ -16,6 +16,48 @@ export interface MobileProject {
   role: ProjectRole | 'admin';
   canEdit: boolean;
   updatedAt: string;
+  startDate?: string;
+  targetEndDate?: string;
+  budgetTotal?: number;
+  budgetSpent?: number;
+}
+
+export interface MobileSubmittal {
+  id: string;
+  projectId: string;
+  number: string;
+  title: string;
+  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'conditional' | 'rejected';
+  dueDate: string;
+  createdAt: string;
+}
+
+export interface MobileRfi {
+  id: string;
+  projectId: string;
+  number: string;
+  subject: string;
+  status: 'open' | 'answered' | 'closed' | 'overdue';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  dueDate: string;
+  createdAt: string;
+}
+
+export interface MobileEarthCamEmbed {
+  id: string;
+  projectId: string;
+  label: string;
+  url: string;
+  createdAt: string;
+}
+
+export interface MobileDashboardSummary {
+  submittalsTotal: number;
+  submittalsPending: number;
+  openRfis: number;
+  overdueRfis: number;
+  openPunchItems: number;
+  criticalPunchItems: number;
 }
 
 export interface MobileDailyLog {
@@ -43,6 +85,10 @@ export interface MobileBootstrap {
   activeProjectId: string | null;
   dailyLogs: MobileDailyLog[];
   team: MobileTeamMember[];
+  submittals?: MobileSubmittal[];
+  rfis?: MobileRfi[];
+  earthCamEmbeds?: MobileEarthCamEmbed[];
+  dashboard?: MobileDashboardSummary;
   synchronizedAt: string;
 }
 

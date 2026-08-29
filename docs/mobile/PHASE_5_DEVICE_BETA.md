@@ -53,9 +53,9 @@ not add a network dependency or change cached data, drafts, photos, authenticati
 outbox synchronization.
 
 The visual pass covers sign-in, dashboard/project selection, daily logs, Sync
-Center, Account/privacy, invitations, password recovery, supporting cached record
-screens, and honest Submittal/RFI module-status routes. Material visual changes
-require replacement store screenshots before submission.
+Center, Account/privacy, invitations, password recovery, cached Submittal/RFI lists,
+the web-matched nine-item More sheet, and project-authorized EarthCam viewing.
+Material visual changes require replacement store screenshots before submission.
 
 ## Offline classification
 
@@ -69,11 +69,14 @@ reading, transmitting, or changing field data.
 Existing workflow classifications remain:
 
 - cached projects, team, and recent logs: **offline read-only**;
+- cached Submittal/RFI lists and EarthCam feed metadata: **offline read-only**;
 - new daily-log fields, location, and photos: **offline draft/queue**;
 - foreground reconnect synchronization: **offline-capable** with authenticated,
   idempotent server delivery;
 - notification registration, invitation acceptance, password recovery, and
   account deletion: **online-only** with explicit messaging and no silent queue.
+- EarthCam live video, EarthCam administration, and deferred module handoffs:
+  **online-only** with explicit messaging and no silent queue.
 
 Photo attachment hardening is **offline draft/queue** behavior. A selected image is
 given an app-owned UUID path with a whitelisted extension before it enters SQLite,
@@ -295,13 +298,12 @@ remotely or uploaded until separately authorized.
   tests, Expo lint and TypeScript, repository TypeScript, both native bundled exports,
   and the Webpack production build pass after this slice.
 - The third parity slice aligns the visible native navigation with RailCommand web:
-  Dashboard, Submittals, RFIs, Logs, and More. Sync Center, Project Team, and Account
-  remain functional under More. Submittals and RFIs deliberately render web-aligned
-  module context plus an explicit online-only release boundary; they do not display
-  invented records, dead actions, or a claim that their native workflows exist.
-  Deferred project modules remain non-interactive and clearly labeled online-only.
-  This navigation work changes no draft, outbox, authentication, or production data
-  contract.
+  Dashboard, Submittals, RFIs, Logs, and More. Submittal/RFI records now come from the
+  authenticated mobile bootstrap and remain cached read-only; mutation/export actions
+  hand off to the connected web application rather than pretending to be native or
+  offline-capable. The More sheet mirrors the web nine-item grid, with native Team and
+  Cameras routes and explicit online-only handoffs for deferred modules. This work
+  changes no draft, outbox, authentication, or production data contract.
 - The measured parity slice used the user-authorized signed-in Safari session read-only
   at 390 × 844, 768 × 1024, and desktop width. It corrected the shared native shell to
   the web app's white 66-point top utility bar, compact navy project selector,
@@ -309,8 +311,10 @@ remotely or uploaded until separately authorized.
   Actions composition, and 64-point bottom navigation. A staging-only iPhone 17 Pro
   Max simulator build (`io.railcommand.app.staging`, build `500004`) rendered the
   signed-in synthetic project with the same hierarchy and no clipping or horizontal
-  overflow. Unsupported Budget, Schedule, Submittal, RFI, and Punch List values remain
-  shown as unavailable/web-only; Daily Logs uses the real cached count. The subsequent
+  overflow. The follow-up parity implementation replaces placeholder KPI and module
+  content with authenticated staging bootstrap values, cached Submittal/RFI lists,
+  the Daily Logs calendar/list presentation, and a strictly allowlisted EarthCam
+  viewer. Live camera video and every deferred mutation remain online-only. The subsequent
   67-test mobile gate, Expo lint/typecheck, repository TypeScript, iOS/Android staging
   exports, and Webpack production compile all pass. No store upload, production
   deployment, or customer-data change occurred.

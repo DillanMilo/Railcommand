@@ -160,7 +160,7 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(account, /catch \{ setStatus\(`/);
   });
 
-  it('ships a TLS-only native shell without WebView escape hatches or credential logging', () => {
+  it('ships a TLS-only native shell and isolates the approved EarthCam WebView', () => {
     const nativeBoundary = [
       source('../../app.config.ts'),
       source('./api.ts'),
@@ -176,6 +176,16 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.doesNotMatch(nativeBoundary, /NSAllowsArbitraryLoads|usesCleartextTraffic|networkSecurityConfig/);
     assert.doesNotMatch(nativeBoundary, /console\.(?:log|debug|info|warn|error)/);
     assert.match(source('./config-guard.ts'), /protocol !== 'https:'/);
+
+    const cameras = source('../app/cameras.tsx');
+    assert.match(cameras, /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
+    assert.match(cameras, /originWhitelist=\{\['https:\/\/share\.earthcam\.net\/\*'\]\}/);
+    assert.match(cameras, /onShouldStartLoadWithRequest/);
+    assert.match(cameras, /sharedCookiesEnabled=\{false\}/);
+    assert.match(cameras, /thirdPartyCookiesEnabled=\{false\}/);
+    assert.match(cameras, /allowFileAccess=\{false\}/);
+    assert.match(cameras, /mixedContentMode="never"/);
+    assert.doesNotMatch(cameras, /http:\/\//);
   });
 
   it('prevents Android cloud backup from copying private offline field data', () => {

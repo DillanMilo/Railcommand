@@ -13,8 +13,10 @@ foreground location and a photo, then queue the log. If the device is offline, S
 Center shows the daily log and photo as pending. Reconnect and tap **Synchronize Now**;
 exactly one log and one copy of each photo move to synchronized history.
 
-Existing records are read-only offline. Administration, billing, full document or
-schedule editing, EarthCam administration, and RailBot voice are intentionally not
+Existing records are read-only offline. Project-authorized EarthCam share feeds may be
+viewed under **More > Cameras** while connected; feed names remain available offline,
+but live video and EarthCam administration require connectivity. Administration,
+billing, full document or schedule editing, and RailBot voice are intentionally not
 part of this mobile v1.
 
 Account deletion is under **Account > Request account deletion**. It requires an

@@ -23,28 +23,30 @@ not a generic Expo starter or a separate mobile brand.
 | Web surface | Native route | Current parity state | Offline classification |
 | --- | --- | --- | --- |
 | Sign in | `/sign-in` | Shared brand, wording, hierarchy, fields, primary action, recovery action, and US-access treatment aligned | Online-only; failed requests remain recoverable |
-| Dashboard | `/(tabs)` | Measured white utility bar/navy project control, breadcrumb/title/status, six-card two-column KPI composition, recent activity, and quick actions aligned; unsupported counts remain visibly unavailable instead of fabricated | Cached project/log/team data is offline read-only; new logs are offline draft/queue |
-| Daily logs list/detail | `/(tabs)/logs`, `/daily-log/[id]` | Project header, page title/status, cached-record notice, web-style record cards, weather metadata, and detail sections aligned for the available mobile data | Offline read-only |
+| Dashboard | `/(tabs)` | Measured white utility bar/navy project control, breadcrumb/title/status, six-card two-column KPI composition, recent activity, milestones, and quick actions aligned; KPI values come from the authenticated staging bootstrap rather than fabricated fixtures | Cached project/log/team/module summaries are offline read-only; new logs are offline draft/queue |
+| Daily logs list/detail | `/(tabs)/logs`, `/daily-log/[id]` | Project header, web-style New Log action, Calendar/List switcher, month grid, cached record cards, weather metadata, and detail sections aligned for the available mobile data | Offline read-only; new-log navigation opens the offline draft/queue workflow |
 | New daily log | `/daily-log/new` | Durable workflow uses the web report-details, weather, field-activity, safety, evidence, and autosave hierarchy; richer personnel/equipment/work-item fields require separate mobile contracts | Offline draft/queue |
 | Project team | `/team` | Project header, cached-state notice, roster heading, member cards, initials, email, and role treatment aligned | Offline read-only |
 | Sync Center | `/(tabs)/sync` | Native-only operational surface now uses the same project header, page status, KPI, action-card, and activity-row language | Offline-capable status and retry control |
 | Profile/privacy/support | `/(tabs)/account` | Identity, session state, device services, support/compliance, and safe-sign-out sections aligned to the web settings hierarchy | Mixed; deletion and remote links are explicitly online-only |
 | Invitation, recovery, and secure callback | `/invitation/[token]`, `/reset-password`, `/auth/callback` | Shared secure-access hierarchy and live verification/recovery status treatment aligned | Online-only; failed requests remain recoverable |
 | Account deletion | `/account-deletion` | Privacy heading, 30-day recovery status, retention explanation, local-work inventory, and identity confirmation aligned | Online-only request; local work is never silently discarded or queued |
-| Submittals | `/(tabs)/submittals` | Web-aligned module heading and release-status explanation; no false record list, count, or action is shown | Online-only/unavailable in the scoped field release |
-| RFIs | `/(tabs)/rfis` | Web-aligned module heading and release-status explanation; no false record list, count, or action is shown | Online-only/unavailable in the scoped field release |
-| More/navigation | `/(tabs)/more` | The visible native navigation now mirrors the web priority order: Dashboard, Submittals, RFIs, Logs, More. Functional Sync Center, Team, and Account routes remain available under More | Mixed: local Sync Center is offline-capable, Team is cached read-only, Account remote actions are explicitly online-only |
+| Submittals | `/(tabs)/submittals` | Authenticated cached list, count, web-matched filters/search/cards, and connected web create/export handoff | Offline read-only list; create/edit/export remain explicitly online-only and are never queued |
+| RFIs | `/(tabs)/rfis` | Authenticated cached list, count, web-matched filters/search/cards, and connected web create/export handoff | Offline read-only list; create/respond/edit/export remain explicitly online-only and are never queued |
+| More/navigation | `/more` | The visible native navigation mirrors the web priority order and opens the same nine-item bottom sheet. Cameras and Team have native routes; the other deferred modules hand off to the authenticated staging web app when connected | Mixed: Cameras/Team metadata is cached read-only; deferred module navigation is explicitly online-only |
+| EarthCam Cameras | `/cameras` | Project-authorized feed labels plus embedded EarthCam share players, strict HTTPS host allowlist, external-open fallback, and connected web administration handoff | Feed metadata is offline read-only; live video and all administration are online-only and are never represented as cached live footage |
 | Punch list, safety, QC/QA, documents, photos, reports, schedule | Not yet native workflows | Preserve web information architecture; implement only with real data endpoints and complete states | Online-only/unavailable until separately implemented |
-| Administration, billing, EarthCam admin, RailBot voice | Intentionally deferred | Must stay clearly unavailable in the field release | Online-only/unavailable |
+| Administration, billing, EarthCam administration, RailBot voice | Intentionally deferred | Must stay clearly unavailable in the field release; EarthCam viewing does not grant or imply administration | Online-only/unavailable |
 
 ## Phase boundary
 
 Phase 5 proves the shared native shell, accessibility/security behavior, and physical
 device reliability. The implemented parity slices now cover sign-in, dashboard,
-the Dashboard/Submittals/RFIs/Logs/More navigation structure, daily-log
-list/form/detail, team, Sync Center, account, account deletion, invitation, recovery,
-callback, and the shared components later screens inherit. Submittals and RFIs are
-honest information routes in this release, not simulated record workflows.
+the Dashboard/Submittals/RFIs/Logs/More navigation structure, cached Submittal/RFI
+lists, the EarthCam viewer, daily-log list/form/detail, team, Sync Center, account,
+account deletion, invitation, recovery, callback, and the shared components later
+screens inherit. Submittal/RFI mutations and EarthCam administration still hand off
+to the connected web application; they are not simulated native/offline workflows.
 
 Full route-by-route parity is product work, not store metadata work. It must continue
 before release-candidate sign-off, but it must not weaken the accepted offline or
@@ -65,10 +67,11 @@ edited, submitted, or downloaded during this inspection.
 - Cards use the warm paper surface, one-pixel neutral border, two-pixel corner radius,
   and restrained three-pixel offset shadow from the web command-shell stylesheet.
 - The desktop-only dark sidebar appears only beyond the measured tablet shell.
-- Native data remains truthful: Budget, Schedule, Submittal, RFI, and Punch List KPI
-  positions preserve the web composition but say that their data/workflow is on web
-  or online-only. Daily Logs shows the real cached mobile count. No synthetic count or
-  dead record action is introduced for visual parity.
+- Native data remains truthful: Budget, schedule, Submittal, RFI, Punch List, and
+  Daily Log KPI positions use authenticated bootstrap data. Existing module lists are
+  cached read-only; actions that are not native open the connected staging web route
+  or explain the offline boundary. No synthetic count or silently queued mutation is
+  introduced for visual parity.
 
 ## Acceptance for each later screen
 

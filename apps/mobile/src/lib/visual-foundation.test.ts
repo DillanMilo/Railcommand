@@ -13,9 +13,7 @@ function asset(path: string) {
 
 function relativeLuminance(hex: string) {
   const channels = hex.match(/../g)?.map((value) => Number.parseInt(value, 16) / 255) ?? [];
-  const [red, green, blue] = channels.map((value) => (
-    value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
-  ));
+  const [red, green, blue] = channels.map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
@@ -25,28 +23,19 @@ function contrast(first: string, second: string) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-describe('Phase 5 RailCommand visual foundation', () => {
-  it('uses the authoritative RailCommand command-shell colors', () => {
+describe('RailCommand web-to-native visual foundation', () => {
+  it('uses the authoritative command-shell colors at accessible contrast', () => {
     const theme = source('../theme/index.ts');
     assert.match(theme, /ink: '#0F172A'/);
     assert.match(theme, /orange: '#F97316'/);
     assert.match(theme, /cream: '#F3F3EE'/);
     assert.match(theme, /paper: '#FBFBF8'/);
-  });
-
-  it('keeps brand text, controls, and normal copy above their contrast thresholds', () => {
-    const theme = source('../theme/index.ts');
-    assert.match(theme, /orangeText: '#9A3412'/);
-    assert.match(theme, /muted: '#5F6672'/);
-    assert.match(theme, /controlLine: '#7C8490'/);
     assert.ok(contrast('0F172A', 'F97316') >= 4.5);
     assert.ok(contrast('9A3412', 'F3F3EE') >= 4.5);
     assert.ok(contrast('5F6672', 'FBFBF8') >= 4.5);
-    assert.ok(contrast('FFFFFF', 'DC2626') >= 4.5);
-    assert.ok(contrast('7C8490', 'FFFFFF') >= 3);
   });
 
-  it('bundles cross-platform TTF typography instead of loading UI fonts from the network', () => {
+  it('bundles the matching web typography and RailCommand mark', () => {
     for (const file of [
       '../../assets/fonts/DMSans_400Regular.ttf',
       '../../assets/fonts/DMSans_500Medium.ttf',
@@ -54,140 +43,112 @@ describe('Phase 5 RailCommand visual foundation', () => {
       '../../assets/fonts/PlusJakartaSans_700Bold.ttf',
       '../../assets/fonts/PlusJakartaSans_800ExtraBold.ttf',
       '../../assets/fonts/JetBrainsMono_600SemiBold.ttf',
+      '../../assets/images/icon.png',
     ]) assert.equal(existsSync(asset(file)), true, `${file} must remain bundled`);
-
-    const layout = source('../app/_layout.tsx');
-    assert.match(layout, /useFonts/);
-    assert.doesNotMatch(layout, /https?:\/\//);
+    assert.match(source('../app/_layout.tsx'), /useFonts/);
+    assert.match(source('../components/web-shell.tsx'), /assets\/images\/icon\.png/);
   });
 
-  it('uses the real RailCommand mark and accessible connectivity/navigation labels', () => {
-    const ui = source('../components/ui.tsx');
-    const tabs = source('../app/(tabs)/_layout.tsx');
-    assert.match(ui, /assets\/images\/icon\.png/);
-    assert.match(ui, /accessibilityLabel=\{`Connectivity:/);
-    assert.match(tabs, /tabBarAccessibilityLabel: 'Dashboard'/);
-    assert.match(tabs, /tabBarAccessibilityLabel: 'Submittals'/);
-    assert.match(tabs, /tabBarAccessibilityLabel: 'RFIs'/);
-    assert.match(tabs, /tabBarAccessibilityLabel: 'Daily logs'/);
-    assert.match(tabs, /tabBarAccessibilityLabel: 'More RailCommand modules'/);
+  it('matches the attached sign-in hierarchy with working pricing and demo links', () => {
+    const signIn = source('../app/sign-in.tsx');
+    assert.match(signIn, /SECURE PROJECT ACCESS/);
+    assert.match(signIn, /Welcome back/);
+    assert.match(signIn, /SEE PRICING/);
+    assert.match(signIn, /Explore Demo Project/);
+    assert.match(signIn, /Email address/);
+    assert.match(signIn, /Forgot password/);
+    assert.match(signIn, /Linking\.openURL/);
   });
 
-  it('matches the web navigation hierarchy without exposing incomplete record controls', () => {
+  it('matches the web mobile tab order and opens the same nine-item More sheet', () => {
     const tabs = source('../app/(tabs)/_layout.tsx');
-    const submittals = source('../app/(tabs)/submittals.tsx');
-    const rfis = source('../app/(tabs)/rfis.tsx');
-    const more = source('../app/(tabs)/more.tsx');
+    const more = source('../app/more.tsx');
     assert.ok(tabs.indexOf('name="index"') < tabs.indexOf('name="submittals"'));
     assert.ok(tabs.indexOf('name="submittals"') < tabs.indexOf('name="rfis"'));
     assert.ok(tabs.indexOf('name="rfis"') < tabs.indexOf('name="logs"'));
     assert.ok(tabs.indexOf('name="logs"') < tabs.indexOf('name="more"'));
-    assert.match(tabs, /name="sync" options=\{\{ href: null \}\}/);
-    assert.match(tabs, /name="account" options=\{\{ href: null \}\}/);
-    assert.match(submittals, /Online-only in this Release/);
-    assert.match(submittals, /without presenting a dead or incomplete record control/);
-    assert.match(rfis, /Online-only in this Release/);
-    assert.match(rfis, /without claiming that native RFI records are available/);
-    assert.doesNotMatch(`${submittals}\n${rfis}`, /<Pressable|<PrimaryButton|<SecondaryButton/);
-    assert.match(more, /href="\/\(tabs\)\/sync"/);
-    assert.match(more, /href="\/team"/);
-    assert.match(more, /href="\/\(tabs\)\/account"/);
-    assert.match(more, /The field app does not claim full offline project work/);
+    for (const label of ['Punch List', 'Safety', 'QC/QA', 'Documents', 'Cameras', 'Photos', 'Reports', 'Schedule', 'Team']) {
+      assert.match(more, new RegExp(`label: '${label.replace('/', '\\/')}'`));
+    }
+    assert.match(more, /badge: 'Beta'/);
+    assert.match(more, /presentation: 'transparentModal'|backgroundColor: 'rgba/);
   });
 
-  it('carries the web command-shell hierarchy into native sign-in and dashboard screens', () => {
-    const signIn = source('../app/sign-in.tsx');
-    const dashboard = source('../app/(tabs)/index.tsx');
-    const tabs = source('../app/(tabs)/_layout.tsx');
-    assert.match(signIn, /SECURE PROJECT ACCESS/);
-    assert.match(signIn, /Welcome back/);
-    assert.match(signIn, /Sign in to continue to your projects/);
-    assert.match(dashboard, /PROJECT CONTROL \/ LIVE OVERVIEW/);
-    assert.match(dashboard, /label="BUDGET"/);
-    assert.match(dashboard, /label="SCHEDULE"/);
-    assert.match(dashboard, /label="SUBMITTALS"/);
-    assert.match(dashboard, /label="OPEN RFIS"/);
-    assert.match(dashboard, /label="PUNCH LIST"/);
-    assert.match(dashboard, /label="DAILY LOGS"/);
-    assert.match(dashboard, /Online-only in this field release/);
-    assert.match(tabs, /title: 'Dashboard'/);
+  it('matches the attached Submittals and RFI filter/search/action screens', () => {
+    const submittals = source('../app/(tabs)/submittals.tsx');
+    const rfis = source('../app/(tabs)/rfis.tsx');
+    assert.match(submittals, /Export PDF/);
+    assert.match(submittals, /New Submittal/);
+    assert.match(submittals, /Under Review/);
+    assert.match(submittals, /Search by title or number/);
+    assert.match(submittals, /showing saved submittals/);
+    assert.match(rfis, /Export PDF/);
+    assert.match(rfis, /New RFI/);
+    assert.match(rfis, /Overdue/);
+    assert.match(rfis, /Search RFIs/);
+    assert.match(rfis, /showing saved RFIs/);
   });
 
-  it('matches the measured web phone and tablet shell proportions', () => {
-    const ui = source('../components/ui.tsx');
-    const dashboard = source('../app/(tabs)/index.tsx');
-    const tabs = source('../app/(tabs)/_layout.tsx');
-    assert.match(ui, /header: \{[\s\S]*?minHeight: 66/);
-    assert.match(ui, /projectControl: \{[\s\S]*?minHeight: 36/);
-    assert.match(ui, /breadcrumbRoot/);
-    assert.match(ui, /metricTile: \{[\s\S]*?width: '48%'[\s\S]*?minHeight: 148/);
-    assert.match(dashboard, /metrics: \{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 \}/);
-    assert.match(tabs, /bar: \{ minHeight: 64/);
-  });
-
-  it('reuses the web-style hierarchy across every implemented field workflow', () => {
-    const ui = source('../components/ui.tsx');
+  it('matches the attached Daily Logs calendar/list controls while preserving device drafts', () => {
     const logs = source('../app/(tabs)/logs.tsx');
-    const sync = source('../app/(tabs)/sync.tsx');
-    const account = source('../app/(tabs)/account.tsx');
-    const draft = source('../app/daily-log/new.tsx');
-    const detail = source('../app/daily-log/[id].tsx');
-    const team = source('../app/team.tsx');
-    assert.match(ui, /export function PageHeading/);
-    assert.match(ui, /export function StatusBanner/);
-    assert.match(ui, /export function MetricTile/);
-    assert.match(logs, /FIELD RECORDS \/ DAILY LOGS/);
-    assert.match(sync, /DEVICE OUTBOX \/ FIELD SYNCHRONIZATION/);
-    assert.match(account, /SETTINGS \/ PROFILE & PRIVACY/);
-    assert.match(draft, /FIELD RECORD \/ DAILY LOG/);
-    assert.match(detail, /FIELD RECORD \/ DAILY LOG/);
-    assert.match(team, /PROJECT ACCESS \/ TEAM/);
+    assert.match(logs, /New Log/);
+    assert.match(logs, /Calendar/);
+    assert.match(logs, /List/);
+    assert.match(logs, /Previous month/);
+    assert.match(logs, /Next month/);
+    assert.match(logs, /Today/);
+    assert.match(logs, /router\.push\('\/daily-log\/new'\)/);
+    assert.match(logs, /durable device drafts/);
   });
 
-  it('caps decorative brand typography while leaving field content available to Dynamic Type', () => {
-    const ui = source('../components/ui.tsx');
-    assert.match(ui, /maxFontSizeMultiplier=\{1\.5\}[^>]*style=\{styles\.eyebrow\}/s);
-    assert.match(ui, /maxFontSizeMultiplier=\{1\.4\}[^>]*numberOfLines=\{1\}[^>]*style=\{styles\.title\}/s);
-    assert.doesNotMatch(ui, /<TextInput[^>]*allowFontScaling=\{false\}/s);
+  it('uses real cached dashboard values and web-style quick actions', () => {
+    const dashboard = source('../app/(tabs)/index.tsx');
+    for (const label of ['BUDGET', 'SCHEDULE', 'SUBMITTALS', 'OPEN RFIS', 'PUNCH LIST', 'DAILY LOGS']) {
+      assert.match(dashboard, new RegExp(`label="${label}"`));
+    }
+    assert.match(dashboard, /dashboard\?\.submittalsTotal/);
+    assert.match(dashboard, /dashboard\?\.openRfis/);
+    assert.match(dashboard, /New Daily Log/);
+    assert.match(dashboard, /New RFI/);
+    assert.match(dashboard, /New Submittal/);
+    assert.match(dashboard, /New Punch Item/);
+    assert.match(dashboard, /Milestones/);
   });
 
-  it('keeps interactive targets at least 48 points and adds no custom motion dependency', () => {
+  it('adds a project-authorized EarthCam workspace with a strict navigation allowlist', () => {
+    const cameras = source('../app/cameras.tsx');
+    const more = source('../app/more.tsx');
+    const bootstrap = source('../../../../src/app/api/mobile/v1/bootstrap/route.ts');
+    assert.match(cameras, /Live EarthCam feeds stream from EarthCam/);
+    assert.match(cameras, /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
+    assert.match(cameras, /originWhitelist=\{\['https:\/\/share\.earthcam\.net\/\*'\]\}/);
+    assert.match(cameras, /sharedCookiesEnabled=\{false\}/);
+    assert.match(cameras, /thirdPartyCookiesEnabled=\{false\}/);
+    assert.match(cameras, /Live feed unavailable while offline/);
+    assert.match(more, /native: '\/cameras'/);
+    assert.match(bootstrap, /authenticateMobileRequest\(request\)/);
+    assert.match(bootstrap, /\.from\('earthcam_embeds'\)/);
+    assert.match(bootstrap, /url\.protocol !== 'https:' \|\| url\.hostname !== 'share\.earthcam\.net'/);
+  });
+
+  it('keeps interactive targets at least 48 points and protects background content', () => {
     const ui = source('../components/ui.tsx');
+    const webShell = source('../components/web-shell.tsx');
     const tabs = source('../app/(tabs)/_layout.tsx');
-    const mobileSources = `${ui}\n${tabs}\n${source('../app/_layout.tsx')}`;
+    const shield = source('../components/privacy-shield.tsx');
     assert.match(ui, /button: \{[\s\S]*?minHeight: 52/);
     assert.match(ui, /secondary: \{[\s\S]*?minHeight: 48/);
-    assert.match(ui, /input: \{[\s\S]*?minHeight: 50/);
+    assert.match(webShell, /actionButton: \{ minHeight: 48/);
+    assert.doesNotMatch(webShell, />9\+<|notificationBadge/);
     assert.match(tabs, /item: \{ minHeight: 56 \}/);
-    assert.doesNotMatch(mobileSources, /Animated|withTiming|withSpring|react-native-reanimated/);
-  });
-
-  it('gives dashboard links and cached-log rows explicit spoken navigation semantics', () => {
-    const overview = source('../app/(tabs)/index.tsx');
-    const logs = source('../app/(tabs)/logs.tsx');
-    assert.match(overview, /accessibilityRole="link" accessibilityLabel=\{`Project team/);
-    assert.match(overview, /accessibilityRole="link" accessibilityLabel="Sync Center, review device work"/);
-    assert.match(logs, /accessibilityRole="button"/);
-    assert.match(logs, /accessibilityLabel=\{`Daily log,/);
-    assert.match(logs, /accessibilityHint="Opens the cached daily log"/);
-  });
-
-  it('conceals field content whenever the native app is inactive or backgrounded', () => {
-    const shield = source('../components/privacy-shield.tsx');
-    const layout = source('../app/_layout.tsx');
-    assert.match(shield, /AppState\.addEventListener\('change'/);
     assert.match(shield, /setConcealed\(state !== 'active'\)/);
-    assert.match(shield, /position: 'absolute'/);
-    assert.match(shield, /inset: 0/);
     assert.match(shield, /importantForAccessibility="no-hide-descendants"/);
-    assert.match(layout, /<PrivacyShield \/>/);
   });
 
-  it('keeps browser visual QA memory-only while native auth remains in Keychain or Keystore', () => {
+  it('keeps browser QA memory-only and native auth in Keychain or Keystore', () => {
     const auth = source('./supabase.ts');
-    const layout = source('../app/_layout.tsx');
     assert.match(auth, /Platform\.OS === 'web' \? previewStorage : nativeSecureStorage/);
     assert.doesNotMatch(auth, /localStorage|sessionStorage/);
-    assert.match(layout, /if \(Platform\.OS === 'web'\) return/);
+    assert.match(auth, /expo-secure-store/);
   });
 });

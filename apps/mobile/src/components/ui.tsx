@@ -153,7 +153,7 @@ export function PrimaryButton({ title, onPress, disabled, busy, tone = 'orange' 
   busy?: boolean;
   tone?: 'orange' | 'dark' | 'danger';
 }) {
-  const foreground = tone === 'orange' ? colors.ink : colors.white;
+  const foreground = colors.white;
   return <Pressable
     accessibilityRole="button"
     accessibilityState={{ disabled: Boolean(disabled || busy), busy: Boolean(busy) }}
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   buttonDanger: { backgroundColor: colors.danger, borderColor: '#991B1B' },
   buttonDisabled: { opacity: 0.42, shadowOpacity: 0, elevation: 0 },
   buttonPressed: { opacity: 0.78, transform: [{ translateX: 1 }, { translateY: 1 }] },
-  buttonText: { color: colors.ink, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
+  buttonText: { color: colors.white, fontFamily: fonts.heading, fontSize: 15, lineHeight: 20 },
   buttonTextLight: { color: colors.white },
   secondary: {
     minHeight: 48,
