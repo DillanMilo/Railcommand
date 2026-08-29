@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text } from 'react-native';
-import { BrandHeader, Card, Field, PrimaryButton, Screen, uiStyles } from '@/components/ui';
+import { BrandHeader, Card, Field, PageHeading, PrimaryButton, Screen, SectionTitle, StatusBanner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordScreen() {
@@ -17,6 +16,10 @@ export default function ResetPasswordScreen() {
       setMessage('Password update could not reach RailCommand. Check connectivity and try again.');
     } finally { setBusy(false); }
   };
-  return <Screen><BrandHeader eyebrow="ACCOUNT RECOVERY" title="Reset password" /><Card><Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{message}</Text><Field label="New password" value={password} onChangeText={setPassword} secureTextEntry />
-    <PrimaryButton title="Update password" onPress={() => void submit()} busy={busy} disabled={password.length < 8} /></Card></Screen>;
+  return <Screen><BrandHeader eyebrow="RAILCOMMAND SECURITY" title="Account recovery" />
+    <PageHeading eyebrow="SECURE PROJECT ACCESS" title="Reset Password" detail="Choose a new password for your approved organization account." />
+    <StatusBanner tone={message.includes('could not') ? 'danger' : 'neutral'} title="Account recovery" detail={message} />
+    <Card><SectionTitle>New Password</SectionTitle><Field label="New password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" />
+      <PrimaryButton title="Update password" onPress={() => void submit()} busy={busy} disabled={password.length < 8} /></Card>
+  </Screen>;
 }

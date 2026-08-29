@@ -1,16 +1,18 @@
 import * as Crypto from 'expo-crypto';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import type { MobileAccountDeletionResult } from '@railcommand/domain';
 import {
   BrandHeader,
   Card,
   Field,
+  PageHeading,
   PrimaryButton,
   Screen,
   SecondaryButton,
   SectionTitle,
+  StatusBanner,
   StatusPill,
   uiStyles,
 } from '@/components/ui';
@@ -26,7 +28,7 @@ const EMPTY_LOCAL_WORK: LocalWork = { drafts: 0, outbox: 0, photos: 0 };
 
 export default function AccountDeletionScreen() {
   const { session, signOut } = useAuth();
-  const { online } = useMobileData();
+  const { activeProjectId, bootstrap, online } = useMobileData();
   const userId = session?.user.id;
   const [localWork, setLocalWork] = useState<LocalWork>(EMPTY_LOCAL_WORK);
   const [activeRequest, setActiveRequest] = useState<MobileAccountDeletionResult | null>(null);
@@ -146,9 +148,16 @@ export default function AccountDeletionScreen() {
     : activeRequest?.status === 'processing'
       ? 'Deletion processing'
       : 'Deletion request pending';
+  const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   return <Screen>
-    <BrandHeader eyebrow="PRIVACY CONTROL" title="Delete account" right={<StatusPill online={online} />} />
+    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <PageHeading eyebrow="SETTINGS / PRIVACY CONTROL" title="Delete Account" badge="30-DAY RECOVERY"
+      detail="Review organization records, device work, identity verification, and the recovery period before submitting." />
+    <StatusBanner tone={!online ? 'warning' : activeRequest?.status === 'failed' ? 'danger' : 'neutral'}
+      title={!online ? 'Account deletion is online-only' : activeRequest ? requestTitle : 'No request has been submitted'}
+      detail={!online ? 'Account deletion is online-only and is never silently queued.' : status} />
     <Card>
+      <Text style={styles.eyebrow}>RETENTION & RECOVERY</Text>
       <SectionTitle>{activeRequest ? requestTitle : 'Before you continue'}</SectionTitle>
       {activeRequest ? <Text style={uiStyles.muted}>
         Your request is scheduled for {new Date(activeRequest.scheduledFor).toLocaleDateString()}.
@@ -164,8 +173,12 @@ export default function AccountDeletionScreen() {
       </>}
     </Card>
     <Card>
-      <SectionTitle>Work stored on this device</SectionTitle>
-      <Text style={styles.copy}>{localWork.drafts} draft(s) · {localWork.outbox} queued item(s) · {localWork.photos} photo(s)</Text>
+      <Text style={styles.eyebrow}>DEVICE INVENTORY</Text><SectionTitle>Work Stored on This Device</SectionTitle>
+      <View style={styles.metrics}>
+        <View style={styles.metric}><Text style={styles.metricValue}>{localWork.drafts}</Text><Text style={styles.metricLabel}>DRAFTS</Text></View>
+        <View style={styles.metric}><Text style={styles.metricValue}>{localWork.outbox}</Text><Text style={styles.metricLabel}>QUEUED</Text></View>
+        <View style={styles.metric}><Text style={styles.metricValue}>{localWork.photos}</Text><Text style={styles.metricLabel}>PHOTOS</Text></View>
+      </View>
       {localTotal > 0 ? <>
         <Text style={styles.warning}>Nothing will be silently deleted. Synchronize or review this work before requesting deletion.</Text>
         <SecondaryButton title="Review Sync Center" onPress={() => router.push('/(tabs)/sync')} />
@@ -173,7 +186,7 @@ export default function AccountDeletionScreen() {
       </> : <Text style={styles.ready}>This device has no unsynchronized field work.</Text>}
     </Card>
     <Card>
-      <SectionTitle>Confirm your identity</SectionTitle>
+      <Text style={styles.eyebrow}>SECURE ACTION</Text><SectionTitle>Confirm Your Identity</SectionTitle>
       <Field
         label="Current password"
         value={password}
@@ -194,6 +207,11 @@ export default function AccountDeletionScreen() {
 }
 
 const styles = StyleSheet.create({
+  eyebrow: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
+  metrics: { flexDirection: 'row', gap: 8 },
+  metric: { flex: 1, minHeight: 72, justifyContent: 'space-between', padding: 10, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  metricValue: { color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 24, lineHeight: 29 },
+  metricLabel: { color: colors.muted, fontFamily: fonts.mono, fontSize: 7, lineHeight: 10, letterSpacing: 0.8 },
   copy: { color: colors.ink, fontFamily: fonts.body, lineHeight: 20 },
   status: { color: colors.muted, fontFamily: fonts.body, lineHeight: 20 },
   warning: { color: colors.warning, fontFamily: fonts.bodyBold, lineHeight: 20 },

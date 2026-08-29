@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Text } from 'react-native';
-import { BrandHeader, Card, Screen, SecondaryButton, uiStyles } from '@/components/ui';
+import { BrandHeader, Card, PageHeading, Screen, SecondaryButton, StatusBanner, uiStyles } from '@/components/ui';
 import { consumeAuthCallback } from '@/lib/deep-links';
 
 export default function CallbackScreen() {
@@ -49,10 +49,12 @@ export default function CallbackScreen() {
   }, [callbackUrl]);
 
   return <Screen>
-    <BrandHeader eyebrow="SECURE LINK" title="RailCommand" />
+    <BrandHeader eyebrow="RAILCOMMAND SECURITY" title="Secure link" />
+    <PageHeading eyebrow="SECURE PROJECT ACCESS" title="Verifying RailCommand" detail="Checking this invitation or recovery link before opening protected project data." />
+    <StatusBanner tone={error ? 'danger' : 'neutral'} title={error ? 'Link could not be verified' : 'Verification in progress'} detail={error ?? 'Verifying your RailCommand link…'} />
     <Card>
     {!error ? <ActivityIndicator /> : null}
-    <Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{error ?? 'Verifying your RailCommand link…'}</Text>
+    <Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{error ? 'Request a fresh secure link to continue.' : 'This normally takes only a moment.'}</Text>
     {error ? <SecondaryButton title="Request a new reset link" onPress={leaveCallback} /> : null}
     </Card>
   </Screen>;

@@ -83,6 +83,25 @@ describe('Phase 5 RailCommand visual foundation', () => {
     assert.match(tabs, /title: 'Dashboard'/);
   });
 
+  it('reuses the web-style hierarchy across every implemented field workflow', () => {
+    const ui = source('../components/ui.tsx');
+    const logs = source('../app/(tabs)/logs.tsx');
+    const sync = source('../app/(tabs)/sync.tsx');
+    const account = source('../app/(tabs)/account.tsx');
+    const draft = source('../app/daily-log/new.tsx');
+    const detail = source('../app/daily-log/[id].tsx');
+    const team = source('../app/team.tsx');
+    assert.match(ui, /export function PageHeading/);
+    assert.match(ui, /export function StatusBanner/);
+    assert.match(ui, /export function MetricTile/);
+    assert.match(logs, /FIELD RECORDS \/ DAILY LOGS/);
+    assert.match(sync, /DEVICE OUTBOX \/ FIELD SYNCHRONIZATION/);
+    assert.match(account, /SETTINGS \/ PROFILE & PRIVACY/);
+    assert.match(draft, /FIELD RECORD \/ DAILY LOG/);
+    assert.match(detail, /FIELD RECORD \/ DAILY LOG/);
+    assert.match(team, /PROJECT ACCESS \/ TEAM/);
+  });
+
   it('caps decorative brand typography while leaving field content available to Dynamic Type', () => {
     const ui = source('../components/ui.tsx');
     assert.match(ui, /maxFontSizeMultiplier=\{1\.5\}[^>]*style=\{styles\.eyebrow\}/s);

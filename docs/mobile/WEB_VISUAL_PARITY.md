@@ -24,11 +24,13 @@ not a generic Expo starter or a separate mobile brand.
 | --- | --- | --- | --- |
 | Sign in | `/sign-in` | Shared brand, wording, hierarchy, fields, primary action, recovery action, and US-access treatment aligned | Online-only; failed requests remain recoverable |
 | Dashboard | `/(tabs)` | Project-control header, project title/status, KPI-card language, quick action, and module hierarchy aligned for the scoped field data | Cached project/log/team data is offline read-only; new logs are offline draft/queue |
-| Daily logs list/detail | `/(tabs)/logs`, `/daily-log/[id]` | Native field subset exists; detailed row/card parity remains to be completed | Offline read-only |
-| New daily log | `/daily-log/new` | Durable field workflow exists; final web form-section and field-density alignment remains | Offline draft/queue |
-| Project team | `/team` | Native cached member list exists; final web row treatment remains | Offline read-only |
-| Sync Center | `/(tabs)/sync` | Native-only operational surface; uses the shared command-shell visual language | Offline-capable status and retry control |
-| Profile/privacy/support | `/(tabs)/account` | Native field subset exists; final web settings-section parity remains | Mixed; deletion and remote links are explicitly online-only |
+| Daily logs list/detail | `/(tabs)/logs`, `/daily-log/[id]` | Project header, page title/status, cached-record notice, web-style record cards, weather metadata, and detail sections aligned for the available mobile data | Offline read-only |
+| New daily log | `/daily-log/new` | Durable workflow uses the web report-details, weather, field-activity, safety, evidence, and autosave hierarchy; richer personnel/equipment/work-item fields require separate mobile contracts | Offline draft/queue |
+| Project team | `/team` | Project header, cached-state notice, roster heading, member cards, initials, email, and role treatment aligned | Offline read-only |
+| Sync Center | `/(tabs)/sync` | Native-only operational surface now uses the same project header, page status, KPI, action-card, and activity-row language | Offline-capable status and retry control |
+| Profile/privacy/support | `/(tabs)/account` | Identity, session state, device services, support/compliance, and safe-sign-out sections aligned to the web settings hierarchy | Mixed; deletion and remote links are explicitly online-only |
+| Invitation, recovery, and secure callback | `/invitation/[token]`, `/reset-password`, `/auth/callback` | Shared secure-access hierarchy and live verification/recovery status treatment aligned | Online-only; failed requests remain recoverable |
+| Account deletion | `/account-deletion` | Privacy heading, 30-day recovery status, retention explanation, local-work inventory, and identity confirmation aligned | Online-only request; local work is never silently discarded or queued |
 | Submittals | Not yet a native workflow | Named in the native project-module hierarchy without a false working control | Online-only/unavailable in the scoped field release |
 | RFIs | Not yet a native workflow | Named in the native project-module hierarchy without a false working control | Online-only/unavailable in the scoped field release |
 | Punch list, safety, QC/QA, documents, photos, reports, schedule | Not yet native workflows | Preserve web information architecture; implement only with real data endpoints and complete states | Online-only/unavailable until separately implemented |
@@ -37,9 +39,10 @@ not a generic Expo starter or a separate mobile brand.
 ## Phase boundary
 
 Phase 5 proves the shared native shell, accessibility/security behavior, and physical
-device reliability. The first high-impact parity slice covers sign-in, dashboard,
-top-level navigation labeling, and shared components so later screens inherit the
-correct design foundation.
+device reliability. The implemented parity slices now cover sign-in, dashboard,
+top-level navigation labeling, daily-log list/form/detail, team, Sync Center, account,
+account deletion, invitation, recovery, callback, and the shared components later
+screens inherit.
 
 Full route-by-route parity is product work, not store metadata work. It must continue
 before release-candidate sign-off, but it must not weaken the accepted offline or

@@ -64,6 +64,56 @@ export function SectionTitle({ children }: PropsWithChildren) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
+export function PageHeading({ eyebrow, title, detail, badge }: {
+  eyebrow: string;
+  title: string;
+  detail?: string;
+  badge?: string;
+}) {
+  return <View style={styles.pageHeading}>
+    <Text maxFontSizeMultiplier={1.5} style={styles.pageEyebrow}>{eyebrow}</Text>
+    <View style={styles.pageTitleRow}>
+      <Text accessibilityRole="header" maxFontSizeMultiplier={1.5} style={styles.pageTitle}>{title}</Text>
+      {badge ? <Text style={styles.pageBadge}>{badge}</Text> : null}
+    </View>
+    {detail ? <Text style={styles.pageDetail}>{detail}</Text> : null}
+  </View>;
+}
+
+export function StatusBanner({ title, detail, tone = 'neutral' }: {
+  title: string;
+  detail: string;
+  tone?: 'neutral' | 'success' | 'warning' | 'danger';
+}) {
+  return <View
+    accessible
+    accessibilityRole="text"
+    accessibilityLiveRegion="polite"
+    style={[
+      styles.statusBanner,
+      tone === 'success' && styles.statusBannerSuccess,
+      tone === 'warning' && styles.statusBannerWarning,
+      tone === 'danger' && styles.statusBannerDanger,
+    ]}
+  >
+    <Text style={[
+      styles.statusBannerTitle,
+      tone === 'success' && styles.statusBannerTitleSuccess,
+      tone === 'warning' && styles.statusBannerTitleWarning,
+      tone === 'danger' && styles.statusBannerTitleDanger,
+    ]}>{title}</Text>
+    <Text style={styles.statusBannerDetail}>{detail}</Text>
+  </View>;
+}
+
+export function MetricTile({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+  return <View style={styles.metricTile}>
+    <Text style={styles.metricLabel}>{label}</Text>
+    <Text style={styles.metricValue}>{value}</Text>
+    <Text style={styles.metricDetail}>{detail}</Text>
+  </View>;
+}
+
 export function PrimaryButton({ title, onPress, disabled, busy, tone = 'orange' }: {
   title: string;
   onPress(): void;
@@ -184,6 +234,25 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionTitle: { color: colors.ink, fontFamily: fonts.heading, fontSize: 17, lineHeight: 23, letterSpacing: -0.25 },
+  pageHeading: { gap: 7, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+  pageEyebrow: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1.35 },
+  pageTitleRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 },
+  pageTitle: { flexShrink: 1, color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 28, lineHeight: 33, letterSpacing: -1.15 },
+  pageBadge: { color: colors.success, backgroundColor: '#E8F8F1', borderWidth: 1, borderColor: '#9BD8C5', paddingHorizontal: 8, paddingVertical: 5, fontFamily: fonts.mono, fontSize: 8, lineHeight: 11, letterSpacing: 1.1 },
+  pageDetail: { color: colors.muted, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  statusBanner: { gap: 4, padding: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper },
+  statusBannerSuccess: { borderColor: '#9BD8C5', backgroundColor: '#EFFBF7' },
+  statusBannerWarning: { borderColor: '#E8B36F', backgroundColor: '#FFF7E8' },
+  statusBannerDanger: { borderColor: '#F3A6A6', backgroundColor: '#FFF1F1' },
+  statusBannerTitle: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 18 },
+  statusBannerTitleSuccess: { color: colors.success },
+  statusBannerTitleWarning: { color: colors.warning },
+  statusBannerTitleDanger: { color: colors.danger },
+  statusBannerDetail: { color: colors.muted, fontFamily: fonts.body, fontSize: 12, lineHeight: 18 },
+  metricTile: { flex: 1, minHeight: 132, justifyContent: 'space-between', padding: 14, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, shadowColor: colors.ink, shadowOpacity: 0.05, shadowRadius: 0, shadowOffset: { width: 3, height: 3 }, elevation: 1 },
+  metricLabel: { color: colors.muted, fontFamily: fonts.mono, fontSize: 8, lineHeight: 12, letterSpacing: 1.15 },
+  metricValue: { color: colors.ink, fontFamily: fonts.headingHeavy, fontSize: 34, lineHeight: 41, letterSpacing: -1.2 },
+  metricDetail: { color: colors.muted, fontFamily: fonts.body, fontSize: 11, lineHeight: 16 },
   button: {
     minHeight: 52,
     borderWidth: 1,

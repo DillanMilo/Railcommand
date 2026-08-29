@@ -1,8 +1,8 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Linking, StyleSheet, Text } from 'react-native';
-import { BrandHeader, Card, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { BrandHeader, Card, PageHeading, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusBanner, StatusPill, uiStyles } from '@/components/ui';
 import { mobileApi } from '@/lib/api';
 import { mobileConfig } from '@/lib/config';
 import { registerForFieldNotifications } from '@/lib/device';
@@ -14,11 +14,13 @@ import { colors, fonts } from '@/theme';
 export default function AccountScreen() {
   const { qaPush } = useLocalSearchParams<{ qaPush?: string }>();
   const { session, signOut } = useAuth();
-  const { online } = useMobileData();
+  const { activeProjectId, bootstrap, online } = useMobileData();
   const [status, setStatus] = useState('Session credentials are stored in the device Keychain or Keystore.');
   const [busy, setBusy] = useState(false);
   const pushQaRan = useRef(false);
   const userId = session?.user.id;
+  const email = session?.user.email ?? 'Signed-in user';
+  const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
 
   const finishSignOut = async () => {
     if (!userId) return;
@@ -89,25 +91,37 @@ export default function AccountScreen() {
     try { await Linking.openURL(url); }
     catch { setStatus(`${label} could not be opened on this device. Contact support@railcommand.io if the problem continues.`); }
   };
+  const sessionTone = /could not|failed|unavailable/i.test(status) ? 'danger' : online ? 'success' : 'warning';
 
   return <Screen>
-    <BrandHeader eyebrow="PROFILE & PRIVACY" title="Account" right={<StatusPill online={online} />} />
-    <Card><SectionTitle>{session?.user.email ?? 'Signed-in user'}</SectionTitle><Text accessibilityLiveRegion="polite" style={styles.status}>{status}</Text></Card>
-    <Card><SectionTitle>Field notifications</SectionTitle>
+    <BrandHeader eyebrow="ACTIVE PROJECT" title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
+    <PageHeading eyebrow="SETTINGS / PROFILE & PRIVACY" title="Account" detail="Manage this device session, support, privacy, and notifications." />
+    <Card><Text style={styles.eyebrow}>SIGNED-IN USER</Text><View style={styles.identity}>
+      <View style={styles.avatar}><Text style={styles.initial}>{email.charAt(0).toUpperCase()}</Text></View>
+      <View style={{ flex: 1 }}><SectionTitle>{email}</SectionTitle><Text style={uiStyles.muted}>Organization access is verified again when queued work synchronizes.</Text></View>
+    </View></Card>
+    <StatusBanner tone={sessionTone} title={online ? 'Secure device session active' : 'Offline device session'} detail={status} />
+    <Card><Text style={styles.eyebrow}>DEVICE SERVICES</Text><SectionTitle>Field Notifications</SectionTitle>
       <Text style={uiStyles.muted}>RailCommand will ask before enabling alerts. Registration requires connectivity and a physical device; denial leaves the rest of the app usable.</Text>
       <PrimaryButton title="Enable field notifications" disabled={!online} busy={busy} onPress={() => void registerPush()} />
     </Card>
-    <Card><SectionTitle>Help and privacy</SectionTitle>
+    <Card><Text style={styles.eyebrow}>SUPPORT & COMPLIANCE</Text><SectionTitle>Help and Privacy</SectionTitle>
       <SecondaryButton title="Privacy policy" onPress={() => void openExternal('https://railcommand.io/privacy', 'Privacy policy', true)} />
       <SecondaryButton title="Contact support" onPress={() => void openExternal('mailto:support@railcommand.io?subject=RailCommand%20mobile%20support', 'Support email')} />
       <SecondaryButton title="Request account deletion" disabled={busy} onPress={() => router.push('/account-deletion')} />
       {!online ? <Text style={styles.offline}>Deletion requests are online-only and will never be silently queued.</Text> : null}
     </Card>
-    <PrimaryButton title="Safe sign-out" tone="danger" busy={busy} onPress={() => void beginSignOut()} />
+    <Card><Text style={styles.eyebrow}>DEVICE SECURITY</Text><SectionTitle>Safe Sign-out</SectionTitle>
+      <Text style={uiStyles.muted}>RailCommand checks for drafts and queued work before removing this user’s private device database.</Text>
+      <PrimaryButton title="Safe sign-out" tone="danger" busy={busy} onPress={() => void beginSignOut()} />
+    </Card>
   </Screen>;
 }
 
 const styles = StyleSheet.create({
-  status: { color: colors.ink, fontFamily: fonts.body, lineHeight: 20 },
+  eyebrow: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.ink },
+  initial: { color: colors.white, fontFamily: fonts.heading, fontSize: 16 },
   offline: { color: colors.warning, fontFamily: fonts.bodyBold, lineHeight: 19 },
 });

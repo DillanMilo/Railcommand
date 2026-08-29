@@ -102,7 +102,7 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(invitation, /Accepting invitation…/);
     assert.match(invitation, /Invitation accepted\. Opening project…/);
     assert.match(invitation, /refresh\(result\.projectId\)\.catch/);
-    assert.match(invitation, /<Text style=\{styles\.message\}>\{message\}<\/Text>/);
+    assert.match(invitation, /<StatusBanner[^>]*detail=\{message\}/s);
   });
 
   it('rejects an authentication callback that does not contain verifiable credentials', () => {

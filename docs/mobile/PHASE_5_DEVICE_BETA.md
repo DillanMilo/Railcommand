@@ -258,6 +258,15 @@ remotely or uploaded until separately authorized.
   workflows `ONLINE-ONLY`; it does not add dead controls or claim that RFIs,
   submittals, or full project editing are implemented. The route-by-route contract and
   remaining work are tracked in `docs/mobile/WEB_VISUAL_PARITY.md`.
+- The second parity slice applies shared page headings, live status banners, KPI
+  tiles, action cards, and record rows across the daily-log list/form/detail, project
+  team, Sync Center, account, account deletion, invitation, recovery, and secure-link
+  callback screens. The visual refactor preserves the existing data contracts and
+  offline classifications: cached logs/team are read-only, new logs remain a durable
+  draft/outbox workflow, Sync Center remains the foreground delivery path, and
+  deletion/invitation/recovery actions remain explicitly online-only. Focused mobile
+  tests, Expo lint and TypeScript, repository TypeScript, both native bundled exports,
+  and the Webpack production build pass after this slice.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped

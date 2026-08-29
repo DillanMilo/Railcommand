@@ -5,7 +5,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import { BrandHeader, Card, Field, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusPill, uiStyles } from '@/components/ui';
+import { BrandHeader, Card, Field, PageHeading, PrimaryButton, Screen, SecondaryButton, SectionTitle, StatusBanner, StatusPill, uiStyles } from '@/components/ui';
 import { attachCurrentLocation, captureFieldPhoto, confirmHaptic, deleteOwnedFieldPhoto, importFieldPhoto } from '@/lib/device';
 import { mobileConfig } from '@/lib/config';
 import { listExpoPhotos, queueExpoDraft, readExpoDraft, saveExpoDraft, saveExpoPhoto, type ExpoStoredPhoto } from '@/lib/offline-store';
@@ -129,19 +129,29 @@ export default function NewDailyLogScreen() {
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Could not queue this log. The device draft remains saved.'); }
     finally { setBusy(false); }
   };
+  const statusTone = /could not|failed|unavailable|missing|too large/i.test(status) ? 'danger' : online ? 'success' : 'warning';
 
   if (!draft || !project) return <Screen><BrandHeader title="New daily log" /><Card><Text style={uiStyles.muted}>{project ? status : 'Select an editable project before creating a daily log.'}</Text></Card><SecondaryButton title="Back" onPress={() => router.back()} /></Screen>;
   return <Screen>
-    <BrandHeader eyebrow="AUTOSAVED OFFLINE DRAFT" title="New daily log" right={<StatusPill online={online} />} />
+    <BrandHeader eyebrow="ACTIVE PROJECT" title={project.name} right={<StatusPill online={online} />} />
+    <PageHeading eyebrow="FIELD RECORD / DAILY LOG" title="New Daily Log" badge="AUTOSAVED"
+      detail="Capture today’s project activity. Every field remains on this device until synchronization succeeds." />
     <SecondaryButton title="Back to logs" onPress={() => router.back()} />
-    <Card><SectionTitle>{project.name}</SectionTitle><Text style={styles.status}>{status}</Text></Card>
-    <Card>
+    <StatusBanner tone={statusTone}
+      title={online ? 'Device draft ready' : 'Offline draft protected'} detail={status} />
+    <Card><Text style={styles.eyebrow}>REPORT DETAILS</Text><SectionTitle>Log date</SectionTitle>
       <Field label="Log date" value={draft.logDate} onChangeText={(logDate) => update({ logDate })} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+    </Card>
+    <Card><Text style={styles.eyebrow}>WEATHER</Text><SectionTitle>Field conditions</SectionTitle>
       <Field label="Weather conditions" value={draft.weatherConditions} onChangeText={(weatherConditions) => update({ weatherConditions })} placeholder="Clear, 72°F" />
+    </Card>
+    <Card><Text style={styles.eyebrow}>FIELD ACTIVITY</Text><SectionTitle>Work Summary</SectionTitle>
       <Field label="Work summary" multiline value={draft.workSummary} onChangeText={(workSummary) => update({ workSummary })} placeholder="Describe today’s completed work…" />
+    </Card>
+    <Card><Text style={styles.eyebrow}>SAFETY</Text><SectionTitle>Safety Notes</SectionTitle>
       <Field label="Safety notes" multiline value={draft.safetyNotes} onChangeText={(safetyNotes) => update({ safetyNotes })} placeholder="Record observations or incidents…" />
     </Card>
-    <Card><SectionTitle>Field evidence</SectionTitle>
+    <Card><Text style={styles.eyebrow}>ATTACHMENTS & LOCATION</Text><SectionTitle>Field Evidence</SectionTitle>
       <Text style={uiStyles.muted}>RailCommand asks for camera, photo, or precise foreground location access only when you choose the related action. Denying access never removes your draft.</Text>
       <View style={styles.actions}><SecondaryButton title="Capture photo" disabled={busy} onPress={() => void takePhoto('camera')} />
         <SecondaryButton title="Import photo" disabled={busy} onPress={() => void takePhoto('library')} /></View>
@@ -155,7 +165,7 @@ export default function NewDailyLogScreen() {
 }
 
 const styles = StyleSheet.create({
-  status: { color: colors.success, fontFamily: fonts.bodyBold, lineHeight: 20 },
+  eyebrow: { color: colors.orangeText, fontFamily: fonts.mono, fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
   actions: { gap: 10 },
   evidence: { color: colors.ink, fontFamily: fonts.mono, fontSize: 11, lineHeight: 17 },
 });
