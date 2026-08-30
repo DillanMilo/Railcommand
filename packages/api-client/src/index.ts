@@ -7,6 +7,10 @@ import type {
   MobileDailyLogPhotoSyncOperation,
   MobileDailyLogSyncOperation,
   MobileDailyLogSyncResult,
+  MobileEarthCamEmbed,
+  MobileEarthCamEmbedDeleteInput,
+  MobileEarthCamEmbedDeleteResult,
+  MobileEarthCamEmbedInput,
   MobilePushRegistration,
   MobileInvitation,
 } from '@railcommand/domain';
@@ -79,6 +83,20 @@ export class MobileApiClient {
   getBootstrap(projectId?: string): Promise<MobileBootstrap> {
     const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
     return this.request<MobileBootstrap>(`/api/mobile/v1/bootstrap${query}`);
+  }
+
+  saveEarthCamEmbed(input: MobileEarthCamEmbedInput): Promise<MobileEarthCamEmbed> {
+    return this.request<MobileEarthCamEmbed>('/api/mobile/v1/earthcam/embeds', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  deleteEarthCamEmbed(input: MobileEarthCamEmbedDeleteInput): Promise<MobileEarthCamEmbedDeleteResult> {
+    return this.request<MobileEarthCamEmbedDeleteResult>('/api/mobile/v1/earthcam/embeds/delete', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
   }
 
   syncDailyLog(operation: MobileDailyLogSyncOperation): Promise<MobileDailyLogSyncResult> {

@@ -156,4 +156,47 @@ describe('MobileApiClient', () => {
       { path: `/api/mobile/v1/invitations/${'a'.repeat(64)}`, method: 'POST' },
     ]);
   });
+
+  it('uses authenticated JSON routes for EarthCam feed management', async () => {
+    const requests: Array<{ path: string; method: string; body: unknown }> = [];
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com',
+      getAccessToken: async () => 'access-token',
+      fetch: async (input, init) => {
+        const request = new Request(input, init);
+        requests.push({
+          path: new URL(request.url).pathname,
+          method: request.method,
+          body: JSON.parse(await request.text()),
+        });
+        return request.url.endsWith('/delete')
+          ? Response.json({ id: '22222222-2222-4222-8222-222222222222', deleted: true })
+          : Response.json({
+            id: '22222222-2222-4222-8222-222222222222',
+            projectId: '11111111-1111-4111-8111-111111111111',
+            label: 'North Yard',
+            url: 'https://share.earthcam.net/example',
+            createdAt: '2026-08-29T12:00:00Z',
+          });
+      },
+    });
+    await client.saveEarthCamEmbed({
+      projectId: '11111111-1111-4111-8111-111111111111',
+      label: 'North Yard',
+      embedInput: 'https://share.earthcam.net/example',
+    });
+    await client.deleteEarthCamEmbed({
+      projectId: '11111111-1111-4111-8111-111111111111',
+      id: '22222222-2222-4222-8222-222222222222',
+    });
+    assert.deepEqual(requests.map(({ path, method }) => ({ path, method })), [
+      { path: '/api/mobile/v1/earthcam/embeds', method: 'POST' },
+      { path: '/api/mobile/v1/earthcam/embeds/delete', method: 'POST' },
+    ]);
+    assert.deepEqual(requests[0]?.body, {
+      projectId: '11111111-1111-4111-8111-111111111111',
+      label: 'North Yard',
+      embedInput: 'https://share.earthcam.net/example',
+    });
+  });
 });

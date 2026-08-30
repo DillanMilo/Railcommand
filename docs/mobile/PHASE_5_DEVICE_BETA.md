@@ -54,7 +54,8 @@ outbox synchronization.
 
 The visual pass covers sign-in, dashboard/project selection, daily logs, Sync
 Center, Account/privacy, invitations, password recovery, cached Submittal/RFI lists,
-the web-matched nine-item More sheet, and project-authorized EarthCam viewing.
+the web-matched nine-item More sheet, and project-authorized EarthCam viewing and
+feed administration.
 Material visual changes require replacement store screenshots before submission.
 
 ## Offline classification
@@ -75,8 +76,9 @@ Existing workflow classifications remain:
   idempotent server delivery;
 - notification registration, invitation acceptance, password recovery, and
   account deletion: **online-only** with explicit messaging and no silent queue.
-- EarthCam live video, EarthCam administration, and deferred module handoffs:
-  **online-only** with explicit messaging and no silent queue.
+- EarthCam live video, permission-checked feed add/edit/remove, and deferred module
+  handoffs: **online-only** with explicit messaging and no silent queue. If the
+  connection drops while a feed form is open, its fields stay visible for retry.
 
 Photo attachment hardening is **offline draft/queue** behavior. A selected image is
 given an app-owned UUID path with a whitelisted extension before it enters SQLite,
@@ -314,7 +316,9 @@ remotely or uploaded until separately authorized.
   overflow. The follow-up parity implementation replaces placeholder KPI and module
   content with authenticated staging bootstrap values, cached Submittal/RFI lists,
   the Daily Logs calendar/list presentation, and a strictly allowlisted EarthCam
-  viewer. Live camera video and every deferred mutation remain online-only. The subsequent
+  viewer. A follow-up closes the web-parity gap with authenticated, permission-checked
+  native add/edit/remove feed controls. Live camera video and every camera mutation
+  remain online-only and are never queued. The subsequent
   67-test mobile gate, Expo lint/typecheck, repository TypeScript, iOS/Android staging
   exports, and Webpack production compile all pass. No store upload, production
   deployment, or customer-data change occurred.

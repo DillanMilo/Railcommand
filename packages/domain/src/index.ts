@@ -20,6 +20,8 @@ export interface MobileProject {
   targetEndDate?: string;
   budgetTotal?: number;
   budgetSpent?: number;
+  canViewEarthCam?: boolean;
+  canManageEarthCam?: boolean;
 }
 
 export interface MobileSubmittal {
@@ -49,6 +51,23 @@ export interface MobileEarthCamEmbed {
   label: string;
   url: string;
   createdAt: string;
+}
+
+export interface MobileEarthCamEmbedInput {
+  projectId: string;
+  id?: string;
+  label: string;
+  embedInput: string;
+}
+
+export interface MobileEarthCamEmbedDeleteInput {
+  projectId: string;
+  id: string;
+}
+
+export interface MobileEarthCamEmbedDeleteResult {
+  id: string;
+  deleted: true;
 }
 
 export interface MobileDashboardSummary {

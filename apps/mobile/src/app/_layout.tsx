@@ -53,7 +53,6 @@ function Routes() {
       <Stack.Screen name="daily-log/[id]" />
       <Stack.Screen name="projects/[id]" />
       <Stack.Screen name="team" />
-      <Stack.Screen name="cameras" />
       <Stack.Screen name="more" options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
       <Stack.Screen name="account-deletion" />
     </Stack.Protected>

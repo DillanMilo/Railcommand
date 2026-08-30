@@ -54,8 +54,9 @@ Full description: use the Apple description above without the “What’s New”
 ## Claims to avoid
 
 Do not call v1 “full offline project management,” “real-time offline,” “guaranteed
-background sync,” or “available worldwide.” Do not show deferred administration,
-billing, EarthCam administration, RailBot voice, or offline existing-record editing in
-screenshots or metadata. The native Cameras screen may show project-authorized
-EarthCam share feeds, but marketing must not imply that video is available offline or
-that EarthCam administration is included in the native release.
+background sync,” or “available worldwide.” Do not show deferred organization
+administration, billing, RailBot voice, or offline existing-record editing in screenshots
+or metadata. The native Cameras screen may show project-authorized EarthCam share feeds
+and permission-checked feed-link controls, but marketing must not imply that video or
+feed administration is available offline or that RailCommand changes anything inside
+the customer’s EarthCam account.

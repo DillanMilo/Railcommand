@@ -14,8 +14,9 @@ Center shows the daily log and photo as pending. Reconnect and tap **Synchronize
 exactly one log and one copy of each photo move to synchronized history.
 
 Existing records are read-only offline. Project-authorized EarthCam share feeds may be
-viewed under **More > Cameras** while connected; feed names remain available offline,
-but live video and EarthCam administration require connectivity. Administration,
+viewed under **More > Cameras** while connected; authorized roles may also add, edit,
+or remove a share feed while online. Feed names remain available offline, but live
+video and feed administration require connectivity and are never queued. Administration,
 billing, full document or schedule editing, and RailBot voice are intentionally not
 part of this mobile v1.
 

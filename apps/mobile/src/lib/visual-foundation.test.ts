@@ -116,19 +116,36 @@ describe('RailCommand web-to-native visual foundation', () => {
   });
 
   it('adds a project-authorized EarthCam workspace with a strict navigation allowlist', () => {
-    const cameras = source('../app/cameras.tsx');
+    const cameras = source('../app/(tabs)/cameras.tsx');
     const more = source('../app/more.tsx');
     const bootstrap = source('../../../../src/app/api/mobile/v1/bootstrap/route.ts');
+    const saveRoute = source('../../../../src/app/api/mobile/v1/earthcam/embeds/route.ts');
+    const deleteRoute = source('../../../../src/app/api/mobile/v1/earthcam/embeds/delete/route.ts');
     assert.match(cameras, /Live EarthCam feeds stream from EarthCam/);
     assert.match(cameras, /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
     assert.match(cameras, /originWhitelist=\{\['https:\/\/share\.earthcam\.net\/\*'\]\}/);
     assert.match(cameras, /sharedCookiesEnabled=\{false\}/);
     assert.match(cameras, /thirdPartyCookiesEnabled=\{false\}/);
     assert.match(cameras, /Live feed unavailable while offline/);
-    assert.match(more, /native: '\/cameras'/);
+    assert.match(cameras, /Add EarthCam Feed/);
+    assert.match(cameras, /Edit \$\{embed\.label\}/);
+    assert.match(cameras, /Remove \$\{embed\.label\}/);
+    assert.match(cameras, /Your entered label and EarthCam link remain here/);
+    assert.match(cameras, /mobileApi\.saveEarthCamEmbed/);
+    assert.match(cameras, /mobileApi\.deleteEarthCamEmbed/);
+    assert.match(more, /native: '\/\(tabs\)\/cameras'/);
+    assert.match(source('../app/(tabs)/_layout.tsx'), /name="cameras" options=\{\{ href: null \}\}/);
     assert.match(bootstrap, /authenticateMobileRequest\(request\)/);
     assert.match(bootstrap, /\.from\('earthcam_embeds'\)/);
     assert.match(bootstrap, /url\.protocol !== 'https:' \|\| url\.hostname !== 'share\.earthcam\.net'/);
+    assert.match(bootstrap, /canManageEarthCam/);
+    assert.match(saveRoute, /authenticateMobileRequest\(request\)/);
+    assert.match(saveRoute, /canManageMobileEarthCam/);
+    assert.ok(saveRoute.indexOf('canManageMobileEarthCam') < saveRoute.indexOf('createAdminClient()'));
+    assert.match(saveRoute, /\.from\('earthcam_embeds'\)/);
+    assert.match(deleteRoute, /canManageMobileEarthCam/);
+    assert.ok(deleteRoute.indexOf('canManageMobileEarthCam') < deleteRoute.indexOf('createAdminClient()'));
+    assert.match(deleteRoute, /\.delete\(\)/);
   });
 
   it('keeps interactive targets at least 48 points and protects background content', () => {

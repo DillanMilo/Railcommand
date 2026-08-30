@@ -177,7 +177,7 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.doesNotMatch(nativeBoundary, /console\.(?:log|debug|info|warn|error)/);
     assert.match(source('./config-guard.ts'), /protocol !== 'https:'/);
 
-    const cameras = source('../app/cameras.tsx');
+    const cameras = source('../app/(tabs)/cameras.tsx');
     assert.match(cameras, /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
     assert.match(cameras, /originWhitelist=\{\['https:\/\/share\.earthcam\.net\/\*'\]\}/);
     assert.match(cameras, /onShouldStartLoadWithRequest/);

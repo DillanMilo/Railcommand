@@ -30,6 +30,7 @@ export default function TabsLayout() {
     <Tabs.Screen name="more" listeners={{ tabPress: (event) => { event.preventDefault(); router.push('/more' as never); } }} options={{ title: 'More', tabBarAccessibilityLabel: 'More RailCommand modules', tabBarIcon: ({ color }) => <TabIcon name="more" color={color} /> }} />
     <Tabs.Screen name="sync" options={{ href: null }} />
     <Tabs.Screen name="account" options={{ href: null }} />
+    <Tabs.Screen name="cameras" options={{ href: null }} />
   </Tabs>;
 }
 

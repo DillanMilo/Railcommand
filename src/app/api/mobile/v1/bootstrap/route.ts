@@ -6,15 +6,18 @@ import type {
   MobileRfi,
   MobileSubmittal,
   MobileTeamMember,
+  ProjectRole,
 } from '@railcommand/domain';
 import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
+import { ACTIONS, canPerform, canPerformWithProjectEdit } from '@/lib/permissions';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 export const OPTIONS = mobileOptions;
 
 type MembershipRow = {
   project_id: string;
-  project_role: MobileProject['role'];
+  project_role: ProjectRole;
   can_edit: boolean;
   project: {
     id: string;
@@ -65,7 +68,7 @@ export async function GET(request: Request): Promise<Response> {
     const byProject = new Map(rows.map((row) => [row.project_id, row]));
     rows = (projects ?? []).map((project) => byProject.get(project.id) ?? {
       project_id: project.id,
-      project_role: 'admin',
+      project_role: 'manager',
       can_edit: true,
       project,
     }) as MembershipRow[];
@@ -86,6 +89,14 @@ export async function GET(request: Request): Promise<Response> {
       targetEndDate: row.project!.target_end_date ?? undefined,
       budgetTotal: row.project!.budget_total ?? 0,
       budgetSpent: row.project!.budget_spent ?? 0,
+      canViewEarthCam: profile?.role === 'admin'
+        || canPerform(row.project_role, ACTIONS.EARTHCAM_VIEW),
+      canManageEarthCam: profile?.role === 'admin'
+        || canPerformWithProjectEdit(
+          row.project_role,
+          row.can_edit,
+          ACTIONS.EARTHCAM_EMBED_MANAGE,
+        ),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -108,6 +119,7 @@ export async function GET(request: Request): Promise<Response> {
     criticalPunchItems: 0,
   };
   if (activeProjectId) {
+    const earthCamClient = profile?.role === 'admin' ? createAdminClient() : context.supabase;
     const [
       { data: logs, error: logsError },
       { data: members, error: membersError },
@@ -142,7 +154,7 @@ export async function GET(request: Request): Promise<Response> {
         .from('punch_list_items')
         .select('status, priority')
         .eq('project_id', activeProjectId),
-      context.supabase
+      earthCamClient
         .from('earthcam_embeds')
         .select('id, project_id, label, url, created_at')
         .eq('project_id', activeProjectId)

@@ -11,7 +11,7 @@ const modules = [
   { label: 'Safety', path: 'safety', ios: 'exclamationmark.shield', android: 'gpp_maybe' },
   { label: 'QC/QA', path: 'qcqa', ios: 'clipboard', android: 'assignment' },
   { label: 'Documents', path: 'documents', ios: 'folder', android: 'folder' },
-  { label: 'Cameras', path: 'cameras', ios: 'video', android: 'videocam', badge: 'Beta', native: '/cameras' },
+  { label: 'Cameras', path: 'cameras', ios: 'video', android: 'videocam', badge: 'Beta', native: '/(tabs)/cameras' },
   { label: 'Photos', path: 'photos', ios: 'camera', android: 'photo_camera' },
   { label: 'Reports', path: 'weekly-reports', ios: 'doc.text.below.ecg', android: 'analytics' },
   { label: 'Schedule', path: 'schedule', ios: 'chart.bar.xaxis', android: 'format_list_bulleted' },

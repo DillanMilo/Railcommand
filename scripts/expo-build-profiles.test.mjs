@@ -82,5 +82,9 @@ test('local Expo scripts explicitly select the development profile', () => {
 });
 
 test('the test resolves repository paths without depending on the caller cwd', () => {
-  assert.ok(repositoryRoot.endsWith('/railcommand-mobile-phase-4-compliance/'));
+  const repositoryPackage = JSON.parse(
+    readFileSync(new URL('package.json', new URL('../', import.meta.url)), 'utf8'),
+  );
+  assert.ok(repositoryRoot.endsWith('/'));
+  assert.equal(repositoryPackage.name, 'railcommand-temp');
 });

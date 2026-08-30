@@ -34,19 +34,19 @@ not a generic Expo starter or a separate mobile brand.
 | Submittals | `/(tabs)/submittals` | Authenticated cached list, count, web-matched filters/search/cards, and connected web create/export handoff | Offline read-only list; create/edit/export remain explicitly online-only and are never queued |
 | RFIs | `/(tabs)/rfis` | Authenticated cached list, count, web-matched filters/search/cards, and connected web create/export handoff | Offline read-only list; create/respond/edit/export remain explicitly online-only and are never queued |
 | More/navigation | `/more` | The visible native navigation mirrors the web priority order and opens the same nine-item bottom sheet. Cameras and Team have native routes; the other deferred modules hand off to the authenticated staging web app when connected | Mixed: Cameras/Team metadata is cached read-only; deferred module navigation is explicitly online-only |
-| EarthCam Cameras | `/cameras` | Project-authorized feed labels plus embedded EarthCam share players, strict HTTPS host allowlist, external-open fallback, and connected web administration handoff | Feed metadata is offline read-only; live video and all administration are online-only and are never represented as cached live footage |
+| EarthCam Cameras | `/cameras` | Project-authorized feed labels plus embedded EarthCam share players, strict HTTPS host allowlist, external-open fallback, and permission-checked native add/edit/remove controls matching the web workspace | Feed metadata is offline read-only; live video and administration are online-only, an open form preserves its input through connection loss, and mutations are never silently queued |
 | Punch list, safety, QC/QA, documents, photos, reports, schedule | Not yet native workflows | Preserve web information architecture; implement only with real data endpoints and complete states | Online-only/unavailable until separately implemented |
-| Administration, billing, EarthCam administration, RailBot voice | Intentionally deferred | Must stay clearly unavailable in the field release; EarthCam viewing does not grant or imply administration | Online-only/unavailable |
+| Administration, billing, RailBot voice | Intentionally deferred | Must stay clearly unavailable in the field release | Online-only/unavailable |
 
 ## Phase boundary
 
 Phase 5 proves the shared native shell, accessibility/security behavior, and physical
 device reliability. The implemented parity slices now cover sign-in, dashboard,
 the Dashboard/Submittals/RFIs/Logs/More navigation structure, cached Submittal/RFI
-lists, the EarthCam viewer, daily-log list/form/detail, team, Sync Center, account,
+lists, the EarthCam viewer and permission-checked feed controls, daily-log list/form/detail, team, Sync Center, account,
 account deletion, invitation, recovery, callback, and the shared components later
-screens inherit. Submittal/RFI mutations and EarthCam administration still hand off
-to the connected web application; they are not simulated native/offline workflows.
+screens inherit. Submittal/RFI mutations still hand off to the connected web application.
+EarthCam add/edit/remove is native but remains online-only and is never placed in the outbox.
 
 Full route-by-route parity is product work, not store metadata work. It must continue
 before release-candidate sign-off, but it must not weaken the accepted offline or
