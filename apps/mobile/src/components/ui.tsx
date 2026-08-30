@@ -185,20 +185,38 @@ export function SecondaryButton({ title, onPress, disabled }: { title: string; o
   </Pressable>;
 }
 
-export const Field = forwardRef<TextInput, TextInputProps & { label: string }>(function Field(
-  { label, multiline, ...props },
+export const Field = forwardRef<TextInput, TextInputProps & {
+  label: string;
+  labelRight?: ReactNode;
+  leftAccessory?: ReactNode;
+  rightAccessory?: ReactNode;
+}>(function Field(
+  { label, labelRight, leftAccessory, rightAccessory, multiline, style: inputStyle, ...props },
   ref,
 ) {
   return <View style={styles.field}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    <TextInput
-      ref={ref}
-      {...props}
-      multiline={multiline}
-      accessibilityLabel={props.accessibilityLabel ?? label}
-      placeholderTextColor={colors.muted}
-      style={[styles.input, multiline && styles.multiline]}
-    />
+    <View style={styles.fieldLabelRow}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {labelRight}
+    </View>
+    <View style={styles.inputFrame}>
+      <TextInput
+        ref={ref}
+        {...props}
+        multiline={multiline}
+        accessibilityLabel={props.accessibilityLabel ?? label}
+        placeholderTextColor={colors.muted}
+        style={[
+          styles.input,
+          Boolean(leftAccessory) && styles.inputWithLeftAccessory,
+          Boolean(rightAccessory) && styles.inputWithRightAccessory,
+          multiline && styles.multiline,
+          inputStyle,
+        ]}
+      />
+      {leftAccessory ? <View pointerEvents="none" style={styles.inputLeftAccessory}>{leftAccessory}</View> : null}
+      {rightAccessory ? <View style={styles.inputRightAccessory}>{rightAccessory}</View> : null}
+    </View>
   </View>;
 });
 
@@ -343,7 +361,9 @@ const styles = StyleSheet.create({
   },
   secondaryText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20 },
   field: { gap: 7 },
+  fieldLabelRow: { minHeight: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   fieldLabel: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 18 },
+  inputFrame: { position: 'relative' },
   input: {
     minHeight: 50,
     borderWidth: 1,
@@ -356,6 +376,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
   },
+  inputWithLeftAccessory: { paddingLeft: 46 },
+  inputWithRightAccessory: { paddingRight: 52 },
+  inputLeftAccessory: { position: 'absolute', left: 14, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  inputRightAccessory: { position: 'absolute', right: 2, top: 1, bottom: 1, width: 48, alignItems: 'center', justifyContent: 'center' },
   multiline: { minHeight: 112, paddingTop: 13, textAlignVertical: 'top' },
   pill: {
     minHeight: 37,

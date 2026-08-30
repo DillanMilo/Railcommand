@@ -76,6 +76,9 @@ Existing workflow classifications remain:
   idempotent server delivery;
 - notification registration, invitation acceptance, password recovery, and
   account deletion: **online-only** with explicit messaging and no silent queue.
+- email/password and provider sign-in: **online-only**; the entered form remains on
+  screen after a failed request, native sessions remain in Keychain/Keystore, and a
+  provider button is shown only when that environment reports the provider enabled.
 - EarthCam live video, permission-checked feed add/edit/remove, and deferred module
   handoffs: **online-only** with explicit messaging and no silent queue. If the
   connection drops while a feed form is open, its fields stay visible for retry.
@@ -322,6 +325,13 @@ remotely or uploaded until separately authorized.
   67-test mobile gate, Expo lint/typecheck, repository TypeScript, iOS/Android staging
   exports, and Webpack production compile all pass. No store upload, production
   deployment, or customer-data change occurred.
+- A clean iPhone 17 Pro simulator rendered the revised first-launch sign-in screen
+  against the staging-only runtime on 2026-08-29. The render confirms the web logo,
+  byline, command eyebrow, title, mode switch, demo treatment, field icons, password
+  visibility control, remembered-device status, primary action, and pricing footer
+  without automatic keyboard obstruction. Staging's public Auth settings returned
+  Google disabled, so the conditional Google control remained hidden rather than
+  presenting a dead sign-in path.
 
 The v1 picker is verified for standard raster field photos. Thermal/radiometric file
 ingestion is not claimed by this Phase 5 evidence; it requires a separately scoped

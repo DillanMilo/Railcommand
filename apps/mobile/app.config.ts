@@ -28,15 +28,16 @@ const profiles = {
 } as const;
 
 const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
-  const profileName = process.env.EXPO_PUBLIC_BUILD_PROFILE;
-  if (!profileName) {
+  const rawProfileName = process.env.EXPO_PUBLIC_BUILD_PROFILE;
+  if (!rawProfileName) {
     throw new Error(
       'EXPO_PUBLIC_BUILD_PROFILE is required; use development, staging, or production explicitly',
     );
   }
-  if (profileName !== 'development' && profileName !== 'staging' && profileName !== 'production') {
+  if (rawProfileName !== 'development' && rawProfileName !== 'staging' && rawProfileName !== 'production') {
     throw new Error('Invalid Expo build profile');
   }
+  const profileName: 'development' | 'staging' | 'production' = rawProfileName;
   const distributionTarget = process.env.MOBILE_DISTRIBUTION_TARGET;
   if (distributionTarget && distributionTarget !== 'beta') {
     throw new Error('Invalid RailCommand mobile distribution target');

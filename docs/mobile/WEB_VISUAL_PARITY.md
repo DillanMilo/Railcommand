@@ -22,7 +22,7 @@ not a generic Expo starter or a separate mobile brand.
 
 | Web surface | Native route | Current parity state | Offline classification |
 | --- | --- | --- | --- |
-| Sign in | `/sign-in` | Shared brand, wording, hierarchy, fields, primary action, recovery action, and US-access treatment aligned | Online-only; failed requests remain recoverable |
+| Sign in | `/sign-in` | Shared brand, wording, hierarchy, field icons, password visibility, primary action, remembered-device status, recovery action, and pricing treatment aligned. Google sign-in is rendered only when the target Supabase environment publicly reports that provider enabled; staging currently reports it disabled, so no dead OAuth control is shown | Online-only; provider discovery and failed authentication requests remain recoverable and never discard entered credentials |
 | Dashboard | `/(tabs)` | Measured white utility bar/navy project control, breadcrumb/title/status, six-card two-column KPI composition, recent activity, milestones, and quick actions aligned; KPI values come from the authenticated staging bootstrap rather than fabricated fixtures | Cached project/log/team/module summaries are offline read-only; new logs are offline draft/queue |
 | Daily logs list/detail | `/(tabs)/logs`, `/daily-log/[id]` | Project header, web-style New Log action, Calendar/List switcher, month grid, cached record cards, weather metadata, and detail sections aligned for the available mobile data | Offline read-only; new-log navigation opens the offline draft/queue workflow |
 | New daily log | `/daily-log/new` | Durable workflow uses the web report-details, weather, field-activity, safety, evidence, and autosave hierarchy; richer personnel/equipment/work-item fields require separate mobile contracts | Offline draft/queue |
@@ -58,6 +58,12 @@ Full route-by-route parity is product work, not store metadata work. It must con
 before release-candidate sign-off, but it must not weaken the accepted offline or
 security invariants and must not invent dead controls for modules whose mobile API and
 workflow do not yet exist.
+
+The native session is always restored from Keychain/Keystore, so the web checkbox is
+represented as an enabled remembered-device status instead of a misleading toggle.
+This preserves the approved secure session-restoration contract. OAuth provider
+discovery reads only Supabase's public Auth settings; it does not cache credentials or
+add a new offline dependency.
 
 ## Measured signed-in reference — 2026-08-29
 

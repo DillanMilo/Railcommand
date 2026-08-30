@@ -49,14 +49,22 @@ describe('RailCommand web-to-native visual foundation', () => {
     assert.match(source('../components/web-shell.tsx'), /assets\/images\/icon\.png/);
   });
 
-  it('matches the attached sign-in hierarchy with working pricing and demo links', () => {
+  it('matches the attached sign-in hierarchy without exposing an unavailable OAuth control', () => {
     const signIn = source('../app/sign-in.tsx');
+    const auth = source('../providers/auth-provider.tsx');
     assert.match(signIn, /SECURE PROJECT ACCESS/);
     assert.match(signIn, /Welcome back/);
     assert.match(signIn, /SEE PRICING/);
     assert.match(signIn, /Explore Demo Project/);
     assert.match(signIn, /Email address/);
     assert.match(signIn, /Forgot password/);
+    assert.match(signIn, /Show password/);
+    assert.match(signIn, /Remember me/);
+    assert.match(signIn, /Sign In  →/);
+    assert.match(signIn, /googleEnabled \? <>/);
+    assert.match(auth, /auth\/v1\/settings/);
+    assert.match(auth, /settings\?\.external\?\.google === true/);
+    assert.match(auth, /skipBrowserRedirect: true/);
     assert.match(signIn, /Linking\.openURL/);
   });
 
