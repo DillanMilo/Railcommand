@@ -81,7 +81,10 @@ export function createDailyLogDraftRecord(
   existing: DailyLogDraftRecord | null = null,
   now = new Date()
 ): DailyLogDraftRecord {
-  const timestamp = now.toISOString();
+  const previousTimestamp = existing ? Date.parse(existing.updatedAt) : NaN;
+  const timestamp = new Date(Number.isFinite(previousTimestamp)
+    ? Math.max(now.getTime(), previousTimestamp + 1)
+    : now.getTime()).toISOString();
   const clientId = existing?.clientId ?? createClientIdentifier();
   return {
     draftId: getDailyLogDraftId(projectId),
@@ -93,6 +96,21 @@ export function createDailyLogDraftRecord(
     updatedAt: timestamp,
     values,
   };
+}
+
+export function assertDailyLogDraftBaseline(
+  current: DailyLogDraftRecord | null | undefined,
+  expected: DailyLogDraftRecord | null
+): void {
+  const matches = expected
+    ? current?.draftId === expected.draftId
+      && current.projectId === expected.projectId
+      && current.clientId === expected.clientId
+      && current.updatedAt === expected.updatedAt
+    : !current;
+  if (!matches) {
+    throw new Error('This draft changed or was queued in another tab. Keep this page open and review the saved draft before retrying.');
+  }
 }
 
 export async function readDailyLogDraft(
@@ -135,18 +153,29 @@ export async function writeDailyLogDraft(
   const record = createDailyLogDraftRecord(projectId, values, existing);
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(OFFLINE_STORES.drafts, 'readwrite');
-    transaction.objectStore(OFFLINE_STORES.drafts).put(record);
+    let writeError: unknown;
     transaction.oncomplete = () => {
       database.close();
       resolve(record);
     };
     transaction.onerror = () => {
       database.close();
-      reject(transaction.error ?? new Error('Could not save the daily-log draft'));
+      reject(writeError ?? transaction.error ?? new Error('Could not save the daily-log draft'));
     };
     transaction.onabort = () => {
       database.close();
-      reject(transaction.error ?? new Error('Daily-log draft save was interrupted'));
+      reject(writeError ?? transaction.error ?? new Error('Daily-log draft save was interrupted'));
+    };
+    const store = transaction.objectStore(OFFLINE_STORES.drafts);
+    const request = store.get(record.draftId);
+    request.onsuccess = () => {
+      try {
+        assertDailyLogDraftBaseline(request.result as DailyLogDraftRecord | undefined, existing);
+        store.put(record);
+      } catch (error) {
+        writeError = error;
+        transaction.abort();
+      }
     };
   });
 }

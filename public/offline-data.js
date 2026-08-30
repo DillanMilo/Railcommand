@@ -8,6 +8,40 @@
   var DRAFTS_STORE = 'drafts';
   var OUTBOX_STORE = 'outbox';
   var DAILY_LOG_DRAFT_KIND = 'daily_log_create';
+  var activeDatabaseName = null;
+  var scopeLocked = false;
+
+  function currentDatabaseName() {
+    try {
+      var scope = localStorage.getItem(SCOPE_KEY);
+      return scope && scope.indexOf(DATABASE_PREFIX) === 0 ? scope : null;
+    } catch { return null; }
+  }
+
+  function hasActiveScope(databaseName) {
+    return !scopeLocked && currentDatabaseName() === databaseName;
+  }
+
+  function lockChangedScope() {
+    if (!activeDatabaseName || hasActiveScope(activeDatabaseName)) return;
+    scopeLocked = true;
+    // Hide, rather than discard, any in-memory input. Pending saves may finish
+    // only in the original existing database; no callback may recreate it.
+    var container = byId('offline-project-data');
+    container.hidden = true;
+    container.querySelectorAll('input, textarea, select, button').forEach(function (control) {
+      control.disabled = true;
+    });
+    byId('offline-neutral-message').hidden = false;
+    renderStatus('Your session changed. This offline page is locked. Keep it open if a draft was not saved; sign in to the same account to recover saved work.');
+  }
+
+  function requireActiveScope(databaseName) {
+    if (!hasActiveScope(databaseName)) {
+      lockChangedScope();
+      throw new Error('Your session changed. Sign in to the same account before queueing this draft.');
+    }
+  }
 
   function byId(id) {
     return document.getElementById(id);
@@ -31,6 +65,9 @@
   function openDatabase(name) {
     return new Promise(function (resolve, reject) {
       var request = indexedDB.open(name);
+      // The neutral reader must never recreate a database removed by confirmed
+      // sign-out. Schema creation belongs to authenticated app initialization.
+      request.onupgradeneeded = function () { request.transaction.abort(); };
       request.onsuccess = function () { resolve(request.result); };
       request.onerror = function () { reject(request.error || new Error('Could not open saved data')); };
     });
@@ -49,21 +86,39 @@
     });
   }
 
-  function writeRecord(database, storeName, value) {
+  function assertDraftBaseline(stored, draft, expectedUpdatedAt) {
+    if (!stored || stored.clientId !== draft.clientId || stored.updatedAt !== expectedUpdatedAt) {
+      throw new Error('This draft changed in another tab. Keep this page open to preserve your input and review the latest saved draft.');
+    }
+  }
+
+  function writeRecord(database, storeName, value, expectedUpdatedAt) {
     return new Promise(function (resolve, reject) {
       if (!database.objectStoreNames.contains(storeName)) {
         reject(new Error('Saved draft storage is unavailable'));
         return;
       }
       var transaction = database.transaction(storeName, 'readwrite');
-      transaction.objectStore(storeName).put(value);
+      var writeError = null;
       transaction.oncomplete = function () { resolve(); };
-      transaction.onerror = function () { reject(transaction.error || new Error('Could not save draft')); };
-      transaction.onabort = function () { reject(transaction.error || new Error('Draft save was interrupted')); };
+      transaction.onerror = function () { reject(writeError || transaction.error || new Error('Could not save draft')); };
+      transaction.onabort = function () { reject(writeError || transaction.error || new Error('Draft save was interrupted')); };
+      var store = transaction.objectStore(storeName);
+      var request = store.get(value.draftId);
+      request.onsuccess = function () {
+        try {
+          assertDraftBaseline(request.result, value, expectedUpdatedAt);
+          store.put(value);
+        } catch (error) {
+          writeError = error;
+          transaction.abort();
+        }
+      };
     });
   }
 
   function queueDailyLogDraft(databaseName, draft) {
+    requireActiveScope(databaseName);
     var timestamp = new Date().toISOString();
     var values = draft.values;
     var operation = {
@@ -96,6 +151,11 @@
 
     return openDatabase(databaseName).then(function (database) {
       return new Promise(function (resolve, reject) {
+        if (!hasActiveScope(databaseName)) {
+          database.close();
+          reject(new Error('Your session changed. The saved draft has not been queued.'));
+          return;
+        }
         if (!database.objectStoreNames.contains(OUTBOX_STORE)) {
           database.close();
           reject(new Error('Synchronization storage is unavailable'));
@@ -112,22 +172,25 @@
           database.close();
           reject(writeError || transaction.error || new Error('Daily-log queue was interrupted'));
         };
-        try {
-          transaction.objectStore(OUTBOX_STORE).add(operation);
-          transaction.objectStore(DRAFTS_STORE).delete(draft.draftId);
-        } catch (error) {
-          writeError = error;
-          transaction.abort();
-        }
+        var drafts = transaction.objectStore(DRAFTS_STORE);
+        var readDraft = drafts.get(draft.draftId);
+        readDraft.onsuccess = function () {
+          try {
+            requireActiveScope(databaseName);
+            assertDraftBaseline(readDraft.result, draft, draft.updatedAt);
+            transaction.objectStore(OUTBOX_STORE).add(operation);
+            drafts.delete(draft.draftId);
+          } catch (error) {
+            writeError = error;
+            transaction.abort();
+          }
+        };
       });
     });
   }
 
   async function resolveDatabaseName() {
-    var storedScope = null;
-    try { storedScope = localStorage.getItem(SCOPE_KEY); } catch {}
-    if (storedScope && storedScope.indexOf(DATABASE_PREFIX) === 0) return storedScope;
-    return null;
+    return currentDatabaseName();
   }
 
   function recordIsUsable(record) {
@@ -334,16 +397,23 @@
 
     function saveNow() {
       if (draftQueued) return saveChain;
-      draft.updatedAt = new Date().toISOString();
       savedNote.textContent = 'Saving on this device…';
       saveChain = saveChain.then(function () { return openDatabase(database.name); }).then(function (writableDatabase) {
-        return writeRecord(writableDatabase, DRAFTS_STORE, draft).finally(function () {
+        // Snapshot the values and compare the stored baseline in one transaction.
+        // A stale tab must not overwrite newer input or resurrect a queued draft.
+        var snapshot = JSON.parse(JSON.stringify(draft));
+        snapshot.updatedAt = new Date(Math.max(Date.now(), Date.parse(draft.updatedAt) + 1)).toISOString();
+        return writeRecord(writableDatabase, DRAFTS_STORE, snapshot, draft.updatedAt).then(function () {
+          draft.updatedAt = snapshot.updatedAt;
+        }).finally(function () {
           writableDatabase.close();
         });
       }).then(function () {
           savedNote.textContent = 'Saved on this device';
-        }).catch(function () {
-          savedNote.textContent = 'Could not save on this device — keep this page open';
+        }).catch(function (error) {
+          savedNote.textContent = error && error.message
+            ? error.message + ' Keep this page open.'
+            : 'Could not save on this device — keep this page open';
         });
       return saveChain;
     }
@@ -355,6 +425,14 @@
     }
 
     window.addEventListener('pagehide', saveNow);
+    window.addEventListener('storage', function (event) {
+      if ((event.key === SCOPE_KEY || event.key === null) && !hasActiveScope(database.name)) {
+        if (saveTimer) window.clearTimeout(saveTimer);
+        // Preserve the last keystrokes on involuntary session loss. Opening a
+        // deleted database is rejected, so confirmed sign-out cannot be undone.
+        saveNow();
+      }
+    });
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') saveNow();
     });
@@ -497,9 +575,13 @@
       return;
     }
 
+    activeDatabaseName = databaseName;
+    if (!hasActiveScope(databaseName)) { lockChangedScope(); return; }
+
     var database = await openDatabase(databaseName);
     try {
       var activeProjectMetadata = await readRecord(database, METADATA_STORE, 'active_project_id');
+      if (!hasActiveScope(databaseName)) { lockChangedScope(); return; }
       var pathMatch = location.pathname.match(/^\/projects\/([^/]+)(?:\/daily-logs(?:\/([^/]+))?)?/);
       var requestedProjectId = pathMatch ? decodeURIComponent(pathMatch[1]) : null;
       var requestedLogId = pathMatch && pathMatch[2] ? decodeURIComponent(pathMatch[2]) : null;
@@ -518,6 +600,7 @@
         ]);
         var savedProject = draftRecords[0];
         var draft = draftRecords[1];
+        if (!hasActiveScope(databaseName)) { lockChangedScope(); return; }
         if (!draft || draft.kind !== DAILY_LOG_DRAFT_KIND || draft.projectId !== projectId) {
           renderStatus('No unfinished daily-log draft is saved for this project. Reconnect to start one.');
           return;
@@ -543,6 +626,7 @@
       var projectRecord = records[0];
       var logsRecord = records[1];
       var dailyLogDraft = records[2];
+      if (!hasActiveScope(databaseName)) { lockChangedScope(); return; }
       if (!recordIsUsable(projectRecord) || !recordIsUsable(logsRecord)) {
         renderStatus('The saved project copy is missing or has expired. Reconnect to refresh it.');
         return;
@@ -576,6 +660,13 @@
       database.close();
     }
   }
+
+  window.addEventListener('storage', function (event) {
+    if (event.key === SCOPE_KEY || event.key === null) lockChangedScope();
+  });
+  window.addEventListener('focus', lockChangedScope);
+  window.addEventListener('pageshow', lockChangedScope);
+  document.addEventListener('visibilitychange', lockChangedScope);
 
   renderOfflineData().catch(function () {
     renderStatus('Saved RailCommand data could not be opened safely. Reconnect and try again.');

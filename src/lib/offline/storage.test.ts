@@ -64,7 +64,7 @@ describe('offline storage security boundaries', () => {
 
   it('identifies only RailCommand-owned caches for cleanup', () => {
     assert.equal(isRailCommandCacheName('railcommand-v2'), true);
-    assert.equal(isRailCommandCacheName('railcommand-static-v9'), true);
+    assert.equal(isRailCommandCacheName('railcommand-static-v10'), true);
     assert.equal(isRailCommandCacheName('another-app-cache'), false);
   });
 
@@ -232,7 +232,9 @@ describe('Day 4 durable daily-log synchronization', () => {
 
     assert.match(outbox, /OFFLINE_STORES\.outbox, OFFLINE_STORES\.drafts/);
     assert.match(outbox, /outboxStore\.add\(operation\)/);
-    assert.match(outbox, /objectStore\(OFFLINE_STORES\.drafts\)\.delete/);
+    assert.match(outbox, /draftStore\.delete\(getDailyLogDraftId\(projectId\)\)/);
+    assert.ok(outbox.indexOf('assertDailyLogDraftBaseline(request.result')
+      < outbox.indexOf('draftStore.delete('));
     assert.match(offlineReader, /database\.transaction\(\[OUTBOX_STORE, DRAFTS_STORE\], 'readwrite'\)/);
     assert.doesNotMatch(outbox, /localStorage/);
   });
@@ -568,7 +570,7 @@ describe('offline acceptance diagnostics security', () => {
   });
 
   it('checks only public static cache paths', () => {
-    assert.match(diagnosticsClient, /railcommand-static-v9/);
+    assert.match(diagnosticsClient, /railcommand-static-v10/);
     assert.match(diagnosticsClient, /pathname\.startsWith\('\/_next\/static\/'\)/);
     assert.doesNotMatch(diagnosticsClient, /localStorage/);
   });

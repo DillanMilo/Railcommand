@@ -1,5 +1,6 @@
 import type { GeoTag } from '@/lib/types';
 import {
+  assertDailyLogDraftBaseline,
   createDailyLogDraftRecord,
   getDailyLogDraftId,
   type DailyLogDraftRecord,
@@ -201,27 +202,32 @@ export async function enqueueDailyLogCreate(
       reject(writeError ?? transaction.error ?? new Error('Daily-log queue transaction was interrupted'));
     };
 
-    try {
-      const outboxStore = transaction.objectStore(OFFLINE_STORES.outbox);
-      const blobStore = transaction.objectStore(OFFLINE_STORES.blobs);
-      outboxStore.add(operation);
-      photoOperations.forEach((photoOperation, index) => {
-        outboxStore.add(photoOperation);
-        const blobRecord: OfflineBlobRecord = {
-          id: photoOperation.blobId,
-          operationId: photoOperation.operationId,
-          blob: photos[index].file,
-          createdAt: photoOperation.createdAt,
-        };
-        blobStore.add(blobRecord);
-      });
-      transaction.objectStore(OFFLINE_STORES.drafts).delete(getDailyLogDraftId(projectId));
-    } catch (error) {
-      // Synchronous quota/clone failures do not automatically abort IndexedDB.
-      // Roll back every queued write and retain the draft for a safe retry.
-      writeError = error;
-      transaction.abort();
-    }
+    const draftStore = transaction.objectStore(OFFLINE_STORES.drafts);
+    const request = draftStore.get(getDailyLogDraftId(projectId));
+    request.onsuccess = () => {
+      try {
+        assertDailyLogDraftBaseline(request.result as DailyLogDraftRecord | undefined, existingDraft);
+        const outboxStore = transaction.objectStore(OFFLINE_STORES.outbox);
+        const blobStore = transaction.objectStore(OFFLINE_STORES.blobs);
+        outboxStore.add(operation);
+        photoOperations.forEach((photoOperation, index) => {
+          outboxStore.add(photoOperation);
+          const blobRecord: OfflineBlobRecord = {
+            id: photoOperation.blobId,
+            operationId: photoOperation.operationId,
+            blob: photos[index].file,
+            createdAt: photoOperation.createdAt,
+          };
+          blobStore.add(blobRecord);
+        });
+        draftStore.delete(getDailyLogDraftId(projectId));
+      } catch (error) {
+        // Stale baselines and synchronous quota/clone failures must roll back
+        // the entire move, retaining the latest draft and every queued item.
+        writeError = error;
+        transaction.abort();
+      }
+    };
   });
 
   notifyOutboxChanged();

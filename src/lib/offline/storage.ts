@@ -1,7 +1,7 @@
 const OFFLINE_DB_PREFIX = 'railcommand-offline';
 const OFFLINE_DB_VERSION = 3;
 const RAILCOMMAND_CACHE_PREFIX = 'railcommand-';
-const PUBLIC_STATIC_CACHE_NAME = 'railcommand-static-v9';
+const PUBLIC_STATIC_CACHE_NAME = 'railcommand-static-v10';
 export const OFFLINE_SCOPE_STORAGE_KEY = 'rc-offline-database-scope';
 export const OFFLINE_DATA_CLEARING_EVENT = 'railcommand:offline-data-clearing';
 

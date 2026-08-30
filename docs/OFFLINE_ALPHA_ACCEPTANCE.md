@@ -118,7 +118,20 @@ evidence, a simulator, or a passing build for these release gates.
 
 Shared-device follow-up within that acceptance: verify an already-open offline
 fallback tab hides old-user content when another tab signs out or changes
-account. Its current reader resolves scope at load, not on cross-tab changes.
+account. Twelve synthetic runtime regressions now verify that the reader locks on
+scope change, guards asynchronous reads, and cannot recreate a deleted database.
+Recovered-draft autosave and queueing compare the saved `updatedAt`/client ID
+inside the same transaction before writing or deleting. A stale tab cannot
+overwrite newer work or resurrect a queued draft; conflicting input remains in
+memory with a visible error, not an automatic overwrite or discard.
+The follow-up advances only the public static cache to v10, not private IndexedDB.
+Positive-path tests also verify the last input is saved into the original user's
+existing database on session loss, without changing the other user's draft, and
+that autosave followed by queueing retains the latest payload and delivery IDs.
+The main app's draft save and queue paths apply the same atomic baseline check,
+including two writers racing and queued drafts followed by new drafts. Seven
+additional runtime regressions cover those paths. The focused suite now contains
+87 offline tests (106 including photo/PDF and UP reporting).
 Also verify mounted project UI after involuntary session expiry; existing
 in-memory data can remain visible until navigation. These observations must
 not be marked passed by the new session-loss storage tests alone.

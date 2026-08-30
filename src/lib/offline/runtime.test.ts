@@ -80,7 +80,7 @@ describe('offline IndexedDB runtime transactions', () => {
 
   beforeEach(() => {
     localValues = new Map();
-    cacheNames = new Set(['railcommand-v2', 'railcommand-static-v9', 'unrelated-app-cache']);
+    cacheNames = new Set(['railcommand-v2', 'railcommand-static-v10', 'unrelated-app-cache']);
     replaceGlobal('indexedDB', new IDBFactory());
     replaceGlobal('localStorage', {
       getItem: (key: string) => localValues.get(key) ?? null,
@@ -182,12 +182,16 @@ describe('offline IndexedDB runtime transactions', () => {
   });
 
   it('queues a recovered draft through the actual public offline fallback without retaining the draft', async () => {
+    await initializeOfflineStorage(userA);
     const draft = await writeDailyLogDraft(userA, projectId, values);
     const source = readFileSync(new URL('../../../public/offline-data.js', import.meta.url), 'utf8');
     const bootstrap = source.lastIndexOf('\n  renderOfflineData().catch(');
     assert.ok(bootstrap > 0, 'Expected the public offline reader bootstrap');
     const sandbox = {
       indexedDB,
+      localStorage,
+      window: { addEventListener() {} },
+      document: { addEventListener() {} },
       queueDraftUnderTest: undefined as undefined | ((name: string, record: DailyLogDraftRecord) => Promise<DailyLogCreateOperation>),
     };
     // Expose the shipped helper; replace only DOM bootstrapping, not its logic.
@@ -256,6 +260,6 @@ describe('offline IndexedDB runtime transactions', () => {
     assert.deepEqual(await listOutboxOperations(userB), operationsB);
     assert.ok(await readOfflineBlob(userB, 'synthetic-photo'));
     assert.equal(localValues.get(OFFLINE_SCOPE_STORAGE_KEY), getOfflineDatabaseName(userB));
-    assert.deepEqual(cacheNames, new Set(['railcommand-static-v9', 'unrelated-app-cache']));
+    assert.deepEqual(cacheNames, new Set(['railcommand-static-v10', 'unrelated-app-cache']));
   });
 });
