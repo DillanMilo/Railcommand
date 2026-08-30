@@ -575,13 +575,15 @@ function LoginPageInner() {
         } else {
           document.cookie = 'rc-remember=true; path=/; SameSite=Lax';
         }
+        // Real authentication takes precedence over demo state in middleware.
+        // A slow demo cleanup must not trap a successfully signed-in user here.
         try {
-          await fetch('/api/demo/local-session', { method: 'DELETE' });
           localStorage.removeItem('rc-mode');
           document.cookie = 'rc-mode=; path=/; max-age=0; SameSite=Lax';
           document.cookie = 'rc-demo-slug=; path=/; max-age=0; SameSite=Lax';
         } catch { /* noop */ }
-        router.push(redirectPath);
+        fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
+        router.replace(redirectPath);
       } catch (error) {
         setAuthError(getSupabaseAuthErrorMessage(error));
       } finally {

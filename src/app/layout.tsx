@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
+import OfflineSyncProvider from "@/components/providers/OfflineSyncProvider";
 import SupabaseStatusBanner from "@/components/layout/SupabaseStatusBanner";
 import "./globals.css";
 
@@ -63,8 +64,10 @@ export default function RootLayout({
       <body className="antialiased">
         <ThemeProvider>
           <ServiceWorkerProvider>
-            <SupabaseStatusBanner />
-            <TooltipProvider>{children}</TooltipProvider>
+            <OfflineSyncProvider>
+              <SupabaseStatusBanner />
+              <TooltipProvider>{children}</TooltipProvider>
+            </OfflineSyncProvider>
           </ServiceWorkerProvider>
         </ThemeProvider>
       </body>

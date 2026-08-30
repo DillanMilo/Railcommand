@@ -25,3 +25,12 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Offline and daily-log regression tests
+        run: |
+          npm run test:offline
+          npm run test:daily-log-photos
+          npm run test:up-report
+
+      - name: Production build
+        run: npm run build
