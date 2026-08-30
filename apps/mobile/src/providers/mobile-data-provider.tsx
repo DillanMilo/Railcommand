@@ -59,10 +59,48 @@ export function MobileDataProvider({ children }: PropsWithChildren) {
       setMessage(`Synchronized ${new Date(next.synchronizedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
     } catch {
       const cached = await readCachedBootstrap(userId);
-      if (cached) { setBootstrap(cached); updateActiveProject(projectId ?? cached.activeProjectId); setMessage('Showing saved device data'); }
+      if (cached) {
+        const requestedProjectIsCached = Boolean(projectId && cached.projects.some((project) => project.id === projectId));
+        const cachedActiveProjectId = requestedProjectIsCached ? projectId! : cached.activeProjectId;
+        setBootstrap({ ...cached, activeProjectId: cachedActiveProjectId });
+        updateActiveProject(cachedActiveProjectId);
+        setMessage('Showing saved device data');
+      }
       else setMessage('No saved project data is available on this device yet.');
     } finally { setLoading(false); }
   }, [updateActiveProject, userId]);
+
+  const selectProject = useCallback(async (projectId: string) => {
+    if (!userId) throw new Error('Sign in before opening a project.');
+    const available = bootstrap ?? await readCachedBootstrap(userId);
+    if (available?.projects.some((project) => project.id === projectId)) {
+      const selected = { ...available, activeProjectId: projectId };
+      setBootstrap(selected);
+      updateActiveProject(projectId);
+      await cacheBootstrap(userId, selected);
+      setMessage('Showing saved device data');
+      void refresh(projectId);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const next = await mobileApi.getBootstrap(projectId);
+      if (!next.projects.some((project) => project.id === projectId)) {
+        throw new Error('Project membership could not be verified.');
+      }
+      const selected = { ...next, activeProjectId: projectId };
+      setBootstrap(selected);
+      updateActiveProject(projectId);
+      await cacheBootstrap(userId, selected);
+      setMessage(`Synchronized ${new Date(next.synchronizedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+    } catch (error) {
+      setMessage('That project is not available for this account.');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [bootstrap, refresh, updateActiveProject, userId]);
 
   const synchronize = useCallback(async () => {
     if (!userId) return;
@@ -103,8 +141,7 @@ export function MobileDataProvider({ children }: PropsWithChildren) {
   }, [synchronize, userId]);
 
   const value = useMemo<MobileDataContextValue>(() => ({ bootstrap, activeProjectId, online, loading, message, syncRows,
-    refresh, selectProject: async (projectId) => { updateActiveProject(projectId); await refresh(projectId); },
-    synchronize, reloadSyncRows }), [activeProjectId, bootstrap, loading, message, online, refresh, reloadSyncRows, syncRows, synchronize, updateActiveProject]);
+    refresh, selectProject, synchronize, reloadSyncRows }), [activeProjectId, bootstrap, loading, message, online, refresh, reloadSyncRows, selectProject, syncRows, synchronize]);
   return <MobileDataContext.Provider value={value}>{children}</MobileDataContext.Provider>;
 }
 

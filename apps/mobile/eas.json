@@ -24,6 +24,7 @@
       "distribution": "internal",
       "environment": "preview",
       "channel": "staging",
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_BUILD_PROFILE": "staging"
       }

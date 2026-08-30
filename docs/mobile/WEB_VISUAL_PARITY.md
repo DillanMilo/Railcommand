@@ -47,6 +47,12 @@ lists, the EarthCam viewer and permission-checked feed controls, daily-log list/
 account deletion, invitation, recovery, callback, and the shared components later
 screens inherit. Submittal/RFI mutations still hand off to the connected web application.
 EarthCam add/edit/remove is native but remains online-only and is never placed in the outbox.
+Web-style project links for Submittals, RFIs, Daily Logs, Cameras, and Team now select the
+linked project and open the corresponding native workspace instead of falling through to an
+unmatched route. A known project opens immediately from the signed-in user's cached project
+list and then revalidates in the background; a failed response never makes an unknown project
+ID active. Unsupported v1 administration modules continue to return safely to the
+project dashboard and are not represented as native/offline-capable.
 
 Full route-by-route parity is product work, not store metadata work. It must continue
 before release-candidate sign-off, but it must not weaken the accepted offline or

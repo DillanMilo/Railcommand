@@ -105,6 +105,26 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(invitation, /<StatusBanner[^>]*detail=\{message\}/s);
   });
 
+  it('bridges supported web project paths into their native mobile workspaces', () => {
+    const bridge = source('../app/projects/[id]/[...module].tsx');
+    assert.match(bridge, /submittals: '\/\(tabs\)\/submittals'/);
+    assert.match(bridge, /rfis: '\/\(tabs\)\/rfis'/);
+    assert.match(bridge, /'daily-logs': '\/\(tabs\)\/logs'/);
+    assert.match(bridge, /cameras: '\/\(tabs\)\/cameras'/);
+    assert.match(bridge, /team: '\/team'/);
+    assert.match(bridge, /selectProject\(id\)/);
+    assert.doesNotMatch(bridge, /Linking\.openURL/);
+  });
+
+  it('opens cached project links immediately and never selects an unknown cached project', () => {
+    const provider = source('../providers/mobile-data-provider.tsx');
+    assert.match(provider, /available\?\.projects\.some\(\(project\) => project\.id === projectId\)/);
+    assert.match(provider, /await cacheBootstrap\(userId, selected\)/);
+    assert.match(provider, /void refresh\(projectId\)/);
+    assert.match(provider, /requestedProjectIsCached/);
+    assert.match(provider, /cachedActiveProjectId = requestedProjectIsCached \? projectId! : cached\.activeProjectId/);
+  });
+
   it('rejects an authentication callback that does not contain verifiable credentials', () => {
     const deepLinks = source('./deep-links.ts');
     assert.match(deepLinks, /Authentication callback is missing credentials/);
@@ -203,5 +223,6 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(eas, /"distribution": "store"/);
     assert.match(eas, /"EXPO_PUBLIC_BUILD_PROFILE": "staging"/);
     assert.match(eas, /"MOBILE_DISTRIBUTION_TARGET": "beta"/);
+    assert.match(eas, /"staging": \{[\s\S]*?"autoIncrement": true/);
   });
 });

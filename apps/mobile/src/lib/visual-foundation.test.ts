@@ -75,8 +75,11 @@ describe('RailCommand web-to-native visual foundation', () => {
   });
 
   it('matches the attached Submittals and RFI filter/search/action screens', () => {
+    const shell = source('../components/web-shell.tsx');
     const submittals = source('../app/(tabs)/submittals.tsx');
     const rfis = source('../app/(tabs)/rfis.tsx');
+    assert.match(shell, /headingTitle: \{[^}]*fontSize: 24/);
+    assert.match(shell, /filterTab: \{[^}]*flexGrow: 1, flexShrink: 0/);
     assert.match(submittals, /Export PDF/);
     assert.match(submittals, /New Submittal/);
     assert.match(submittals, /Under Review/);
@@ -146,6 +149,13 @@ describe('RailCommand web-to-native visual foundation', () => {
     assert.match(deleteRoute, /canManageMobileEarthCam/);
     assert.ok(deleteRoute.indexOf('canManageMobileEarthCam') < deleteRoute.indexOf('createAdminClient()'));
     assert.match(deleteRoute, /\.delete\(\)/);
+  });
+
+  it('opens web-style project module links without an unmatched route', () => {
+    const bridge = source('../app/projects/[id]/[...module].tsx');
+    assert.match(bridge, /nativeProjectSections/);
+    assert.match(bridge, /cameras: '\/\(tabs\)\/cameras'/);
+    assert.match(bridge, /router\.replace\(destination as never\)/);
   });
 
   it('keeps interactive targets at least 48 points and protects background content', () => {
