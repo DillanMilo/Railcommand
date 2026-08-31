@@ -30,6 +30,7 @@ import {
   type SyncHistoryItem,
 } from '@/lib/offline/outbox';
 import { createClient } from '@/lib/supabase/client';
+import { uploadProjectPhoto } from '@/lib/actions/project-photo-upload';
 import {
   clearOfflineDataForUser,
   estimateOfflineStorage,
@@ -167,6 +168,7 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
       const remainingOperationIds = new Set(queued.map((operation) => operation.operationId));
       const now = Date.now();
       for (const original of queued) {
+        if (userIdRef.current !== activeUserId) return;
         if (connectivityRef.current !== 'online') break;
         if (original.status === 'failed') continue;
         if (original.status === 'retry' && Date.parse(original.nextAttemptAt) > now) continue;
@@ -196,6 +198,19 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
                 error: 'The locally saved photo is missing. Remove this failed item after confirming the original photo is available.',
                 retryable: false,
               };
+            } else if (syncingOperation.kind === 'project_photo_upload') {
+              const formData = new FormData();
+              formData.append('file', blobRecord.blob, syncingOperation.payload.fileName);
+              formData.append('metadata', JSON.stringify({
+                userId: activeUserId,
+                projectId: syncingOperation.projectId,
+                operationId: syncingOperation.operationId,
+                fileName: syncingOperation.payload.fileName,
+                geoLat: syncingOperation.payload.geoLat,
+                geoLng: syncingOperation.payload.geoLng,
+                capturedAt: syncingOperation.payload.capturedAt,
+              }));
+              result = await uploadProjectPhoto(formData);
             } else {
               const prepared = await prepareOfflineDailyLogPhotoUpload(syncingOperation);
               if (!prepared.success) {

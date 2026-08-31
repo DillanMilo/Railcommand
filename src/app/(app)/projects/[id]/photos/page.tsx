@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback, use } from 'react';
+import { useState, useMemo, useEffect, useCallback, use } from 'react';
 import { format, parseISO, isToday, isYesterday, isThisWeek } from 'date-fns';
 import {
-  Camera,
   Thermometer,
   MapPin,
   ImageOff,
@@ -15,17 +14,17 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectPhotos } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import * as store from '@/lib/store';
-import { compressImage } from '@/lib/compressImage';
-import { resolvePhotoGeo } from '@/lib/photoGeotag';
-import { uploadPhotoAttachment } from '@/lib/uploadPhotosAfterCreate';
+import ProjectPhotoUpload from '@/components/shared/ProjectPhotoUpload';
+import { PROJECT_PHOTO_PAGE_SIZE } from '@/lib/project-photo-policy';
+import { OFFLINE_SYNC_COMPLETE_EVENT } from '@/components/providers/OfflineSyncProvider';
 import { ACTIONS } from '@/lib/permissions';
-import type { Attachment, PhotoCategory } from '@/lib/types';
+import type { Attachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -69,18 +68,9 @@ function getPhotoUrl(photo: Attachment, variant: 'thumbnail' | 'full'): string {
     return photo.thumbnail_url;
   }
 
-  const source = photo.signed_url ?? photo.file_url;
-  if (variant === 'full' || source.startsWith('blob:') || source.startsWith('data:')) {
-    return source;
-  }
-
-  try {
-    const url = new URL(source);
-    url.searchParams.set('width', '400');
-    return url.toString();
-  } catch {
-    return source;
-  }
+  // No width parameter on an object URL: it does not resize the image and
+  // makes the lightbox request a second URL for identical bytes.
+  return photo.signed_url ?? photo.file_url;
 }
 
 /* ------------------------------------------------------------------ */
@@ -103,10 +93,14 @@ export default function PhotosPage({
 
   const [filter, setFilter] = useState<PhotoFilter>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<Attachment | null>(null);
-  const [captureLoading, setCaptureLoading] = useState(false);
+  const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState(false);
 
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const refresh = () => refetch();
+    window.addEventListener(OFFLINE_SYNC_COMPLETE_EVENT, refresh);
+    return () => window.removeEventListener(OFFLINE_SYNC_COMPLETE_EVENT, refresh);
+  }, [refetch]);
 
   const canDeletePhoto = useCallback(
     (photo: Attachment) =>
@@ -120,12 +114,18 @@ export default function PhotosPage({
     return photos.filter((p) => p.photo_category === filter);
   }, [photos, filter]);
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PROJECT_PHOTO_PAGE_SIZE));
+  const activePage = Math.min(page, pageCount - 1);
+  const visiblePhotos = useMemo(() => filtered.slice(
+    activePage * PROJECT_PHOTO_PAGE_SIZE, (activePage + 1) * PROJECT_PHOTO_PAGE_SIZE
+  ), [filtered, activePage]);
+
   /* ---- Group by date ---- */
   const grouped = useMemo(() => {
     const groups: { key: string; photos: Attachment[] }[] = [];
     const map = new Map<string, Attachment[]>();
 
-    for (const photo of filtered) {
+    for (const photo of visiblePhotos) {
       const dateStr = photo.captured_at ?? photo.created_at;
       const key = getDateKey(dateStr);
       if (!map.has(key)) {
@@ -136,56 +136,7 @@ export default function PhotosPage({
     }
 
     return groups;
-  }, [filtered]);
-
-  /* ---- Camera capture handler ---- */
-  const handleCapture = useCallback(
-    async (fileList: FileList | null) => {
-      if (!fileList || fileList.length === 0) return;
-      setCaptureLoading(true);
-
-      try {
-        const file = fileList[0];
-        const geo = await resolvePhotoGeo(file, { allowDeviceGeo: true });
-        const geoLat = geo?.lat ?? null;
-        const geoLng = geo?.lng ?? null;
-
-        if (isDemo) {
-          const compressed = await compressImage(file, 'standard');
-          const previewUrl = URL.createObjectURL(compressed);
-          store.addProjectPhoto(projectId, {
-            file_name: file.name,
-            file_url: previewUrl,
-            file_type: compressed.type,
-            file_size: compressed.size,
-            photo_category: 'standard' as PhotoCategory,
-            geo_lat: geoLat,
-            geo_lng: geoLng,
-          });
-          refetch();
-        } else {
-          const result = await uploadPhotoAttachment({
-            file,
-            category: 'standard',
-            entityType: 'project_photo',
-            entityId: projectId,
-            projectId,
-            geoLat,
-            geoLng,
-          });
-          if (result.error) {
-            alert(`Upload failed: ${result.error}`);
-          }
-          refetch();
-        }
-      } catch {
-        alert('Failed to capture photo');
-      } finally {
-        setCaptureLoading(false);
-      }
-    },
-    [isDemo, projectId, refetch]
-  );
+  }, [visiblePhotos]);
 
   /* ---- Delete handler ---- */
   const handleDelete = useCallback(
@@ -246,29 +197,7 @@ export default function PhotosPage({
             {photos.filter((p) => p.photo_category === 'thermal').length} thermal
           </p>
         </div>
-        <Button
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={captureLoading}
-          className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-        >
-          {captureLoading ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          ) : (
-            <Camera className="mr-2 size-4" />
-          )}
-          Take Photo
-        </Button>
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            handleCapture(e.target.files);
-            e.target.value = '';
-          }}
-        />
+        <ProjectPhotoUpload key={`${currentUserId}:${projectId}`} projectId={projectId} onDemoUpload={refetch} />
       </div>
 
       {/* Filter tabs */}
@@ -276,7 +205,7 @@ export default function PhotosPage({
         {FILTER_TABS.map((t) => (
           <button
             key={t.value}
-            onClick={() => setFilter(t.value)}
+            onClick={() => { setFilter(t.value); setPage(0); }}
             className={`whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px min-h-[44px] ${
               filter === t.value
                 ? 'border-rc-orange text-rc-orange'
@@ -307,7 +236,7 @@ export default function PhotosPage({
           <ImageOff className="size-10 mb-3" />
           <p className="text-sm font-medium">No photos yet</p>
           <p className="text-xs mt-1">
-            Take a photo or upload images from other modules
+            Take a photo or choose an existing photo saved on your device
           </p>
         </div>
       ) : (
@@ -328,6 +257,8 @@ export default function PhotosPage({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getPhotoUrl(photo, 'thumbnail')}
+                      loading="lazy"
+                      decoding="async"
                       alt={photo.file_name}
                       className="aspect-square w-full object-cover"
                     />
@@ -380,12 +311,21 @@ export default function PhotosPage({
         </div>
       )}
 
+      {pageCount > 1 && (
+        <nav aria-label="Photo gallery pages" className="flex items-center justify-center gap-3">
+          <Button variant="outline" disabled={activePage === 0} onClick={() => setPage(activePage - 1)}>Previous</Button>
+          <span className="text-sm">Page {activePage + 1} of {pageCount}</span>
+          <Button variant="outline" disabled={activePage + 1 >= pageCount} onClick={() => setPage(activePage + 1)}>Next</Button>
+        </nav>
+      )}
+
       {/* Lightbox / detail dialog */}
       <Dialog
         open={!!selectedPhoto}
         onOpenChange={() => setSelectedPhoto(null)}
       >
         <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <DialogTitle className="sr-only">{selectedPhoto?.file_name ?? 'Photo details'}</DialogTitle>
           {selectedPhoto && (
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}

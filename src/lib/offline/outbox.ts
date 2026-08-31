@@ -10,6 +10,7 @@ import { OFFLINE_STORES, openOfflineDatabase } from './storage';
 
 export const DAILY_LOG_CREATE_OPERATION = 'daily_log_create' as const;
 export const DAILY_LOG_PHOTO_UPLOAD_OPERATION = 'daily_log_photo_upload' as const;
+export const PROJECT_PHOTO_UPLOAD_OPERATION = 'project_photo_upload' as const;
 export const OUTBOX_CHANGED_EVENT = 'railcommand:outbox-changed';
 
 export type OutboxStatus = 'pending' | 'syncing' | 'retry' | 'failed';
@@ -62,7 +63,13 @@ export interface DailyLogPhotoUploadOperation extends OutboxOperationBase {
   };
 }
 
-export type OutboxOperation = DailyLogCreateOperation | DailyLogPhotoUploadOperation;
+export interface ProjectPhotoUploadOperation extends OutboxOperationBase {
+  kind: typeof PROJECT_PHOTO_UPLOAD_OPERATION;
+  blobId: string;
+  payload: DailyLogPhotoUploadOperation['payload'];
+}
+
+export type OutboxOperation = DailyLogCreateOperation | DailyLogPhotoUploadOperation | ProjectPhotoUploadOperation;
 
 export interface OfflinePhotoInput {
   id: string;
@@ -318,10 +325,10 @@ export async function completeOutboxOperation(
   const database = await openOfflineDatabase(userId);
   await new Promise<void>((resolve, reject) => {
     const stores: string[] = [OFFLINE_STORES.outbox, OFFLINE_STORES.syncHistory];
-    if (operation.kind === DAILY_LOG_PHOTO_UPLOAD_OPERATION) stores.push(OFFLINE_STORES.blobs);
+    if (operation.kind !== DAILY_LOG_CREATE_OPERATION) stores.push(OFFLINE_STORES.blobs);
     const transaction = database.transaction(stores, 'readwrite');
     transaction.objectStore(OFFLINE_STORES.outbox).delete(operation.operationId);
-    if (operation.kind === DAILY_LOG_PHOTO_UPLOAD_OPERATION) {
+    if (operation.kind !== DAILY_LOG_CREATE_OPERATION) {
       transaction.objectStore(OFFLINE_STORES.blobs).delete(operation.blobId);
     }
     const history: SyncHistoryItem = {
