@@ -204,6 +204,7 @@ The Daily Logs module provides a structured, digital replacement for paper-based
   - **Work Summary** -- Overall summary of the day's activities
 - **Daily Log Detail View** -- Read-only presentation of a completed log with all structured data sections, with PDF export button for downloading individual log reports
 - **Photo Attachment Support** -- Upload site photos associated with the day's work
+- **Offline behavior** -- New daily logs use user-scoped drafts and an idempotent log/photo queue. The project photo library and signed-photo PDF sharing require connectivity; selected library photos can be included in the local queue. Existing log edits remain online-only.
 - **Searchable History** -- Find past logs by date, content, or personnel
 - **7-Day Calendar View** -- Calendar displays full 7-day week instead of current view *(Complete)*
 - **Weekly Reports Section** -- Fields for Construction Manager and Contractor weekly reports *(Planned)*

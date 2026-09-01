@@ -64,7 +64,7 @@ export default function PhotoLibraryPicker({
 
   const addSelected = async () => {
     const selected = activeSelected;
-    if (selected.length === 0) return;
+    if (isOffline || selected.length === 0) return;
     setAdding(true);
     setAddError(null);
 
@@ -109,7 +109,7 @@ export default function PhotoLibraryPicker({
         {isOffline ? (
           <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
             <WifiOff className="mt-0.5 size-4 shrink-0" />
-            <p>Photo-library selection needs a connection. Photos already added remain selected while this form stays open; reconnect before submitting.</p>
+            <p>Photo-library selection needs a connection. Photos already added can be saved with this log in the offline queue before closing the form.</p>
           </div>
         ) : loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
