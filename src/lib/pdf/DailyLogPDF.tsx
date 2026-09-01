@@ -78,7 +78,7 @@ const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy
                   wrap={false}
                 >
                   <Text style={[styles.tableCell, { width: '40%' }]}>{p.role}</Text>
-                  <Text style={[styles.tableCell, { width: '20%' }]}>{p.headcount}</Text>
+                  <Text style={[styles.tableCell, { width: '20%' }]}>{p.headcount || '-'}</Text>
                   <Text style={[styles.tableCell, { width: '40%' }]}>{p.company}</Text>
                 </View>
               ))}
@@ -103,7 +103,7 @@ const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy
                   wrap={false}
                 >
                   <Text style={[styles.tableCell, { width: '40%' }]}>{e.equipment_type}</Text>
-                  <Text style={[styles.tableCell, { width: '20%' }]}>{e.count}</Text>
+                  <Text style={[styles.tableCell, { width: '20%' }]}>{e.count || '-'}</Text>
                   <Text style={[styles.tableCell, { width: '40%' }]}>{e.notes}</Text>
                 </View>
               ))}

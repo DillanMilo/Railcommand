@@ -17,16 +17,6 @@ function getBucket(category: string): string {
   return BUCKET_MAP[category] ?? 'project-photos';
 }
 
-function withThumbnailWidth(source: string): string {
-  try {
-    const url = new URL(source);
-    url.searchParams.set('width', '400');
-    return url.toString();
-  } catch {
-    return source;
-  }
-}
-
 /**
  * Fetch all photo attachments for a project by querying entity tables
  * for IDs belonging to the project, then fetching matching attachments.
@@ -107,7 +97,7 @@ export async function getProjectPhotos(
             photos[items[j].index] = {
               ...photos[items[j].index],
               signed_url: signedUrl,
-              thumbnail_url: withThumbnailWidth(signedUrl),
+              thumbnail_url: signedUrl,
             };
           }
         }
