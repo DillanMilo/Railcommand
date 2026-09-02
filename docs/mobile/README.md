@@ -5,6 +5,7 @@ application and its users.
 
 Start here:
 
+- [Current backend readiness — August 30](./BACKEND_READINESS_2026-08-30.md)
 - [Phase 0 decision gate](./PHASE_0_DECISION_GATE.md)
 - [Production safety boundary](./PRODUCTION_SAFETY.md)
 - [Account deletion and retention policy](./ACCOUNT_DELETION_RETENTION_POLICY.md)

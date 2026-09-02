@@ -27,7 +27,7 @@ export default function TabsLayout() {
     <Tabs.Screen name="submittals" options={{ title: 'Submittals', tabBarAccessibilityLabel: 'Submittals', tabBarIcon: ({ color }) => <TabIcon name="submittals" color={color} /> }} />
     <Tabs.Screen name="rfis" options={{ title: 'RFIs', tabBarAccessibilityLabel: 'RFIs', tabBarIcon: ({ color }) => <TabIcon name="rfis" color={color} /> }} />
     <Tabs.Screen name="logs" options={{ title: 'Logs', tabBarAccessibilityLabel: 'Daily logs', tabBarIcon: ({ color }) => <TabIcon name="logs" color={color} /> }} />
-    <Tabs.Screen name="more" listeners={{ tabPress: (event) => { event.preventDefault(); router.push('/more' as never); } }} options={{ title: 'More', tabBarAccessibilityLabel: 'More RailCommand modules', tabBarIcon: ({ color }) => <TabIcon name="more" color={color} /> }} />
+    <Tabs.Screen name="more-tab" listeners={{ tabPress: (event) => { event.preventDefault(); router.push('/more' as never); } }} options={{ title: 'More', tabBarAccessibilityLabel: 'More RailCommand modules', tabBarIcon: ({ color }) => <TabIcon name="more" color={color} /> }} />
     <Tabs.Screen name="sync" options={{ href: null }} />
     <Tabs.Screen name="account" options={{ href: null }} />
     <Tabs.Screen name="cameras" options={{ href: null }} />

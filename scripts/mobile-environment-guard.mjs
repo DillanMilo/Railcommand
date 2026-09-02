@@ -4,6 +4,9 @@ const PROFILE_APP_IDS = {
   production: 'io.railcommand.app',
 };
 const PRODUCTION_CONFIRMATION = 'release-authorized';
+const BUILT_IN_PRODUCTION_PROJECT_REFS = new Set(['gwvftrrknusdfdgiwuij']);
+const BUILT_IN_PRODUCTION_APP_HOSTS = new Set(['railcommand.io', 'www.railcommand.io']);
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const FORBIDDEN_CLIENT_SECRETS = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_SECRET_KEY',
@@ -29,14 +32,17 @@ function csv(value) {
   );
 }
 
-function parseHttpsUrl(value, name) {
+function parseServiceUrl(value, name, profile) {
   let url;
   try {
     url = new URL(value);
   } catch {
     throw new Error(`${name} must be a valid URL`);
   }
-  if (url.protocol !== 'https:') throw new Error(`${name} must use HTTPS`);
+  const localDevelopment = profile === 'development'
+    && url.protocol === 'http:'
+    && LOOPBACK_HOSTS.has(url.hostname.toLowerCase());
+  if (url.protocol !== 'https:' && !localDevelopment) throw new Error(`${name} must use HTTPS`);
   return url;
 }
 
@@ -61,9 +67,10 @@ export function validateMobileEnvironment(env) {
     throw new Error('Production mobile builds require explicit release authorization');
   }
 
-  const supabaseUrl = parseHttpsUrl(
+  const supabaseUrl = parseServiceUrl(
     required(env, 'NEXT_PUBLIC_SUPABASE_URL'),
-    'NEXT_PUBLIC_SUPABASE_URL'
+    'NEXT_PUBLIC_SUPABASE_URL',
+    profile
   );
   const expectedProjectRef = required(
     env,
@@ -76,22 +83,24 @@ export function validateMobileEnvironment(env) {
     throw new Error('At least one production Supabase project ref must be blocked');
   }
 
-  const expectedSupabaseHost = `${expectedProjectRef}.supabase.co`;
-  if (supabaseUrl.hostname.toLowerCase() !== expectedSupabaseHost) {
-    throw new Error(
-      `Supabase host must match the approved staging project ${expectedProjectRef}`
-    );
+  const localSupabase = profile === 'development'
+    && supabaseUrl.protocol === 'http:'
+    && LOOPBACK_HOSTS.has(supabaseUrl.hostname.toLowerCase());
+  const expectedSupabaseHost = localSupabase ? supabaseUrl.hostname.toLowerCase() : `${expectedProjectRef}.supabase.co`;
+  if ((localSupabase && expectedProjectRef !== 'local') || supabaseUrl.hostname.toLowerCase() !== expectedSupabaseHost) {
+    throw new Error('Supabase host does not match the approved mobile inventory');
   }
-  if (profile !== 'production' && blockedProjectRefs.has(expectedProjectRef)) {
+  if (profile !== 'production' && (BUILT_IN_PRODUCTION_PROJECT_REFS.has(expectedProjectRef) || blockedProjectRefs.has(expectedProjectRef))) {
     throw new Error('The approved staging Supabase project is marked as production');
   }
   if (profile === 'production' && !blockedProjectRefs.has(expectedProjectRef)) {
     throw new Error('The production Supabase project must be present in the production inventory');
   }
 
-  const appUrl = parseHttpsUrl(
+  const appUrl = parseServiceUrl(
     required(env, 'NEXT_PUBLIC_APP_URL'),
-    'NEXT_PUBLIC_APP_URL'
+    'NEXT_PUBLIC_APP_URL',
+    profile
   );
   const expectedAppHost = required(env, 'MOBILE_EXPECTED_APP_HOST').toLowerCase();
   const blockedAppHosts = csv(required(env, 'MOBILE_BLOCKED_APP_HOSTS'));
@@ -99,9 +108,9 @@ export function validateMobileEnvironment(env) {
     throw new Error('At least one production application host must be blocked');
   }
   if (appUrl.hostname.toLowerCase() !== expectedAppHost) {
-    throw new Error(`Application host must match approved staging host ${expectedAppHost}`);
+    throw new Error('Application host does not match the approved mobile inventory');
   }
-  if (profile !== 'production' && blockedAppHosts.has(expectedAppHost)) {
+  if (profile !== 'production' && (BUILT_IN_PRODUCTION_APP_HOSTS.has(expectedAppHost) || blockedAppHosts.has(expectedAppHost))) {
     throw new Error('The approved staging application host is marked as production');
   }
   if (profile === 'production' && !blockedAppHosts.has(expectedAppHost)) {
@@ -119,10 +128,7 @@ export function validateMobileEnvironment(env) {
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   try {
     const result = validateMobileEnvironment(process.env);
-    console.log(
-      `Mobile environment safe: ${result.profile}, ${result.appId}, ` +
-        `${result.supabaseProjectRef}, ${result.appHost}`
-    );
+    console.log(`Mobile environment validated for the ${result.profile} build profile`);
   } catch (error) {
     console.error(`Mobile environment rejected: ${error.message}`);
     process.exitCode = 1;

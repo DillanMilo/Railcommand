@@ -8,9 +8,12 @@ import type {
   MobileTeamMember,
   ProjectRole,
 } from '@railcommand/domain';
+import { normalizeDailyLogReadFields } from '@railcommand/domain';
 import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
+import { mobileQueryFailed, mobileQueryFailureStatus, type MobileQueryResult } from '@/lib/mobile-api/query-failure';
 import { ACTIONS, canPerform, canPerformWithProjectEdit } from '@/lib/permissions';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { mobilePage, parseMobilePage } from '@/lib/mobile-api/pagination';
 
 export const dynamic = 'force-dynamic';
 export const OPTIONS = mobileOptions;
@@ -40,31 +43,50 @@ type TeamRow = {
   profile: { id: string; full_name: string | null; email: string } | null;
 };
 
+function bootstrapQueryFailure(
+  results: MobileQueryResult[],
+  message: string,
+  profileResult?: MobileQueryResult,
+): Response | null {
+  const status = mobileQueryFailureStatus(results);
+  if (!status) return null;
+  // Preserve upstream authentication failures for the client's single refresh attempt.
+  if (status === 401) return mobileJson({ error: 'Not authenticated' }, 401);
+  return mobileJson({ error: message }, profileResult?.error?.code === 'PGRST116' ? 403 : status);
+}
+
 export async function GET(request: Request): Promise<Response> {
   const context = await authenticateMobileRequest(request);
   if (!context) return mobileJson({ error: 'Not authenticated' }, 401);
 
-  const requestedProjectId = new URL(request.url).searchParams.get('projectId');
-  const [{ data: profile, error: profileError }, { data: memberships, error: membershipError }] =
+  const requestUrl = new URL(request.url);
+  const requestedProjectId = requestUrl.searchParams.get('projectId');
+  const page = parseMobilePage(requestUrl);
+  const [profileResult, membershipResult] =
     await Promise.all([
       context.supabase.from('profiles').select('role').eq('id', context.user.id).single(),
       context.supabase
         .from('project_members')
         .select('project_id, project_role, can_edit, project:projects(id, name, status, location, client, start_date, target_end_date, budget_total, budget_spent, created_at)')
-        .eq('profile_id', context.user.id),
+        .eq('profile_id', context.user.id)
+        .limit(200),
     ]);
 
-  if (profileError || membershipError) {
-    return mobileJson({ error: 'Could not verify project access' }, 403);
-  }
+  const accessFailure = bootstrapQueryFailure([profileResult, membershipResult], 'Could not verify project access', profileResult);
+  if (accessFailure) return accessFailure;
+  const { data: profile } = profileResult;
+  const { data: memberships } = membershipResult;
 
   let rows = (memberships ?? []) as unknown as MembershipRow[];
   if (profile?.role === 'admin') {
-    const { data: projects, error } = await context.supabase
+    const projectsResult = await context.supabase
       .from('projects')
       .select('id, name, status, location, client, start_date, target_end_date, budget_total, budget_spent, created_at')
-      .order('name');
-    if (error) return mobileJson({ error: 'Could not list projects' }, 500);
+      .order('name')
+      .limit(200);
+    const projectsFailure = bootstrapQueryFailure([projectsResult], 'Could not list projects');
+    if (projectsFailure) return projectsFailure;
+    const { data: projects } = projectsResult;
     const byProject = new Map(rows.map((row) => [row.project_id, row]));
     rows = (projects ?? []).map((project) => byProject.get(project.id) ?? {
       project_id: project.id,
@@ -84,6 +106,8 @@ export async function GET(request: Request): Promise<Response> {
       client: row.project!.client ?? '',
       role: profile?.role === 'admin' ? 'admin' : row.project_role,
       canEdit: profile?.role === 'admin' || row.can_edit,
+      canCreateRfi: profile?.role === 'admin' || (row.can_edit && canPerform(row.project_role, ACTIONS.RFI_CREATE)),
+      canCreateSubmittal: profile?.role === 'admin' || (row.can_edit && canPerform(row.project_role, ACTIONS.SUBMITTAL_CREATE)),
       updatedAt: row.project!.created_at,
       startDate: row.project!.start_date ?? undefined,
       targetEndDate: row.project!.target_end_date ?? undefined,
@@ -110,6 +134,9 @@ export async function GET(request: Request): Promise<Response> {
   let submittals: MobileSubmittal[] = [];
   let rfis: MobileRfi[] = [];
   let earthCamEmbeds: MobileEarthCamEmbed[] = [];
+  let dailyLogsHasMore = false;
+  let submittalsHasMore = false;
+  let rfisHasMore = false;
   let dashboard: MobileBootstrap['dashboard'] = {
     submittalsTotal: 0,
     submittalsPending: 0,
@@ -120,50 +147,63 @@ export async function GET(request: Request): Promise<Response> {
   };
   if (activeProjectId) {
     const earthCamClient = profile?.role === 'admin' ? createAdminClient() : context.supabase;
-    const [
-      { data: logs, error: logsError },
-      { data: members, error: membersError },
-      { data: submittalRows, error: submittalsError },
-      { data: rfiRows, error: rfisError },
-      { data: punchRows, error: punchError },
-      { data: embedRows, error: embedsError },
-    ] = await Promise.all([
+    const [logsResult, membersResult, submittalsResult, rfisResult, punchResult, embedsResult] = await Promise.all([
       context.supabase
         .from('daily_logs')
-        .select('id, project_id, log_date, weather_conditions, work_summary, safety_notes, created_at')
+        .select('id, project_id, log_date, weather_temp, weather_conditions, weather_wind, work_summary, safety_notes, geo_tag, created_at, personnel:daily_log_personnel(id, role, headcount, company), equipment:daily_log_equipment(id, equipment_type, count, notes), work_items:daily_log_work_items(id, description, quantity, unit, location)')
         .eq('project_id', activeProjectId)
         .order('log_date', { ascending: false })
-        .limit(90),
+        .range(page.offset, page.offset + page.limit),
       context.supabase
         .from('project_members')
         .select('project_id, project_role, can_edit, profile:profiles(id, full_name, email)')
-        .eq('project_id', activeProjectId),
+        .eq('project_id', activeProjectId)
+        .limit(200),
       context.supabase
         .from('submittals')
         .select('id, project_id, number, title, status, due_date, created_at')
         .eq('project_id', activeProjectId)
         .order('created_at', { ascending: false })
-        .limit(100),
+        .range(page.offset, page.offset + page.limit),
       context.supabase
         .from('rfis')
         .select('id, project_id, number, subject, status, priority, due_date, created_at')
         .eq('project_id', activeProjectId)
         .order('created_at', { ascending: false })
-        .limit(100),
+        .range(page.offset, page.offset + page.limit),
       context.supabase
         .from('punch_list_items')
         .select('status, priority')
-        .eq('project_id', activeProjectId),
+        .eq('project_id', activeProjectId)
+        .limit(500),
       earthCamClient
         .from('earthcam_embeds')
         .select('id, project_id, label, url, created_at')
         .eq('project_id', activeProjectId)
-        .order('label', { ascending: true }),
+        .order('label', { ascending: true })
+        .limit(100),
     ]);
-    if (logsError || membersError || submittalsError || rfisError || punchError || embedsError) {
+    const userResults: MobileQueryResult[] = [logsResult, membersResult, submittalsResult, rfisResult, punchResult];
+    if (profile?.role !== 'admin') userResults.push(embedsResult);
+    const fieldFailure = bootstrapQueryFailure(userResults, 'Could not load project field data');
+    if (fieldFailure) return fieldFailure;
+    // Service-client failures cannot be repaired by refreshing the user's session.
+    if (mobileQueryFailed(embedsResult)) {
       return mobileJson({ error: 'Could not load project field data' }, 500);
     }
-    dailyLogs = (logs ?? []).map((log) => ({
+    const { data: logs } = logsResult;
+    const { data: members } = membersResult;
+    const { data: submittalRows } = submittalsResult;
+    const { data: rfiRows } = rfisResult;
+    const { data: punchRows } = punchResult;
+    const { data: embedRows } = embedsResult;
+    const logPage = mobilePage(logs, page.limit);
+    const submittalPage = mobilePage(submittalRows, page.limit);
+    const rfiPage = mobilePage(rfiRows, page.limit);
+    dailyLogsHasMore = logPage.hasMore;
+    submittalsHasMore = submittalPage.hasMore;
+    rfisHasMore = rfiPage.hasMore;
+    dailyLogs = logPage.items.map((log) => ({
       id: log.id,
       projectId: log.project_id,
       logDate: log.log_date,
@@ -171,6 +211,14 @@ export async function GET(request: Request): Promise<Response> {
       workSummary: log.work_summary ?? '',
       safetyNotes: log.safety_notes ?? '',
       createdAt: log.created_at,
+      ...normalizeDailyLogReadFields({
+        weatherTemp: log.weather_temp,
+        weatherWind: log.weather_wind,
+        geoTag: log.geo_tag,
+        personnel: log.personnel,
+        equipment: log.equipment?.map((row) => ({ id: row.id, equipmentType: row.equipment_type, count: row.count, notes: row.notes })),
+        workItems: log.work_items,
+      }),
     }));
     team = ((members ?? []) as unknown as TeamRow[])
       .filter((member) => member.profile)
@@ -183,7 +231,7 @@ export async function GET(request: Request): Promise<Response> {
         canEdit: member.can_edit,
       }))
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
-    submittals = (submittalRows ?? []).map((item) => ({
+    submittals = submittalPage.items.map((item) => ({
       id: item.id,
       projectId: item.project_id,
       number: item.number,
@@ -192,7 +240,7 @@ export async function GET(request: Request): Promise<Response> {
       dueDate: item.due_date,
       createdAt: item.created_at,
     }));
-    rfis = (rfiRows ?? []).map((item) => ({
+    rfis = rfiPage.items.map((item) => ({
       id: item.id,
       projectId: item.project_id,
       number: item.number,
@@ -240,6 +288,13 @@ export async function GET(request: Request): Promise<Response> {
     rfis,
     earthCamEmbeds,
     dashboard,
+    pagination: {
+      offset: page.offset,
+      limit: page.limit,
+      dailyLogsHasMore,
+      submittalsHasMore,
+      rfisHasMore,
+    },
     synchronizedAt: new Date().toISOString(),
   };
   return mobileJson(response);

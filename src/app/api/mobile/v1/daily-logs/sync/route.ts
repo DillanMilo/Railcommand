@@ -1,6 +1,7 @@
 import { isValidSyncOperation, type MobileDailyLogSyncResult } from '@railcommand/domain';
 import { authenticateMobileRequest, mobileJson, mobileOptions } from '@/lib/mobile-api/auth';
 import { canCreateMobileDailyLog } from '@/lib/mobile-api/authorization';
+import { mobileQueryFailed, mobileQueryFailureStatus } from '@/lib/mobile-api/query-failure';
 
 export const dynamic = 'force-dynamic';
 export const OPTIONS = mobileOptions;
@@ -16,7 +17,7 @@ export async function POST(request: Request): Promise<Response> {
     return mobileJson({ error: 'Invalid synchronization operation' }, 400);
   }
 
-  const [{ data: profile }, { data: membership }] = await Promise.all([
+  const [profileResult, membershipResult] = await Promise.all([
     context.supabase.from('profiles').select('role').eq('id', context.user.id).single(),
     context.supabase
       .from('project_members')
@@ -25,6 +26,14 @@ export async function POST(request: Request): Promise<Response> {
       .eq('profile_id', context.user.id)
       .maybeSingle(),
   ]);
+  const accessFailure = mobileQueryFailureStatus([profileResult, membershipResult]);
+  if (accessFailure) {
+    if (accessFailure === 401) return mobileJson({ error: 'Not authenticated', retryable: false }, 401);
+    const denied = accessFailure === 403 || profileResult.error?.code === 'PGRST116';
+    return mobileJson({ error: denied ? 'Permission denied' : 'Could not verify project access', retryable: !denied }, denied ? 403 : 503);
+  }
+  const { data: profile } = profileResult;
+  const { data: membership } = membershipResult;
   if (!canCreateMobileDailyLog({
     organizationRole: profile?.role ?? null,
     projectRole: membership?.project_role ?? null,
@@ -33,24 +42,32 @@ export async function POST(request: Request): Promise<Response> {
     return mobileJson({ error: 'Permission denied' }, 403);
   }
 
-  const { data, error } = await context.supabase.rpc('sync_daily_log_create', {
+  const rpcResult = await context.supabase.rpc('sync_daily_log_create', {
     p_project_id: operation.projectId,
     p_client_id: operation.clientId,
     p_idempotency_key: operation.idempotencyKey,
     p_payload: operation.payload,
   });
-  if (error) {
-    const permanent = error.code === '42501'
-      || error.code?.startsWith('22')
-      || error.code?.startsWith('23');
-    return mobileJson({ error: error.message, retryable: !permanent }, permanent ? 400 : 503);
+  if (mobileQueryFailed(rpcResult)) {
+    const status = mobileQueryFailureStatus([rpcResult]);
+    if (status === 401) return mobileJson({ error: 'Not authenticated', retryable: false }, 401);
+    if (status === 403) return mobileJson({ error: 'Permission denied', retryable: false }, 403);
+    const invalid = rpcResult.error?.code?.startsWith('22') || rpcResult.error?.code?.startsWith('23');
+    return mobileJson({ error: invalid ? 'The daily log could not be accepted. Review the saved field values.' : 'Daily-log synchronization is temporarily unavailable', retryable: !invalid }, invalid ? 400 : 503);
   }
 
-  const record = data as {
+  const record = rpcResult.data as {
     id: string;
     project_id: string;
     duplicate: boolean;
   };
+  if (!record || typeof record.id !== 'string' || typeof record.project_id !== 'string'
+    || typeof operation.clientId !== 'string'
+    || record.id.toLowerCase() !== operation.clientId.toLowerCase()
+    || record.project_id.toLowerCase() !== operation.projectId.toLowerCase()
+    || typeof record.duplicate !== 'boolean') {
+    return mobileJson({ error: 'Daily-log synchronization returned an invalid receipt', retryable: true }, 503);
+  }
   const result: MobileDailyLogSyncResult = {
     id: record.id,
     projectId: record.project_id,

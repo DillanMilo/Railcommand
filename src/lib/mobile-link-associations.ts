@@ -15,7 +15,11 @@ function validSha256(value: string | undefined): value is string {
 export function appleAppSiteAssociation(hostHeader: string | null) {
   const host = normalizeHost(hostHeader);
   const appIDs = host === STAGING_HOST
-    ? [`${APPLE_TEAM_ID}.io.railcommand.app.dev`, `${APPLE_TEAM_ID}.io.railcommand.app.staging`]
+    ? [
+      `${APPLE_TEAM_ID}.io.railcommand.app.dev`,
+      `${APPLE_TEAM_ID}.io.railcommand.app.staging`,
+      `${APPLE_TEAM_ID}.io.railcommand.app`,
+    ]
     : PRODUCTION_HOSTS.has(host)
       ? [`${APPLE_TEAM_ID}.io.railcommand.app`]
       : null;

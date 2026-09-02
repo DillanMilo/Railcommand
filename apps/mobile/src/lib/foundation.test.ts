@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'mocha';
+import type { MobileBootstrap } from '@railcommand/domain';
+import { bootstrapForProject } from './bootstrap-scope';
 
 function source(path: string) {
   return readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
@@ -107,22 +109,28 @@ describe('Expo Phase 3 security and offline boundaries', () => {
 
   it('bridges supported web project paths into their native mobile workspaces', () => {
     const bridge = source('../app/projects/[id]/[...module].tsx');
-    assert.match(bridge, /submittals: '\/\(tabs\)\/submittals'/);
-    assert.match(bridge, /rfis: '\/\(tabs\)\/rfis'/);
-    assert.match(bridge, /'daily-logs': '\/\(tabs\)\/logs'/);
-    assert.match(bridge, /cameras: '\/\(tabs\)\/cameras'/);
-    assert.match(bridge, /team: '\/team'/);
-    assert.match(bridge, /selectProject\(id\)/);
+    const destinations = source('./project-routes.ts');
+    assert.match(destinations, /submittals: '\/\(tabs\)\/submittals'/);
+    assert.match(destinations, /rfis: '\/\(tabs\)\/rfis'/);
+    assert.match(destinations, /'daily-logs': '\/\(tabs\)\/logs'/);
+    assert.match(destinations, /cameras: '\/\(tabs\)\/cameras'/);
+    assert.match(destinations, /team: '\/team'/);
+    assert.match(bridge, /selectProjectRef\.current\(next.projectId\)/);
     assert.doesNotMatch(bridge, /Linking\.openURL/);
   });
 
   it('opens cached project links immediately and never selects an unknown cached project', () => {
     const provider = source('../providers/mobile-data-provider.tsx');
-    assert.match(provider, /available\?\.projects\.some\(\(project\) => project\.id === projectId\)/);
-    assert.match(provider, /await cacheBootstrap\(userId, selected\)/);
-    assert.match(provider, /void refresh\(projectId\)/);
-    assert.match(provider, /requestedProjectIsCached/);
-    assert.match(provider, /cachedActiveProjectId = requestedProjectIsCached \? projectId! : cached\.activeProjectId/);
+    assert.match(provider, /loadProject\(projectId, true, true\)/);
+    const cached: MobileBootstrap = {
+      userId: 'A', activeProjectId: 'P', synchronizedAt: '2026-08-30T12:00:00Z', dailyLogs: [], team: [],
+      projects: [{ id: 'P', name: 'Synthetic project', status: 'active', location: '', client: '', role: 'engineer', canEdit: true, updatedAt: '2026-08-30T12:00:00Z' }],
+    };
+    assert.equal(bootstrapForProject(cached, 'A', 'P').activeProjectId, 'P');
+    assert.throws(() => bootstrapForProject(cached, 'A', 'unknown'), /membership/);
+    assert.throws(() => bootstrapForProject(cached, 'B', 'P'), /different account/);
+    // Immediate cached rendering and network races are executed, not regex-
+    // simulated, in mobile-data-session.test.ts.
   });
 
   it('rejects an authentication callback that does not contain verifiable credentials', () => {
@@ -197,9 +205,9 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.doesNotMatch(nativeBoundary, /console\.(?:log|debug|info|warn|error)/);
     assert.match(source('./config-guard.ts'), /protocol !== 'https:'/);
 
-    const cameras = source('../app/(tabs)/cameras.tsx');
-    assert.match(cameras, /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
-    assert.match(cameras, /originWhitelist=\{\['https:\/\/share\.earthcam\.net\/\*'\]\}/);
+    const cameras = source('../components/earthcam-player.tsx');
+    assert.match(source('./earthcam-player.ts'), /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
+    assert.match(cameras, /originWhitelist=\{EARTHCAM_DISPATCH_ORIGINS\}/);
     assert.match(cameras, /onShouldStartLoadWithRequest/);
     assert.match(cameras, /sharedCookiesEnabled=\{false\}/);
     assert.match(cameras, /thirdPartyCookiesEnabled=\{false\}/);

@@ -14,6 +14,11 @@ screen size or testing every possible OS/device combination.
 
 ## Current decision status
 
+**August 30 follow-up:** the status below records the earlier accepted foundation,
+not acceptance of subsequent client/schema changes or installed build `300003`.
+See [current backend readiness](./BACKEND_READINESS_2026-08-30.md) and the
+[staging integration evidence](./STAGING_INTEGRATION_2026-08-30.md) before advancing.
+
 The internally executable Phase 5 foundation is complete on the isolated feature
 branch: the scoped native workflows use the RailCommand visual system, the physical
 iPhone and iPad critical paths pass, Android phone/tablet builds and emulator evidence

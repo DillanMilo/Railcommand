@@ -55,3 +55,71 @@ advertising, microphone, contacts, or background-location SDK or permission. It 
 an Apple privacy manifest containing the approved linked/app-functionality data types
 and required-reason APIs from the exact Expo dependency set. Any new SDK or device
 permission reopens this review before TestFlight, Play testing, or submission.
+
+## Expo PDF export follow-up — isolated visual-parity branch
+
+The current Expo client uses user-scoped SQLite and app-owned files, not the
+Capacitor IndexedDB locations described in the historical Phase 2 table above.
+The following addition is implemented locally and is not yet in internal build
+300003 or a store submission:
+
+- `expo-sharing` provides **outgoing** RFI/Submittal PDF sharing only. No incoming
+  share extension, app group, broad photo-library permission, analytics, or
+  crash-reporting integration is configured by this addition.
+- The authenticated mobile API receives selected project/record IDs, checks live
+  membership and RLS, and renders a report containing project/record text and
+  relevant participant names. The response is private/no-store and bounded to
+  2 MiB; it is not placed in a public cache or stored as a server artifact.
+- Native files use generated filenames in app Documents under
+  `railcommand/<authenticated-user-id>/exports`. Neither server filenames nor
+  supplied paths control the local location. Account/project changes before
+  sharing cancel the operation.
+- The user chooses the destination in the OS share sheet. A receiver can retain
+  a copy; RailCommand sign-out cannot revoke a copy deliberately shared outside
+  the app. No recipient or public upload is chosen automatically.
+- Normal share completion/cancellation/error removes the temporary local file;
+  safe sign-out removes the user's entire app-owned directory. If the process
+  terminates before cleanup, its private PDF can remain until sign-out. Android
+  receiver read timing and process-death cleanup require device verification.
+- Export is online-only and never silently queued. Existing filters and device
+  drafts are preserved on offline, auth, download, storage and share errors.
+
+Before beta/store distribution, reconcile this outgoing-file use and the exact
+autolinked dependency's privacy manifest with the current store disclosures.
+This note is an implementation inventory, not a claim of legal or store approval.
+
+### Native record detail follow-up — local, not released
+
+Previously opened RFI/Submittal detail text, participant display names, response
+text, review notes, milestone labels and attachment metadata are cached in the
+existing user/build-profile SQLite database (50-record/30-day bounds, 2 MiB per
+record). Explicit serializers exclude transport URLs, access tokens, emails and
+unrequested profile fields. Sign-out removes the user database with other private
+device data. The cache is not an authorization boundary; online refresh and
+attachment opening revalidate membership and caller RLS access.
+
+Attachment previews are online-only and use short-lived, scope-checked Storage
+links in component memory, with `expo-image` caching set to `none`. No attachment
+blob or signed URL is added to the text cache. Native image-cache behavior still
+requires installed-device verification. Other files open only after the user
+confirms browser handoff; browser downloads/history are outside RailCommand's
+sign-out cleanup and this is disclosed before handoff. No new telemetry or third-
+party analytics processor was introduced. Reconcile these additions with final
+store privacy disclosures before any beta/release.
+
+### Native creation draft follow-up — local, not released
+
+RFI/Submittal form input (title, question/description, assignee ID, priority,
+specification section, due date and milestone ID) is saved in user/build-profile
+SQLite, partitioned by project and record kind. Client UUID and optional server
+creation receipt support safe retries. Drafts have no automatic expiry and are
+included in sign-out unsynced-work inspection and full user-database cleanup.
+Project reference caches contain only IDs/display names and expire after seven
+days; no tokens, emails, signed URLs or attachment bytes enter this store.
+
+Only explicit online creation sends the text to the configured backend using
+the user's bearer session. These forms never automatically enqueue or submit
+on reconnection. No new telemetry, email processor or native permission was
+added. File/photo creation is not implemented for these forms. Device-level
+storage failure, background/sign-out races and lifecycle cleanup are still
+acceptance items; reconcile the new text retention with final disclosures.

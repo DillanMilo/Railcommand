@@ -47,5 +47,13 @@
         "EXPO_PUBLIC_BUILD_PROFILE": "production"
       }
     }
+  },
+  "submit": {
+    "beta": {
+      "ios": {
+        "ascAppId": "6803576049",
+        "appleTeamId": "PQAGLH9L66"
+      }
+    }
   }
 }

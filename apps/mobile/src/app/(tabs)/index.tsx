@@ -26,6 +26,10 @@ export default function OverviewScreen() {
   const budgetTotal = active?.budgetTotal ?? 0;
   const budgetSpent = active?.budgetSpent ?? 0;
   const openWebCreate = async (module: string) => {
+    if ((module === 'rfis' || module === 'submittals') && activeProjectId) {
+      router.push({ pathname: '/record/[kind]/new', params: { kind: module, projectId: activeProjectId } });
+      return;
+    }
     if (!online || !activeProjectId) {
       Alert.alert('Connectivity required', `Creating this ${module.replace('-', ' ')} is online-only and is never silently queued.`);
       return;

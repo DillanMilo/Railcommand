@@ -74,7 +74,7 @@ const SubmittalsPDF: React.FC<SubmittalsPDFProps> = ({
 
         {/* Table */}
         <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
+          <View style={styles.tableHeaderRow} fixed>
             <Text style={[styles.tableHeaderCell, { width: colWidths[0] }]}>Number</Text>
             <Text style={[styles.tableHeaderCell, { width: colWidths[1] }]}>Title</Text>
             <Text style={[styles.tableHeaderCell, { width: colWidths[2] }]}>Spec Section</Text>
@@ -94,7 +94,7 @@ const SubmittalsPDF: React.FC<SubmittalsPDFProps> = ({
                 wrap={false}
               >
                 <Text style={[styles.tableCell, { width: colWidths[0] }]}>{s.number}</Text>
-                <Text style={[styles.tableCell, { width: colWidths[1] }]}>{s.title}</Text>
+                <Text style={[styles.tableCell, { width: colWidths[1], paddingRight: 6 }]}>{s.title}</Text>
                 <Text style={[styles.tableCell, { width: colWidths[2] }]}>{s.spec_section}</Text>
                 <Text
                   style={[

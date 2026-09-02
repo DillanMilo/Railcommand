@@ -6,11 +6,12 @@ import { mobileConfig } from '@/lib/config';
 import { colors, fonts } from '@/theme';
 import railCommandMark from '../../assets/images/icon.png';
 
-export function WebHeader({ projectName, online, expanded, onProjectPress }: {
+export function WebHeader({ projectName, online, expanded, onProjectPress, navigationDisabled = false }: {
   projectName: string;
   online: boolean;
   expanded?: boolean;
   onProjectPress?: () => void;
+  navigationDisabled?: boolean;
 }) {
   const { width } = useWindowDimensions();
   const openSearch = async () => {
@@ -28,9 +29,9 @@ export function WebHeader({ projectName, online, expanded, onProjectPress }: {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Active project: ${projectName}. ${online ? 'Online' : 'Offline'}.`}
-      accessibilityState={{ expanded }}
+      accessibilityState={{ expanded, disabled: navigationDisabled || !onProjectPress }}
       onPress={onProjectPress}
-      disabled={!onProjectPress}
+      disabled={navigationDisabled || !onProjectPress}
       style={({ pressed }) => [styles.project, pressed && styles.pressed]}
     >
       <Image source={railCommandMark} style={styles.mark} resizeMode="cover" accessible={false} alt="" />
@@ -39,13 +40,13 @@ export function WebHeader({ projectName, online, expanded, onProjectPress }: {
       {onProjectPress ? <SymbolView accessible={false} name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor="#CBD5E1" size={14} /> : null}
     </Pressable>
     <View style={styles.headerIcons}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Open RailCommand search" onPress={() => void openSearch()} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Open RailCommand search" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => void openSearch()} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
         <SymbolView accessible={false} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor="#64748B" size={23} />
       </Pressable>
-      {width >= 360 ? <Pressable accessibilityRole="button" accessibilityLabel="Open notification settings" onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
+      {width >= 360 ? <Pressable accessibilityRole="button" accessibilityLabel="Open notification settings" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
         <SymbolView accessible={false} name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} tintColor="#64748B" size={21} />
       </Pressable> : null}
-      <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Open account" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}>
         <Text style={styles.avatarText}>RC</Text>
       </Pressable>
     </View>

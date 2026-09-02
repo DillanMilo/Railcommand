@@ -15,10 +15,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import { EarthCamPlayer } from '@/components/earthcam-player';
 import { Field, PrimaryButton, Screen, SecondaryButton, StatusBanner } from '@/components/ui';
-import { BreadcrumbRow, ModuleHeading, WebActionButton, WebEmpty, WebHeader } from '@/components/web-shell';
+import { BreadcrumbRow, ModuleHeading, WebActionButton, WebHeader } from '@/components/web-shell';
 import { mobileApi } from '@/lib/api';
+import { earthCamAccessNotice, earthCamFeedsForProject, isEarthCamShareUrl } from '@/lib/earthcam-player';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
 
@@ -32,16 +33,6 @@ type FeedForm = {
 
 const emptyForm: FeedForm = { label: '', embedInput: '' };
 
-const isAllowedEarthCamNavigation = (value: string) => {
-  if (value === 'about:blank') return true;
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'share.earthcam.net';
-  } catch {
-    return false;
-  }
-};
-
 const readableError = (error: unknown, fallback: string) => error instanceof Error
   ? error.message
   : fallback;
@@ -49,10 +40,10 @@ const readableError = (error: unknown, fallback: string) => error instanceof Err
 export default function CamerasScreen() {
   const { activeProjectId, bootstrap, online, refresh } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
-  const embeds = bootstrap?.earthCamEmbeds ?? [];
+  const embeds = earthCamFeedsForProject(bootstrap?.earthCamEmbeds ?? [], activeProjectId);
   const canView = project?.canViewEarthCam === true;
   const canManage = project?.canManageEarthCam === true;
-  const [failedIds, setFailedIds] = useState<Set<string>>(() => new Set());
+  const accessNotice = earthCamAccessNotice(activeProjectId, project, online);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FeedForm>(emptyForm);
   const [formError, setFormError] = useState('');
@@ -90,16 +81,11 @@ export default function CamerasScreen() {
     setSaving(true);
     setFormError('');
     try {
-      const saved = await mobileApi.saveEarthCamEmbed({
+      await mobileApi.saveEarthCamEmbed({
         projectId: activeProjectId,
         ...(form.id ? { id: form.id } : {}),
         label: form.label,
         embedInput: form.embedInput,
-      });
-      setFailedIds((current) => {
-        const next = new Set(current);
-        next.delete(saved.id);
-        return next;
       });
       await refresh(activeProjectId);
       setFormOpen(false);
@@ -145,7 +131,11 @@ export default function CamerasScreen() {
   };
 
   const openFeedExternally = async (label: string, url: string) => {
-    if (!isAllowedEarthCamNavigation(url)) {
+    if (!online) {
+      Alert.alert('EarthCam is online-only', 'Reconnect before opening a live feed.');
+      return;
+    }
+    if (!isEarthCamShareUrl(url)) {
       Alert.alert('EarthCam link blocked', 'RailCommand only opens approved HTTPS EarthCam share links.');
       return;
     }
@@ -162,7 +152,7 @@ export default function CamerasScreen() {
       <BreadcrumbRow current="Cameras" />
       <ModuleHeading
         title="Cameras"
-        count={embeds.length}
+        count={canView ? embeds.length : undefined}
         subtitle="Live EarthCam feeds stream from EarthCam. RailCommand only stores the project embed link."
         badges={<Text style={styles.beta}>Beta</Text>}
         actions={canManage ? <WebActionButton
@@ -173,10 +163,9 @@ export default function CamerasScreen() {
           icon={<SymbolView accessible={false} name={{ ios: 'plus', android: 'add', web: 'add' }} tintColor={colors.white} size={18} />}
         /> : undefined}
       />
-      {!canView ? <StatusBanner
+      {accessNotice ? <StatusBanner
         tone="warning"
-        title="Camera access unavailable"
-        detail="Your current project role does not have permission to view EarthCam feeds."
+        {...accessNotice}
       /> : null}
       {canView && !online ? <StatusBanner
         tone="warning"
@@ -185,8 +174,11 @@ export default function CamerasScreen() {
       /> : null}
       {canView && embeds.length === 0 ? <View style={styles.emptyCard}>
         <View style={styles.cameraIcon}><SymbolView accessible={false} name={{ ios: 'video', android: 'videocam', web: 'videocam' }} tintColor={colors.orange} size={27} /></View>
-        <Text style={styles.emptyTitle}>Add an EarthCam feed</Text>
-        <Text style={styles.emptyDetail}>Paste the EarthCam share link or Broadway Media Player embed code generated from the customer&apos;s EarthCam project.</Text>
+        <Text style={styles.emptyTitle}>{canManage ? 'Add an EarthCam feed' : 'No EarthCam feeds available'}</Text>
+        <Text style={styles.emptyDetail}>{canManage
+          ? 'Paste the EarthCam share link or Broadway Media Player embed code generated from the customer’s EarthCam project.'
+          : online ? 'No feeds are available for this project. A project administrator can configure EarthCam access.'
+            : 'No feed labels are saved for this project. Reconnect to refresh the list; live video is online-only.'}</Text>
         {canManage ? <WebActionButton title="Add EarthCam Feed" primary onPress={() => openForm()} disabled={!online || saving} /> : null}
       </View> : null}
       {canView && embeds.length > 0 ? <View style={styles.feedList}>{embeds.map((embed) => <View key={embed.id} style={styles.feedCard}>
@@ -204,27 +196,7 @@ export default function CamerasScreen() {
             </Pressable> : null}
           </View>
         </View>
-        {online && !failedIds.has(embed.id) ? <View style={styles.frame}>
-          <WebView
-            source={{ uri: embed.url }}
-            accessibilityLabel={`Live EarthCam feed: ${embed.label}`}
-            originWhitelist={['https://share.earthcam.net/*']}
-            onShouldStartLoadWithRequest={(request) => isAllowedEarthCamNavigation(request.url)}
-            onError={() => setFailedIds((current) => new Set(current).add(embed.id))}
-            javaScriptEnabled
-            domStorageEnabled={false}
-            sharedCookiesEnabled={false}
-            thirdPartyCookiesEnabled={false}
-            allowFileAccess={false}
-            allowFileAccessFromFileURLs={false}
-            allowUniversalAccessFromFileURLs={false}
-            mixedContentMode="never"
-            setSupportMultipleWindows={false}
-            allowsFullscreenVideo
-            mediaPlaybackRequiresUserAction
-            style={styles.webview}
-          />
-        </View> : <WebEmpty>{online ? 'This EarthCam feed could not be loaded. Use the external-link button to open it securely.' : 'Live feed unavailable while offline.'}</WebEmpty>}
+        <EarthCamPlayer label={embed.label} url={embed.url} online={online} />
       </View>)}</View> : null}
     </Screen>
 
@@ -302,8 +274,6 @@ const styles = StyleSheet.create({
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.35 },
   pressed: { opacity: 0.7 },
-  frame: { height: 224, margin: 14, marginTop: 0, overflow: 'hidden', borderWidth: 1, borderColor: colors.line, borderRadius: 8, backgroundColor: '#000' },
-  webview: { flex: 1, backgroundColor: '#000' },
   modalSafe: { flex: 1, backgroundColor: colors.cream },
   modalKeyboard: { flex: 1 },
   modalHeader: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.paper },

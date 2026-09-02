@@ -1,13 +1,15 @@
 import type { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import { parseMobileDeepLink } from '@railcommand/domain';
 import { supabase } from '@/lib/supabase';
 import { mobileConfig } from '@/lib/config';
 
 type AuthContextValue = {
   session: Session | null;
+  sessionRevision: number;
+  isSessionCurrent(userId: string | null, revision: number): boolean;
   loading: boolean;
   googleEnabled: boolean;
   signIn(email: string, password: string): Promise<string | null>;
@@ -20,17 +22,42 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
+  const [sessionRevision, setSessionRevision] = useState(0);
+  const owner = useRef({ userId: null as string | null, revision: 0 });
   const [loading, setLoading] = useState(true);
   const [googleEnabled, setGoogleEnabled] = useState(false);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    let current = true;
+    let authEventObserved = false;
+    const accept = (next: Session | null) => {
+      if (!current) return;
+      const userId = next?.user.id ?? null;
+      if (userId !== owner.current.userId) {
+        owner.current = { userId, revision: owner.current.revision + 1 };
+        setSessionRevision(owner.current.revision);
+      }
+      setSession(next);
       setLoading(false);
+    };
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!authEventObserved) accept(data.session);
+    }).catch(() => { if (current && !authEventObserved) setLoading(false); });
+    // Synchronous invalidation also covers A -> B -> A events batched before a
+    // React render; comparing only the final user ID would revive old requests.
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      authEventObserved = true;
+      accept(next);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
-    return () => data.subscription.unsubscribe();
+    return () => {
+      current = false;
+      owner.current = { userId: null, revision: owner.current.revision + 1 };
+      data.subscription.unsubscribe();
+    };
   }, []);
+
+  const isSessionCurrent = useCallback((userId: string | null, revision: number) =>
+    owner.current.userId === userId && owner.current.revision === revision, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,6 +97,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
+    sessionRevision,
+    isSessionCurrent,
     loading,
     googleEnabled,
     signIn: async (email, password) => {
@@ -105,7 +134,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) throw error;
     },
-  }), [googleEnabled, loading, session]);
+  }), [googleEnabled, isSessionCurrent, loading, session, sessionRevision]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

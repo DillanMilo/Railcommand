@@ -2,10 +2,11 @@ import type { MobileRfi } from '@railcommand/domain';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen, StatusBanner } from '@/components/ui';
+import { ReportExportButton } from '@/components/report-export-button';
 import { BreadcrumbRow, FilterTabs, ModuleHeading, RailBotButton, WebActionButton, WebEmpty, WebHeader, WebSearch } from '@/components/web-shell';
-import { mobileConfig } from '@/lib/config';
+import { recordsForProject } from '@/lib/project-routes';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
 
@@ -16,7 +17,7 @@ const filterStatus: Record<Filter, MobileRfi['status'] | null> = { All: null, Op
 export default function RfisScreen() {
   const { activeProjectId, bootstrap, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
-  const records = useMemo(() => bootstrap?.rfis ?? [], [bootstrap?.rfis]);
+  const records = useMemo(() => recordsForProject(bootstrap?.rfis, activeProjectId), [bootstrap?.rfis, activeProjectId]);
   const [filter, setFilter] = useState<Filter>('All');
   const [search, setSearch] = useState('');
   const visible = useMemo(() => records.filter((item) => {
@@ -25,34 +26,23 @@ export default function RfisScreen() {
     return (!status || item.status === status) && (!query || `${item.number} ${item.subject}`.toLocaleLowerCase().includes(query));
   }), [filter, records, search]);
 
-  const openWeb = async (suffix = '') => {
-    if (!online || !activeProjectId) {
-      Alert.alert('RFIs are online-only', 'Cached RFIs remain readable, but creation and export require connectivity.');
-      return;
-    }
-    const url = new URL(`/projects/${activeProjectId}/rfis${suffix}`, mobileConfig.apiBaseUrl);
-    try {
-      await Linking.openURL(url.toString());
-    } catch {
-      Alert.alert('Could not open RFIs on web', 'Cached records and saved mobile work are unchanged. Check connectivity and try again.');
-    }
-  };
-
   return <Screen>
     <WebHeader projectName={project?.name ?? 'Select project'} online={online} onProjectPress={() => router.push('/(tabs)')} />
     <BreadcrumbRow current="RFIs" />
     <ModuleHeading title="RFIs" subtitle={`${records.length} item${records.length === 1 ? '' : 's'}`} actions={<>
-      <WebActionButton title="Export PDF" onPress={() => void openWeb('?export=pdf')} icon={<SymbolView accessible={false} name={{ ios: 'document.badge.arrow.up', android: 'download', web: 'download' }} tintColor={colors.ink} size={19} />} />
-      <WebActionButton title="New RFI" primary onPress={() => void openWeb('/new')} icon={<SymbolView accessible={false} name={{ ios: 'plus', android: 'add', web: 'add' }} tintColor={colors.white} size={19} />} />
+      <ReportExportButton kind="rfis" projectId={activeProjectId} recordIds={visible.map((item) => item.id)} online={online} />
+      <WebActionButton title="New RFI" primary disabled={!activeProjectId} onPress={() => router.push({ pathname: '/record/[kind]/new', params: { kind: 'rfis', projectId: activeProjectId! } })} icon={<SymbolView accessible={false} name={{ ios: 'plus', android: 'add', web: 'add' }} tintColor={colors.white} size={19} />} />
     </>} />
     {!online ? <StatusBanner tone="warning" title="Offline — showing saved RFIs" detail="Previously synchronized records remain readable. Creating, responding, editing, and exporting are online-only and are never silently queued." /> : null}
     <FilterTabs items={filters} selected={filter} onSelect={(value) => setFilter(value as Filter)} />
     <WebSearch value={search} onChangeText={setSearch} placeholder="Search RFIs…" />
-    {visible.length ? <View style={styles.list}>{visible.map((item) => <View key={item.id} style={styles.row}>
+    {visible.length ? <View style={styles.list}>{visible.map((item) => <Pressable key={item.id} style={styles.row}
+      accessibilityRole="button" accessibilityLabel={`Open ${item.number}: ${item.subject}`}
+      onPress={() => router.push({ pathname: '/record/[kind]/[id]', params: { kind: 'rfis', id: item.id, projectId: item.projectId } })}>
       <View style={styles.rowTop}><Text style={styles.number}>{item.number}</Text><Text style={styles.status}>{item.status}</Text></View>
       <Text style={styles.title}>{item.subject}</Text>
       <Text style={styles.meta}>{item.priority.toUpperCase()} · Due {new Date(`${item.dueDate}T12:00:00`).toLocaleDateString()}</Text>
-    </View>)}</View> : <WebEmpty>No RFIs match your filters.</WebEmpty>}
+    </Pressable>)}</View> : <WebEmpty>No RFIs match your filters.</WebEmpty>}
     <RailBotButton />
   </Screen>;
 }

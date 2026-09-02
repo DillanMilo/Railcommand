@@ -7,6 +7,7 @@ import {
   authorizeMobilePhotoOperation,
   isRetryablePhotoDatabaseError,
 } from '@/lib/mobile-api/photo-sync';
+import { mobileQueryFailureStatus } from '@/lib/mobile-api/query-failure';
 
 export const dynamic = 'force-dynamic';
 export const OPTIONS = mobileOptions;
@@ -36,7 +37,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const operation = body.operation;
-  const { data, error } = await context.supabase.rpc('sync_daily_log_photo_attachment', {
+  const result = await context.supabase.rpc('sync_daily_log_photo_attachment', {
     p_attachment_id: operation.operationId,
     p_project_id: operation.projectId,
     p_daily_log_id: operation.parentEntityId,
@@ -51,9 +52,19 @@ export async function POST(request: Request): Promise<Response> {
     p_geo_lng: operation.payload.geoLng,
     p_captured_at: operation.payload.capturedAt,
   });
-  if (error) {
-    const retryable = isRetryablePhotoDatabaseError(error.code);
-    return mobileJson({ error: error.message, retryable }, retryable ? 503 : 400);
+  const failureStatus = mobileQueryFailureStatus([result]);
+  if (failureStatus === 401 || failureStatus === 403) {
+    return mobileJson({ error: failureStatus === 401 ? 'Not authenticated' : 'Permission denied', retryable: false }, failureStatus);
   }
-  return mobileJson(data);
+  if (failureStatus) {
+    const retryable = isRetryablePhotoDatabaseError(result.error?.code);
+    return mobileJson({ error: retryable ? 'Could not finalize the photo' : 'Invalid photo finalization request', retryable }, retryable ? 503 : 400);
+  }
+  const receipt = result.data;
+  if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)
+    || typeof receipt.id !== 'string' || receipt.id.toLowerCase() !== operation.operationId.toLowerCase()
+    || typeof receipt.duplicate !== 'boolean') {
+    return mobileJson({ error: 'Could not verify photo finalization', retryable: true }, 503);
+  }
+  return mobileJson({ id: receipt.id, duplicate: receipt.duplicate });
 }

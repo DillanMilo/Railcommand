@@ -1,8 +1,73 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
 import { MobileApiClient, MobileApiError } from './index';
+import type { MobileRecordDraft } from '@railcommand/domain';
 
 describe('MobileApiClient', () => {
+  it('keeps the creation identity and body unchanged when refreshing a session', async () => {
+    const draft = { clientId: 'fixture-id', kind: 'rfis', projectId: 'fixture-project', title: 'Synthetic' } as MobileRecordDraft;
+    let calls = 0;
+    const client = new MobileApiClient({ baseUrl: 'https://staging.example', getAccessToken: async () => 'expired', refreshAccessToken: async () => 'refreshed',
+      fetch: async (input, init) => {
+        const req = new Request(input, init); calls += 1;
+        assert.equal(req.url, 'https://staging.example/api/mobile/v1/records/create');
+        assert.equal(req.method, 'POST'); assert.equal(req.headers.get('idempotency-key'), draft.clientId);
+        assert.equal(req.headers.has('next-action'), false); assert.deepEqual(await req.json(), draft);
+        assert.equal(req.headers.get('authorization'), calls === 1 ? 'Bearer expired' : 'Bearer refreshed');
+        return calls === 1 ? Response.json({ error: 'expired' }, { status: 401 }) : Response.json({ id: draft.clientId });
+      },
+    });
+    assert.equal((await client.createRecord(draft)).id, draft.clientId); assert.equal(calls, 2);
+  });
+  it('reads exact record and attachment scope with bearer headers, not URL credentials or web actions', async () => {
+    const scope = { kind: 'rfis' as const, projectId: 'project-a', recordId: 'record-b' };
+    const requests: URL[] = [];
+    const client = new MobileApiClient({ baseUrl: 'https://staging.example', getAccessToken: async () => 'synthetic-token',
+      fetch: async (input, init) => {
+        const request = new Request(input, init); const url = new URL(request.url); requests.push(url);
+        assert.equal(request.method, 'GET'); assert.equal(request.headers.get('authorization'), 'Bearer synthetic-token');
+        assert.equal(request.headers.has('next-action'), false); assert.doesNotMatch(url.toString(), /synthetic-token/);
+        for (const [key, value] of Object.entries(scope)) assert.equal(url.searchParams.get(key), value);
+        return Response.json({});
+      },
+    });
+    await client.getRecordDetail(scope); await client.getRecordAttachment(scope, 'photo-c');
+    assert.equal(requests[0].pathname, '/api/mobile/v1/records/detail');
+    assert.equal(requests[1].pathname, '/api/mobile/v1/records/attachment');
+    assert.equal(requests[1].searchParams.get('attachmentId'), 'photo-c');
+  });
+  it('does not request or sign an attachment while only record text is opened', async () => {
+    const paths: string[] = [];
+    const scope = { kind: 'rfis' as const, projectId: 'project-a', recordId: 'record-b' };
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example', getAccessToken: async () => 'token',
+      fetch: async (input) => {
+        paths.push(new URL(input instanceof Request ? input.url : input.toString()).pathname);
+        return Response.json({});
+      },
+    });
+    await client.getRecordDetail(scope);
+    assert.deepEqual(paths, ['/api/mobile/v1/records/detail']);
+    await client.getRecordAttachment(scope, 'attachment-c');
+    assert.deepEqual(paths, ['/api/mobile/v1/records/detail', '/api/mobile/v1/records/attachment']);
+  });
+  it('exports a filtered report through bearer JSON without a URL token or web action', async () => {
+    const selection = { projectId: 'project-a', kind: 'rfis' as const, recordIds: ['rfi-b', 'rfi-a'] };
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com',
+      getAccessToken: async () => 'test-access-token',
+      fetch: async (input, init) => {
+        const request = new Request(input, init);
+        assert.equal(request.method, 'POST');
+        assert.equal(request.url, 'https://staging.example.com/api/mobile/v1/reports/pdf');
+        assert.equal(request.headers.get('authorization'), 'Bearer test-access-token');
+        assert.equal(request.headers.has('next-action'), false);
+        assert.deepEqual(await request.json(), selection);
+        return Response.json({ mimeType: 'application/pdf', recordCount: 2 });
+      },
+    });
+    assert.equal((await client.exportPdfReport(selection)).recordCount, 2);
+  });
   it('uses bearer JSON endpoints instead of Server Action protocols', async () => {
     let authorization = '';
     let hasNextAction = true;
@@ -25,6 +90,42 @@ describe('MobileApiClient', () => {
     assert.equal(authorization, 'Bearer access-token');
     assert.equal(hasNextAction, false);
     assert.equal(path, '/api/mobile/v1/bootstrap');
+  });
+
+  it('deduplicates identical in-flight reads but permits a later refresh', async () => {
+    let calls = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com', getAccessToken: async () => 'access-token',
+      fetch: async () => { calls += 1; await gate; return Response.json({ userId: 'u', projects: [], activeProjectId: null, dailyLogs: [], team: [], synchronizedAt: new Date().toISOString() }); },
+    });
+    const first = client.getBootstrap('project-a');
+    const duplicate = client.getBootstrap('project-a');
+    release();
+    assert.strictEqual(first, duplicate);
+    await Promise.all([first, duplicate]);
+    assert.equal(calls, 1);
+    await client.getBootstrap('project-a');
+    assert.equal(calls, 2);
+  });
+
+  it('sends bounded pagination parameters and reports payload-free transfer metrics', async () => {
+    const metrics: unknown[] = [];
+    const client = new MobileApiClient({
+      baseUrl: 'https://staging.example.com', getAccessToken: async () => 'private-token',
+      onRequestMetric: (metric) => metrics.push(metric),
+      fetch: async (input) => {
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        assert.equal(url.searchParams.get('offset'), '90');
+        assert.equal(url.searchParams.get('limit'), '25');
+        return Response.json({ userId: 'u', projects: [], activeProjectId: null, dailyLogs: [], team: [], synchronizedAt: new Date().toISOString() });
+      },
+    });
+    await client.getBootstrap('project-a', { offset: 90, limit: 25 });
+    assert.equal(metrics.length, 1);
+    assert.deepEqual(Object.keys(metrics[0] as object).sort(), ['approximateTransferredBytes', 'operation', 'status']);
+    assert.doesNotMatch(JSON.stringify(metrics), /private-token|project-a|staging\.example/);
   });
 
   it('classifies authorization failures as permanent', async () => {

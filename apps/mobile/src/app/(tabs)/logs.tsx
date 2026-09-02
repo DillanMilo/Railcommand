@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen, StatusBanner } from '@/components/ui';
 import { RailBotButton, WebHeader } from '@/components/web-shell';
+import { recordsForProject } from '@/lib/project-routes';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
 
@@ -23,7 +24,8 @@ export default function LogsScreen() {
   const [mode, setMode] = useState<'calendar' | 'list'>('calendar');
   const [month, setMonth] = useState(() => new Date());
   const cells = useMemo(() => monthCells(month), [month]);
-  const logsByDate = useMemo(() => new Map((bootstrap?.dailyLogs ?? []).map((log) => [log.logDate, log])), [bootstrap?.dailyLogs]);
+  const logs = useMemo(() => recordsForProject(bootstrap?.dailyLogs, activeProjectId), [bootstrap?.dailyLogs, activeProjectId]);
+  const logsByDate = useMemo(() => new Map(logs.map((log) => [log.logDate, log])), [logs]);
   const today = dateKey(new Date());
 
   return <Screen>
@@ -71,11 +73,11 @@ export default function LogsScreen() {
         })}</View>
       </View>
     </> : <View style={styles.list}>
-      {(bootstrap?.dailyLogs ?? []).map((log) => <Pressable key={log.id} accessibilityRole="button" onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.logRow}>
+      {logs.map((log) => <Pressable key={log.id} accessibilityRole="button" onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.logRow}>
         <View style={{ flex: 1 }}><Text style={styles.logDate}>{new Date(`${log.logDate}T12:00:00`).toLocaleDateString()}</Text><Text numberOfLines={2} style={styles.logSummary}>{log.workSummary || 'No work summary recorded'}</Text></View>
         <SymbolView accessible={false} name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={colors.muted} size={18} />
       </Pressable>)}
-      {(bootstrap?.dailyLogs.length ?? 0) === 0 ? <Text style={styles.empty}>No daily logs found.</Text> : null}
+      {logs.length === 0 ? <Text style={styles.empty}>No daily logs found.</Text> : null}
     </View>}
     <RailBotButton />
   </Screen>;

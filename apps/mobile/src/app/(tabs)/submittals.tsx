@@ -2,10 +2,11 @@ import type { MobileSubmittal } from '@railcommand/domain';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen, StatusBanner } from '@/components/ui';
+import { ReportExportButton } from '@/components/report-export-button';
 import { BreadcrumbRow, FilterTabs, ModuleHeading, RailBotButton, WebActionButton, WebEmpty, WebHeader, WebSearch } from '@/components/web-shell';
-import { mobileConfig } from '@/lib/config';
+import { recordsForProject } from '@/lib/project-routes';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
 
@@ -23,7 +24,7 @@ const filterStatus: Record<Filter, MobileSubmittal['status'] | null> = {
 export default function SubmittalsScreen() {
   const { activeProjectId, bootstrap, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
-  const records = useMemo(() => bootstrap?.submittals ?? [], [bootstrap?.submittals]);
+  const records = useMemo(() => recordsForProject(bootstrap?.submittals, activeProjectId), [bootstrap?.submittals, activeProjectId]);
   const [filter, setFilter] = useState<Filter>('All');
   const [search, setSearch] = useState('');
   const visible = useMemo(() => records.filter((item) => {
@@ -32,34 +33,23 @@ export default function SubmittalsScreen() {
     return (!status || item.status === status) && (!query || `${item.number} ${item.title}`.toLocaleLowerCase().includes(query));
   }), [filter, records, search]);
 
-  const openWeb = async (suffix = '') => {
-    if (!online || !activeProjectId) {
-      Alert.alert('Submittals are online-only', 'Cached submittals remain readable, but creation and export require connectivity.');
-      return;
-    }
-    const url = new URL(`/projects/${activeProjectId}/submittals${suffix}`, mobileConfig.apiBaseUrl);
-    try {
-      await Linking.openURL(url.toString());
-    } catch {
-      Alert.alert('Could not open Submittals on web', 'Cached records and saved mobile work are unchanged. Check connectivity and try again.');
-    }
-  };
-
   return <Screen>
     <WebHeader projectName={project?.name ?? 'Select project'} online={online} onProjectPress={() => router.push('/(tabs)')} />
     <BreadcrumbRow current="Submittals" />
     <ModuleHeading title="Submittals" count={records.length} actions={<>
-      <WebActionButton title="Export PDF" onPress={() => void openWeb('?export=pdf')} icon={<SymbolView accessible={false} name={{ ios: 'document.badge.arrow.up', android: 'download', web: 'download' }} tintColor={colors.ink} size={19} />} />
-      <WebActionButton title="New Submittal" primary onPress={() => void openWeb('/new')} icon={<SymbolView accessible={false} name={{ ios: 'plus', android: 'add', web: 'add' }} tintColor={colors.white} size={19} />} />
+      <ReportExportButton kind="submittals" projectId={activeProjectId} recordIds={visible.map((item) => item.id)} online={online} />
+      <WebActionButton title="New Submittal" primary disabled={!activeProjectId} onPress={() => router.push({ pathname: '/record/[kind]/new', params: { kind: 'submittals', projectId: activeProjectId! } })} icon={<SymbolView accessible={false} name={{ ios: 'plus', android: 'add', web: 'add' }} tintColor={colors.white} size={19} />} />
     </>} />
     {!online ? <StatusBanner tone="warning" title="Offline — showing saved submittals" detail="Previously synchronized records remain readable. Creating, editing, and exporting are online-only and are never silently queued." /> : null}
     <FilterTabs items={filters} selected={filter} onSelect={(value) => setFilter(value as Filter)} />
     <WebSearch value={search} onChangeText={setSearch} placeholder="Search by title or number…" />
-    {visible.length ? <View style={styles.list}>{visible.map((item) => <View key={item.id} style={styles.row}>
+    {visible.length ? <View style={styles.list}>{visible.map((item) => <Pressable key={item.id} style={styles.row}
+      accessibilityRole="button" accessibilityLabel={`Open ${item.number}: ${item.title}`}
+      onPress={() => router.push({ pathname: '/record/[kind]/[id]', params: { kind: 'submittals', id: item.id, projectId: item.projectId } })}>
       <View style={styles.rowTop}><Text style={styles.number}>{item.number}</Text><Text style={styles.status}>{item.status.replace('_', ' ')}</Text></View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.meta}>Due {new Date(`${item.dueDate}T12:00:00`).toLocaleDateString()}</Text>
-    </View>)}</View> : <WebEmpty>No submittals found.</WebEmpty>}
+    </Pressable>)}</View> : <WebEmpty>No submittals found.</WebEmpty>}
     <RailBotButton />
   </Screen>;
 }

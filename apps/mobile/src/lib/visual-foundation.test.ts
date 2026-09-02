@@ -74,7 +74,10 @@ describe('RailCommand web-to-native visual foundation', () => {
     assert.ok(tabs.indexOf('name="index"') < tabs.indexOf('name="submittals"'));
     assert.ok(tabs.indexOf('name="submittals"') < tabs.indexOf('name="rfis"'));
     assert.ok(tabs.indexOf('name="rfis"') < tabs.indexOf('name="logs"'));
-    assert.ok(tabs.indexOf('name="logs"') < tabs.indexOf('name="more"'));
+    assert.ok(tabs.indexOf('name="logs"') < tabs.indexOf('name="more-tab"'));
+    assert.equal(existsSync(asset('../app/(tabs)/more.tsx')), false, 'the launcher must not shadow the root /more modal');
+    assert.equal(existsSync(asset('../app/(tabs)/more-tab.tsx')), true);
+    assert.match(tabs, /router\.push\('\/more' as never\)/);
     for (const label of ['Punch List', 'Safety', 'QC/QA', 'Documents', 'Cameras', 'Photos', 'Reports', 'Schedule', 'Team']) {
       assert.match(more, new RegExp(`label: '${label.replace('/', '\\/')}'`));
     }
@@ -88,12 +91,12 @@ describe('RailCommand web-to-native visual foundation', () => {
     const rfis = source('../app/(tabs)/rfis.tsx');
     assert.match(shell, /headingTitle: \{[^}]*fontSize: 24/);
     assert.match(shell, /filterTab: \{[^}]*flexGrow: 1, flexShrink: 0/);
-    assert.match(submittals, /Export PDF/);
+    assert.match(submittals, /ReportExportButton kind="submittals"/);
     assert.match(submittals, /New Submittal/);
     assert.match(submittals, /Under Review/);
     assert.match(submittals, /Search by title or number/);
     assert.match(submittals, /showing saved submittals/);
-    assert.match(rfis, /Export PDF/);
+    assert.match(rfis, /ReportExportButton kind="rfis"/);
     assert.match(rfis, /New RFI/);
     assert.match(rfis, /Overdue/);
     assert.match(rfis, /Search RFIs/);
@@ -112,6 +115,12 @@ describe('RailCommand web-to-native visual foundation', () => {
     assert.match(logs, /durable device drafts/);
   });
 
+  it('returns the draft editor to Logs regardless of its entry point', () => {
+    const editor = source('../app/daily-log/new.tsx');
+    assert.match(editor, /title="Back to logs" disabled=\{busy\} onPress=\{\(\) => router\.replace\('\/\(tabs\)\/logs'\)\}/);
+    assert.match(editor, /usePreventRemove\(dirty \|\| busy/);
+  });
+
   it('uses real cached dashboard values and web-style quick actions', () => {
     const dashboard = source('../app/(tabs)/index.tsx');
     for (const label of ['BUDGET', 'SCHEDULE', 'SUBMITTALS', 'OPEN RFIS', 'PUNCH LIST', 'DAILY LOGS']) {
@@ -128,16 +137,23 @@ describe('RailCommand web-to-native visual foundation', () => {
 
   it('adds a project-authorized EarthCam workspace with a strict navigation allowlist', () => {
     const cameras = source('../app/(tabs)/cameras.tsx');
+    const player = source('../components/earthcam-player.tsx');
     const more = source('../app/more.tsx');
     const bootstrap = source('../../../../src/app/api/mobile/v1/bootstrap/route.ts');
     const saveRoute = source('../../../../src/app/api/mobile/v1/earthcam/embeds/route.ts');
     const deleteRoute = source('../../../../src/app/api/mobile/v1/earthcam/embeds/delete/route.ts');
     assert.match(cameras, /Live EarthCam feeds stream from EarthCam/);
-    assert.match(cameras, /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
-    assert.match(cameras, /originWhitelist=\{\['https:\/\/share\.earthcam\.net\/\*'\]\}/);
-    assert.match(cameras, /sharedCookiesEnabled=\{false\}/);
-    assert.match(cameras, /thirdPartyCookiesEnabled=\{false\}/);
-    assert.match(cameras, /Live feed unavailable while offline/);
+    assert.match(source('./earthcam-player.ts'), /url\.protocol === 'https:' && url\.hostname === 'share\.earthcam\.net'/);
+    assert.match(player, /originWhitelist=\{EARTHCAM_DISPATCH_ORIGINS\}/);
+    assert.match(player, /sharedCookiesEnabled=\{false\}/);
+    assert.match(player, /thirdPartyCookiesEnabled=\{false\}/);
+    assert.match(player, /Live feed unavailable while offline/);
+    assert.match(player, /aspectRatio: 16 \/ 9/);
+    assert.match(player, /Retry live feed/);
+    assert.match(player, /key=\{`\$\{url\}:\$\{online\}`\}/);
+    assert.match(player, /onOpenWindow=\{\(\) => \{\}\}/);
+    assert.match(player, /webviewDebuggingEnabled=\{false\}/);
+    assert.match(player, /cacheEnabled=\{false\}/);
     assert.match(cameras, /Add EarthCam Feed/);
     assert.match(cameras, /Edit \$\{embed\.label\}/);
     assert.match(cameras, /Remove \$\{embed\.label\}/);
@@ -161,9 +177,10 @@ describe('RailCommand web-to-native visual foundation', () => {
 
   it('opens web-style project module links without an unmatched route', () => {
     const bridge = source('../app/projects/[id]/[...module].tsx');
-    assert.match(bridge, /nativeProjectSections/);
-    assert.match(bridge, /cameras: '\/\(tabs\)\/cameras'/);
-    assert.match(bridge, /router\.replace\(destination as never\)/);
+    assert.match(bridge, /resolveProjectRoute/);
+    assert.match(source('./project-routes.ts'), /cameras: '\/\(tabs\)\/cameras'/);
+    assert.match(bridge, /router\.replace\(next.destination as never\)/);
+    assert.doesNotMatch(bridge, /setTimeout/);
   });
 
   it('keeps interactive targets at least 48 points and protects background content', () => {

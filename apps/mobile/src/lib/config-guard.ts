@@ -12,18 +12,50 @@ export type ExpoMobileConfig = {
 };
 
 type RawConfig = Record<string, string | undefined>;
+type MobileRuntime = {
+  isDebug: boolean;
+  isPhysicalDevice: boolean;
+  nativeProfile: string | undefined;
+};
+
+// This checked-in inventory is deliberately independent of build-time variables:
+// a missing or altered denylist must never let a development bundle use production.
+const productionProjectFingerprints = new Set(['fbf44d01']);
+const productionApiHosts = new Set(['railcommand.io', 'www.railcommand.io']);
+const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 function csv(value: string | undefined): Set<string> {
   return new Set((value ?? '').split(',').map((part) => part.trim().toLowerCase()).filter(Boolean));
 }
 
-export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
+function inventoryFingerprint(value: string): string {
+  let hash = 2166136261;
+  for (const character of value) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+export function validateExpoMobileConfig(raw: RawConfig, runtime?: MobileRuntime): ExpoMobileConfig {
   const profile = raw.profile;
   if (profile !== 'development' && profile !== 'staging' && profile !== 'production') {
     throw new Error('RailCommand mobile build profile is invalid');
   }
-  const supabaseUrl = new URL(raw.supabaseUrl ?? '');
-  const apiBaseUrl = new URL(raw.apiBaseUrl ?? '');
+  // An environment variable alone cannot promote a debug/simulator bundle.
+  // Reject before constructing either client, and never report service values.
+  if (profile === 'production' && (runtime?.isDebug !== false
+    || runtime?.isPhysicalDevice !== true || runtime?.nativeProfile !== 'production')) {
+    throw new Error('Production services require an explicitly configured physical-device release');
+  }
+  let supabaseUrl: URL;
+  let apiBaseUrl: URL;
+  try {
+    supabaseUrl = new URL(raw.supabaseUrl ?? '');
+    apiBaseUrl = new URL(raw.apiBaseUrl ?? '');
+  } catch {
+    throw new Error('RailCommand mobile service configuration is invalid');
+  }
   const expectedSupabaseProjectRef = raw.expectedSupabaseProjectRef?.trim().toLowerCase();
   const expectedApiHost = raw.expectedApiHost?.trim().toLowerCase();
   const linkHost = raw.linkHost?.trim().toLowerCase();
@@ -31,10 +63,14 @@ export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
   if (!expectedSupabaseProjectRef || !expectedApiHost || !linkHost || !publishableKey) {
     throw new Error('RailCommand mobile environment is incomplete');
   }
-  if (supabaseUrl.protocol !== 'https:' || apiBaseUrl.protocol !== 'https:') {
+  const localSupabase = profile === 'development' && supabaseUrl.protocol === 'http:'
+    && loopbackHosts.has(supabaseUrl.hostname);
+  const localApi = profile === 'development' && apiBaseUrl.protocol === 'http:'
+    && loopbackHosts.has(apiBaseUrl.hostname);
+  if ((!localSupabase && supabaseUrl.protocol !== 'https:') || (!localApi && apiBaseUrl.protocol !== 'https:')) {
     throw new Error('RailCommand mobile services must use HTTPS');
   }
-  if (supabaseUrl.hostname !== `${expectedSupabaseProjectRef}.supabase.co`) {
+  if (localSupabase ? expectedSupabaseProjectRef !== 'local' : supabaseUrl.hostname !== `${expectedSupabaseProjectRef}.supabase.co`) {
     throw new Error('RailCommand mobile Supabase host does not match the approved inventory');
   }
   if (apiBaseUrl.hostname !== expectedApiHost) {
@@ -48,7 +84,15 @@ export function validateExpoMobileConfig(raw: RawConfig): ExpoMobileConfig {
   }
   const blockedRefs = csv(raw.blockedSupabaseProjectRefs);
   const blockedHosts = csv(raw.blockedApiHosts);
-  if (profile !== 'production' && (blockedRefs.has(expectedSupabaseProjectRef) || blockedHosts.has(expectedApiHost))) {
+  const actualProjectRef = localSupabase ? 'local' : supabaseUrl.hostname.split('.')[0];
+  if (profile !== 'production' && (
+    productionProjectFingerprints.has(inventoryFingerprint(expectedSupabaseProjectRef))
+    || productionProjectFingerprints.has(inventoryFingerprint(actualProjectRef))
+    || productionApiHosts.has(expectedApiHost)
+    || productionApiHosts.has(apiBaseUrl.hostname)
+    || blockedRefs.has(expectedSupabaseProjectRef)
+    || blockedHosts.has(expectedApiHost)
+  )) {
     throw new Error('A non-production mobile build cannot use production services');
   }
   if (/service_role|secret/i.test(publishableKey)) {

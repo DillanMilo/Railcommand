@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import { validateMobileEnvironment } from './mobile-environment-guard.mjs';
 
@@ -22,6 +24,15 @@ test('accepts the exact approved staging environment', () => {
     supabaseProjectRef: 'stagingref',
     appHost: 'staging.railcommand.test',
   });
+});
+
+test('the CLI reports only a profile-level result, never service inventory values', () => {
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('./mobile-environment-guard.mjs', import.meta.url))], {
+    env: { ...process.env, ...safeEnvironment }, encoding: 'utf8',
+  });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /development build profile/);
+  assert.doesNotMatch(result.stdout + result.stderr, /stagingref|staging\.railcommand\.test|productionref/);
 });
 
 test('rejects the production mobile app identifier', () => {
@@ -94,6 +105,32 @@ test('rejects a production Supabase project even when it is expected', () => {
   );
 });
 
+test('rejects the checked-in production project even when the supplied denylist is wrong', () => {
+  assert.throws(() => validateMobileEnvironment({
+    ...safeEnvironment,
+    NEXT_PUBLIC_SUPABASE_URL: 'https://gwvftrrknusdfdgiwuij.supabase.co',
+    MOBILE_EXPECTED_SUPABASE_PROJECT_REF: 'gwvftrrknusdfdgiwuij',
+    MOBILE_BLOCKED_SUPABASE_PROJECT_REFS: 'different-production-ref',
+  }), /marked as production/);
+});
+
+test('allows explicit loopback services only for development', () => {
+  const local = {
+    ...safeEnvironment,
+    NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
+    MOBILE_EXPECTED_SUPABASE_PROJECT_REF: 'local',
+    NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+    MOBILE_EXPECTED_APP_HOST: 'localhost',
+  };
+  assert.equal(validateMobileEnvironment(local).supabaseProjectRef, 'local');
+  assert.throws(() => validateMobileEnvironment({
+    ...local,
+    MOBILE_BUILD_PROFILE: 'staging',
+    MOBILE_APP_ID: 'io.railcommand.app.staging',
+    MOBILE_EXPECTED_APP_ID: 'io.railcommand.app.staging',
+  }), /must use HTTPS/);
+});
+
 test('rejects a Supabase URL that does not match approved staging', () => {
   assert.throws(
     () =>
@@ -101,7 +138,7 @@ test('rejects a Supabase URL that does not match approved staging', () => {
         ...safeEnvironment,
         NEXT_PUBLIC_SUPABASE_URL: 'https://otherref.supabase.co',
       }),
-    /must match the approved staging project/
+    /does not match the approved mobile inventory/
   );
 });
 

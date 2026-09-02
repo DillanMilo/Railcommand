@@ -1,0 +1,4 @@
+#!/bin/sh
+# Vercel prepends URL flags, so a forwarded --disable is too late to suppress
+# curlrc. Force it to be the real curl's FIRST argument; preserve stdin unchanged.
+exec /usr/bin/curl --disable "$@"

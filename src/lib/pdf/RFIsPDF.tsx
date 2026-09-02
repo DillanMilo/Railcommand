@@ -87,7 +87,7 @@ const RFIsPDF: React.FC<RFIsPDFProps> = ({ rfis, projectName, generatedBy }) => 
 
         {/* Table */}
         <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
+          <View style={styles.tableHeaderRow} fixed>
             <Text style={[styles.tableHeaderCell, { width: cols[0] }]}>Number</Text>
             <Text style={[styles.tableHeaderCell, { width: cols[1] }]}>Subject</Text>
             <Text style={[styles.tableHeaderCell, { width: cols[2] }]}>Status</Text>
@@ -109,7 +109,7 @@ const RFIsPDF: React.FC<RFIsPDFProps> = ({ rfis, projectName, generatedBy }) => 
                 wrap={false}
               >
                 <Text style={[styles.tableCell, { width: cols[0] }]}>{r.number}</Text>
-                <Text style={[styles.tableCell, { width: cols[1] }]}>{r.subject}</Text>
+                <Text style={[styles.tableCell, { width: cols[1], paddingRight: 6 }]}>{r.subject}</Text>
                 <Text
                   style={[
                     styles.badge,

@@ -1,5 +1,6 @@
 import { validateExpoMobileConfig } from './config-guard';
 import Constants from 'expo-constants';
+import { isDevice } from 'expo-device';
 
 const easProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID
   ?? Constants.expoConfig?.extra?.eas?.projectId
@@ -17,4 +18,8 @@ export const mobileConfig = validateExpoMobileConfig({
   blockedSupabaseProjectRefs: process.env.EXPO_PUBLIC_BLOCKED_SUPABASE_PROJECT_REFS,
   blockedApiHosts: process.env.EXPO_PUBLIC_BLOCKED_API_HOSTS,
   easProjectId,
+}, {
+  isDebug: __DEV__,
+  isPhysicalDevice: isDevice,
+  nativeProfile: Constants.expoConfig?.extra?.buildProfile,
 });

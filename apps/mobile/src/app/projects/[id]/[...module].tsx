@@ -1,48 +1,49 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { SecondaryButton } from '@/components/ui';
+import { resolveProjectRoute } from '@/lib/project-routes';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
-
-const nativeProjectSections: Record<string, string> = {
-  submittals: '/(tabs)/submittals',
-  rfis: '/(tabs)/rfis',
-  'daily-logs': '/(tabs)/logs',
-  cameras: '/(tabs)/cameras',
-  team: '/team',
-};
 
 export default function ProjectModuleDeepLinkScreen() {
   const { id, module } = useLocalSearchParams<{ id?: string; module?: string | string[] }>();
   const { selectProject } = useMobileData();
-  const [message, setMessage] = useState('Opening project workspace…');
+  const selectProjectRef = useRef(selectProject);
+  useLayoutEffect(() => { selectProjectRef.current = selectProject; }, [selectProject]);
+  const modulePath = Array.isArray(module) ? module.join('/') : module;
+  const route = resolveProjectRoute(id, modulePath);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const section = Array.isArray(module) ? module[0] : module;
-    const destination = section ? nativeProjectSections[section] : undefined;
-    if (!id || !destination) {
-      setMessage('This workspace remains available in the connected web app. Returning to your project dashboard…');
-      const timeout = setTimeout(() => router.replace('/(tabs)'), 900);
-      return () => clearTimeout(timeout);
-    }
-
+    const next = resolveProjectRoute(id, modulePath);
+    if (next.kind !== 'native') return;
     let current = true;
-    void selectProject(id)
+    setFailed(false);
+    void selectProjectRef.current(next.projectId)
       .then(() => {
-        if (current) router.replace(destination as never);
+        if (current) router.replace(next.destination as never);
       })
       .catch(() => {
         if (!current) return;
-        setMessage('That project could not be opened. Returning to your saved dashboard…');
-        setTimeout(() => router.replace('/(tabs)'), 1_200);
+        setFailed(true);
       });
     return () => { current = false; };
-  }, [id, module, selectProject]);
+  }, [id, modulePath, attempt]);
 
+  const opening = route.kind === 'native' && !failed;
   return <View style={styles.screen}>
-    <ActivityIndicator color={colors.orangeText} />
+    {opening ? <ActivityIndicator color={colors.orangeText} /> : null}
     <Text accessibilityRole="header" style={styles.title}>RailCommand</Text>
-    <Text style={styles.message}>{message}</Text>
+    <Text accessibilityLiveRegion="polite" style={styles.message}>{opening
+      ? 'Opening project workspace…'
+      : failed ? 'That project could not be opened. Check connectivity and project access, then try again. Your saved work is unchanged.'
+        : route.kind === 'invalid' ? 'This project link is not valid.'
+          : 'This exact screen is not implemented in the mobile app yet. The link has not been replaced with a different screen. Your saved work is unchanged.'}</Text>
+    {route.kind === 'unimplemented' ? <Text selectable style={styles.path}>{route.path}</Text> : null}
+    {failed ? <SecondaryButton title="Retry opening project" onPress={() => setAttempt((value) => value + 1)} /> : null}
+    {!opening ? <SecondaryButton title="Back to dashboard" onPress={() => router.replace('/(tabs)')} /> : null}
   </View>;
 }
 
@@ -69,4 +70,5 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     textAlign: 'center',
   },
+  path: { maxWidth: 420, color: colors.muted, fontFamily: fonts.mono, fontSize: 11, lineHeight: 17 },
 });
