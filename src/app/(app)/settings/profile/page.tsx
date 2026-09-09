@@ -42,6 +42,7 @@ import { getMyProfile, updateMyProfile } from '@/lib/actions/profiles';
 import { uploadMyAvatar } from '@/lib/actions/avatar';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectMembers } from '@/hooks/useData';
+import { useOfflineSync } from '@/components/providers/OfflineSyncProvider';
 
 const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const AVATAR_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
@@ -112,6 +113,7 @@ function formatProjectRole(role: string): string {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { requestSignOut } = useOfflineSync();
   const { currentProject, currentProjectId, currentUserId, isDemo } = useProject();
   const [authProfile, setAuthProfile] = useState<(Profile & { organization?: Organization }) | null>(null);
   const [profileLoading, setProfileLoading] = useState(!isDemo);
@@ -301,13 +303,6 @@ export default function ProfilePage() {
     } finally {
       setIsSendingReset(false);
     }
-  }
-
-  function handleSignOut() {
-    try {
-      document.cookie = 'rc-remember=; path=/; max-age=0';
-    } catch { /* noop */ }
-    router.push('/login');
   }
 
   return (
@@ -702,7 +697,7 @@ export default function ProfilePage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="destructive"
-              onClick={handleSignOut}
+              onClick={() => void requestSignOut()}
               className="gap-2 min-h-[44px] sm:min-h-0"
             >
               <LogOut className="size-4" />

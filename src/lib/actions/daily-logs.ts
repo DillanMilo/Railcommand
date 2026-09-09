@@ -35,7 +35,10 @@ export async function getDailyLogs(
       .from('daily_logs')
       .select(`
         *,
-        created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url)
+        created_by_profile:profiles!daily_logs_created_by_fkey(id, full_name, email, avatar_url),
+        personnel:daily_log_personnel(*),
+        equipment:daily_log_equipment(*),
+        work_items:daily_log_work_items(*)
       `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })

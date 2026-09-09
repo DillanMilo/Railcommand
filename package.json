@@ -9,6 +9,10 @@
     "lint": "eslint",
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:up-report": "mocha --require tsx \"src/lib/up-reports/__tests__/*.test.ts\"",
+    "test:offline": "mocha --require tsx \"src/lib/offline/*.test.ts\"",
+    "test:daily-log-photos": "mocha --require tsx \"src/lib/daily-log-photo-selection.test.ts\" \"src/lib/pdf/daily-log-photos.test.ts\"",
+    "test:offline:backend": "node --env-file=.env.local scripts/offline-permission-acceptance.mjs",
+    "test:offline:browser-qa": "node --env-file=.env.local scripts/offline-browser-qa.mjs",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
     "test:email": "tsx scripts/test-email.ts"
   },
@@ -42,6 +46,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.3.0",
+    "fake-indexeddb": "6.2.5",
     "mocha": "^11.7.6",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4.3.0",

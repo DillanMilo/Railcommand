@@ -12,6 +12,7 @@ import QueryError from '@/components/shared/QueryError';
 import { useDailyLogs } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ACTIONS } from '@/lib/permissions';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -19,11 +20,24 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const { id: projectId } = use(params);
   use(searchParams);
   const { can } = usePermissions(projectId);
+  const { isOffline } = usePWA();
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date());
   const basePath = `/projects/${projectId}/daily-logs`;
 
-  const { data: rawLogs, loading, error, refetch, hasMore, loadingMore, loadMore } = useDailyLogs(projectId);
+  const {
+    data: rawLogs,
+    loading,
+    error,
+    refetch,
+    hasMore,
+    loadingMore,
+    loadMore,
+    dataSource,
+    cachedAt,
+    isCacheStale,
+  } = useDailyLogs(projectId);
+  const isOfflineReadOnly = isOffline || dataSource === 'cache';
 
   const logs = useMemo(
     () => [...rawLogs].sort((a, b) => b.log_date.localeCompare(a.log_date)),
@@ -65,13 +79,30 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
     <div className="space-y-6">
       <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Daily Logs' }]} />
 
+      {isOfflineReadOnly && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-semibold">Saved daily logs — read only</p>
+          <p className="mt-1 text-xs opacity-80">
+            {cachedAt
+              ? `Saved ${format(new Date(cachedAt), 'MMM d, yyyy h:mm a')}${isCacheStale ? ' · refresh overdue' : ''}.`
+              : 'RailCommand is offline.'}{' '}
+            Reconnect before creating or editing field records.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       {/* NOTE: PDF export for individual daily logs is available on each log's detail page using DailyLogPDF */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold">Daily Logs</h1>
-        {can(ACTIONS.DAILY_LOG_CREATE) && (
+        {can(ACTIONS.DAILY_LOG_CREATE) && !isOfflineReadOnly && (
           <Button asChild className="bg-rc-orange hover:bg-rc-orange-dark text-white">
             <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New Log</Link>
+          </Button>
+        )}
+        {can(ACTIONS.DAILY_LOG_CREATE) && isOfflineReadOnly && (
+          <Button asChild variant="outline">
+            <Link href={`${basePath}/new`}><Plus className="mr-2 size-4" />New or Continue Device Draft</Link>
           </Button>
         )}
       </div>

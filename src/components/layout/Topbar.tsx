@@ -23,9 +23,9 @@ import {
 } from '@/components/ui/sheet';
 import ThemeToggle from './ThemeToggle';
 import GlobalSearch from '@/components/shared/GlobalSearch';
-import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
+import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import NewProjectDialog from '@/components/projects/NewProjectDialog';
 import { getMyProfile } from '@/lib/actions/profiles';
 import { getActivityLog } from '@/lib/actions/activity-log';
@@ -38,6 +38,8 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { PATCH_NOTES } from '@/lib/patch-notes';
 import type { Project, Profile, ActivityLogEntry, UserNotification } from '@/lib/types';
+import OfflineProjectSnapshotSync from '@/components/providers/OfflineProjectSnapshotSync';
+import { useOfflineSync } from '@/components/providers/OfflineSyncProvider';
 
 type EntityType = ActivityLogEntry['entity_type'];
 
@@ -150,6 +152,8 @@ type UnifiedItem =
 export default function Topbar({ children }: TopbarProps) {
   const router = useRouter();
   const { currentProject, currentProjectId, projects, setCurrentProjectId, currentUserId, isDemo } = useProject();
+  const { markSynced } = usePWA();
+  const { requestSignOut } = useOfflineSync();
   const [searchOpen, setSearchOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<Profile | null>(null);
@@ -172,6 +176,14 @@ export default function Topbar({ children }: TopbarProps) {
     setReadIds(loadReadIds());
     setDismissedIds(loadDismissedIds());
   }, []);
+
+  // ProjectProvider publishes a new projects array after a successful server
+  // refresh. Record that moment without coupling offline storage to its fetch logic.
+  useEffect(() => {
+    if (!isDemo && currentUserId && projects.length > 0) {
+      void markSynced(currentUserId);
+    }
+  }, [currentUserId, isDemo, markSynced, projects]);
 
   const markAsRead = useCallback((id: string) => {
     setReadIds((prev) => {
@@ -393,30 +405,13 @@ export default function Topbar({ children }: TopbarProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [router]);
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    await fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
-    // Clear demo mode state
-    try {
-      localStorage.removeItem('rc-mode');
-      localStorage.removeItem('rc-user-name');
-      localStorage.removeItem('rc-user-email');
-      localStorage.removeItem('rc-current-project');
-      document.cookie = 'rc-mode=; path=/; max-age=0';
-      document.cookie = 'rc-demo-session=; path=/; max-age=0';
-      document.cookie = 'rc-demo-slug=; path=/; max-age=0';
-      document.cookie = 'rc-remember=; path=/; max-age=0';
-    } catch { /* noop */ }
-    router.push('/login');
-  }
-
   // Both categories empty means full empty state
   const bothCategoriesEmpty = profileNotifications.length === 0 && patchNoteItems.length === 0 && activityItems.length === 0;
   const hasAnyVisible = !bothCategoriesEmpty;
 
   return (
     <>
+      <OfflineProjectSnapshotSync />
       <header className="flex h-[66px] shrink-0 items-center justify-between border-b border-rc-border bg-rc-card/95 px-4 backdrop-blur md:px-6">
         {/* Left: Mobile project switcher + Breadcrumbs slot */}
         <div className="flex items-center min-w-0 gap-2">
@@ -946,7 +941,7 @@ export default function Topbar({ children }: TopbarProps) {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
+              <DropdownMenuItem variant="destructive" onClick={() => void requestSignOut()}>
                 <LogOut className="size-4" />
                 Sign out
               </DropdownMenuItem>

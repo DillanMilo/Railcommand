@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useCallback, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, CloudUpload, HardDrive, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,14 +14,15 @@ import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import PhotoLibraryPicker from '@/components/daily-logs/PhotoLibraryPicker';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { addDailyLog, addAttachment } from '@/lib/store';
-import { createDailyLog as serverCreateDailyLog } from '@/lib/actions/daily-logs';
-import { uploadPhotosAfterCreate } from '@/lib/uploadPhotosAfterCreate';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDailyLogDraft } from '@/hooks/useDailyLogDraft';
 import { ACTIONS } from '@/lib/permissions';
 import { getLocalDateString } from '@/lib/date-utils';
 import type { GeoTag } from '@/lib/types';
+import type { DailyLogDraftValues } from '@/lib/offline/daily-log-draft';
+import { getOfflineStorageErrorMessage } from '@/lib/offline/errors';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -44,7 +45,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const { id: projectId } = use(params);
   use(searchParams);
   const router = useRouter();
-  const { isDemo } = useProject();
+  const { isDemo, currentUserId } = useProject();
   const { isOffline } = usePWA();
   const { can } = usePermissions(projectId);
 
@@ -60,9 +61,49 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const [geoTag, setGeoTag] = useState<GeoTag | null>(null);
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [success, setSuccess] = useState(false);
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const draftValues = useMemo<DailyLogDraftValues>(() => ({
+    date,
+    temp,
+    conditions,
+    wind,
+    personnel,
+    equipment,
+    workItems,
+    workSummary,
+    safetyNotes,
+    geoTag,
+  }), [conditions, date, equipment, geoTag, personnel, safetyNotes, temp, wind, workItems, workSummary]);
+
+  const restoreDraft = useCallback((draft: DailyLogDraftValues) => {
+    setDate(draft.date);
+    setTemp(draft.temp);
+    setConditions(draft.conditions);
+    setWind(draft.wind);
+    setPersonnel(draft.personnel);
+    setEquipment(draft.equipment);
+    setWorkItems(draft.workItems);
+    setWorkSummary(draft.workSummary);
+    setSafetyNotes(draft.safetyNotes);
+    setGeoTag(draft.geoTag);
+  }, []);
+
+  const {
+    status: draftStatus,
+    savedAt: draftSavedAt,
+    recovered: draftRecovered,
+    saveError: draftSaveError,
+    queueDraft,
+  } = useDailyLogDraft({
+    userId: currentUserId,
+    projectId,
+    values: draftValues,
+    enabled: !isDemo,
+    onRestore: restoreDraft,
+  });
 
   if (!can(ACTIONS.DAILY_LOG_CREATE)) {
     return (
@@ -90,6 +131,20 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
     setter(arr.filter((_, idx) => idx !== i));
   };
 
+  const resetForm = () => {
+    setDate(getLocalDateString());
+    setTemp('');
+    setConditions('');
+    setWind('');
+    setPersonnel([]);
+    setEquipment([]);
+    setWorkItems([]);
+    setWorkSummary('');
+    setSafetyNotes('');
+    setGeoTag(null);
+    setPhotos([]);
+  };
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <Breadcrumbs items={[
@@ -100,11 +155,45 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
       <h1 className="font-heading text-2xl font-bold">New Daily Log</h1>
 
+      {!isDemo && (
+        <div
+          className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2 font-semibold">
+            {draftStatus === 'saving' || draftStatus === 'loading' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <HardDrive className="size-4" />
+            )}
+            {draftStatus === 'error'
+              ? 'Could not save on this device'
+              : draftStatus === 'saving'
+                ? 'Saving on this device…'
+                : draftStatus === 'loading'
+                  ? 'Checking this device for a saved draft…'
+                  : draftSavedAt
+                    ? 'Saved on this device'
+                    : 'Draft autosave is ready'}
+          </div>
+          <p className="mt-1 text-xs opacity-80">
+            {draftStatus === 'error'
+              ? draftSaveError ?? 'Keep this page open and check your browser storage settings before leaving.'
+              : draftRecovered
+                ? `Recovered your unfinished draft${draftSavedAt ? ` from ${new Date(draftSavedAt).toLocaleString()}` : ''}.`
+                : 'Personnel, equipment, work items, location, weather, summary, and safety notes are stored in your private offline database.'}
+          </p>
+        </div>
+      )}
+
       {isOffline && (
-        <Alert className="border-amber-300 bg-amber-50">
-          <AlertTitle className="text-amber-900">You are offline</AlertTitle>
-          <AlertDescription className="text-amber-800">
-            Keep this form open to preserve your entries, then reconnect before submitting. Existing RailCommand photos cannot be selected while offline.
+        <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTitle>Working offline</AlertTitle>
+          <AlertDescription>
+            {isDemo
+              ? 'Demo logs need a connection to submit. Keep this form open to preserve your entries.'
+              : 'You can queue this daily log and its compressed photos now. RailCommand keeps them on this device and synchronizes the log first, followed by each photo, after it verifies the connection and your current permission.'}
           </AlertDescription>
         </Alert>
       )}
@@ -288,7 +377,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
       <div className="space-y-2">
         <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
         <p className="text-xs text-muted-foreground">
-          Tap the upload area on a phone to choose Camera or Photo Library.
+          Tap the upload area on a phone to choose Camera or Photo Library. Standard photos are compressed before being saved privately on this device. Queue or submit this log before closing the form to save its selected photos. Queued photos upload independently after their daily log synchronizes.
         </p>
       </div>
 
@@ -307,14 +396,43 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         </Alert>
       )}
 
+      {queuedMessage && (
+        <Alert className="border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+          <CloudUpload className="size-4 text-blue-600" />
+          <AlertTitle>Queued for synchronization</AlertTitle>
+          <AlertDescription>{queuedMessage}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pb-8">
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting}
+          disabled={success || submitting || (!isDemo && draftStatus === 'loading') || (isOffline && isDemo)}
           onClick={async () => {
             setErrorMsg(null);
+            setQueuedMessage(null);
             setSubmitting(true);
+
+            if (!isDemo) {
+              if (!date) {
+                setErrorMsg('Choose a log date before adding this daily log to the synchronization queue.');
+                setSubmitting(false);
+                return;
+              }
+              try {
+                await queueDraft(photos);
+                resetForm();
+                setQueuedMessage(
+                  `Saved securely on this device with ${photos.length} photo${photos.length === 1 ? '' : 's'}. You can enter another log while synchronization continues.`
+                );
+              } catch (error) {
+                setErrorMsg(getOfflineStorageErrorMessage(error));
+              } finally {
+                setSubmitting(false);
+              }
+              return;
+            }
 
             if (isDemo) {
               const log = addDailyLog(projectId, {
@@ -350,44 +468,12 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
               setSuccess(true);
               setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
-            } else {
-              const result = await serverCreateDailyLog(projectId, {
-                log_date: date,
-                weather_temp: typeof temp === 'number' ? temp : 0,
-                weather_conditions: conditions,
-                weather_wind: wind,
-                work_summary: workSummary,
-                safety_notes: safetyNotes,
-                geo_tag: geoTag,
-                personnel,
-                equipment: equipment.map((e) => ({ equipment_type: e.type, count: e.count, notes: e.notes })),
-                work_items: workItems,
-              });
-
-              if (result.error) {
-                setErrorMsg(result.error);
-                setSubmitting(false);
-                return;
-              }
-
-              // Upload photos to Supabase storage
-              if (photos.length > 0 && result.data) {
-                setUploadProgress(`Uploading ${photos.length} photo${photos.length !== 1 ? 's' : ''}…`);
-                const uploadResult = await uploadPhotosAfterCreate(photos, 'daily_log', result.data.id, projectId);
-                setUploadProgress(null);
-                if (uploadResult.failed > 0) {
-                  setErrorMsg(`${uploadResult.succeeded} of ${uploadResult.total} photos uploaded. ${uploadResult.failed} failed.`);
-                  setSubmitting(false);
-                  return;
-                }
-              }
-
-              setSuccess(true);
-              setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
             }
           }}
         >
-          {uploadProgress ?? (submitting && !success ? 'Submitting…' : 'Submit Log')}
+          {isOffline
+            ? submitting ? 'Saving to device…' : isDemo ? 'Submit — online required' : 'Queue Log & Photos'
+            : submitting && !success ? 'Adding to sync queue…' : 'Submit Log'}
         </Button>
       </div>
     </div>

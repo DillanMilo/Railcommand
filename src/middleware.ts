@@ -144,6 +144,9 @@ function isGeoRestrictedPath(pathname: string): boolean {
 function isPublicRoute(pathname: string): boolean {
   return (
     pathname === '/' ||
+    pathname === '/sw.js' ||
+    pathname === '/offline.html' ||
+    pathname === '/offline-data.js' ||
     pathname === '/login' ||
     pathname === '/reset-password' ||
     pathname === '/client' ||
@@ -170,6 +173,9 @@ function isPublicRoute(pathname: string): boolean {
 function canSkipAuthForPublicRoute(pathname: string): boolean {
   return (
     pathname === '/' ||
+    pathname === '/sw.js' ||
+    pathname === '/offline.html' ||
+    pathname === '/offline-data.js' ||
     pathname === '/client' ||
     pathname === '/privacy' ||
     pathname === '/terms' ||
@@ -399,6 +405,13 @@ export async function middleware(request: NextRequest) {
     : null;
   const isDemoMode = !user && !!demoSession;
 
+  // Authenticated HTML must never be revived from the browser's ordinary HTTP
+  // cache after connectivity is lost. The service worker will provide the
+  // neutral offline reader, whose private records remain in user-scoped IDB.
+  if (!publicRoute && !pathname.startsWith('/api/')) {
+    supabaseResponse.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  }
+
   // If not authenticated, not demo, and not on a public route → redirect to login
   if (!user && !isDemoMode && !publicRoute) {
     const url = request.nextUrl.clone();
@@ -507,8 +520,9 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization)
+     * - offline service-worker assets
      * - favicon.ico, manifest, icons, etc.
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|sw\\.js|offline\\.html|offline-data\\.js|favicon.ico|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
