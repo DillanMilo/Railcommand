@@ -94,7 +94,7 @@ export default function HomePage() {
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>RAIL CONSTRUCTION / ONE COMMAND VIEW</p>
+          <p className={styles.eyebrow}>Built by railroaders for railroaders</p>
           <h1>
             Every rail project.
             <br />

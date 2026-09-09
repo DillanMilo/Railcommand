@@ -849,6 +849,9 @@ function LoginPageInner() {
 
           {/* Hero content */}
           <div className="max-w-lg">
+            <p className="mb-4 text-sm font-semibold text-rc-orange">
+              Built by railroaders for railroaders
+            </p>
             <h2 className="font-heading text-4xl xl:text-5xl font-extrabold text-white leading-[1.1] tracking-tight">
               Command your
               <br />
@@ -914,6 +917,9 @@ function LoginPageInner() {
             />
             <p className="text-[10px] text-muted-foreground/60 tracking-wide uppercase mt-1">
               by A5 Rail
+            </p>
+            <p className="mt-3 text-center text-sm font-semibold text-foreground">
+              Built by railroaders for railroaders
             </p>
           </div>
 
