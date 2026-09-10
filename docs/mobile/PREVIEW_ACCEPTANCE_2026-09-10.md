@@ -40,3 +40,31 @@ command; no UI workaround or alternate credential retrieval was attempted.
 Offline classification: online-only deployment/API acceptance. Supported device
 work remains offline read-only or draft/queue as documented; existing device
 storage, drafts, and outboxes are unchanged.
+
+## Signed-in workflow acceptance — passed
+
+The user ran the bounded test in Terminal. It completed September 10 at
+17:32:43 UTC; process 72128 exited. The durable sanitized result is
+STAGING_WORKFLOW_RESULT_2026-09-10.json.
+
+- Existing reviewer sign-in and refresh passed.
+- Bootstrap, project identity, and creation options passed.
+- One rich daily log and its children were created; two replays returned the
+  original ID without duplicates.
+- One synthetic PNG was uploaded and finalized; replay returned the same
+  attachment and downloaded bytes matched the original.
+- One RFI and one Submittal were created. Replay, conflicting-content rejection,
+  detail, PDF output, and missing-record/attachment denial checks passed.
+- Three synthetic records and one photo were retained. No existing records were
+  deleted, no credentials reset, and the temporary session was ended.
+
+This establishes the manager-member staging HTTP workflow, not administrator
+without-membership HTTP coverage, physical-device offline acceptance, or live-data
+beta readiness. Do not rerun this successful test solely to recover context.
+
+The next proposed actions are to point the existing staging hostname at this
+accepted deployment and create one current store-signed iOS beta build using
+EAS profile beta / preview environment / io.railcommand.app. These remain staged
+for approval; no store upload or automatic submission is part of that build.
+The existing hostname deployment dpl_6KSvsv6dMLLMmSX31Who9AVxNmG3 is the rollback
+target if staging health/association/signed-in acceptance fails after reassignment.

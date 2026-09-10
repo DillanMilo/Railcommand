@@ -1,0 +1,74 @@
+{
+  "startedAt": "2026-09-10T17:30:54.729Z",
+  "preview": "https://railcommand-mobile-staging-rdom3qft3-dillans-projects-f662840b.vercel.app",
+  "projectId": "20000000-0000-4000-8000-000000000001",
+  "classification": "Online-only API acceptance; not native offline/device evidence",
+  "checks": [
+    {
+      "label": "PASS exact Preview transport, no-store, and unauthenticated rejection"
+    },
+    {
+      "label": "PASS existing staging reviewer sign-in and session refresh"
+    },
+    {
+      "label": "Fresh synthetic QA identifiers — retain if interrupted",
+      "details": {
+        "projectId": "20000000-0000-4000-8000-000000000001",
+        "dailyLog": "f471040b-d303-4905-ada7-8c0e0eb58016",
+        "photo": "7ff4ee16-aa91-4527-ad02-34b177a52d7b",
+        "rfi": "ddf9b1d5-8080-4f98-a71a-4a970881987c",
+        "submittal": "6939e65f-fc16-4fdc-b0c9-562ec1a8aaaf",
+        "missing": "8cae5ec2-91ee-4456-9811-c9c4dedc3090"
+      }
+    },
+    {
+      "label": "Bootstrap and RFI/Submittal options verified"
+    },
+    {
+      "label": "Rich daily log created once; two replays and all child fields verified",
+      "details": {
+        "id": "f471040b-d303-4905-ada7-8c0e0eb58016"
+      }
+    },
+    {
+      "label": "One synthetic PNG uploaded, finalized once, replayed, and downloaded byte-for-byte",
+      "details": {
+        "id": "7ff4ee16-aa91-4527-ad02-34b177a52d7b",
+        "bytes": 70
+      }
+    },
+    {
+      "label": "rfis: created once, replay/conflict, detail, PDF, and missing-record/attachment denials verified",
+      "details": {
+        "id": "ddf9b1d5-8080-4f98-a71a-4a970881987c",
+        "number": "RFI-003",
+        "pdfBytes": 4163
+      }
+    },
+    {
+      "label": "submittals: created once, replay/conflict, detail, PDF, and missing-record/attachment denials verified",
+      "details": {
+        "id": "6939e65f-fc16-4fdc-b0c9-562ec1a8aaaf",
+        "number": "SUB-003",
+        "pdfBytes": 3875
+      }
+    },
+    {
+      "label": "Online-only synthetic API workflows passed; records retained, not device offline proof",
+      "details": {
+        "records": 3,
+        "photos": 1,
+        "dailyLog": "f471040b-d303-4905-ada7-8c0e0eb58016",
+        "photo": "7ff4ee16-aa91-4527-ad02-34b177a52d7b",
+        "rfi": "ddf9b1d5-8080-4f98-a71a-4a970881987c",
+        "submittal": "6939e65f-fc16-4fdc-b0c9-562ec1a8aaaf",
+        "missing": "8cae5ec2-91ee-4456-9811-c9c4dedc3090"
+      }
+    },
+    {
+      "label": "Temporary QA session ended; other device sessions unchanged"
+    }
+  ],
+  "status": "passed",
+  "finishedAt": "2026-09-10T17:32:43.413Z"
+}
