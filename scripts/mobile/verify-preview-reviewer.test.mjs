@@ -4,7 +4,7 @@ import { curlConfig, parseResponse, PREVIEW, safeAuthDiagnostic, safeApiDiagnost
 
 const response = (body, extra = '') => `HTTP/2 200\r\ncontent-type: application/json\r\ncache-control: no-store, max-age=0\r\n${extra}\r\n${JSON.stringify(body)}`;
 test('dated harness targets only the approved unique staging Preview', () => {
-  assert.equal(PREVIEW, 'https://railcommand-mobile-staging-nxpo544zw-dillans-projects-f662840b.vercel.app');
+  assert.equal(PREVIEW, 'https://railcommand-mobile-staging-rdom3qft3-dillans-projects-f662840b.vercel.app');
 });
 test('stdin config escapes JSON content and keeps body within one config line', () => {
   const body = { text: 'line\n"quote"\\path', value: 0 };
