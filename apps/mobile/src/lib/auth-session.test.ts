@@ -196,3 +196,4 @@ describe('auth provider session ownership lifetime', () => {
     assert.equal(h.writes.length, 0, 'No state write is accepted after cleanup');
   });
 });
+import { URL } from 'node:url';

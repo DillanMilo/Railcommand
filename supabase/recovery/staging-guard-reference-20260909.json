@@ -1,0 +1,48 @@
+{
+  "scope": "staging-schema-reference-not-a-migration",
+  "projectRef": "rxuvchdqbzvovqijvfhx",
+  "definitions": [
+    {
+      "name": "assert_stored_object",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.assert_stored_object(p_bucket text, p_path text, p_type text, p_size bigint)\n RETURNS void\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  if p_size is null or p_size<=0 or length(trim(coalesce(p_type,'')))=0 then\n    raise exception 'Invalid attachment metadata' using errcode='22023';\n  end if;\n  if not exists(select 1 from storage.objects o where o.bucket_id=p_bucket and o.name=p_path) then\n    raise exception 'Uploaded attachment is not available yet' using errcode='P0001';\n  end if;\n  if not exists(select 1 from storage.objects o where o.bucket_id=p_bucket and o.name=p_path\n    and case when jsonb_typeof(o.metadata->'size')='number' and (o.metadata->>'size') ~ '^[0-9]+$'\n      then (o.metadata->>'size')::numeric=p_size else false end\n    and jsonb_typeof(o.metadata->'mimetype')='string'\n    and lower(trim(o.metadata->>'mimetype'))=lower(trim(p_type))) then\n    raise exception 'Uploaded attachment metadata does not match' using errcode='22023';\n  end if;\nend;\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "can_write_daily_log",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.can_write_daily_log(p_project uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  select (select auth.uid()) is not null and exists(select 1 from public.project_members pm\n    where pm.project_id=p_project and pm.profile_id=(select auth.uid()) and pm.can_edit\n      and pm.project_role in ('manager','superintendent','foreman','contractor'));\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "can_write_object",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.can_write_object(p_bucket text, p_name text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\n SET search_path TO ''\nAS $function$\ndeclare v_project uuid:=railcommand_guard.project_from_path(p_name);\nbegin\n  if p_bucket not in ('project-photos','thermal-photos','project-documents') then return true; end if;\n  if not exists(select 1 from public.project_members pm where pm.project_id=v_project\n    and pm.profile_id=(select auth.uid()) and pm.can_edit) then return false; end if;\n  if split_part(p_name,'/',2)='daily_log' then\n    return railcommand_guard.can_write_daily_log(v_project) and exists(select 1 from public.daily_logs dl\n      where dl.id=split_part(p_name,'/',3)::uuid and dl.project_id=v_project);\n  end if;\n  return true;\nend;\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "check_daily_log_attachment",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.check_daily_log_attachment()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\ndeclare v_parts text[];v_bucket text;\nbegin\n  if tg_op='UPDATE' and (old.entity_type='daily_log' or new.entity_type='daily_log')\n    and (old.id is distinct from new.id or old.project_id is distinct from new.project_id\n      or old.entity_type is distinct from new.entity_type or old.entity_id is distinct from new.entity_id\n      or old.uploaded_by is distinct from new.uploaded_by or old.idempotency_key is distinct from new.idempotency_key\n      or old.file_url is distinct from new.file_url or old.file_size is distinct from new.file_size\n      or lower(trim(old.file_type)) is distinct from lower(trim(new.file_type))\n      or old.photo_category is distinct from new.photo_category) then\n    raise exception 'Daily-log attachment identity and stored file cannot be reassigned' using errcode='22023';\n  end if;\n  if new.entity_type <> 'daily_log' then return new; end if;\n  if not railcommand_guard.can_write_daily_log(new.project_id) then\n    raise exception 'Permission denied' using errcode='42501';\n  end if;\n  v_bucket:=case new.photo_category when 'standard' then 'project-photos'\n    when 'thermal' then 'thermal-photos' when 'document' then 'project-documents' else null end;\n  -- getPublicUrl is the existing stored-path format, not permission to read it\n  -- publicly. Authenticated download helpers derive a signed local Storage URL.\n  v_parts:=regexp_match(new.file_url,'^(?:https://[a-z0-9-]+[.]supabase[.]co)?/storage/v1/object/public/(project-photos|thermal-photos|project-documents)/(.+)$');\n  if v_bucket is null or v_parts is null or v_parts[1]<>v_bucket\n    or railcommand_guard.project_from_path(v_parts[2]) is distinct from new.project_id\n    or split_part(v_parts[2],'/',2)<>'daily_log' or split_part(v_parts[2],'/',3)<>new.entity_id::text then\n    raise exception 'Invalid attachment storage destination' using errcode='22023';\n  end if;\n  perform railcommand_guard.assert_stored_object(v_bucket,v_parts[2],new.file_type,new.file_size);\n  return new;\nend;\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "check_daily_log_identity",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.check_daily_log_identity()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  if old.id is distinct from new.id or old.project_id is distinct from new.project_id\n    or old.created_by is distinct from new.created_by or old.idempotency_key is distinct from new.idempotency_key then\n    raise exception 'Daily-log identity cannot be reassigned' using errcode='22023';\n  end if;\n  return new;\nend;\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "is_project_member",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.is_project_member(p_project uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  select (select auth.uid()) is not null and exists(select 1 from public.project_members pm\n    where pm.project_id=p_project and pm.profile_id=(select auth.uid()));\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "project_from_path",
+      "definition": "CREATE OR REPLACE FUNCTION railcommand_guard.project_from_path(p_name text)\n RETURNS uuid\n LANGUAGE plpgsql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\nbegin\n  if p_name is null or p_name !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[a-z][a-z_]{0,63}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[a-z0-9._-]+$'\n    or split_part(p_name,'/',4) in ('.','..') then return null; end if;\n  return split_part(p_name,'/',1)::uuid;\nend;\n$function$\n",
+      "security_definer": false,
+      "grants": "{postgres=X/postgres,authenticated=X/postgres}"
+    }
+  ]
+}

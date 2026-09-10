@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { Alert, Image, Linking, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
-import { mobileConfig } from '@/lib/config';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { colors, fonts } from '@/theme';
 import railCommandMark from '../../assets/images/icon.png';
 
@@ -14,16 +13,13 @@ export function WebHeader({ projectName, online, expanded, onProjectPress, navig
   navigationDisabled?: boolean;
 }) {
   const { width } = useWindowDimensions();
-  const openSearch = async () => {
-    if (!online) {
-      Alert.alert('Search requires connectivity', 'Cached project records remain available in their mobile sections. Web search is never silently queued.');
-      return;
-    }
-    try {
-      await Linking.openURL(new URL('/search', mobileConfig.apiBaseUrl).toString());
-    } catch {
-      Alert.alert('Could not open search', 'The mobile app remains unchanged. Check connectivity and try again.');
-    }
+  const openSearch = () => {
+    Alert.alert(
+      'Search is not yet available in this field beta',
+      online
+        ? 'Use the Submittals, RFIs, Logs, or More sections to find project records.'
+        : 'Saved Submittals, RFIs, and Logs remain available in their mobile sections while offline.',
+    );
   };
   return <View style={styles.header}>
     <Pressable
@@ -40,10 +36,20 @@ export function WebHeader({ projectName, online, expanded, onProjectPress, navig
       {onProjectPress ? <SymbolView accessible={false} name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor="#CBD5E1" size={14} /> : null}
     </Pressable>
     <View style={styles.headerIcons}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Open RailCommand search" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => void openSearch()} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
+      <View
+        accessible
+        accessibilityRole="text"
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={`Connectivity: ${online ? 'online' : 'offline'}`}
+        style={[styles.connectionBadge, !online && styles.connectionBadgeOffline]}
+      >
+        <View style={[styles.connectionBadgeDot, !online && styles.connectionDotOffline]} />
+        <Text style={[styles.connectionBadgeText, !online && styles.connectionBadgeTextOffline]}>{online ? 'ONLINE' : 'OFFLINE'}</Text>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Open RailCommand search" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={openSearch} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
         <SymbolView accessible={false} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor="#64748B" size={23} />
       </Pressable>
-      {width >= 360 ? <Pressable accessibilityRole="button" accessibilityLabel="Open notification settings" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
+      {width >= 600 ? <Pressable accessibilityRole="button" accessibilityLabel="Open notification settings" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}>
         <SymbolView accessible={false} name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} tintColor="#64748B" size={21} />
       </Pressable> : null}
       <Pressable accessibilityRole="button" accessibilityLabel="Open account" disabled={navigationDisabled} accessibilityState={{ disabled: navigationDisabled }} onPress={() => router.push('/(tabs)/account')} style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}>
@@ -153,12 +159,17 @@ export function RailBotButton() {
 
 const styles = StyleSheet.create({
   header: { minHeight: 72, marginHorizontal: -12, marginTop: -12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.paper, borderBottomWidth: 1, borderBottomColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  project: { maxWidth: '48%', minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10, backgroundColor: colors.ink, borderRadius: 9 },
+  project: { flex: 1, minWidth: 0, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10, backgroundColor: colors.ink, borderRadius: 9 },
   mark: { width: 24, height: 24, borderRadius: 2 },
   connectionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.successBright },
   connectionDotOffline: { backgroundColor: colors.amber },
+  connectionBadge: { minHeight: 30, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, borderWidth: 1, borderColor: '#A7E1CA', backgroundColor: '#F0FBF6' },
+  connectionBadgeOffline: { borderColor: '#E8B36F', backgroundColor: '#FFF7E8' },
+  connectionBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.successBright },
+  connectionBadgeText: { color: colors.success, fontFamily: fonts.mono, fontSize: 8, lineHeight: 11, letterSpacing: 0.9 },
+  connectionBadgeTextOffline: { color: colors.warning },
   projectName: { flex: 1, minWidth: 0, color: colors.white, fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 19 },
-  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerIcons: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerAction: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.ink },
   avatarText: { color: colors.white, fontFamily: fonts.bodyMedium, fontSize: 12 },

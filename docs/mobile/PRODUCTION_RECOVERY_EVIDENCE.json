@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "scope": "production-recovery-evidence",
+  "projectRef": "gwvftrrknusdfdgiwuij",
+  "status": "pending",
+  "productionDataChanged": false,
+  "productionMutationAuthorized": false,
+  "backupExportAuthorizedAt": null,
+  "capturedAt": "2026-09-09T18:20:57.315Z",
+  "source": {
+    "gitCommit": null,
+    "productionDeploymentId": null,
+    "migrationInventorySha256": null
+  },
+  "storageProtection": {
+    "locationClass": "encrypted-local-volume",
+    "encryptedAtRest": true,
+    "accessRestricted": true
+  },
+  "artifacts": {
+    "roles": {
+      "file": "roles.sql",
+      "bytes": 297,
+      "sha256": "25873cec56a2cc6514e204f420231777f85c03da818caa7090cdcdfa89776ecd"
+    },
+    "schema": {
+      "file": "schema.sql",
+      "bytes": 178100,
+      "sha256": "ee2001e8ea0fc5142668a4325f8609e21e100b5d53cac6ad884c8d249c7ee138"
+    },
+    "data": {
+      "file": "data.sql",
+      "bytes": 806901,
+      "sha256": "68a66fec3e751b6642ff37abcc95a1d223c3d59f27f53153bbbe635194f463bf"
+    },
+    "storageInventory": {
+      "file": "storage-inventory.json",
+      "bytes": 2008,
+      "sha256": "f2da4e53b91ac26f5c27d756291f5541ed3f6a925aaa4ac7570232bc579d6249",
+      "objectCount": 244,
+      "objectBytes": 292292261
+    }
+  },
+  "restoreRehearsal": {
+    "status": "verified",
+    "target": "disposable-local",
+    "verifiedAt": "2026-09-09T18:35:35.235Z",
+    "verificationSha256": "7847210eb0ebf899cb669debccbc4cb0dc6bda337799cdc3210a4edaeb61cf84"
+  },
+  "owners": {
+    "backup": "Dillan Milosevich",
+    "restore": "Dillan Milosevich",
+    "mobileKillSwitch": null
+  },
+  "retention": {
+    "days": 30,
+    "approvedAt": null,
+    "disposalDueAt": "2026-10-09T17:58:14.780Z",
+    "disposalOwner": "Dillan Milosevich"
+  },
+  "databaseBackupContainsStorageObjectBodies": false
+}

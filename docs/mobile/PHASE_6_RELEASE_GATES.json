@@ -1,0 +1,61 @@
+{
+  "releaseVersion": "1.0.0",
+  "scope": "controlled-mobile-release",
+  "releaseOwner": "Dillan Milosevich",
+  "releaseStrategy": "manual",
+  "initialCountries": [
+    "US"
+  ],
+  "productionMutationAuthorized": false,
+  "storeUploadAuthorized": false,
+  "storeSubmissionAuthorized": false,
+  "publicReleaseAuthorized": false,
+  "gates": [
+    {
+      "id": "phase-5-release-candidate",
+      "status": "pending",
+      "evidence": "The scoped iPhone, iPad, simulator, and Android emulator paths pass. A physical Android critical-path and supervised accessibility smoke test remain required before public release."
+    },
+    {
+      "id": "staging-backend-rehearsal",
+      "status": "verified",
+      "verifiedAt": "2026-09-05",
+      "evidence": "Hosted RailCommand Mobile Staging passed the exact additive foundation and hardening sequence, rollback-only acceptance, read-only postflight, and Security Advisor review. Postflight proved the contracts/RLS/grants and zero exact acceptance residue; production was untouched."
+    },
+    {
+      "id": "production-recovery-evidence",
+      "status": "pending",
+      "evidence": "Authorized September 9 database exports restored in an isolated local database: 67 COPY sections, 2116 rows, zero mismatches. All 244 Storage objects (292292261 bytes) were copied locally and hash-verified separately. See RECOVERY_EXPORT_CHECK_2026-09-09.md and STORAGE_BACKUP_CHECK_2026-09-09.md. Recovery manifest/source linkage and kill-switch ownership remain pending; these separate captures are not an atomic point-in-time snapshot or a tested Storage service restore."
+    },
+    {
+      "id": "controlled-live-pilot",
+      "status": "pending",
+      "evidence": "The fail-closed allowlist and read-only/read-write modes are implemented locally. Backup reads were authorized separately; no production mobile pilot configuration, deployment, or user workflow activation is authorized."
+    },
+    {
+      "id": "signed-internal-betas",
+      "status": "pending",
+      "evidence": "Signing configuration is prepared, but no current release-candidate build has been uploaded to TestFlight or Google Play internal testing."
+    },
+    {
+      "id": "reviewer-package",
+      "status": "pending",
+      "evidence": "Reviewer copy and credential handling are prepared. Final screenshots, final installed-build credentials, and release-candidate reconciliation remain."
+    },
+    {
+      "id": "store-review-approval",
+      "status": "pending",
+      "evidence": "No app build has been submitted for review and no approval has been received."
+    },
+    {
+      "id": "controlled-rollout-stability",
+      "status": "pending",
+      "evidence": "Manual release is selected. A limited rollout and its stability observation have not started."
+    },
+    {
+      "id": "operations-and-maintenance-ownership",
+      "status": "pending",
+      "evidence": "Crash, sign-in, sync, upload, push, deletion, rollback, monthly dependency review, and SDK-deadline ownership must be named before release."
+    }
+  ]
+}

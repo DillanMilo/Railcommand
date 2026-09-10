@@ -40,3 +40,4 @@ describe('Client choice and daily-log card parity', () => {
     assert.match(fields, /content: \{ padding: 16, gap: 16 \}/);
   });
 });
+import { URL } from 'node:url';

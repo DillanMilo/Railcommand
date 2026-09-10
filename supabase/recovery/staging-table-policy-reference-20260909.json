@@ -1,0 +1,648 @@
+{
+  "scope": "staging-schema-reference-not-a-migration",
+  "projectRef": "rxuvchdqbzvovqijvfhx",
+  "capturedDate": "2026-09-09",
+  "schema": {
+    "tables": [
+      {
+        "rls": true,
+        "name": "account_deletion_audit",
+        "grants": "{postgres=arwdDxtm/postgres,service_role=arDxtm/postgres,authenticated=r/postgres}",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "not_null": true
+          },
+          {
+            "name": "request_id",
+            "type": "uuid",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "event_code",
+            "type": "text",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "actor",
+            "type": "text",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "event_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "not_null": true
+          },
+          {
+            "name": "metadata",
+            "type": "jsonb",
+            "default": "'{}'::jsonb",
+            "not_null": true
+          }
+        ],
+        "indexes": [
+          "CREATE UNIQUE INDEX account_deletion_audit_pkey ON public.account_deletion_audit USING btree (id)",
+          "CREATE INDEX account_deletion_audit_request_idx ON public.account_deletion_audit USING btree (request_id, event_at)"
+        ],
+        "force_rls": false,
+        "constraints": [
+          {
+            "name": "account_deletion_audit_actor_check",
+            "definition": "CHECK ((actor = ANY (ARRAY['user'::text, 'system'::text, 'administrator'::text])))"
+          },
+          {
+            "name": "account_deletion_audit_event_code_check",
+            "definition": "CHECK ((event_code = ANY (ARRAY['requested'::text, 'duplicate_request'::text, 'sessions_revoked'::text, 'session_revocation_failed'::text, 'canceled'::text, 'processing_started'::text, 'profile_anonymized'::text, 'identity_deleted'::text, 'completion_email_sent'::text, 'completed'::text, 'failed'::text])))"
+          },
+          {
+            "name": "account_deletion_audit_pkey",
+            "definition": "PRIMARY KEY (id)"
+          },
+          {
+            "name": "account_deletion_audit_request_id_fkey",
+            "definition": "FOREIGN KEY (request_id) REFERENCES account_deletion_requests(id) ON DELETE RESTRICT"
+          }
+        ]
+      },
+      {
+        "rls": true,
+        "name": "account_deletion_requests",
+        "grants": "{postgres=arwdDxtm/postgres,service_role=rwDxtm/postgres,authenticated=r/postgres}",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "not_null": true
+          },
+          {
+            "name": "profile_id",
+            "type": "uuid",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "client_request_id",
+            "type": "uuid",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "status",
+            "type": "text",
+            "default": "'pending'::text",
+            "not_null": true
+          },
+          {
+            "name": "requested_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "not_null": true
+          },
+          {
+            "name": "scheduled_for",
+            "type": "timestamp with time zone",
+            "default": "(now() + '30 days'::interval)",
+            "not_null": true
+          },
+          {
+            "name": "completed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "request_source",
+            "type": "text",
+            "default": "'mobile'::text",
+            "not_null": true
+          },
+          {
+            "name": "organization_id",
+            "type": "uuid",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "organization_role",
+            "type": "text",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "local_drafts_count",
+            "type": "integer",
+            "default": "0",
+            "not_null": true
+          },
+          {
+            "name": "local_outbox_count",
+            "type": "integer",
+            "default": "0",
+            "not_null": true
+          },
+          {
+            "name": "local_photos_count",
+            "type": "integer",
+            "default": "0",
+            "not_null": true
+          },
+          {
+            "name": "reauthenticated_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "record_disposition",
+            "type": "text",
+            "default": "'organization_retained_or_anonymized'::text",
+            "not_null": true
+          },
+          {
+            "name": "canceled_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "anonymized_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "not_null": true
+          },
+          {
+            "name": "result_code",
+            "type": "text",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "completion_recipient",
+            "type": "text",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "identity_deleted_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "completion_email_sent_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          }
+        ],
+        "indexes": [
+          "CREATE UNIQUE INDEX account_deletion_requests_pkey ON public.account_deletion_requests USING btree (id)",
+          "CREATE UNIQUE INDEX account_deletion_requests_profile_id_client_request_id_key ON public.account_deletion_requests USING btree (profile_id, client_request_id)",
+          "CREATE UNIQUE INDEX account_deletion_requests_one_active_per_profile ON public.account_deletion_requests USING btree (profile_id) WHERE (status = ANY (ARRAY['pending'::text, 'reviewing'::text, 'processing'::text, 'failed'::text]))"
+        ],
+        "force_rls": false,
+        "constraints": [
+          {
+            "name": "account_deletion_requests_local_drafts_count_check",
+            "definition": "CHECK ((local_drafts_count >= 0))"
+          },
+          {
+            "name": "account_deletion_requests_local_outbox_count_check",
+            "definition": "CHECK ((local_outbox_count >= 0))"
+          },
+          {
+            "name": "account_deletion_requests_local_photos_count_check",
+            "definition": "CHECK ((local_photos_count >= 0))"
+          },
+          {
+            "name": "account_deletion_requests_organization_id_fkey",
+            "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL"
+          },
+          {
+            "name": "account_deletion_requests_pkey",
+            "definition": "PRIMARY KEY (id)"
+          },
+          {
+            "name": "account_deletion_requests_profile_id_client_request_id_key",
+            "definition": "UNIQUE (profile_id, client_request_id)"
+          },
+          {
+            "name": "account_deletion_requests_profile_id_fkey",
+            "definition": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
+          },
+          {
+            "name": "account_deletion_requests_request_source_check",
+            "definition": "CHECK ((request_source = ANY (ARRAY['mobile'::text, 'web'::text])))"
+          },
+          {
+            "name": "account_deletion_requests_status_check",
+            "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'reviewing'::text, 'processing'::text, 'completed'::text, 'canceled'::text, 'failed'::text])))"
+          }
+        ]
+      },
+      {
+        "rls": true,
+        "name": "mobile_device_registrations",
+        "grants": "{postgres=arwdDxtm/postgres,service_role=rwdDxtm/postgres,authenticated=arw/postgres}",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "not_null": true
+          },
+          {
+            "name": "profile_id",
+            "type": "uuid",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "expo_push_token",
+            "type": "text",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "platform",
+            "type": "text",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "app_profile",
+            "type": "text",
+            "default": null,
+            "not_null": true
+          },
+          {
+            "name": "device_name",
+            "type": "text",
+            "default": null,
+            "not_null": false
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "not_null": true
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "not_null": true
+          },
+          {
+            "name": "disabled_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "not_null": false
+          }
+        ],
+        "indexes": [
+          "CREATE UNIQUE INDEX mobile_device_registrations_pkey ON public.mobile_device_registrations USING btree (id)",
+          "CREATE UNIQUE INDEX mobile_device_registrations_profile_id_expo_push_token_app__key ON public.mobile_device_registrations USING btree (profile_id, expo_push_token, app_profile)"
+        ],
+        "force_rls": false,
+        "constraints": [
+          {
+            "name": "mobile_device_registrations_app_profile_check",
+            "definition": "CHECK ((app_profile = ANY (ARRAY['development'::text, 'staging'::text, 'production'::text])))"
+          },
+          {
+            "name": "mobile_device_registrations_pkey",
+            "definition": "PRIMARY KEY (id)"
+          },
+          {
+            "name": "mobile_device_registrations_platform_check",
+            "definition": "CHECK ((platform = ANY (ARRAY['ios'::text, 'android'::text])))"
+          },
+          {
+            "name": "mobile_device_registrations_profile_id_expo_push_token_app__key",
+            "definition": "UNIQUE (profile_id, expo_push_token, app_profile)"
+          },
+          {
+            "name": "mobile_device_registrations_profile_id_fkey",
+            "definition": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
+          }
+        ]
+      }
+    ],
+    "policies": [
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_daily_log_photos_insert",
+        "schemaname": "storage",
+        "with_check": "((bucket_id = ANY (ARRAY['project-photos'::text, 'thermal-photos'::text])) AND\nCASE\n    WHEN (name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/daily_log/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f-]+-.+$'::text) THEN ((EXISTS ( SELECT 1\n       FROM daily_logs dl\n      WHERE ((dl.id = (split_part(objects.name, '/'::text, 3))::uuid) AND (dl.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (dl.created_by = ( SELECT auth.uid() AS uid))))) AND ((EXISTS ( SELECT 1\n       FROM profiles p\n      WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n       FROM project_members pm\n      WHERE ((pm.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (pm.profile_id = ( SELECT auth.uid() AS uid)) AND pm.can_edit AND (pm.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'contractor'::text])))))))\n    ELSE false\nEND)"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_daily_log_photos_insert_hardened",
+        "schemaname": "storage",
+        "with_check": "((bucket_id = ANY (ARRAY['project-photos'::text, 'thermal-photos'::text])) AND (owner_id = (( SELECT auth.uid() AS uid))::text) AND (name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/daily_log/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-.+$'::text) AND (EXISTS ( SELECT 1\n   FROM daily_logs log\n  WHERE ((log.id = (split_part(objects.name, '/'::text, 3))::uuid) AND (log.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (log.created_by = ( SELECT auth.uid() AS uid))))) AND ((EXISTS ( SELECT 1\n   FROM profiles profile\n  WHERE ((profile.id = ( SELECT auth.uid() AS uid)) AND (profile.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n   FROM project_members member\n  WHERE ((member.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (member.profile_id = ( SELECT auth.uid() AS uid)) AND member.can_edit AND (member.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'contractor'::text])))))))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((bucket_id = ANY (ARRAY['project-photos'::text, 'thermal-photos'::text])) AND\nCASE\n    WHEN (name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/daily_log/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f-]+-.+$'::text) THEN ((EXISTS ( SELECT 1\n       FROM daily_logs dl\n      WHERE ((dl.id = (split_part(objects.name, '/'::text, 3))::uuid) AND (dl.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (dl.created_by = ( SELECT auth.uid() AS uid))))) AND ((EXISTS ( SELECT 1\n       FROM profiles p\n      WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n       FROM project_members pm\n      WHERE ((pm.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (pm.profile_id = ( SELECT auth.uid() AS uid)) AND pm.can_edit AND (pm.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'contractor'::text])))))))\n    ELSE false\nEND)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_daily_log_photos_select",
+        "schemaname": "storage",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((bucket_id = ANY (ARRAY['project-photos'::text, 'thermal-photos'::text])) AND (owner_id = (( SELECT auth.uid() AS uid))::text) AND (name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/daily_log/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-.+$'::text) AND (EXISTS ( SELECT 1\n   FROM daily_logs log\n  WHERE ((log.id = (split_part(objects.name, '/'::text, 3))::uuid) AND (log.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (log.created_by = ( SELECT auth.uid() AS uid))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_daily_log_photos_select_hardened",
+        "schemaname": "storage",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((bucket_id = ANY (ARRAY['project-photos'::text, 'thermal-photos'::text])) AND\nCASE\n    WHEN (name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/daily_log/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f-]+-.+$'::text) THEN ((EXISTS ( SELECT 1\n       FROM daily_logs dl\n      WHERE ((dl.id = (split_part(objects.name, '/'::text, 3))::uuid) AND (dl.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (dl.created_by = ( SELECT auth.uid() AS uid))))) AND ((EXISTS ( SELECT 1\n       FROM profiles p\n      WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n       FROM project_members pm\n      WHERE ((pm.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (pm.profile_id = ( SELECT auth.uid() AS uid)) AND pm.can_edit AND (pm.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'contractor'::text])))))))\n    ELSE false\nEND)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_daily_log_photos_update",
+        "schemaname": "storage",
+        "with_check": "((bucket_id = ANY (ARRAY['project-photos'::text, 'thermal-photos'::text])) AND\nCASE\n    WHEN (name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/daily_log/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f-]+-.+$'::text) THEN ((EXISTS ( SELECT 1\n       FROM daily_logs dl\n      WHERE ((dl.id = (split_part(objects.name, '/'::text, 3))::uuid) AND (dl.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (dl.created_by = ( SELECT auth.uid() AS uid))))) AND ((EXISTS ( SELECT 1\n       FROM profiles p\n      WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n       FROM project_members pm\n      WHERE ((pm.project_id = (split_part(objects.name, '/'::text, 1))::uuid) AND (pm.profile_id = ( SELECT auth.uid() AS uid)) AND pm.can_edit AND (pm.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'contractor'::text])))))))\n    ELSE false\nEND)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "mobile_staging.can_read_workflow_object(bucket_id, name)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_phase5_record_attachment_read",
+        "schemaname": "storage",
+        "with_check": null
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "railcommand_guard.can_write_object(bucket_id, name)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "RESTRICTIVE",
+        "policyname": "rc_project_object_delete_guard",
+        "schemaname": "storage",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "RESTRICTIVE",
+        "policyname": "rc_project_object_insert_guard",
+        "schemaname": "storage",
+        "with_check": "railcommand_guard.can_write_object(bucket_id, name)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((bucket_id <> ALL (ARRAY['project-photos'::text, 'thermal-photos'::text, 'project-documents'::text])) OR (railcommand_guard.is_project_member(railcommand_guard.project_from_path(name)) AND (NOT ( SELECT storage.allow_any_operation(ARRAY['object.move'::text, 'object.copy'::text, 's3.object.copy'::text, 's3.upload.part_copy'::text]) AS allow_any_operation))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "RESTRICTIVE",
+        "policyname": "rc_project_object_read_guard",
+        "schemaname": "storage",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "(railcommand_guard.can_write_object(bucket_id, name) AND ((bucket_id <> ALL (ARRAY['project-photos'::text, 'thermal-photos'::text, 'project-documents'::text])) OR ( SELECT storage.allow_any_operation(ARRAY['object.upload'::text, 'object.upload_update'::text, 'object.sign_upload_url'::text]) AS allow_any_operation)))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "objects",
+        "permissive": "RESTRICTIVE",
+        "policyname": "rc_project_object_update_guard",
+        "schemaname": "storage",
+        "with_check": "(railcommand_guard.can_write_object(bucket_id, name) AND ((bucket_id <> ALL (ARRAY['project-photos'::text, 'thermal-photos'::text, 'project-documents'::text])) OR ( SELECT storage.allow_any_operation(ARRAY['object.upload'::text, 'object.upload_update'::text, 'object.sign_upload_url'::text]) AS allow_any_operation)))"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_members",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can add invited membership",
+        "schemaname": "public",
+        "with_check": "((profile_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1\n   FROM project_invitations invitation\n  WHERE ((invitation.project_id = project_members.project_id) AND (invitation.project_role = project_members.project_role) AND (invitation.status = 'pending'::text) AND (invitation.expires_at > now()) AND (lower(invitation.email) = lower(( SELECT profile.email\n           FROM profiles profile\n          WHERE (profile.id = ( SELECT auth.uid() AS uid))))) AND (project_members.can_edit = (invitation.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'engineer'::text])))))))"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_members",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can add their invited membership",
+        "schemaname": "public",
+        "with_check": "((profile_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1\n   FROM project_invitations invitation\n  WHERE ((invitation.project_id = project_members.project_id) AND (invitation.project_role = project_members.project_role) AND (invitation.status = 'pending'::text) AND (invitation.expires_at > now()) AND (lower(invitation.email) = lower(( SELECT profile.email\n           FROM profiles profile\n          WHERE (profile.id = ( SELECT auth.uid() AS uid))))) AND (project_members.can_edit = (invitation.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'engineer'::text])))))))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_members",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_memberships_select_self",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "mobile_staging.can_access_project(project_id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_members",
+        "permissive": "PERMISSIVE",
+        "policyname": "mobile_phase5_memberships_select_team",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_members",
+        "permissive": "RESTRICTIVE",
+        "policyname": "rc_invited_membership_guard",
+        "schemaname": "public",
+        "with_check": "((profile_id <> ( SELECT auth.uid() AS uid)) OR (EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n   FROM project_invitations i\n  WHERE ((i.project_id = project_members.project_id) AND (i.status = 'pending'::text) AND (i.expires_at > now()) AND (lower(i.email) = lower((auth.jwt() ->> 'email'::text))) AND (i.project_role = project_members.project_role) AND (project_members.can_edit = (i.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'engineer'::text])))))))"
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((status = 'pending'::text) AND (expires_at > now()) AND (lower(email) = lower(( SELECT profile.email\n   FROM profiles profile\n  WHERE (profile.id = ( SELECT auth.uid() AS uid))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_invitations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can accept their invitation",
+        "schemaname": "public",
+        "with_check": "((status = 'accepted'::text) AND (lower(email) = lower(( SELECT profile.email\n   FROM profiles profile\n  WHERE (profile.id = ( SELECT auth.uid() AS uid))))))"
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((status = 'pending'::text) AND (expires_at > now()) AND (lower(email) = lower(( SELECT p.email\n   FROM profiles p\n  WHERE (p.id = ( SELECT auth.uid() AS uid))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_invitations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can accept their pending invitations",
+        "schemaname": "public",
+        "with_check": "((status = 'accepted'::text) AND (lower(email) = lower(( SELECT p.email\n   FROM profiles p\n  WHERE (p.id = ( SELECT auth.uid() AS uid))))))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((status = ANY (ARRAY['pending'::text, 'accepted'::text])) AND (lower(email) = lower(( SELECT profile.email\n   FROM profiles profile\n  WHERE (profile.id = ( SELECT auth.uid() AS uid))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_invitations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can read accepted invitation during handoff",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((status = 'accepted'::text) AND (lower(email) = lower(( SELECT profile.email\n   FROM profiles profile\n  WHERE (profile.id = ( SELECT auth.uid() AS uid))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_invitations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can read their accepted invitation during hando",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((status = 'pending'::text) AND (expires_at > now()) AND (lower(email) = lower(( SELECT p.email\n   FROM profiles p\n  WHERE (p.id = ( SELECT auth.uid() AS uid))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "project_invitations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Mobile invitees can read their pending invitations",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "mobile_device_registrations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Users can read their mobile device registrations",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "mobile_device_registrations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Users can register their own mobile devices",
+        "schemaname": "public",
+        "with_check": "(profile_id = ( SELECT auth.uid() AS uid))"
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "mobile_device_registrations",
+        "permissive": "PERMISSIVE",
+        "policyname": "Users can update their own mobile device registrations",
+        "schemaname": "public",
+        "with_check": "(profile_id = ( SELECT auth.uid() AS uid))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(EXISTS ( SELECT 1\n   FROM account_deletion_requests request\n  WHERE ((request.id = account_deletion_audit.request_id) AND (request.profile_id = ( SELECT auth.uid() AS uid)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "account_deletion_audit",
+        "permissive": "PERMISSIVE",
+        "policyname": "Users can read their account deletion audit",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "account_deletion_requests",
+        "permissive": "PERMISSIVE",
+        "policyname": "Users can read their account deletion requests",
+        "schemaname": "public",
+        "with_check": null
+      }
+    ]
+  }
+}

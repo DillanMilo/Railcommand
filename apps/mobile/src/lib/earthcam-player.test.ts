@@ -120,3 +120,4 @@ describe('EarthCam player navigation and recovery', () => {
     assert.deepEqual(earthCamFeedsForProject(cached, 'project-a'), cached);
   });
 });
+import { URL } from 'node:url';

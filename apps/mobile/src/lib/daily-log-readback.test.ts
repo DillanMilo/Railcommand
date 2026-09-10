@@ -134,3 +134,4 @@ describe('Read-only rich daily-log detail rendering', () => {
     assert.doesNotMatch(noProject.text, /Track alignment completed|41\.878113|Synthetic Rail/);
   });
 });
+import { URL } from 'node:url';

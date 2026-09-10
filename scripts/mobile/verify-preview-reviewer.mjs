@@ -8,7 +8,7 @@ import { spawn } from 'node:child_process';
 import { emitKeypressEvents } from 'node:readline';
 import { createClient } from '@supabase/supabase-js';
 
-export const PREVIEW = 'https://railcommand-mobile-staging-92syl0mro-dillans-projects-f662840b.vercel.app';
+export const PREVIEW = 'https://railcommand-mobile-staging-nxpo544zw-dillans-projects-f662840b.vercel.app';
 const SUPABASE = 'https://rxuvchdqbzvovqijvfhx.supabase.co';
 const REVIEWER = 'app-review@railcommand.io';
 const USER = 'ee8dee3d-d28e-4f0b-a40e-25f55a3dc4b0';

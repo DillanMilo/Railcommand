@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, URL } from 'node:url';
 import { describe, it } from 'mocha';
 
 function source(path: string) {
@@ -123,6 +123,7 @@ describe('RailCommand web-to-native visual foundation', () => {
 
   it('uses real cached dashboard values and web-style quick actions', () => {
     const dashboard = source('../app/(tabs)/index.tsx');
+    const shell = source('../components/web-shell.tsx');
     for (const label of ['BUDGET', 'SCHEDULE', 'SUBMITTALS', 'OPEN RFIS', 'PUNCH LIST', 'DAILY LOGS']) {
       assert.match(dashboard, new RegExp(`label="${label}"`));
     }
@@ -133,6 +134,10 @@ describe('RailCommand web-to-native visual foundation', () => {
     assert.match(dashboard, /New Submittal/);
     assert.match(dashboard, /New Punch Item/);
     assert.match(dashboard, /Milestones/);
+    assert.match(shell, /online \? 'ONLINE' : 'OFFLINE'/);
+    assert.match(shell, /accessibilityLiveRegion="polite"/);
+    assert.match(shell, /Search is not yet available in this field beta/);
+    assert.doesNotMatch(shell, /Linking\.openURL\(new URL\('\/search'/);
   });
 
   it('adds a project-authorized EarthCam workspace with a strict navigation allowlist', () => {

@@ -184,3 +184,4 @@ describe('Owner-bound API authentication (real API client, synthetic transport)'
     assert.deepEqual(h.requests, ['Bearer synthetic-token-a', 'Bearer synthetic-token-a']);
   });
 });
+import { URL } from 'node:url';

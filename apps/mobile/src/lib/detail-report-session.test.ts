@@ -286,3 +286,4 @@ describe('owner-scoped detail reads and native report handoff', () => {
     h.blur();
   });
 });
+import { URL } from 'node:url';

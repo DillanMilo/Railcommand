@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, URL } from 'node:url';
 import { describe, it } from 'mocha';
 import type { MobileBootstrap } from '@railcommand/domain';
 import { bootstrapForProject } from './bootstrap-scope';

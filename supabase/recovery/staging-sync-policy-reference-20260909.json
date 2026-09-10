@@ -1,0 +1,325 @@
+{
+  "scope": "read-only-staging-schema-reference",
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "attachments",
+      "policyname": "mobile_staging_attachments_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((uploaded_by = ( SELECT auth.uid() AS uid)) AND (entity_type = 'daily_log'::text) AND (EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = attachments.entity_id) AND (dl.project_id = attachments.project_id) AND (dl.created_by = ( SELECT auth.uid() AS uid))))) AND ((EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n   FROM project_members pm\n  WHERE ((pm.project_id = attachments.project_id) AND (pm.profile_id = ( SELECT auth.uid() AS uid)) AND pm.can_edit AND (pm.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'contractor'::text])))))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "attachments",
+      "policyname": "mobile_staging_attachments_select",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n   FROM project_members pm\n  WHERE ((pm.project_id = attachments.project_id) AND (pm.profile_id = ( SELECT auth.uid() AS uid))))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "attachments",
+      "policyname": "rc_daily_log_photo_delete_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "((entity_type <> 'daily_log'::text) OR railcommand_guard.can_write_daily_log(project_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "attachments",
+      "policyname": "rc_daily_log_photo_insert_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((entity_type <> 'daily_log'::text) OR ((uploaded_by = ( SELECT auth.uid() AS uid)) AND railcommand_guard.can_write_daily_log(project_id) AND (EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = attachments.entity_id) AND (dl.project_id = attachments.project_id))))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "attachments",
+      "policyname": "rc_daily_log_photo_update_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "((entity_type <> 'daily_log'::text) OR railcommand_guard.can_write_daily_log(project_id))",
+      "with_check": "((entity_type <> 'daily_log'::text) OR (railcommand_guard.can_write_daily_log(project_id) AND (EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = attachments.entity_id) AND (dl.project_id = attachments.project_id))))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_equipment",
+      "policyname": "mobile_equipment_insert_owner",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_equipment.daily_log_id) AND (dl.created_by = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_equipment",
+      "policyname": "mobile_phase5_equipment_select_parent",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_equipment.daily_log_id) AND mobile_staging.can_access_project(dl.project_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_equipment",
+      "policyname": "rc_daily_log_child_delete_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_equipment.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_equipment",
+      "policyname": "rc_daily_log_child_insert_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_equipment.daily_log_id) AND (dl.created_by = ( SELECT auth.uid() AS uid)) AND railcommand_guard.can_write_daily_log(dl.project_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_equipment",
+      "policyname": "rc_daily_log_child_update_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_equipment.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_equipment.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_personnel",
+      "policyname": "mobile_personnel_insert_owner",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_personnel.daily_log_id) AND (dl.created_by = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_personnel",
+      "policyname": "mobile_phase5_personnel_select_parent",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_personnel.daily_log_id) AND mobile_staging.can_access_project(dl.project_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_personnel",
+      "policyname": "rc_daily_log_child_delete_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_personnel.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_personnel",
+      "policyname": "rc_daily_log_child_insert_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_personnel.daily_log_id) AND (dl.created_by = ( SELECT auth.uid() AS uid)) AND railcommand_guard.can_write_daily_log(dl.project_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_personnel",
+      "policyname": "rc_daily_log_child_update_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_personnel.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_personnel.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_work_items",
+      "policyname": "mobile_phase5_work_items_select_parent",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_work_items.daily_log_id) AND mobile_staging.can_access_project(dl.project_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_work_items",
+      "policyname": "mobile_work_items_insert_owner",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_work_items.daily_log_id) AND (dl.created_by = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_work_items",
+      "policyname": "rc_daily_log_child_delete_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_work_items.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_work_items",
+      "policyname": "rc_daily_log_child_insert_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_work_items.daily_log_id) AND (dl.created_by = ( SELECT auth.uid() AS uid)) AND railcommand_guard.can_write_daily_log(dl.project_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_log_work_items",
+      "policyname": "rc_daily_log_child_update_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_work_items.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM daily_logs dl\n  WHERE ((dl.id = daily_log_work_items.daily_log_id) AND railcommand_guard.can_write_daily_log(dl.project_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_logs",
+      "policyname": "mobile_daily_logs_insert_editor",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((created_by = ( SELECT auth.uid() AS uid)) AND mobile_staging.can_edit_project(project_id))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_logs",
+      "policyname": "mobile_daily_logs_select_member",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "mobile_staging.can_access_project(project_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_logs",
+      "policyname": "rc_daily_log_delete_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "railcommand_guard.can_write_daily_log(project_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_logs",
+      "policyname": "rc_daily_log_insert_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((created_by = ( SELECT auth.uid() AS uid)) AND railcommand_guard.can_write_daily_log(project_id))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "daily_logs",
+      "policyname": "rc_daily_log_update_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "railcommand_guard.can_write_daily_log(project_id)",
+      "with_check": "railcommand_guard.can_write_daily_log(project_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "profiles",
+      "policyname": "mobile_phase5_profiles_select_shared",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "mobile_staging.can_view_shared_profile(id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "profiles",
+      "policyname": "mobile_profiles_select_self",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(id = ( SELECT auth.uid() AS uid))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "project_members",
+      "policyname": "Mobile invitees can add invited membership",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((profile_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1\n   FROM project_invitations invitation\n  WHERE ((invitation.project_id = project_members.project_id) AND (invitation.project_role = project_members.project_role) AND (invitation.status = 'pending'::text) AND (invitation.expires_at > now()) AND (lower(invitation.email) = lower(( SELECT profile.email\n           FROM profiles profile\n          WHERE (profile.id = ( SELECT auth.uid() AS uid))))) AND (project_members.can_edit = (invitation.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'engineer'::text])))))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "project_members",
+      "policyname": "Mobile invitees can add their invited membership",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((profile_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1\n   FROM project_invitations invitation\n  WHERE ((invitation.project_id = project_members.project_id) AND (invitation.project_role = project_members.project_role) AND (invitation.status = 'pending'::text) AND (invitation.expires_at > now()) AND (lower(invitation.email) = lower(( SELECT profile.email\n           FROM profiles profile\n          WHERE (profile.id = ( SELECT auth.uid() AS uid))))) AND (project_members.can_edit = (invitation.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'engineer'::text])))))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "project_members",
+      "policyname": "mobile_memberships_select_self",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "project_members",
+      "policyname": "mobile_phase5_memberships_select_team",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "mobile_staging.can_access_project(project_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "project_members",
+      "policyname": "rc_invited_membership_guard",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((profile_id <> ( SELECT auth.uid() AS uid)) OR (EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.role = 'admin'::text)))) OR (EXISTS ( SELECT 1\n   FROM project_invitations i\n  WHERE ((i.project_id = project_members.project_id) AND (i.status = 'pending'::text) AND (i.expires_at > now()) AND (lower(i.email) = lower((auth.jwt() ->> 'email'::text))) AND (i.project_role = project_members.project_role) AND (project_members.can_edit = (i.project_role = ANY (ARRAY['manager'::text, 'superintendent'::text, 'foreman'::text, 'engineer'::text])))))))"
+    }
+  ]
+}
