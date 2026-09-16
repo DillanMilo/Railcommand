@@ -140,7 +140,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       ['expo-image-picker', {
         cameraPermission: 'RailCommand uses the camera only when you attach a field photo to a record.',
         photosPermission: 'RailCommand lets you choose field photos to attach to a record.',
-        microphonePermission: false,
+        microphonePermission: 'RailBot records your voice only when you tap Dictate, to turn it into a message you can review.',
       }],
       ['expo-audio', { microphonePermission: 'RailBot records your voice only when you tap Dictate, to turn it into a message you can review.', enableBackgroundRecording: false, enableBackgroundPlayback: false }],
       './plugins/with-foreground-location-only',
