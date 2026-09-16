@@ -28,3 +28,25 @@ Validation: 223 mobile tests including actual screen cleanup-order regression;
 mobile TypeScript; iPhone Hermes export; 27 focused server sync tests; production
 backend TypeScript and build passed. Physical phone Back/dictation/restart checks
 remain required after the new TestFlight update. Existing pending logs are untouched.
+
+Release progress:
+- Native source `13c2fa8`; EAS build 300008 `f4a86ae9-50fd-4543-b883-c7753ac24895` is building.
+- Backend source `117e376`; staged deployment `dpl_EEtfNpANoeoMTwCzcSTVhSW1SpmS`
+  passed the Vercel build and unauthenticated/invalid-signature/non-pilot no-store
+  endpoint checks. Promotion requested, rollback `dpl_ECZ7fmPh16iKKCmsU9YJ3oNrPQdh`.
+- Fresh Apple check: internal group still only dillanxx@gmail.com, installed 300007.
+- Supabase read-only query confirms original Tester September 16 log
+  `a8871e0b-cf2c-4bf9-847b-6010efccebf2` remains. No submitted phone payloads read,
+  records mutated, queue discarded, or uniqueness rule changed.
+
+- Backend promotion completed; live unauthorized/invalid-signature/non-pilot checks
+  passed with no-store responses. Duplicate-date confirmation from phone still needed.
+- Build 300008 finished and passed deep strict Apple signature, production entitlements
+  (debug disabled), bundle/version, microphone purpose, privacy AudioData and live
+  profile checks. IPA SHA256
+  `3240b6a1ac763ee5c28ae2f70a1fff69ef0c09497605e9bbf0a57a48bed71d2d`.
+- Apple upload started for the exact EAS build; internal assignment remains pending
+  processing. No storage schema/version changes or purge operations included.
+
+- Apple accepted submission `e597d168-b9e5-4017-8f3d-6ecf2f7d3a93`.
+  Build 300008 visibly Processing at 5:08 PM CDT. Release is internal only.
