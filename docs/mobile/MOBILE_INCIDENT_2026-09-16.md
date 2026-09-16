@@ -50,3 +50,16 @@ Release progress:
 
 - Apple accepted submission `e597d168-b9e5-4017-8f3d-6ecf2f7d3a93`.
   Build 300008 visibly Processing at 5:08 PM CDT. Release is internal only.
+
+## Release handoff
+
+Apple build `d9394bb3-17b4-482d-accd-ef600c337446`, 1.0.0 (300008), processing Complete.
+What to Test visibly Saved. Build detail confirms Group (1): RailCommand Private
+Beta, Internal, 1 tester. No external group or new testers added.
+
+The crash/icon patch is released internally. Device confirmation is pending.
+The two reported queued logs are NOT declared resolved: awaiting exact errors,
+project/date confirmation and whether field workflow needs multiple logs per day.
+No live record or database constraint was changed. Existing daily-log queue and
+RailBot drafts retain their offline behavior. Ask user to update in place, test Back,
+and use Synchronize now once to read the new actionable error without resubmitting.
