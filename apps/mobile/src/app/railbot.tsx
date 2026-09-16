@@ -34,6 +34,7 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
   const [status, setStatus] = useState('Loading saved conversation…');
   const [history, setHistory] = useState<Conversation[] | null>(null);
   const [recording, setRecording] = useState(false);
+  const recordingLock = useRef(false);
   const alive = useRef(true);
   const abort = useRef<AbortController | null>(null);
   const saves = useRef(Promise.resolve());
@@ -141,9 +142,11 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
     setStatus('Dictation added. Review the text before sending.');
   }); });
   const stopRecording = useCallback(async () => {
+    if (!recordingLock.current) return;
+    recordingLock.current = false;
     try {
       await recorder.stop();
-      if (!current()) { if (recorder.uri) { const f = new File(recorder.uri); if (f.exists) f.delete(); } return; }
+      if (!current()) { if (!sessionCurrent() && recorder.uri) { const f = new File(recorder.uri); if (f.exists) f.delete(); } return; }
       const uri = recorder.uri;
       if (uri) {
         const directory = new Directory(Paths.document, 'railcommand', userId, mobileConfig.profile, 'railbot'); directory.create({ intermediates: true, idempotent: true });
@@ -153,7 +156,7 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
       }
     } catch { if (current()) setStatus('Recording could not be saved. Keep this screen open and retry.'); }
     finally { if (current()) setRecording(false); void setAudioModeAsync({ allowsRecording: false }); }
-  }, [recorder, current, patch, projectId, userId]);
+  }, [recorder, current, sessionCurrent, patch, projectId, userId]);
   useEffect(() => {
     if (!recording) return;
     const timer = setTimeout(() => void stopRecording(), 120_000);
@@ -161,17 +164,36 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
     return () => { clearTimeout(timer); subscription.remove(); };
   }, [recording, stopRecording]);
   const startRecording = async () => {
-    if (busy || recording || ref.current.audioUri) return;
+    if (busy || recordingLock.current || ref.current.audioUri || !current()) return;
+    recordingLock.current = true;
+    let started = false;
     try {
       const permission = await AudioModule.requestRecordingPermissionsAsync();
+      if (!current()) return;
       if (!permission.granted) { setStatus('Microphone permission was declined. You can still type.'); return; }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync(); if (!current()) return;
       if (!recorder.uri) throw new Error('Recording location unavailable');
       await patch({ audioUri: recorder.uri });
-      recorder.record(); setRecording(true); setStatus('Recording — tap Stop when finished (maximum 2 minutes).');
-    } catch { setStatus('Could not start recording. You can still type.'); }
+      if (!current()) return;
+      recorder.record(); started = true; setRecording(true); setStatus('Recording — tap Stop when finished (maximum 2 minutes).');
+    } catch { if (current()) setStatus('Could not start recording. You can still type.'); }
+    finally {
+      if (!started) {
+        recordingLock.current = false;
+        await recorder.stop().catch(() => undefined);
+        if (!sessionCurrent() && recorder.uri) { const file = new File(recorder.uri); if (file.exists) file.delete(); }
+        void setAudioModeAsync({ allowsRecording: false });
+      }
+    }
   };
+  useEffect(() => () => {
+    const uri = recorder.uri;
+    void recorder.stop().catch(() => undefined).finally(() => {
+      if (!sessionCurrent() && uri) { const file = new File(uri); if (file.exists) file.delete(); }
+      void setAudioModeAsync({ allowsRecording: false });
+    });
+  }, [recorder, sessionCurrent]);
   const newChat = () => {
     const reset = () => { void patch({ ...newBotDraft(projectId), input: ref.current.input, audioUri: ref.current.audioUri, aiConsent: ref.current.aiConsent }); setHistory(null); setStatus('New chat. Unsent input is retained.'); };
     if (draft.proposal || draft.uncertain) Alert.alert('Start a new chat?', 'The saved conversation remains in History. Any unconfirmed proposal will be left unsubmitted.', [{ text: 'Cancel', style: 'cancel' }, { text: 'New chat', onPress: reset }]); else reset();

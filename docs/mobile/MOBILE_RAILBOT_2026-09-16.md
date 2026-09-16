@@ -48,3 +48,34 @@ activity, daily-log rollups, and role-gated budget information. AI keys stay on 
 Implementation locations: `.mobile-recovery/candidate` (native) and
 `.mobile-recovery/live-backend` (isolated production backend). The root offline
 branch is not a production deployment source.
+
+## Verified outcome so far
+
+- Native revision `21c66918d041af2e05b7ff934dc295e0e16162aa` committed; a small
+  recording lifecycle follow-up preserves interrupted dictation on navigation and
+  cleans up after account changes (verification in progress).
+- Backend revision `b08c58f` committed. Local production dependency install,
+  TypeScript and webpack build passed; 263 mobile API tests and 36 existing RailBot
+  regression tests passed. No live database mutations or migrations were run.
+- Native typecheck, 222 mobile tests, store declaration check, and iPhone Hermes
+  export passed. The local Expo stall was an unreadable node_modules dependency;
+  reinstalling the exact lockfile resolved it.
+- Deployment `dpl_ECZ7fmPh16iKKCmsU9YJ3oNrPQdh` is READY at
+  https://railcommand-b37ph5p44-dillans-projects-f662840b.vercel.app (not promoted
+  to railcommand.io). Missing chat/history/transcription credentials and an invalid
+  named-pilot token all return 401; a non-pilot token returns 403; all are no-store.
+- Live domain remains on the prior read-write pilot deployment. Its records are
+  unchanged. The new backend keeps the same three-user allowlist.
+- EAS build request was rejected by automatic approval review: upload of this new
+  source payload to Expo plus use of production signing credentials requires explicit
+  user authorization. An asynchronous approval request is pending. No new EAS build
+  started, no new Apple upload/invitation was sent.
+- Remaining: authorize EAS upload, produce/inspect signed artifact, submit/assign
+  internally, promote verified backend, physical iPhone acceptance. Update store
+  console audio disclosures before external release. Apple external review still
+  requires the demonstration account credentials, entered privately by the user.
+- Final verification: recording lifecycle follow-up passed the 222-test mobile suite,
+  mobile TypeScript and a fresh iPhone Hermes export. Clean tracked candidate source
+  passed root TypeScript and `npm run build -- --webpack` (network access was needed
+  for its existing Google Fonts imports). Production backend build passed separately
+  against its exact locked Next 16.3.0 / React 19.2.7 dependencies.
