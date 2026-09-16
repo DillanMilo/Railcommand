@@ -18,7 +18,7 @@ const operation = draftToSyncOperation(userId, createMobileDraft(projectId, {
 }, null, new Date('2026-08-30T12:00:00Z'), () => clientId));
 
 type Query = 'profiles' | 'project_members' | 'sync_daily_log_create';
-type Fault = { query: Query; status: number; code?: string; nullBody?: boolean; token?: string };
+type Fault = { query: Query; status: number; code?: string; message?: string; nullBody?: boolean; token?: string };
 function harness(options: { faults?: Fault[]; authenticated?: boolean; member?: boolean; canEdit?: boolean; receipt?: unknown } = {}) {
   const requests: Array<{ query: string; token: string; body: unknown }> = [];
   const makeClient = (token: string) => createClient('https://staging.example', 'public-fixture', {
@@ -43,7 +43,7 @@ function harness(options: { faults?: Fault[]; authenticated?: boolean; member?: 
       const fault = options.faults?.find((item) => item.query === query && (!item.token || item.token === token));
       if (fault) {
         if (fault.status === 0) throw new DOMException('private database transport error', 'AbortError');
-        return Response.json(fault.nullBody ? null : { code: fault.code, message: 'private SQL, token, and row details',
+        return Response.json(fault.nullBody ? null : { code: fault.code, message: fault.message ?? 'private SQL, token, and row details',
           details: 'private row', hint: 'private hint' }, { status: fault.status });
       }
       if (query === 'profiles') return Response.json({ role: 'member' });
@@ -121,11 +121,24 @@ describe('daily-log queued-write authentication and receipt boundary', () => {
     assert.equal(h.requests.some((request) => request.query === 'sync_daily_log_create'), false);
   });
 
-  for (const code of ['22003', '23505']) {
+  for (const code of ['22003']) {
     it(`keeps ${code} validation/integrity failure permanent but sanitized`, async () => {
       await safeFailure(await harness({ faults: [{ query: 'sync_daily_log_create', status: 400, code }] }).send(), 400, false);
     });
   }
+
+  it('reports an existing project/date as a conflict without leaking SQL or acknowledging the queued record', async () => {
+    const h = harness({ faults: [{ query: 'sync_daily_log_create', status: 400, code: '23505', message: 'duplicate key violates unique constraint "daily_logs_project_id_log_date_key"' }] });
+    const response = await h.send();
+    const copy = response.clone();
+    await safeFailure(response, 409, false);
+    assert.match((await copy.json()).error, /already exists for this project and date/);
+    assert.equal(h.requests.filter(r => r.query === 'sync_daily_log_create').length, 1);
+  });
+
+  it('keeps other unique conflicts distinct from a successful retry', async () => {
+    await safeFailure(await harness({ faults: [{ query: 'sync_daily_log_create', status: 400, code: '23505' }] }).send(), 409, false);
+  });
 
   it('only acknowledges the exact queued identity and an explicit duplicate receipt', async () => {
     for (const receipt of [null, {}, { id: projectId, project_id: projectId, duplicate: false },

@@ -142,11 +142,11 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
     setStatus('Dictation added. Review the text before sending.');
   }); });
   const stopRecording = useCallback(async () => {
-    if (!recordingLock.current) return;
+    if (!recordingLock.current || !current()) return;
     recordingLock.current = false;
     try {
       await recorder.stop();
-      if (!current()) { if (!sessionCurrent() && recorder.uri) { const f = new File(recorder.uri); if (f.exists) f.delete(); } return; }
+      if (!current()) return; // The hook may already have released the native recorder.
       const uri = recorder.uri;
       if (uri) {
         const directory = new Directory(Paths.document, 'railcommand', userId, mobileConfig.profile, 'railbot'); directory.create({ intermediates: true, idempotent: true });
@@ -155,7 +155,7 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
         setStatus('Recording saved. Tap Transcribe when online.');
       }
     } catch { if (current()) setStatus('Recording could not be saved. Keep this screen open and retry.'); }
-    finally { if (current()) setRecording(false); void setAudioModeAsync({ allowsRecording: false }); }
+    finally { if (current()) setRecording(false); void setAudioModeAsync({ allowsRecording: false }).catch(() => undefined); }
   }, [recorder, current, sessionCurrent, patch, projectId, userId]);
   useEffect(() => {
     if (!recording) return;
@@ -172,6 +172,7 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
       if (!current()) return;
       if (!permission.granted) { setStatus('Microphone permission was declined. You can still type.'); return; }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      if (!current()) return;
       await recorder.prepareToRecordAsync(); if (!current()) return;
       if (!recorder.uri) throw new Error('Recording location unavailable');
       await patch({ audioUri: recorder.uri });
@@ -181,19 +182,18 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
     finally {
       if (!started) {
         recordingLock.current = false;
-        await recorder.stop().catch(() => undefined);
-        if (!sessionCurrent() && recorder.uri) { const file = new File(recorder.uri); if (file.exists) file.delete(); }
-        void setAudioModeAsync({ allowsRecording: false });
+        // Never touch the shared recorder after the owning hook has unmounted.
+        if (current()) { try { await recorder.stop(); } catch { /* Already stopped/unprepared. */ } }
+        void setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
       }
     }
   };
   useEffect(() => () => {
-    const uri = recorder.uri;
-    void recorder.stop().catch(() => undefined).finally(() => {
-      if (!sessionCurrent() && uri) { const file = new File(uri); if (file.exists) file.delete(); }
-      void setAudioModeAsync({ allowsRecording: false });
-    });
-  }, [recorder, sessionCurrent]);
+    // useAudioRecorder releases its shared native object before this cleanup.
+    // Expo stops active recording on release; the URI was persisted before record().
+    // Reading recorder.uri or calling stop() here throws on every Back navigation.
+    void setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+  }, []);
   const newChat = () => {
     const reset = () => { void patch({ ...newBotDraft(projectId), input: ref.current.input, audioUri: ref.current.audioUri, aiConsent: ref.current.aiConsent }); setHistory(null); setStatus('New chat. Unsent input is retained.'); };
     if (draft.proposal || draft.uncertain) Alert.alert('Start a new chat?', 'The saved conversation remains in History. Any unconfirmed proposal will be left unsubmitted.', [{ text: 'Cancel', style: 'cancel' }, { text: 'New chat', onPress: reset }]); else reset();

@@ -1,3 +1,4 @@
+import { RailBotIcon } from '@/components/railbot-icon';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -42,7 +43,7 @@ export default function MoreSheet() {
     <SafeAreaView edges={['bottom']} style={styles.sheet}>
       <View style={styles.sheetHeader}><Text accessibilityRole="header" style={styles.title}>More</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={styles.close}><SymbolView accessible={false} name={{ ios: 'xmark', android: 'close', web: 'close' }} tintColor={colors.ink} size={19} /></Pressable></View>
       <View style={styles.grid}>{modules.map((item) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={`${item.label}${'badge' in item ? `, ${item.badge}` : ''}`} onPress={() => void open(item)} style={({ pressed }) => [styles.module, pressed && styles.pressed]}>
-        <SymbolView accessible={false} name={{ ios: item.ios, android: item.android, web: item.android }} tintColor={colors.muted} size={29} />
+        {item.label === 'RailBot' ? <RailBotIcon color={colors.muted} size={29} /> : <SymbolView accessible={false} name={{ ios: item.ios, android: item.android, web: item.android }} tintColor={colors.muted} size={29} />}
         <Text style={styles.moduleLabel}>{item.label}</Text>
         {'badge' in item ? <Text style={styles.badge}>{item.badge}</Text> : null}
       </Pressable>)}</View>

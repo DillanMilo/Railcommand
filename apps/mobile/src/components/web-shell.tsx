@@ -1,3 +1,4 @@
+import { RailBotIcon } from './railbot-icon';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { PropsWithChildren, ReactNode } from 'react';
@@ -153,7 +154,7 @@ export function RailBotButton() {
     onPress={() => router.push('/railbot' as never)}
     style={({ pressed }) => [styles.railbot, pressed && styles.pressed]}
   >
-    <SymbolView accessible={false} name={{ ios: 'robotic.vacuum', android: 'smart_toy', web: 'smart_toy' }} tintColor={colors.white} size={25} />
+    <RailBotIcon color={colors.white} size={25} />
   </Pressable>;
 }
 
