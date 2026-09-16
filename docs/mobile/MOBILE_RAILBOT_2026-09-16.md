@@ -49,7 +49,7 @@ Implementation locations: `.mobile-recovery/candidate` (native) and
 `.mobile-recovery/live-backend` (isolated production backend). The root offline
 branch is not a production deployment source.
 
-## Verified outcome so far
+## Implementation verification before release approval
 
 - Native revision `21c66918d041af2e05b7ff934dc295e0e16162aa` committed; a small
   recording lifecycle follow-up preserves interrupted dictation on navigation and
@@ -66,12 +66,12 @@ branch is not a production deployment source.
   named-pilot token all return 401; a non-pilot token returns 403; all are no-store.
 - Live domain remains on the prior read-write pilot deployment. Its records are
   unchanged. The new backend keeps the same three-user allowlist.
-- EAS build request was rejected by automatic approval review: upload of this new
+- Earlier EAS build request was rejected by automatic approval review: upload of this new
   source payload to Expo plus use of production signing credentials requires explicit
-  user authorization. An asynchronous approval request is pending. No new EAS build
-  started, no new Apple upload/invitation was sent.
-- Remaining: authorize EAS upload, produce/inspect signed artifact, submit/assign
-  internally, promote verified backend, physical iPhone acceptance. Update store
+  user authorization. This was resolved by the subsequent explicit user approval;
+  see the release continuation below.
+- At that checkpoint the remaining work was EAS upload, signed artifact inspection,
+  internal submission, backend promotion and physical iPhone acceptance. Update store
   console audio disclosures before external release. Apple external review still
   requires the demonstration account credentials, entered privately by the user.
 - Final verification: recording lifecycle follow-up passed the 222-test mobile suite,
@@ -79,3 +79,66 @@ branch is not a production deployment source.
   passed root TypeScript and `npm run build -- --webpack` (network access was needed
   for its existing Google Fonts imports). Production backend build passed separately
   against its exact locked Next 16.3.0 / React 19.2.7 dependencies.
+
+## Approved release continuation
+
+- User explicitly approved Expo source upload and existing production signing.
+- Build 300006 completed as EAS `952d4755-aa93-4498-89ef-b9c19f1a398e`.
+  Artifact inspection caught a missing NSMicrophoneUsageDescription caused by
+  expo-image-picker's microphonePermission=false overriding expo-audio. This build
+  was NOT submitted to Apple. Its Apple signature validated outside the sandbox;
+  production entitlements disable get-task-allow and use railcommand.io applinks.
+- Fix committed as `7604d5d`: both plugins now declare the same user-initiated RailBot
+  dictation purpose. Expo introspection proves the permission survives plugin
+  composition; mobile TypeScript and store declaration verification passed.
+- Corrected signed rebuild started. Internal Apple group freshly verified to contain
+  only dillanxx@gmail.com, currently installed on 300005. No tester access expanded.
+
+- Corrected build 300007 is EAS `38ea960f-f886-4c97-b083-2566b1b5c816`, source
+  `7604d5d`, currently building. Build 300006 remains deliberately undistributed.
+- Promoted backend `dpl_ECZ7fmPh16iKKCmsU9YJ3oNrPQdh` to production. Live checks:
+  missing credentials (chat/history/transcription) 401; invalid pilot signature 401;
+  non-pilot 403; every API response no-store; `/login` 200. No live record writes.
+  Rollback is `dpl_6bVok14kbmXCFLm8bCLPQke93MUb`.
+
+- Build 300007 finished. Signed IPA SHA256
+  `7aa955a8667a6815739cf92f3adfccc559736d3dff40c9a8c506cd23cfe90e2d`.
+  Verified bundle/version, production profile and railcommand.io link host,
+  microphone purpose, AudioData disclosure, no background audio, valid deep strict
+  Apple signature, production APNs and get-task-allow=false.
+- Apple submission started for this exact build, with existing RailCommand Private
+  Beta group and explicit `--no-auto-testflight-setup`. Testing notes describe live
+  writes, consent, voice, offline draft recovery, and device checks still required.
+
+- Expo rejected the release-notes parameter because it requires an Enterprise plan;
+  that attempt did not schedule a submission. Resubmission without that option
+  succeeded: Apple submission `d8a72ff9-d15b-4268-8020-ed18e7122771`. Apple processing
+  is pending; notes must be entered directly in App Store Connect.
+- App Store privacy questionnaire was found entirely unconfigured (not merely missing
+  Audio Data). This remains an external/public release gate; public policy URL is
+  https://railcommand.io/privacy (HTTP 200).
+
+- Apple processing completed for 300007. What to Test notes saved successfully in
+  App Store Connect. CLI group assignment did not take effect, so the same verified
+  one-user internal group was selected directly in Apple; assignment verification
+  pending. The external Dillan Preview group was not selected.
+- Privacy policy URL saved and visibly verified in App Store Connect. The collection
+  questionnaire remains unconfigured and must be completed before external/public
+  release; no public store release was submitted.
+
+## Internal release outcome
+
+- Apple build `48d58e94-6c94-473b-b0fc-0d74ed54f808`, version 1.0.0 (300007),
+  processing Complete. Build detail visibly confirms Group (1): RailCommand Private
+  Beta, Internal, 1 tester. Notes visibly Saved. No external group assigned.
+- Browser connection became unavailable after that authoritative assignment check;
+  no additional Apple mutations were attempted. Phone installation and functional
+  acceptance are still user/device checks, not claimed completed.
+- Internal user next step: update RailCommand via TestFlight (do not uninstall), open
+  RailBot, ask a read-only question, test dictation and offline draft recovery.
+  Any synthetic create must use a designated demonstration project.
+- External gate: demo-only reviewer login entered privately, Apple privacy
+  questionnaire completion, external beta review and physical-device acceptance.
+  Existing record editing remains web-only. RailBot classification is online-only
+  execution/history retrieval with offline text/audio drafts and a locally readable
+  current conversation. No claim of full offline project work.
