@@ -71,14 +71,14 @@ export default function SignInScreen() {
     <View style={styles.intro}>
       <Text style={styles.eyebrow}>SECURE PROJECT ACCESS</Text>
       <Text accessibilityRole="header" style={styles.title}>Welcome back</Text>
-      <Text style={styles.subtitle}>Sign in to continue to your projects</Text>
+      <Text style={styles.subtitle}>{mobileConfig.profile === 'production' ? 'Sign in with your existing RailCommand account' : 'Test environment — use a staging account. Live accounts and projects are unavailable here.'}</Text>
     </View>
     <View style={styles.form}>
       <View style={styles.modeRow}><View style={styles.mode}><Text style={styles.modeText}>SIGN IN</Text></View><Pressable accessibilityRole="link" onPress={() => void openBrowserPage('https://railcommand.io/#pricing', 'Could not open pricing')} style={styles.pricing}><Text style={styles.pricingText}>SEE PRICING</Text></Pressable></View>
-      <Pressable accessibilityRole="link" accessibilityLabel="Explore demo project on staging web" onPress={() => void openBrowserPage('/login?demo=1', 'Could not open the demo')} style={({ pressed }) => [styles.demo, pressed && styles.pressed]}><Text style={styles.demoIcon}>▷</Text><Text style={styles.demoText}>Explore Demo Project</Text></Pressable>
-      <Text style={styles.demoDetail}>Private browser sandbox — resets on refresh and expires after 3 days</Text>
+      <Pressable accessibilityRole="link" accessibilityLabel="Explore demo project in your browser" onPress={() => void openBrowserPage('/login?demo=1', 'Could not open the demo')} style={({ pressed }) => [styles.demo, pressed && styles.pressed]}><Text style={styles.demoIcon}>▷</Text><Text style={styles.demoText}>Explore Demo Project (web)</Text></Pressable>
+      <Text style={styles.demoDetail}>Opens a separate web demo in your browser</Text>
       <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>or sign in to your account</Text><View style={styles.dividerLine} /></View>
-      {googleEnabled ? <>
+      {googleEnabled !== false ? <>
         <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" disabled={pending !== null} onPress={() => void google()} style={({ pressed }) => [styles.google, pending !== null && styles.disabled, pressed && styles.pressed]}>
           <Text accessible={false} style={styles.googleMark}>G</Text><Text style={styles.googleText}>Continue with Google</Text>
         </Pressable>

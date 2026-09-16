@@ -61,9 +61,9 @@ describe('RailCommand web-to-native visual foundation', () => {
     assert.match(signIn, /Show password/);
     assert.match(signIn, /Remember me/);
     assert.match(signIn, /Sign In  →/);
-    assert.match(signIn, /googleEnabled \? <>/);
+    assert.match(signIn, /googleEnabled !== false \? <>/);
     assert.match(auth, /auth\/v1\/settings/);
-    assert.match(auth, /settings\?\.external\?\.google === true/);
+    assert.match(auth, /typeof settings\?\.external\?\.google === 'boolean'/);
     assert.match(auth, /skipBrowserRedirect: true/);
     assert.match(signIn, /Linking\.openURL/);
   });

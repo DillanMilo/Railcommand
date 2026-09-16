@@ -9,6 +9,7 @@ type AuthValue = {
   session: TestSession | null;
   sessionRevision: number;
   loading: boolean;
+  googleEnabled: boolean | null;
   isSessionCurrent(userId: string | null, revision: number): boolean;
 };
 type Slot = { value?: unknown; deps?: readonly unknown[]; setter?: (value: unknown) => void; cleanup?: () => void };
@@ -20,7 +21,7 @@ const session = (userId: string, token = 'synthetic-test-token'): TestSession =>
 // replaces React rendering only; Supabase, links, and the settings request never
 // reach a device or network. This verifies the owner lifetime that protects the
 // offline read-only cache and draft/outbox, not real sign-in or token persistence.
-function authHarness() {
+function authHarness(settingsResponse: { ok: boolean; json?: () => Promise<unknown> } = { ok: false }) {
   let finishInitial!: (value: { data: { session: TestSession | null } }) => void;
   const initial = new Promise<{ data: { session: TestSession | null } }>((resolve) => { finishInitial = resolve; });
   let listener: ((event: string, next: TestSession | null) => void) | null = null;
@@ -86,7 +87,7 @@ function authHarness() {
     fetch: async (url: URL, options: { signal: AbortSignal }) => {
       assert.equal(url.toString(), 'https://staging.example.invalid/auth/v1/settings');
       settingsSignal = options.signal;
-      return { ok: false };
+      return settingsResponse;
     },
     require(name: string) {
       if (name === 'react') return react;
@@ -197,3 +198,21 @@ describe('auth provider session ownership lifetime', () => {
   });
 });
 import { URL } from 'node:url';
+
+
+describe('Google provider discovery', () => {
+  it('keeps Google available when discovery fails instead of treating failure as disabled', async () => {
+    const h = authHarness();
+    await h.flush();
+    assert.equal(h.value().googleEnabled, null);
+    h.unmount();
+  });
+  for (const enabled of [true, false]) {
+    it(`honors an explicit Google provider setting of ${enabled}`, async () => {
+      const h = authHarness({ ok: true, json: async () => ({ external: { google: enabled } }) });
+      await h.flush();
+      assert.equal(h.value().googleEnabled, enabled);
+      h.unmount();
+    });
+  }
+});

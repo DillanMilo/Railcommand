@@ -45,17 +45,17 @@ export default function CallbackScreen() {
         else if (result === 'authenticated') router.replace('/(tabs)');
         else setError('This RailCommand link is not supported.');
       })
-      .catch(() => setError('This password reset link is invalid, expired, or has already been used.'));
+      .catch(() => setError('This sign-in or recovery link could not be verified. Check your connection and try again from the sign-in screen.'));
   }, [callbackUrl]);
 
   return <Screen>
     <BrandHeader eyebrow="RAILCOMMAND SECURITY" title="Secure link" />
-    <PageHeading eyebrow="SECURE PROJECT ACCESS" title="Verifying RailCommand" detail="Checking this invitation or recovery link before opening protected project data." />
+    <PageHeading eyebrow="SECURE PROJECT ACCESS" title="Verifying RailCommand" detail="Checking this sign-in or recovery link before opening protected project data. An internet connection is required." />
     <StatusBanner tone={error ? 'danger' : 'neutral'} title={error ? 'Link could not be verified' : 'Verification in progress'} detail={error ?? 'Verifying your RailCommand link…'} />
     <Card>
     {!error ? <ActivityIndicator /> : null}
-    <Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{error ? 'Request a fresh secure link to continue.' : 'This normally takes only a moment.'}</Text>
-    {error ? <SecondaryButton title="Request a new reset link" onPress={leaveCallback} /> : null}
+    <Text accessibilityLiveRegion="polite" style={uiStyles.muted}>{error ? 'Return to sign in to try again or request a fresh recovery link.' : 'This normally takes only a moment.'}</Text>
+    {error ? <SecondaryButton title="Return to sign in" onPress={leaveCallback} /> : null}
     </Card>
   </Screen>;
 }

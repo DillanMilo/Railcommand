@@ -11,7 +11,7 @@ type AuthContextValue = {
   sessionRevision: number;
   isSessionCurrent(userId: string | null, revision: number): boolean;
   loading: boolean;
-  googleEnabled: boolean;
+  googleEnabled: boolean | null;
   signIn(email: string, password: string): Promise<string | null>;
   signInWithGoogle(): Promise<string | null>;
   requestPasswordReset(email: string): Promise<string | null>;
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [sessionRevision, setSessionRevision] = useState(0);
   const owner = useRef({ userId: null as string | null, revision: 0 });
   const [loading, setLoading] = useState(true);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -66,7 +66,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signal: controller.signal,
     })
       .then(async (response) => response.ok ? response.json() as Promise<{ external?: { google?: boolean } }> : null)
-      .then((settings) => setGoogleEnabled(settings?.external?.google === true))
+      .then((settings) => {
+        if (!controller.signal.aborted && typeof settings?.external?.google === 'boolean') {
+          setGoogleEnabled(settings.external.google);
+        }
+      })
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
@@ -106,7 +110,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return error?.message ?? null;
     },
     signInWithGoogle: async () => {
-      if (!googleEnabled) return 'Google sign-in is not enabled for this RailCommand environment.';
+      if (googleEnabled === false) return 'Google sign-in is not enabled for this RailCommand environment.';
       const redirectTo = new URL('/auth/callback', `https://${mobileConfig.linkHost}`).toString();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
