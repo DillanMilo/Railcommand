@@ -56,6 +56,7 @@ function Routes() {
       <Stack.Screen name="projects/[id]" />
       <Stack.Screen name="projects/[id]/[...module]" />
       <Stack.Screen name="team" />
+      <Stack.Screen name="railbot" />
       <Stack.Screen name="more" options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
       <Stack.Screen name="account-deletion" />
     </Stack.Protected>

@@ -7,6 +7,7 @@ import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
 
 const modules = [
+  { label: 'RailBot', path: 'railbot', ios: 'bubble.left.and.text.bubble.right', android: 'smart_toy', native: '/railbot' },
   { label: 'Punch List', path: 'punch-list', ios: 'checklist', android: 'fact_check' },
   { label: 'Safety', path: 'safety', ios: 'exclamationmark.shield', android: 'gpp_maybe' },
   { label: 'QC/QA', path: 'qcqa', ios: 'clipboard', android: 'assignment' },

@@ -96,8 +96,8 @@ describe('Expo Phase 3 security and offline boundaries', () => {
     assert.match(nativeIntent, /`\/invitation\/\$\{segments\[1\]\}/);
     assert.match(callback, /consumeAuthCallback\(callbackUrl\)/);
     assert.match(callback, /router\.replace\('\/reset-password'\)/);
-    assert.match(callback, /invalid, expired, or has already been used/);
-    assert.match(callback, /Request a new reset link/);
+    assert.match(callback, /could not be verified/);
+    assert.match(callback, /request a fresh recovery link/);
     const invitation = source('../app/invitation/[token].tsx');
     assert.match(invitation, /sign-in\?inviteToken=/);
     assert.match(invitation, /if \(!session\)/);

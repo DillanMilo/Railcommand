@@ -1,9 +1,10 @@
 import type { MobileBootstrap, MobileDailyLogDraft, MobileDailyLogSyncOperation, MobileGeoTag, MobileRecordDetail, MobileRecordScope } from '@railcommand/domain';
 import { draftToSyncOperation } from '@railcommand/domain';
-import { Directory, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import * as SQLite from 'expo-sqlite';
 import { mobileConfig } from './config';
 import { cleanRecordDetail, recordCacheKey, recordCacheMaxAge } from './record-detail';
+import { parseBotDraft, serializeBotDraft, type BotDraft } from './railbot';
 import { createRecordDraftStore } from './record-drafts';
 import { beginOfflinePurge, captureOfflineScope } from './storage-scope';
 
@@ -71,6 +72,7 @@ async function openUserDatabase(userId: string): Promise<SQLite.SQLiteDatabase> 
           payload TEXT NOT NULL,
           updated_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS railbot_drafts (project_id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL, pending INTEGER NOT NULL DEFAULT 0);
         CREATE TABLE IF NOT EXISTS record_drafts (
           draft_key TEXT PRIMARY KEY NOT NULL,
           payload TEXT NOT NULL,
@@ -367,9 +369,9 @@ export async function listExpoSyncRows(userId: string, isCurrent: () => boolean 
 
 export async function inspectExpoUnsynced(userId: string): Promise<{ drafts: number; outbox: number; photos: number }> {
   const db = await openUserDatabase(userId);
-  const counts = await Promise.all(['drafts', 'outbox', 'photos', 'record_drafts'].map((table) =>
-    db.getFirstAsync<{ count: number }>(`SELECT count(*) AS count FROM ${table}`)));
-  return { drafts: (counts[0]?.count ?? 0) + (counts[3]?.count ?? 0), outbox: counts[1]?.count ?? 0, photos: counts[2]?.count ?? 0 };
+  const counts = await Promise.all(['drafts', 'outbox', 'photos', 'record_drafts', 'railbot_drafts'].map((table) =>
+    db.getFirstAsync<{ count: number }>(`SELECT count(*) AS count FROM ${table}${table === 'railbot_drafts' ? ' WHERE pending = 1' : ''}`)));
+  return { drafts: (counts[0]?.count ?? 0) + (counts[3]?.count ?? 0) + (counts[4]?.count ?? 0), outbox: counts[1]?.count ?? 0, photos: counts[2]?.count ?? 0 };
 }
 
 export async function purgeExpoUser(userId: string): Promise<void> {
@@ -379,10 +381,36 @@ export async function purgeExpoUser(userId: string): Promise<void> {
     // Do not reopen a database merely to delete it. In-flight opens must finish
     // before close/delete; every old scope is already invalid at this point.
     const pending = dbPromises.get(name);
-    if (pending) await (await pending).closeAsync();
+    if (pending) {
+      const db = await pending;
+      const audio = await db.getAllAsync<{ payload: string }>('SELECT payload FROM railbot_drafts');
+      for (const row of audio) {
+        try {
+          const uri = JSON.parse(row.payload).audioUri;
+          // Expo creates active recordings in Documents before we move them into the user folder.
+          if (typeof uri === 'string' && uri.startsWith(Paths.document.uri) && uri.endsWith('.m4a') && !uri.includes('..')) {
+            const file = new File(uri); if (file.exists) file.delete();
+          }
+        } catch { /* User folder cleanup below still applies. */ }
+      }
+      await db.closeAsync();
+    }
     dbPromises.delete(name);
     await SQLite.deleteDatabaseAsync(name);
     const userFiles = new Directory(Paths.document, 'railcommand', userId);
     if (userFiles.exists) userFiles.delete();
   } finally { finishPurge(); }
+}
+
+export async function readBotDraft(userId: string, projectId: string, current: () => boolean) {
+  const valid = storageGuard(userId, current); requireCurrent(valid);
+  const db = await openUserDatabase(userId); requireCurrent(valid);
+  const row = await db.getFirstAsync<{ payload: string }>('SELECT payload FROM railbot_drafts WHERE project_id = ?', projectId);
+  requireCurrent(valid); return row ? parseBotDraft(row.payload, projectId) : null;
+}
+export async function saveBotDraft(userId: string, draft: BotDraft, current: () => boolean) {
+  const valid = storageGuard(userId, current); requireCurrent(valid);
+  const raw = serializeBotDraft(draft);
+  const db = await openUserDatabase(userId); requireCurrent(valid);
+  await db.runAsync('INSERT INTO railbot_drafts(project_id,payload,pending) VALUES(?,?,?) ON CONFLICT(project_id) DO UPDATE SET payload=excluded.payload,pending=excluded.pending', draft.projectId, raw, draft.input.trim() || draft.audioUri || draft.proposal || draft.uncertain ? 1 : 0);
 }

@@ -39,7 +39,9 @@
   },
   "targetAudience": {
     "designedForChildren": false,
-    "ages": ["18+"]
+    "ages": [
+      "18+"
+    ]
   },
   "dataSafety": {
     "collectsData": true,
@@ -50,40 +52,73 @@
     "dataTypes": [
       {
         "category": "Personal info",
-        "types": ["Name", "Email address", "User IDs"],
+        "types": [
+          "Name",
+          "Email address",
+          "User IDs"
+        ],
         "required": true,
-        "purposes": ["App functionality", "Account management"]
+        "purposes": [
+          "App functionality",
+          "Account management"
+        ]
       },
       {
         "category": "Photos and videos",
-        "types": ["Photos"],
+        "types": [
+          "Photos"
+        ],
         "required": false,
-        "purposes": ["App functionality"]
+        "purposes": [
+          "App functionality"
+        ]
       },
       {
         "category": "Location",
-        "types": ["Approximate location", "Precise location"],
+        "types": [
+          "Approximate location",
+          "Precise location"
+        ],
         "required": false,
-        "purposes": ["App functionality"]
+        "purposes": [
+          "App functionality"
+        ]
       },
       {
         "category": "App activity",
-        "types": ["Other user-generated content"],
+        "types": [
+          "Other user-generated content"
+        ],
         "required": false,
-        "purposes": ["App functionality"]
+        "purposes": [
+          "App functionality"
+        ]
       },
       {
         "category": "Device or other IDs",
-        "types": ["Device or other IDs"],
+        "types": [
+          "Device or other IDs"
+        ],
         "required": false,
-        "purposes": ["App functionality"]
+        "purposes": [
+          "App functionality"
+        ]
+      },
+      {
+        "category": "Audio files",
+        "types": [
+          "Voice or sound recordings"
+        ],
+        "required": false,
+        "purposes": [
+          "App functionality"
+        ]
       }
     ],
     "notCollected": [
       "Contacts",
       "Health and fitness",
       "Financial info",
-      "Audio files",
       "Browsing history",
       "Search history",
       "Crash logs",

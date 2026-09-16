@@ -6,6 +6,7 @@ import { describe, it } from 'mocha';
 import ts from 'typescript';
 import { MobileApiClient } from '@railcommand/api-client';
 import type { MobileBootstrap } from '@railcommand/domain';
+import * as railbot from './railbot';
 import * as storageScopes from './storage-scope';
 
 const userA = '10000000-0000-4000-8000-000000000091';
@@ -37,7 +38,7 @@ function storageHarness() {
     'expo-file-system': { Directory: class { exists = false; }, Paths: { document: 'test-only' } },
     './config': { mobileConfig: { profile: 'test' } },
     './record-detail': {}, './record-drafts': { createRecordDraftStore: () => ({}) },
-    './storage-scope': storageScopes,
+    './storage-scope': storageScopes, './railbot': railbot,
     'expo-sqlite': {
       openDatabaseAsync: async (name: string) => {
         opens++;
@@ -46,6 +47,7 @@ function storageHarness() {
         databases.set(name, db);
         const adapter = {
           execAsync: async (sql: string) => db.exec(sql),
+          getAllAsync: async (sql: string, ...args: string[]) => db.prepare(sql).all(...args),
           getFirstAsync: async (sql: string, ...args: string[]) => db.prepare(sql).get(...args) ?? null,
           runAsync: async (sql: string, ...args: string[]) => {
             await beforeWrite();
@@ -71,6 +73,18 @@ function storageHarness() {
 }
 
 describe('Native cache purge and owner boundary (real SQLite, mocked native bridge)', () => {
+  it('keeps RailBot drafts separate by account/project and warns before sign-out', async () => {
+    const h = storageHarness();
+    try {
+      await h.store.saveBotDraft(userA, { ...railbot.newBotDraft('projectA'), input: 'Private draft' }, () => true);
+      assert.equal((await h.store.readBotDraft(userA, 'projectA', () => true))?.input, 'Private draft');
+      assert.equal(await h.store.readBotDraft(userB, 'projectA', () => true), null);
+      assert.equal(await h.store.readBotDraft(userA, 'projectB', () => true), null);
+      assert.equal((await h.store.inspectExpoUnsynced(userA)).drafts, 1);
+      await assert.rejects(h.store.saveBotDraft(userA, railbot.newBotDraft('projectA'), () => false));
+      assert.equal((await h.store.readBotDraft(userA, 'projectA', () => true))?.input, 'Private draft');
+    } finally { h.close(); }
+  });
   it('rejects wrong-owner or canceled cache writes before opening a database', async () => {
     const h = storageHarness();
     try {

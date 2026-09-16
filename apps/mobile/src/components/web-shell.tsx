@@ -149,8 +149,8 @@ export function RailBotButton() {
   return <Pressable
     accessibilityRole="button"
     accessibilityLabel="RailBot"
-    accessibilityHint="Explains RailBot availability"
-    onPress={() => Alert.alert('RailBot', 'RailBot voice remains online-only and is not included in this field release yet.')}
+    accessibilityHint="Opens RailBot project assistant"
+    onPress={() => router.push('/railbot' as never)}
     style={({ pressed }) => [styles.railbot, pressed && styles.pressed]}
   >
     <SymbolView accessible={false} name={{ ios: 'robotic.vacuum', android: 'smart_toy', web: 'smart_toy' }} tintColor={colors.white} size={25} />

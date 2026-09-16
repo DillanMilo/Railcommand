@@ -97,6 +97,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
           'UserID',
           'DeviceID',
           'OtherUserContent',
+          'AudioData',
         ].map((suffix) => ({
           NSPrivacyCollectedDataType: `NSPrivacyCollectedDataType${suffix}`,
           NSPrivacyCollectedDataTypeLinked: true,
@@ -116,7 +117,6 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       allowBackup: false,
       blockedPermissions: [
         'android.permission.ACCESS_BACKGROUND_LOCATION',
-        'android.permission.RECORD_AUDIO',
         'android.permission.SYSTEM_ALERT_WINDOW',
       ],
       adaptiveIcon: {
@@ -142,6 +142,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
         photosPermission: 'RailCommand lets you choose field photos to attach to a record.',
         microphonePermission: false,
       }],
+      ['expo-audio', { microphonePermission: 'RailBot records your voice only when you tap Dictate, to turn it into a message you can review.', enableBackgroundRecording: false, enableBackgroundPlayback: false }],
       './plugins/with-foreground-location-only',
       ['expo-location', {
         locationWhenInUsePermission: 'RailCommand attaches your location only when you request it for a field record.',

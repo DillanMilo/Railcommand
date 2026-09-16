@@ -68,6 +68,7 @@ const nativePrivacyMappings = new Map([
   ['Precise location', 'PreciseLocation'],
   ['Other user-generated content', 'OtherUserContent'],
   ['Device or other IDs', 'DeviceID'],
+  ['Voice or sound recordings', 'AudioData'],
 ]);
 for (const type of disclosedTypes) {
   const nativeType = nativePrivacyMappings.get(type);
@@ -81,7 +82,9 @@ for (const asset of Object.values(draft.assetSources).filter((path) => !path.end
 
 assert.match(expoConfig, /NSPrivacyTracking:\s*false/);
 assert.match(expoConfig, /ACCESS_BACKGROUND_LOCATION/);
-assert.match(expoConfig, /RECORD_AUDIO/);
+assert.match(expoConfig, /expo-audio/);
+assert.match(expoConfig, /enableBackgroundRecording: false/);
+assert.doesNotMatch(expoConfig.match(/blockedPermissions:[\s\S]*?\]/)?.[0] ?? '', /RECORD_AUDIO/);
 assert.doesNotMatch(expoConfig, /NSMicrophoneUsageDescription/);
 
 console.log(JSON.stringify({

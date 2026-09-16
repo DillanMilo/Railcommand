@@ -25,6 +25,7 @@ const requiredFragments = [
   'android.permission.ACCESS_COARSE_LOCATION',
   'android.permission.ACCESS_FINE_LOCATION',
   'android.permission.CAMERA',
+  'android.permission.RECORD_AUDIO',
   'android.permission.INTERNET',
   'android.permission.POST_NOTIFICATIONS',
   'android:scheme="railcommand"',
@@ -38,7 +39,6 @@ for (const fragment of requiredFragments) {
 
 const forbiddenFragments = [
   'android.permission.ACCESS_BACKGROUND_LOCATION',
-  'android.permission.RECORD_AUDIO',
   'android.permission.SYSTEM_ALERT_WINDOW',
   'android.permission.MANAGE_EXTERNAL_STORAGE',
   'com.google.android.gms.permission.AD_ID',

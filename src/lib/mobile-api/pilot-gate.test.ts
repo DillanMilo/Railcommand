@@ -28,6 +28,12 @@ const expectedRouteMethods = [
   'earthcam/embeds/delete#POST',
   'invitations/[token]#GET',
   'invitations/[token]#POST',
+  'railbot#POST',
+  'railbot/confirm#POST',
+  'railbot/conversations#GET',
+  'railbot/conversations/[id]#DELETE',
+  'railbot/conversations/[id]#GET',
+  'railbot/transcribe#POST',
   'records/attachment#GET',
   'records/create#POST',
   'records/detail#GET',
@@ -115,6 +121,8 @@ describe('production mobile pilot gate', () => {
     assert.deepEqual(actualRouteMethods().sort(), expectedRouteMethods);
 
     const readOnly = [
+      ['/api/mobile/v1/railbot/conversations', 'GET'],
+      ['/api/mobile/v1/railbot/conversations/id', 'GET'],
       ['/api/mobile/v1/bootstrap', 'GET'],
       ['/api/mobile/v1/records/options', 'GET'],
       ['/api/mobile/v1/records/detail', 'GET'],
@@ -124,6 +132,10 @@ describe('production mobile pilot gate', () => {
       ['/api/mobile/v1/reports/pdf', 'POST'],
     ] as const;
     const mutations = [
+      ['/api/mobile/v1/railbot', 'POST'],
+      ['/api/mobile/v1/railbot/confirm', 'POST'],
+      ['/api/mobile/v1/railbot/transcribe', 'POST'],
+      ['/api/mobile/v1/railbot/conversations/id', 'DELETE'],
       ['/api/mobile/v1/records/create', 'POST'],
       ['/api/mobile/v1/daily-logs/sync', 'POST'],
       ['/api/mobile/v1/daily-logs/photos/prepare', 'POST'],
