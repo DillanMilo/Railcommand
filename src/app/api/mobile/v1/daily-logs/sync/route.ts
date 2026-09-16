@@ -52,6 +52,15 @@ export async function POST(request: Request): Promise<Response> {
     const status = mobileQueryFailureStatus([rpcResult]);
     if (status === 401) return mobileJson({ error: 'Not authenticated', retryable: false }, 401);
     if (status === 403) return mobileJson({ error: 'Permission denied', retryable: false }, 403);
+    if (rpcResult.error?.code === '23505') {
+      const sameDate = rpcResult.error.message?.includes('daily_logs_project_id_log_date_key');
+      return mobileJson({
+        error: sameDate
+          ? 'A daily log already exists for this project and date. This queued log and its photos are still on your device; nothing was overwritten. Review the existing daily log before resolving this conflict.'
+          : 'This queued log conflicts with an existing record. Your work remains on this device; nothing was overwritten.',
+        retryable: false,
+      }, 409);
+    }
     const invalid = rpcResult.error?.code?.startsWith('22') || rpcResult.error?.code?.startsWith('23');
     return mobileJson({ error: invalid ? 'The daily log could not be accepted. Review the saved field values.' : 'Daily-log synchronization is temporarily unavailable', retryable: !invalid }, invalid ? 400 : 503);
   }
