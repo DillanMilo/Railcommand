@@ -41,6 +41,14 @@
           "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
+          "name": "removeDailyLogPhoto",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification",
+          "offline": "online-only; native queues unchanged",
+          "evidence": "DFR_PHOTO_REPAIR_20260917.md"
+        },
+        {
           "name": "getSignedUrl",
           "mobile": "gap-or-unverified",
           "deviceVerified": false,
