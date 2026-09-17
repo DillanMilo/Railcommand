@@ -3,6 +3,18 @@
 These instructions apply to the entire repository. Read them before planning,
 implementing, or reviewing changes.
 
+## Web and mobile changes must be reviewed together
+
+Before planning or implementing any change, read
+[the web/mobile change policy](docs/WEB_MOBILE_CHANGE_POLICY.md).
+Every change must record its impact on web, native mobile, shared API/domain code,
+installed-client compatibility and offline drafts/queues. Implement and verify all
+applicable platform changes together; document a justified non-applicable case or
+an explicit tracked gap rather than silently omitting a platform. Shared data does
+not automatically update native UI or bundled code. Before a web deployment,
+verify that the source retains the currently released mobile API and protections.
+Use the pull-request checklist, or the policy's impact record for work without a PR.
+
 ## Offline mode is a first-class design constraint
 
 Every new feature and every material change to an existing feature must include

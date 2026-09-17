@@ -63,3 +63,12 @@ project/date confirmation and whether field workflow needs multiple logs per day
 No live record or database constraint was changed. Existing daily-log queue and
 RailBot drafts retain their offline behavior. Ask user to update in place, test Back,
 and use Synchronize now once to read the new actionable error without resubmitting.
+
+## September 17 user feedback
+
+User reports RailBot working well. Screenshot confirms both September 16 queued
+logs are marked Conflicted due to the existing project/date log, with zero queued
+photos. This confirms the duplicate-date hypothesis, not delivery or resolution.
+The screenshot's last-sync timestamp does not acknowledge those conflicted entries.
+Multiple-log versus shared-daily-log product decision remains unanswered. Entries
+must remain preserved. See WEB_MOBILE_CHANGE_POLICY.md for the new parity workflow.
