@@ -57,13 +57,17 @@ or photos are removed automatically by this rollout.
   Caleb's incident or all field workflows resolved. No new database migration needed.
 - Staged deployment dpl_36LoCT8KqjExbxukXS7GbMBpLhvX is READY from runtime commit
   8d78abd. Nine missing/forged-token and nonpilot auth checks passed with no-store.
-  Promotion was rejected by automatic approval review: exact live-promotion approval
-  is required while physical iPhone acceptance remains incomplete. User approval
-  requested; no retry or workaround performed. Live remains on
-  dpl_AH14LTcuJkBKqT7StPXdPwhysVgk (also the rollback target).
+  User explicitly approved this exact live promotion on September 17. Promotion
+  succeeded; a fresh railcommand.io lookup confirms dpl_36LoCT8KqjExbxukXS7GbMBpLhvX.
+  All nine live mobile auth/sync/RailBot rejection checks passed with no-store.
+  The deployment's post-promotion error scan (last 10 minutes) returned zero entries.
+  No database migrations or live record mutation fixtures accompanied this release.
+  Rollback target remains dpl_AH14LTcuJkBKqT7StPXdPwhysVgk. Physical iPhone acceptance
+  remains open; approval to publish is not device-test evidence.
 - CI 35251438295 caught the new action missing from the parity inventory. Added its
   online-only shared-workspace assessment without marking device acceptance passed;
-  inventory now covers 127 actions. CI rerun 35251835975 passed on e710ade (runtime unchanged from 8d78abd).
+  inventory now covers 127 actions. CI rerun 35251835975 passed on e710ade; final CI 35252344337 also passed on
+  222fbae. Both revisions change documentation only after runtime 8d78abd.
 
 ## iPhone availability
 

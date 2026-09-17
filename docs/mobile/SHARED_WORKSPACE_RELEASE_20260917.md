@@ -171,3 +171,12 @@ Build 300009 is now VALID and assigned to Dillan’s existing internal TestFligh
 group; the earlier upload-queue note is superseded. Backend CI 35241568752 passed.
 Caleb’s DFR photo feedback has now been supplied and is being addressed in
 `DFR_PHOTO_REPAIR_20260917.md`. Physical device acceptance remains open.
+
+## Approved DFR release now live
+
+After explicit user approval, dpl_36LoCT8KqjExbxukXS7GbMBpLhvX was promoted to
+railcommand.io from runtime commit 8d78abd. Nine live auth/no-store checks passed;
+post-promotion runtime error scan returned zero entries. Build 300009 Workspace
+receives these web changes after navigation/refresh. No new mobile build, schema
+change or automatic field-record modification accompanied this release. See
+`DFR_PHOTO_REPAIR_20260917.md` for acceptance gaps and rollback.
