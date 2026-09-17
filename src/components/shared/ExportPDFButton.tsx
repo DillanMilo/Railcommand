@@ -1,5 +1,6 @@
 'use client';
 
+import { shareWorkspaceBlob } from '@/lib/native-workspace';
 import React, { useState, useCallback } from 'react';
 import { FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ export default function ExportPDFButton({
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const blob = await pdf(pdfDocument as any).toBlob();
+      if (await shareWorkspaceBlob(blob, fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`)) return;
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;

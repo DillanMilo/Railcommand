@@ -35,7 +35,7 @@ export default function OverviewScreen() {
       return;
     }
     try {
-      await Linking.openURL(new URL(`/projects/${activeProjectId}/${module}/new`, mobileConfig.apiBaseUrl).toString());
+      router.push({ pathname: '/workspace', params: { path: `/projects/${activeProjectId}/${module}/new` } });
     } catch {
       Alert.alert('Could not open RailCommand web', 'Your saved mobile work is unchanged. Check connectivity and try again.');
     }

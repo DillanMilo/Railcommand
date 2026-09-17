@@ -8,7 +8,7 @@ import { colors, fonts } from '@/theme';
 
 export default function ProjectModuleDeepLinkScreen() {
   const { id, module } = useLocalSearchParams<{ id?: string; module?: string | string[] }>();
-  const { selectProject } = useMobileData();
+  const { selectProject, online } = useMobileData();
   const selectProjectRef = useRef(selectProject);
   useLayoutEffect(() => { selectProjectRef.current = selectProject; }, [selectProject]);
   const modulePath = Array.isArray(module) ? module.join('/') : module;
@@ -18,21 +18,23 @@ export default function ProjectModuleDeepLinkScreen() {
 
   useEffect(() => {
     const next = resolveProjectRoute(id, modulePath);
-    if (next.kind !== 'native') return;
+    if (next.kind === 'invalid' || (next.kind === 'unimplemented' && !online)) return;
     let current = true;
     setFailed(false);
     void selectProjectRef.current(next.projectId)
       .then(() => {
-        if (current) router.replace(next.destination as never);
+        if (!current) return;
+        if (next.kind === 'native') router.replace(next.destination as never);
+        else router.replace({ pathname: '/workspace', params: { path: next.path } });
       })
       .catch(() => {
         if (!current) return;
         setFailed(true);
       });
     return () => { current = false; };
-  }, [id, modulePath, attempt]);
+  }, [id, modulePath, attempt, online]);
 
-  const opening = route.kind === 'native' && !failed;
+  const opening = (route.kind === 'native' || (route.kind === 'unimplemented' && online)) && !failed;
   return <View style={styles.screen}>
     {opening ? <ActivityIndicator color={colors.orangeText} /> : null}
     <Text accessibilityRole="header" style={styles.title}>RailCommand</Text>
@@ -40,7 +42,7 @@ export default function ProjectModuleDeepLinkScreen() {
       ? 'Opening project workspace…'
       : failed ? 'That project could not be opened. Check connectivity and project access, then try again. Your saved work is unchanged.'
         : route.kind === 'invalid' ? 'This project link is not valid.'
-          : 'This exact screen is not implemented in the mobile app yet. The link has not been replaced with a different screen. Your saved work is unchanged.'}</Text>
+          : 'This workspace screen is online-only. Reconnect to open it. Your saved field work is unchanged.'}</Text>
     {route.kind === 'unimplemented' ? <Text selectable style={styles.path}>{route.path}</Text> : null}
     {failed ? <SecondaryButton title="Retry opening project" onPress={() => setAttempt((value) => value + 1)} /> : null}
     {!opening ? <SecondaryButton title="Back to dashboard" onPress={() => router.replace('/(tabs)')} /> : null}

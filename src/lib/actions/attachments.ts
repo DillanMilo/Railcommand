@@ -74,7 +74,7 @@ export async function uploadAttachment(
       .single();
 
     if (dbError) {
-      await supabase.storage.from(bucket).remove([storagePath]);
+      // Preserve uploaded bytes: a failed response may hide a committed receipt.
       return { error: dbError.message };
     }
 
@@ -97,6 +97,7 @@ export async function uploadAttachment(
  * trivially. RLS on the attachments table still enforces project membership.
  */
 export async function recordAttachment(input: {
+  clientId?: string;
   entityType: string;
   entityId: string;
   projectId: string;
@@ -128,9 +129,22 @@ export async function recordAttachment(input: {
       .getPublicUrl(input.storagePath);
     const fileUrl = urlData.publicUrl;
 
+    if (input.clientId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.clientId)) return { error: 'Invalid attachment identity.' };
+    if (input.bucket !== getBucket(input.photoCategory ?? 'document') || !input.storagePath.startsWith(`${input.projectId}/${input.entityType}/${input.entityId}/`) || input.storagePath.split('/').some(segment => segment === '..' || segment === '.')) return { error: 'Invalid attachment path.' };
+    const findReceipt = async (): Promise<Attachment | null> => {
+      if (!input.clientId) return null;
+      const { data: existing, error } = await supabase.from('attachments').select('*').eq('id',input.clientId).maybeSingle();
+      if (error || !existing) return null;
+      if (existing.uploaded_by !== user.id || existing.project_id !== input.projectId || existing.entity_id !== input.entityId || existing.entity_type !== input.entityType || existing.file_url !== fileUrl || existing.file_size !== input.fileSize || existing.file_type !== input.fileType) return null;
+      return existing as Attachment;
+    };
+    const existing = await findReceipt();
+    if (existing) return { success: true, data: existing };
+
     const { data: attachment, error: dbError } = await supabase
       .from('attachments')
       .insert({
+        ...(input.clientId ? { id: input.clientId } : {}),
         entity_type: input.entityType,
         entity_id: input.entityId,
         project_id: input.projectId,
@@ -148,8 +162,11 @@ export async function recordAttachment(input: {
       .single();
 
     if (dbError) {
-      // Best-effort cleanup — orphan object otherwise
-      await supabase.storage.from(input.bucket).remove([input.storagePath]);
+      // Never delete bytes after an ambiguous metadata response.
+      if (input.clientId) {
+        const reconciled = await findReceipt();
+        if (reconciled) return { success: true, data: reconciled };
+      }
       return { error: dbError.message };
     }
 

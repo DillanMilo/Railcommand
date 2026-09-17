@@ -152,6 +152,10 @@ export class MobileApiClient {
     return body;
   }
 
+  createWorkspaceSession(path: string): Promise<{ ticket: string; userId: string }> {
+    return this.request('/api/mobile/v1/web-session', { method: 'POST', body: JSON.stringify({ path }) });
+  }
+
   getBootstrap(projectId?: string, page: MobilePageRequest = {}): Promise<MobileBootstrap> {
     const params = new URLSearchParams();
     if (projectId) params.set('projectId', projectId);

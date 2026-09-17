@@ -180,6 +180,7 @@ export async function updateDailyLog(
   projectId: string,
   logId: string,
   data: {
+    expected?: DailyLog;
     log_date: string;
     weather_temp: number;
     weather_conditions: string;
@@ -211,65 +212,31 @@ export async function updateDailyLog(
     if (fetchErr || !existing) return { error: 'Daily log not found' };
     if (existing.created_by !== user.id) return { error: 'You can only edit your own daily logs' };
 
-    // Update the daily log
-    const { error: updateError } = await supabase
-      .from('daily_logs')
-      .update({
-        log_date: data.log_date,
-        weather_temp: data.weather_temp,
-        weather_conditions: data.weather_conditions,
-        weather_wind: data.weather_wind,
-        work_summary: data.work_summary,
-        safety_notes: data.safety_notes,
-        geo_tag: data.geo_tag ?? null,
-      })
-      .eq('id', logId);
-
-    if (updateError) return { error: updateError.message };
-
-    // Delete existing nested records and re-insert
-    await supabase.from('daily_log_personnel').delete().eq('daily_log_id', logId);
-    await supabase.from('daily_log_equipment').delete().eq('daily_log_id', logId);
-    await supabase.from('daily_log_work_items').delete().eq('daily_log_id', logId);
-
-    // Re-insert personnel
-    const validPersonnel = data.personnel.filter((p) => p.role.trim() !== '');
-    if (validPersonnel.length > 0) {
-      await supabase.from('daily_log_personnel').insert(
-        validPersonnel.map((p) => ({
-          daily_log_id: logId,
-          role: p.role,
-          headcount: p.headcount,
-          company: p.company,
-        }))
-      );
+    if (!data.expected || data.expected.id !== logId || data.expected.project_id !== projectId) {
+      return { error: 'Reload this daily log before editing. Your entered values have not been saved.' };
     }
-
-    // Re-insert equipment
-    const validEquipment = data.equipment.filter((e) => e.equipment_type.trim() !== '');
-    if (validEquipment.length > 0) {
-      await supabase.from('daily_log_equipment').insert(
-        validEquipment.map((e) => ({
-          daily_log_id: logId,
-          equipment_type: e.equipment_type,
-          count: e.count,
-          notes: e.notes,
-        }))
-      );
-    }
-
-    // Re-insert work items
-    const validWorkItems = data.work_items.filter((w) => w.description.trim() !== '');
-    if (validWorkItems.length > 0) {
-      await supabase.from('daily_log_work_items').insert(
-        validWorkItems.map((w) => ({
-          daily_log_id: logId,
-          description: w.description,
-          quantity: w.quantity,
-          unit: w.unit,
-          location: w.location,
-        }))
-      );
+    const baseline = data.expected;
+    const { error: updateError } = await supabase.rpc('update_daily_log_checked', {
+      p_project_id: projectId, p_log_id: logId,
+      p_expected: {
+        log_date: baseline.log_date, weather_temp: baseline.weather_temp,
+        weather_conditions: baseline.weather_conditions, weather_wind: baseline.weather_wind,
+        work_summary: baseline.work_summary, safety_notes: baseline.safety_notes,
+        geo_tag: baseline.geo_tag ?? null, personnel: baseline.personnel ?? [],
+        equipment: baseline.equipment ?? [], work_items: baseline.work_items ?? [],
+      },
+      p_payload: {
+        log_date: data.log_date, weather_temp: data.weather_temp,
+        weather_conditions: data.weather_conditions, weather_wind: data.weather_wind,
+        work_summary: data.work_summary, safety_notes: data.safety_notes,
+        geo_tag: data.geo_tag ?? null, personnel: data.personnel,
+        equipment: data.equipment, work_items: data.work_items,
+      },
+    });
+    if (updateError) {
+      return { error: updateError.code === '40001'
+        ? 'This log changed after you opened it. Your entries are still here; compare them with the latest log before saving again. Nothing was overwritten.'
+        : 'The edit could not be saved. Your entries are still here. Check your connection and permissions before trying again.' };
     }
 
     await logActivity(

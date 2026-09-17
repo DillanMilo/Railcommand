@@ -5,5 +5,5 @@ import { useAuth } from '@/providers/auth-provider';
 export default function Index() {
   const { session, loading } = useAuth();
   if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator /></View>;
-  return <Redirect href={session ? '/(tabs)' : '/sign-in'} />;
+  return <Redirect href={session ? '/workspace' : '/sign-in'} />;
 }

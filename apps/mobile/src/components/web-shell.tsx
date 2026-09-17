@@ -15,6 +15,7 @@ export function WebHeader({ projectName, online, expanded, onProjectPress, navig
 }) {
   const { width } = useWindowDimensions();
   const openSearch = () => {
+    if (online) { router.push({ pathname: '/workspace', params: { path: '/search' } }); return; }
     Alert.alert(
       'Search is not yet available in this field beta',
       online

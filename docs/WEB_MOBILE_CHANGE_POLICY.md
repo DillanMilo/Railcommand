@@ -6,6 +6,16 @@ data meaning and permissions are required; layouts can adapt to each platform.
 A Markdown checklist is a development/review rule, not automatic code conversion
 or a guarantee that every contributor or tool will follow it.
 
+## Shared online workspace implementation
+
+The September 17 shared-workspace patch reuses the released web UI inside the
+native app for online workflows. Read `docs/mobile/SHARED_WORKSPACE_RELEASE_20260917.md`
+for actual deployment/build/acceptance status. Future web UI changes are reused in
+that workspace after navigation/refresh, but still require mobile viewport, file,
+authentication and connection-loss checks. Native Field tools, offline queues,
+RailBot, permissions and bundled code still require explicit native assessment.
+Do not equate shared UI or an inventory pass with physical-device acceptance.
+
 ## Change workflow
 
 1. Record the affected web screens, mobile screens, shared domain/API contracts,

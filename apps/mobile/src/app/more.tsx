@@ -1,13 +1,13 @@
 import { RailBotIcon } from '@/components/railbot-icon';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { mobileConfig } from '@/lib/config';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { colors, fonts } from '@/theme';
 
 const modules = [
+  { label: 'Workspace', path: 'workspace', ios: 'square.grid.2x2', android: 'dashboard', native: '/workspace' },
   { label: 'RailBot', path: 'railbot', ios: 'bubble.left.and.text.bubble.right', android: 'smart_toy', native: '/railbot' },
   { label: 'Punch List', path: 'punch-list', ios: 'checklist', android: 'fact_check' },
   { label: 'Safety', path: 'safety', ios: 'exclamationmark.shield', android: 'gpp_maybe' },
@@ -32,7 +32,7 @@ export default function MoreSheet() {
       return;
     }
     try {
-      await Linking.openURL(new URL(`/projects/${activeProjectId}/${item.path}`, mobileConfig.apiBaseUrl).toString());
+      router.replace({ pathname: '/workspace', params: { path: `/projects/${activeProjectId}/${item.path}` } });
     } catch {
       Alert.alert(`Could not open ${item.label}`, 'No mobile input was changed. Check connectivity and try again.');
     }

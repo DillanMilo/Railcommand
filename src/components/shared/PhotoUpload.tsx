@@ -5,8 +5,7 @@ import { Camera, Thermometer, X, MapPin, Loader2, Upload, Image as ImageIcon } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { compressImage } from '@/lib/compressImage';
-import { uploadAttachment } from '@/lib/actions/attachments';
+import { uploadPhotoAttachment } from '@/lib/uploadPhotosAfterCreate';
 import { resolvePhotoGeoBatch, type PhotoGeoSource } from '@/lib/photoGeotag';
 import type { PhotoCategory, Attachment } from '@/lib/types';
 
@@ -21,6 +20,8 @@ export interface PhotoFile {
   uploading?: boolean;
   uploadError?: string;
   originalSize?: number;
+  capturedAt?: string;
+  sourceAttachmentId?: string;
 }
 
 interface PhotoUploadProps {
@@ -33,7 +34,6 @@ interface PhotoUploadProps {
   entityId?: string;
   projectId?: string;
   onUploadComplete?: (attachment: Attachment) => void;
-  disabled?: boolean;
 }
 
 const ACCEPTED_IMAGE_TYPES = '.jpg,.jpeg,.png,.webp,.heic,.heif';
@@ -50,7 +50,6 @@ export default function PhotoUpload({
   entityId,
   projectId,
   onUploadComplete,
-  disabled = false,
 }: PhotoUploadProps) {
   const [category, setCategory] = useState<PhotoCategory>('standard');
   const [geoLoading, setGeoLoading] = useState(false);
@@ -62,7 +61,7 @@ export default function PhotoUpload({
   }, [photos]);
 
   const handleFiles = useCallback(async (fileList: FileList | null) => {
-    if (!fileList || disabled) return;
+    if (!fileList) return;
 
     const remaining = maxFiles - photos.length;
     if (remaining <= 0) return;
@@ -79,16 +78,9 @@ export default function PhotoUpload({
         )
       : files.map(() => null);
 
-    // Compress before anything can persist the files to IndexedDB. GPS is
-    // resolved from the originals first because canvas compression removes
-    // EXIF metadata by design.
-    const preparedFiles = await Promise.all(
-      files.map((file) => compressImage(file, category, { maxPx: 1600, quality: 0.72 }))
-    );
-
-    const newPhotos: PhotoFile[] = preparedFiles
+    const newPhotos: PhotoFile[] = files
       .map((file, index) => ({
-        id: crypto.randomUUID(),
+        id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         file,
         preview: URL.createObjectURL(file),
         category,
@@ -96,7 +88,7 @@ export default function PhotoUpload({
         geo_lng: geos[index]?.lng ?? null,
         geo_source: geos[index]?.source ?? null,
         uploading: !!(entityType && entityId && projectId),
-        originalSize: files[index].size,
+        originalSize: file.size,
       }));
 
     // Show previews immediately
@@ -109,38 +101,35 @@ export default function PhotoUpload({
     // Upload each photo
     for (const photo of newPhotos) {
       try {
-        const compressed = await compressImage(photo.file, photo.category);
-
-        const formData = new FormData();
-        formData.append('file', compressed);
-        formData.append('entity_type', entityType);
-        formData.append('entity_id', entityId);
-        formData.append('project_id', projectId);
-        formData.append('photo_category', photo.category);
-        if (photo.geo_lat !== null) formData.append('geo_lat', String(photo.geo_lat));
-        if (photo.geo_lng !== null) formData.append('geo_lng', String(photo.geo_lng));
-
-        const result = await uploadAttachment(formData);
+        const result = await uploadPhotoAttachment({
+          file: photo.file,
+          category: photo.category,
+          entityType,
+          entityId,
+          projectId,
+          geoLat: photo.geo_lat,
+          geoLng: photo.geo_lng,
+        });
 
         if (result.error) {
-          onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
+          onPhotosChange(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error } : p));
           alert(`Upload failed: ${result.error}`);
         } else {
           onPhotosChange(
             photosRef.current.map((p) =>
               p.id === photo.id
-                ? { ...p, uploading: false, file: compressed }
+                ? { ...p, uploading: false, uploadError: undefined, file: result.data?.file ?? p.file }
                 : p
             )
           );
-          if (result.data) onUploadComplete?.(result.data);
+          if (result.data) onUploadComplete?.(result.data.attachment);
         }
       } catch {
-        onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
+        onPhotosChange(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Upload could not be confirmed. Retry while this page is open.' } : p));
         alert(`Upload failed for ${photo.file.name}`);
       }
     }
-  }, [photos, onPhotosChange, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete, disabled]);
+  }, [photos, onPhotosChange, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete]);
 
   const removePhoto = useCallback((id: string) => {
     const photo = photos.find((p) => p.id === id);
@@ -171,7 +160,6 @@ export default function PhotoUpload({
             variant={category === 'standard' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCategory('standard')}
-            disabled={disabled}
             className={category === 'standard' ? 'bg-rc-blue hover:bg-rc-blue/90 text-white' : ''}
           >
             <Camera className="mr-1.5 size-3.5" />
@@ -182,7 +170,6 @@ export default function PhotoUpload({
             variant={category === 'thermal' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCategory('thermal')}
-            disabled={disabled}
             className={category === 'thermal' ? 'bg-rc-orange hover:bg-rc-orange/90 text-white' : ''}
           >
             <Thermometer className="mr-1.5 size-3.5" />
@@ -192,15 +179,13 @@ export default function PhotoUpload({
 
         {/* Upload area */}
         <div
-          className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-rc-border py-8 px-4 transition-colors ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-rc-blue/50 hover:bg-rc-blue/5'}`}
-          onClick={() => {
-            if (!disabled) fileInputRef.current?.click();
-          }}
+          className="relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-rc-border py-8 px-4 cursor-pointer transition-colors hover:border-rc-blue/50 hover:bg-rc-blue/5"
+          onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (!disabled) handleFiles(e.dataTransfer.files);
+            handleFiles(e.dataTransfer.files);
           }}
         >
           {geoLoading ? (
@@ -230,7 +215,6 @@ export default function PhotoUpload({
             type="file"
             accept={acceptTypes}
             multiple
-            disabled={disabled}
             className="hidden"
             onChange={(e) => {
               handleFiles(e.target.files);
@@ -263,6 +247,17 @@ export default function PhotoUpload({
                     <Loader2 className="size-8 animate-spin text-white" />
                   </div>
                 )}
+                {photo.uploadError && <div className="absolute inset-x-0 top-0 bg-red-50 p-2 text-xs text-red-800">
+                  <p>{photo.uploadError}</p>
+                  {entityType && entityId && projectId && <Button type="button" size="sm" variant="outline" onClick={async () => {
+                    onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: true } : p));
+                    try {
+                      const result = await uploadPhotoAttachment({ file: photo.file, category: photo.category, entityType, entityId, projectId, geoLat: photo.geo_lat, geoLng: photo.geo_lng });
+                      onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error, file: result.data?.file ?? p.file } : p));
+                      if (result.data) onUploadComplete?.(result.data.attachment);
+                    } catch { onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Could not upload. Keep this page open and retry.' } : p)); }
+                  }}>Retry photo</Button>}
+                </div>}
                 {/* Overlay badges */}
                 <div className="absolute bottom-1 left-1 flex flex-wrap gap-1">
                   <Badge
