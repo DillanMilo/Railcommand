@@ -45,8 +45,23 @@ cancel and explicit confirmed navigation. Broader auth/export/cache suites run t
 tests passed. Backend production web build, TypeScript and focused ESLint passed.
 Native focused lint has no errors (two pre-existing unused import warnings).
 Candidate web compilation succeeded, but auto-discovery found unrelated duplicate
-" 2" dependency type folders; an isolated tracked-source check is running.
-Release and physical acceptance remain pending.
+" 2" dependency type folders. A tracked-source snapshot with a filtered typeRoots
+symlink directory passed production build and TypeScript using the same dependencies;
+no source checkout dependency folders were removed. CI 35271038012 passed.
+
+Web runtime commit 1e46401 was staged, checked through authorized Vercel preview
+access, and promoted as dpl_5RfdY5kutDSpjCPkter7aWFhfPxn. Fresh railcommand.io
+inspection confirms READY on that deployment. Four unauthenticated/forged-token
+API checks and the opaque-Origin handoff denial passed with no-store both staged
+and live. Rollback target: dpl_36LoCT8KqjExbxukXS7GbMBpLhvX. Initial direct staged
+handoff check reached Vercel protection; authorized Vercel curl then verified the
+actual app rejection. No real user records were written for verification.
+
+Native commit cecbb02 finished building as 1.0.0 (300011), production build
+ da0209f4-20e7-4c62-998e-a3832229d75e, auto-submission
+7688001a-c020-4d1d-8dc0-bdd5cb99fb44. Last status: FINISHED / IN_QUEUE (upload pending).
+Apple processing, internal assignment and physical acceptance are pending. Do not
+start a duplicate build/submission merely because observation timed out.
 
 Physical checks pending: repeated More -> Photos/Reports/Workspace switching;
 unsaved form -> Field tools -> new Workspace destination -> cancel/confirm;
