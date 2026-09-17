@@ -2,9 +2,12 @@
 
 ## Scope and current status
 
-Implementation is local; deployment, signed build assignment and physical acceptance
-must be recorded below before calling this released. The existing live release is
-still backend 117e376 / dpl_EEtfNpANoeoMTwCzcSTVhSW1SpmS and iPhone 300008.
+Backend e717d5b8dcd81fb024b8a17a2c8c9e58483ca9ca is live as
+`dpl_AH14LTcuJkBKqT7StPXdPwhysVgk`, promoted after staging auth checks.
+Both reviewed migrations are applied and recorded in production. Build 300009
+finished from native source 7bf201373afa0f30b9c530f20328fdc9da85a08e and has
+been submitted to Apple; processing, internal assignment and physical acceptance
+remain pending. The user's last confirmed installed version is 300008.
 
 The app's primary online workspace uses the released responsive web UI inside an
 isolated WebView. This reuses web editing, responses, status changes, uploads,
@@ -112,12 +115,37 @@ uniqueness by deleting/merging records, and do not restore the old create RPC af
 removing uniqueness. The new edit function is additive; older native clients do
 not depend on it. Disabling workspace entry can fall back to existing Field tools.
 
+## Deployment verification — September 17
+
+- Production deployment: `dpl_AH14LTcuJkBKqT7StPXdPwhysVgk`,
+  https://railcommand-ri2p8r9pm-dillans-projects-f662840b.vercel.app.
+  `railcommand.io` resolves to this deployment; live and staged auth checks pass
+  (401 missing/forged pilot credentials, 403 nonpilot and invalid handoff, no-store).
+- Production `MOBILE_WORKSPACE_ENABLED=true`; existing three-user read/write pilot
+  remains bounded. No project membership or edit grants were widened.
+- Additive atomic edit installed before backend promotion. Same-day migration
+  applied after promotion, guarded by the exact previous create-function definition.
+  Both migration-history entries verified. Read-back confirms both function bodies
+  exactly match source, SECURITY INVOKER, unchanged grants/RLS policies, enabled
+  RLS, retained primary/foreign keys and author/idempotency uniqueness.
+  Migration DDL did not update/delete any field records; no live mutation fixtures.
+- Production advisor reports 19 warnings on existing helper functions and leaked
+  password protection; neither release function appears. Those wider findings are
+  a separate audit follow-up, not silently changed in this release.
+- EAS build: `da211cfc-a497-4c4f-87e3-70b92c052005`, version 1.0.0 (300009),
+  production STORE build. Submission: `b703435c-a98e-4f5c-a761-6c920f83b9c5`.
+- IPA SHA-256: `1dbcab9677f1e343818975be1e3338000698296d4e81d6abc4ede9ab74e434f8`.
+  Bundle `io.railcommand.app`, build/version and camera/photo/location/microphone
+  purpose strings verified. macOS codesign could not validate the downloaded iOS
+  distribution archive's trust/entitlement representation; do not call local signing
+  validation passed. Apple upload/processing remains the distribution validation.
+- App Store Connect browser session expired. Sign-in requested from Dillan; old
+  review form preserved. No internal assignment or external rollout inferred.
+
 ## Remaining acceptance/release gates
 
-- Finish final checks, commit exact sources, stage compatible backend, run auth
-  boundary smoke checks, apply only reviewed DDL, promote the verified deployment.
-- Build/submit/assign a new production iPhone build to Dillan only, preserving his
-  installed app data. Verify the App Store build/source/version and assignment.
+- Finish Apple processing and assign 300009 to Dillan's existing internal group only,
+  preserving installed app data. Verify availability; uploaded is not installed.
 - Physical iPhone: sign-in, same projects, web/mobile write/readback using a test
   project, file picker/photo/document upload and export/share, GPS, offline form
   retention, native queued-log review, restart and account isolation.
