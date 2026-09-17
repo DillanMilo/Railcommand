@@ -1,3 +1,4 @@
+import { openWorkspace } from '@/lib/workspace-navigation';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
@@ -35,7 +36,7 @@ export default function OverviewScreen() {
       return;
     }
     try {
-      router.push({ pathname: '/workspace', params: { path: `/projects/${activeProjectId}/${module}/new` } });
+      openWorkspace(`/projects/${activeProjectId}/${module}/new`);
     } catch {
       Alert.alert('Could not open RailCommand web', 'Your saved mobile work is unchanged. Check connectivity and try again.');
     }

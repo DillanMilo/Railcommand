@@ -19,8 +19,12 @@ export default function WorkspaceScreen() {
   return <AccountWorkspace key={sessionRevision} userId={session.user.id} revision={sessionRevision} />;
 }
 function AccountWorkspace({ userId, revision }: { userId: string; revision: number }) {
-  const params = useLocalSearchParams<{ path?: string }>();
+  const params = useLocalSearchParams<{ path?: string; request?: string }>();
   const path = workspaceDestination(params.path);
+  const request = `${params.request ?? ''}:${path}`;
+  const handledRequest = useRef(request);
+  const [ready, setReady] = useState(false);
+  const clientNavigation = useRef(false);
   const { isSessionCurrent } = useAuth();
   const { online, selectProject, refresh } = useMobileData();
   const navigation = useNavigation();
@@ -62,14 +66,32 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
   useEffect(() => {
     web.current?.injectJavaScript(`window.railcommandWorkspaceOnline=${online};true;`);
   }, [online]);
+  useEffect(() => {
+    if (!ready || !online || !current() || handledRequest.current === request) return;
+    handledRequest.current = request;
+    if (clientNavigation.current) {
+      // The web bridge checks its own current dirty/offline state before routing.
+      web.current?.injectJavaScript(`window.dispatchEvent(new CustomEvent('railcommand:navigate',{detail:${JSON.stringify({ path })}}));true;`);
+    } else {
+      // Older web deployments still navigate with their isolated session.
+      confirmLeave(() => {
+        if (current()) web.current?.injectJavaScript(`window.location.assign(${JSON.stringify(origin + path)});true;`);
+      });
+    }
+  }, [confirmLeave, current, online, origin, path, ready, request]);
   const openFieldTools = useCallback(async (destination: '/(tabs)' | '/railbot' = '/(tabs)') => {
     try {
       const projectId = workspaceProject.current;
       if (projectId) {
         await selectProject(projectId);
-        if (online) await refresh(projectId);
       }
-      if (current()) router.push(destination);
+      if (current()) {
+        router.push(destination);
+        // Show the selected project immediately; refresh without blocking navigation.
+        if (online && projectId) void refresh(projectId).catch(() => {
+          if (current()) Alert.alert('Project refresh failed', 'Saved field data is retained. Retry from Field tools.');
+        });
+      }
     } catch { if (current()) Alert.alert('Could not open this project', 'Reconnect and try again. Field tools have not been opened in a different project.'); }
   }, [current, online, refresh, selectProject]);
   const goBack = useCallback(() => {
@@ -96,6 +118,8 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
       if (!message || typeof message !== 'object') return;
       if (message.type === 'dirty') { dirtyRef.current = message.value === true; setDirty(dirtyRef.current); }
       if (message.type === 'ready') {
+        clientNavigation.current = message.clientNavigation === true;
+        setReady(true);
         workspaceProject.current = typeof message.path === 'string' ? /^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:\/|$)/i.exec(message.path)?.[1] ?? null : null;
         setLoading(false); setError('');
       }
@@ -134,7 +158,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
       <Pressable accessibilityRole="button" onPress={() => void openFieldTools('/railbot')} style={styles.button}><Text style={styles.buttonText}>RailBot</Text></Pressable>
     </View>
     <Text accessibilityLiveRegion="polite" style={[styles.notice, !online && styles.offline]}>{online ? 'Online workspace · Save changes before closing the app.' : 'Offline · This page stays open. Reconnect to save. Use Field tools for offline logs.'}</Text>
-    {error ? <View style={styles.error}><Text style={styles.body}>{error}</Text><Pressable disabled={!online} onPress={() => confirmLeave(() => { transfer.current = null; dirtyRef.current = false; setDirty(false); setSource(undefined); started.current = false; setAttempt((value) => value + 1); })} style={styles.button}><Text style={styles.buttonText}>Reconnect workspace</Text></Pressable></View> : null}
+    {error ? <View style={styles.error}><Text style={styles.body}>{error}</Text><Pressable disabled={!online} onPress={() => confirmLeave(() => { transfer.current = null; dirtyRef.current = false; setDirty(false); setReady(false); setSource(undefined); started.current = false; setAttempt((value) => value + 1); })} style={styles.button}><Text style={styles.buttonText}>Reconnect workspace</Text></Pressable></View> : null}
     {loading ? <ActivityIndicator accessibilityLabel="Opening workspace" style={styles.loading} /> : null}
     {source ? <View style={styles.webContainer}>
       <WebView ref={web} source={source} style={styles.web}

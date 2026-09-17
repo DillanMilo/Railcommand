@@ -1,3 +1,4 @@
+import { openWorkspace } from '@/lib/workspace-navigation';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -25,7 +26,7 @@ export default function ProjectModuleDeepLinkScreen() {
       .then(() => {
         if (!current) return;
         if (next.kind === 'native') router.replace(next.destination as never);
-        else router.replace({ pathname: '/workspace', params: { path: next.path } });
+        else openWorkspace(next.path);
       })
       .catch(() => {
         if (!current) return;

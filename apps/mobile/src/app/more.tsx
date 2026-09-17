@@ -1,3 +1,4 @@
+import { openWorkspace } from '@/lib/workspace-navigation';
 import { RailBotIcon } from '@/components/railbot-icon';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -24,7 +25,8 @@ export default function MoreSheet() {
   const { activeProjectId, online } = useMobileData();
   const open = async (item: typeof modules[number]) => {
     if ('native' in item) {
-      router.replace(item.native as never);
+      if (item.native === '/workspace') openWorkspace(activeProjectId ? `/projects/${activeProjectId}/daily-logs` : '/dashboard');
+      else router.replace(item.native as never);
       return;
     }
     if (!online || !activeProjectId) {
@@ -32,7 +34,7 @@ export default function MoreSheet() {
       return;
     }
     try {
-      router.replace({ pathname: '/workspace', params: { path: `/projects/${activeProjectId}/${item.path}` } });
+      openWorkspace(`/projects/${activeProjectId}/${item.path}`);
     } catch {
       Alert.alert(`Could not open ${item.label}`, 'No mobile input was changed. Check connectivity and try again.');
     }

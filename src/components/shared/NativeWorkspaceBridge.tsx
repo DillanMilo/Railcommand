@@ -1,20 +1,23 @@
 "use client";
 
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { nativeWorkspace, shareWorkspaceBlob } from '@/lib/native-workspace';
+
+import { navigateWorkspace } from '@/lib/workspace-navigation';
 
 // No project content or credentials cross this bridge. Native downloads use the
 // bounded blob helper; normal web requests retain the user's existing RLS checks.
 export default function NativeWorkspaceBridge() {
   const pathname = usePathname();
+  const router = useRouter();
   useEffect(() => {
     const bridge = nativeWorkspace();
     if (!bridge) return;
     let dirty = false;
     const state = window as Window & { railcommandWorkspaceOnline?: boolean };
     const send = (type: string, fields = {}) => bridge.postMessage(JSON.stringify({ type, ...fields }));
-    send('ready', { path: pathname });
+    send('ready', { path: pathname, clientNavigation: true });
     send('dirty', { value: false });
     const changed = (event: Event) => {
       const target = event.target as HTMLElement | null;
@@ -40,6 +43,15 @@ export default function NativeWorkspaceBridge() {
     };
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (dirty) { event.preventDefault(); event.returnValue = ''; }
+    };
+    const nativeNavigate = (event: Event) => {
+      navigateWorkspace((event as CustomEvent<{ path?: unknown }>).detail?.path, {
+        online: state.railcommandWorkspaceOnline !== false,
+        // The retained page remains authoritative even if native dirty messages lag.
+        dirty,
+        confirm: () => window.confirm('Leave this page? Any unsaved changes may be lost.'),
+        push: (path) => router.push(path),
+      });
     };
     const download = (event: Event) => {
       const value = (event as CustomEvent<{ url?: unknown }>).detail?.url;
@@ -69,6 +81,7 @@ export default function NativeWorkspaceBridge() {
         await shareWorkspaceBlob(new Blob(chunks, { type: response.headers.get('content-type')?.split(';')[0] || 'application/octet-stream' }), name);
       })().catch((error: unknown) => window.alert(error instanceof Error ? error.message : 'Could not export the file.'));
     };
+    window.addEventListener('railcommand:navigate', nativeNavigate);
     window.addEventListener('railcommand:download', download);
     document.addEventListener('input', changed, true);
     document.addEventListener('change', changed, true);
@@ -76,6 +89,7 @@ export default function NativeWorkspaceBridge() {
     document.addEventListener('submit', submitting, true);
     window.addEventListener('beforeunload', beforeUnload);
     return () => {
+      window.removeEventListener('railcommand:navigate', nativeNavigate);
       window.removeEventListener('railcommand:download', download);
       document.removeEventListener('input', changed, true);
       document.removeEventListener('change', changed, true);
@@ -83,6 +97,6 @@ export default function NativeWorkspaceBridge() {
       document.removeEventListener('submit', submitting, true);
       window.removeEventListener('beforeunload', beforeUnload);
     };
-  }, [pathname]);
+  }, [pathname, router]);
   return null;
 }
