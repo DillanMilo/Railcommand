@@ -180,3 +180,12 @@ post-promotion runtime error scan returned zero entries. Build 300009 Workspace
 receives these web changes after navigation/refresh. No new mobile build, schema
 change or automatic field-record modification accompanied this release. See
 `DFR_PHOTO_REPAIR_20260917.md` for acceptance gaps and rollback.
+
+## iPhone acceptance failure and replacement
+
+Dillan installed 300009 and reported Workspace immediately rejects sign-in. Do not
+treat its TestFlight availability as working device acceptance. The native initial
+POST omitted an explicit Origin, incompatible with WebKit opaque-origin behavior
+and the server’s unchanged same-origin guard. Repair dbc59b9 is built as 300010;
+upload/Apple assignment remains pending. See `WORKSPACE_ORIGIN_REPAIR_20260917.md`
+for source evidence, regression checks, release IDs and remaining device acceptance.

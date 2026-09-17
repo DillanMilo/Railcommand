@@ -35,8 +35,17 @@ Existing Workspace forms retain the prior online-only limitations.
   successful cookie issuance, one-use replay denial, identity changes, revoked pilot,
   MFA, missing authentication and cache boundaries. These use real SDK transport
   with synthetic Auth responses; they are not physical-device evidence.
-- Production build, submission and assignment pending. Do not call the repair
-  installed or accepted before the user's iPhone successfully opens Workspace.
+- Candidate web build, root TypeScript and focused lint passed; server CI
+  35255446664 passed on f15c0aa. Native runtime commit: dbc59b9.
+- Production iOS build 1.0.0 (300010): 229143d5-703e-45c0-b77f-02a56fbdef49.
+  Auto-submission: 07af68ba-dd02-4971-80a4-57035f4d7ad6. Production profile,
+  existing signing credentials. Build FINISHED and IPA bundle/version verified.
+  SHA-256: fa6b8b93178083632fedf2690b0944f9e66334de8df1782ae1a9503b524e3b93.
+  Signed archive also contains the new factory/error-message strings.
+  Submission is IN_QUEUE; Apple upload/processing/assignment pending; internal group membership rechecked
+  as Dillan only. No external release requested or performed.
+  Do not call the repair installed or accepted before the user's iPhone opens
+  Workspace successfully.
 - No web deployment or database migration required for this native repair.
 - External tester distribution remains separately gated.
 
