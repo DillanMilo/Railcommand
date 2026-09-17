@@ -139,8 +139,17 @@ not depend on it. Disabling workspace entry can fall back to existing Field tool
   purpose strings verified. macOS codesign could not validate the downloaded iOS
   distribution archive's trust/entitlement representation; do not call local signing
   validation passed. Apple upload/processing remains the distribution validation.
-- App Store Connect browser session expired. Sign-in requested from Dillan; old
-  review form preserved. No internal assignment or external rollout inferred.
+- App Store Connect browser session expired; the old review form is preserved.
+  Existing EAS publishing credentials successfully read Apple status and verified
+  internal group b92ba7eb-1a88-40ec-8af2-f38c499dee30 contains only dillanxx@gmail.com.
+  Browser sign-in is not needed for that API path. Build 300009 is still queued for
+  upload and not yet assigned; no external rollout inferred.
+- Initial remote CI found 15 explicit-any lint errors in five test harnesses.
+  Replaced those with typed mocks/module exports; focused 23 tests, lint and both
+  TypeScript checks pass. This changes tests only, not the shipped runtime/build.
+  Remote CI rerun remains pending after the fix push.
+- Post-promotion runtime error scan returned zero entries. Disposable local Auth
+  and database containers/network were removed after tests; no live service stopped.
 
 ## Remaining acceptance/release gates
 

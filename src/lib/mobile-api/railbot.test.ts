@@ -6,8 +6,16 @@ import type { MobileAuthenticatedContext } from './auth';
 const user = '10000000-0000-4000-8000-000000000001';
 const project = '20000000-0000-4000-8000-000000000001';
 const conversation = '30000000-0000-4000-8000-000000000001';
+type Row=Record<string,unknown>;
+type QueryResult={data:Row|Row[]|null;error:{message:string}|null};
+interface MockQuery {
+ select():MockQuery; eq(key:string,value:unknown):MockQuery; order():MockQuery; limit():MockQuery;
+ insert(row:Row):MockQuery; single():Promise<QueryResult>; maybeSingle():Promise<QueryResult>;
+ then(resolve:(result:QueryResult)=>unknown,reject:(error:unknown)=>unknown):Promise<unknown>;
+ run(single:boolean):Promise<QueryResult>;
+}
 function harness({ canEdit = true, owner = user, savedProject = project, mobile = true } = {}) {
-  const tables: Record<string, any[]> = {
+  const tables: Record<string, Row[]> = {
     conversations: [{ id: conversation, user_id: owner, project_id: savedProject }],
     messages: [{ conversation_id: conversation, role: 'assistant', tool_calls: [{ id: 'call-1', mobile_proposal: mobile, function: { name: 'create_daily_log', arguments: JSON.stringify({ work_summary: 'Synthetic field work' }) } }] }],
     profiles: [{ id: user, role: 'member' }],
@@ -16,16 +24,16 @@ function harness({ canEdit = true, owner = user, savedProject = project, mobile 
   };
   let inserts = 0;
   const client = { from(table: string) {
-    const filters: [string, unknown][] = []; let insert: any = null;
-    const query: any = {
+    const filters: [string, unknown][] = []; let insert: Row | null = null;
+    const query: MockQuery = {
       select() { return query; }, eq(k: string, v: unknown) { filters.push([k,v]); return query; },
       order() { return query; }, limit() { return query; },
-      insert(row: any) { insert = row; return query; },
+      insert(row: Row) { insert = row; return query; },
       single() { return query.run(true); }, maybeSingle() { return query.run(true); },
-      then(resolve: any, reject: any) { return query.run(false).then(resolve,reject); },
+      then(resolve:(result:QueryResult)=>unknown, reject:(error:unknown)=>unknown) { return query.run(false).then(resolve,reject); },
       async run(single: boolean) {
         if (insert) {
-          if (tables[table].some(r => r.id === insert.id)) return { data: null, error: { message: 'duplicate primary key' } };
+          if (tables[table].some(r => r.id === insert!.id)) return { data: null, error: { message: 'duplicate primary key' } };
           inserts++; tables[table].push(insert); return { data: insert, error: null };
         }
         const rows = (tables[table] ?? []).filter(r => filters.every(([k,v]) => r[k] === v));
