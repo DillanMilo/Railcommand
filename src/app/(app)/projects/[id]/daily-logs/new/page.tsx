@@ -321,7 +321,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting || isOffline}
+          disabled={photos.some(photo => photo.preparing) || success || submitting || isOffline}
           onClick={async () => {
             if (submittingRef.current || isOffline) return;
             submittingRef.current = true;

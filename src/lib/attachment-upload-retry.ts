@@ -1,6 +1,6 @@
 import { recordAttachment } from '@/lib/actions/attachments';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getBucket, sanitizeFilename } from '@/lib/attachments-shared';
+import { getBucket } from '@/lib/attachments-shared';
 import { compressImage } from '@/lib/compressImage';
 import type { PhotoCategory, Attachment } from '@/lib/types';
 
@@ -17,8 +17,15 @@ export async function uploadFileWithReceipt(input: Input): Promise<{ success?: b
   prepared.set(input.file, choices);
   let pending = choices.get(scope);
   if (!pending) {
-    const id = crypto.randomUUID();
-    pending = { id, file: input.category === 'document' ? Promise.resolve(input.file) : compressImage(input.file,input.category), path: `${input.projectId}/${input.entityType}/${input.entityId}/${id}-${sanitizeFilename(input.file.name)}` };
+    // Stable per-account/parent/content identity also survives reselecting a file
+    // or refreshing the page. Never merge existing historical attachment rows.
+    const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', await input.file.arrayBuffer()));
+    const digest = [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    const identity = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([scope, digest]))));
+    identity[6] = (identity[6] & 15) | 0x50; identity[8] = (identity[8] & 63) | 0x80;
+    const hex = [...identity.slice(0, 16)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    const id = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+    pending = { id, file: input.category === 'document' ? Promise.resolve(input.file) : compressImage(input.file,input.category), path: `${input.projectId}/${input.entityType}/${input.entityId}/${id}` };
     choices.set(scope,pending);
   }
   let file: File;

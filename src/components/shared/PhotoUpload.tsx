@@ -18,6 +18,7 @@ export interface PhotoFile {
   geo_lng: number | null;
   geo_source?: PhotoGeoSource | null;
   uploading?: boolean;
+  preparing?: boolean;
   uploadError?: string;
   originalSize?: number;
   capturedAt?: string;
@@ -60,10 +61,15 @@ export default function PhotoUpload({
     photosRef.current = photos;
   }, [photos]);
 
+  const publishPhotos = useCallback((next: PhotoFile[]) => {
+    photosRef.current = next;
+    onPhotosChange(next);
+  }, [onPhotosChange]);
+
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList) return;
 
-    const remaining = maxFiles - photos.length;
+    const remaining = maxFiles - photosRef.current.length;
     if (remaining <= 0) return;
 
     const files = Array.from(fileList)
@@ -71,35 +77,28 @@ export default function PhotoUpload({
       .filter((file) => file.size <= MAX_FILE_SIZE);
     if (files.length === 0) return;
 
+    const newPhotos: PhotoFile[] = files.map(file => ({
+      id: crypto.randomUUID(), file, preview: URL.createObjectURL(file), category,
+      geo_lat: null, geo_lng: null, geo_source: null, preparing: true,
+      uploading: !!(entityType && entityId && projectId), originalSize: file.size,
+    }));
+    publishPhotos([...photosRef.current, ...newPhotos]);
     setGeoLoading(showGeoCapture);
     const geos = showGeoCapture
-      ? await resolvePhotoGeoBatch(files, { allowDeviceGeo: true }).finally(() =>
-          setGeoLoading(false)
-        )
+      ? await resolvePhotoGeoBatch(files, { allowDeviceGeo: true }).catch(() => files.map(() => null)).finally(() => setGeoLoading(false))
       : files.map(() => null);
-
-    const newPhotos: PhotoFile[] = files
-      .map((file, index) => ({
-        id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        file,
-        preview: URL.createObjectURL(file),
-        category,
-        geo_lat: geos[index]?.lat ?? null,
-        geo_lng: geos[index]?.lng ?? null,
-        geo_source: geos[index]?.source ?? null,
-        uploading: !!(entityType && entityId && projectId),
-        originalSize: file.size,
-      }));
-
-    // Show previews immediately
-    const allPhotos = [...photos, ...newPhotos];
-    onPhotosChange(allPhotos);
+    const ready = new Map(newPhotos.map((photo, index) => [photo.id, {
+      ...photo, preparing: false, geo_lat: geos[index]?.lat ?? null,
+      geo_lng: geos[index]?.lng ?? null, geo_source: geos[index]?.source ?? null,
+    }]));
+    publishPhotos(photosRef.current.map(photo => ready.get(photo.id) ?? photo));
 
     // Only do server upload if entity context is provided
     if (!entityType || !entityId || !projectId) return;
 
     // Upload each photo
-    for (const photo of newPhotos) {
+    for (const photo of ready.values()) {
+      if (!photosRef.current.some(current => current.id === photo.id)) continue;
       try {
         const result = await uploadPhotoAttachment({
           file: photo.file,
@@ -112,10 +111,10 @@ export default function PhotoUpload({
         });
 
         if (result.error) {
-          onPhotosChange(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error } : p));
+          publishPhotos(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error } : p));
           alert(`Upload failed: ${result.error}`);
         } else {
-          onPhotosChange(
+          publishPhotos(
             photosRef.current.map((p) =>
               p.id === photo.id
                 ? { ...p, uploading: false, uploadError: undefined, file: result.data?.file ?? p.file }
@@ -125,20 +124,20 @@ export default function PhotoUpload({
           if (result.data) onUploadComplete?.(result.data.attachment);
         }
       } catch {
-        onPhotosChange(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Upload could not be confirmed. Retry while this page is open.' } : p));
+        publishPhotos(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Upload could not be confirmed. Retry while this page is open.' } : p));
         alert(`Upload failed for ${photo.file.name}`);
       }
     }
-  }, [photos, onPhotosChange, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete]);
+  }, [publishPhotos, maxFiles, category, showGeoCapture, entityType, entityId, projectId, onUploadComplete]);
 
   const removePhoto = useCallback((id: string) => {
-    const photo = photos.find((p) => p.id === id);
+    const photo = photosRef.current.find((p) => p.id === id);
     if (photo) {
       URL.revokeObjectURL(photo.preview);
       onPhotoRemove?.(photo);
     }
-    onPhotosChange(photos.filter((p) => p.id !== id));
-  }, [photos, onPhotosChange, onPhotoRemove]);
+    publishPhotos(photosRef.current.filter((p) => p.id !== id));
+  }, [publishPhotos, onPhotoRemove]);
 
   const acceptTypes = category === 'thermal'
     ? THERMAL_TYPES
@@ -242,7 +241,7 @@ export default function PhotoUpload({
                   </div>
                 )}
                 {/* Upload spinner overlay */}
-                {photo.uploading && (
+                {(photo.uploading || photo.preparing) && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                     <Loader2 className="size-8 animate-spin text-white" />
                   </div>
@@ -250,12 +249,12 @@ export default function PhotoUpload({
                 {photo.uploadError && <div className="absolute inset-x-0 top-0 bg-red-50 p-2 text-xs text-red-800">
                   <p>{photo.uploadError}</p>
                   {entityType && entityId && projectId && <Button type="button" size="sm" variant="outline" onClick={async () => {
-                    onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: true } : p));
+                    publishPhotos(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: true } : p));
                     try {
                       const result = await uploadPhotoAttachment({ file: photo.file, category: photo.category, entityType, entityId, projectId, geoLat: photo.geo_lat, geoLng: photo.geo_lng });
-                      onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error, file: result.data?.file ?? p.file } : p));
+                      publishPhotos(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error, file: result.data?.file ?? p.file } : p));
                       if (result.data) onUploadComplete?.(result.data.attachment);
-                    } catch { onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Could not upload. Keep this page open and retry.' } : p)); }
+                    } catch { publishPhotos(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Could not upload. Keep this page open and retry.' } : p)); }
                   }}>Retry photo</Button>}
                 </div>}
                 {/* Overlay badges */}

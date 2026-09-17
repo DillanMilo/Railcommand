@@ -41,4 +41,15 @@ describe('daily-log PDF photos', () => {
       caption: photo.file_name,
     }]);
   });
+  it('does not silently generate a report missing an unavailable photo',async()=>{
+    const old=globalThis.fetch;
+    try { globalThis.fetch=async()=>new Response('',{status:403}); await assert.rejects(loadDailyLogPdfPhotos([attachment('missing','image/jpeg')]), /Could not include "missing.jpg"/); }
+    finally { globalThis.fetch=old; }
+  });
+  it('reports unsupported photo formats and signed URL failures instead of omitting them',async()=>{
+    await assert.rejects(loadDailyLogPdfPhotos([attachment('iphone','image/heic')]), /JPEG or PNG/);
+    const photo={...attachment('private','image/jpeg'),signed_url_error:'Refresh required'};
+    await assert.rejects(loadDailyLogPdfPhotos([photo]), /private.jpg/);
+  });
+
 });
