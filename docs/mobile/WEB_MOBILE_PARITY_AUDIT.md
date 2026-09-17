@@ -23,7 +23,17 @@ same-day-log patch. It is not physical-device acceptance or a live-data write te
 | Account/admin/search | Selected account controls | Profile/avatar, preferences, notifications, global search, client/demo/project administration audit |
 | Change orders/modifications/activity | No full native workflow confirmed | Audit web exposure and implement corresponding supported actions |
 
-## Release priorities
+## Shared workspace implementation update
+
+The table above records the earlier native-only audit. The bounded implementation
+now reuses those web workflows inside an isolated in-app online workspace, retaining
+native offline Field tools. See `SHARED_WORKSPACE_RELEASE_20260917.md` for current
+verification and rollout. Daily-log atomic editing and upload receipt recovery are
+implemented locally to address the data-safety findings below. They must be
+verified and deployed before those findings are considered closed. No action has
+been marked device-verified just because its web screen is reused.
+
+## Original release priorities (superseded by shared workspace rollout)
 
 1. Recover queued logs safely; ship multiple same-day visibility and explicit review.
 2. Implement field mutations: existing-log editing with concurrency protection,

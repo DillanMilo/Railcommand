@@ -19,7 +19,7 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDailyLogDetail } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
-import type { GeoTag } from '@/lib/types';
+import type { GeoTag, DailyLog } from '@/lib/types';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -37,6 +37,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
   const { can } = usePermissions(projectId);
   const { data: log, loading } = useDailyLogDetail(projectId, logId);
 
+  const [baseline, setBaseline] = useState<DailyLog | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [date, setDate] = useState('');
   const [temp, setTemp] = useState<number | ''>('');
@@ -57,6 +58,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
   // Populate form when log data loads
   useEffect(() => {
     if (log && !initialized) {
+      setBaseline(log);
       setDate(log.log_date);
       setTemp(log.weather_temp);
       setConditions(log.weather_conditions);
@@ -340,6 +342,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
               setTimeout(() => router.push(`/projects/${projectId}/daily-logs/${logId}`), 1500);
             } else {
               const result = await serverUpdateDailyLog(projectId, logId, {
+                expected: baseline ?? undefined,
                 log_date: date,
                 weather_temp: typeof temp === 'number' ? temp : 0,
                 weather_conditions: conditions,
@@ -357,6 +360,8 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
                 setSubmitting(false);
                 return;
               }
+
+              if (result.data?.personnel) setBaseline(result.data);
 
               // Upload any new photos
               if (photos.length > 0) {

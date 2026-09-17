@@ -1,5 +1,6 @@
 'use client';
 
+import { shareWorkspaceBlob } from '@/lib/native-workspace';
 import React, { useState, useCallback, useEffect } from 'react';
 import { FileDown, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ export default function ExportPDFButton({
     setLoading(true);
     try {
       const { blob, completeFileName } = await generatePdf();
+      if (await shareWorkspaceBlob(blob, completeFileName)) return;
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;

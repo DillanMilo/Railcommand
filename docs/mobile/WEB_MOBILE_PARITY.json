@@ -13,7 +13,8 @@
         {
           "name": "getActivityLog",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -24,37 +25,44 @@
         {
           "name": "uploadAttachment",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "recordAttachment",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteAttachment",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getSignedUrl",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getAttachments",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getDocumentAttachmentsForDownload",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getAttachmentsWithSignedUrls",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -65,7 +73,8 @@
         {
           "name": "uploadMyAvatar",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -76,27 +85,32 @@
         {
           "name": "getChangeOrders",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getChangeOrderById",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createChangeOrder",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateChangeOrder",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteChangeOrder",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -107,22 +121,26 @@
         {
           "name": "getDailyLogs",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getDailyLogById",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createDailyLog",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateDailyLog",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -133,7 +151,8 @@
         {
           "name": "getDashboardData",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -144,27 +163,32 @@
         {
           "name": "getProjectDocuments",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectDocumentById",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createProjectDocument",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateProjectDocument",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteProjectDocument",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -175,57 +199,68 @@
         {
           "name": "getEarthCamWorkspace",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getEarthCamEmbeds",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "saveEarthCamEmbed",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteEarthCamEmbed",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "saveEarthCamConnection",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "upsertEarthCamCamera",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteEarthCamCamera",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createEarthCamEvidence",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteEarthCamEvidence",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createEarthCamAccessLink",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "syncEarthCamCameras",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -236,42 +271,50 @@
         {
           "name": "createInvitation",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getInvitationByToken",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "acceptInvitation",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "declineInvitation",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getPendingInvitationsForUser",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectInvitations",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "resendInvitation",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "cancelInvitation",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -282,22 +325,26 @@
         {
           "name": "getMilestones",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createMilestone",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateMilestone",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteMilestone",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -308,27 +355,32 @@
         {
           "name": "getModifications",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getModificationById",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createModification",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateModification",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteModification",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -339,12 +391,14 @@
         {
           "name": "getNotificationPreferences",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateNotificationPreferences",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -355,12 +409,14 @@
         {
           "name": "setupBusiness",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "checkOnboardingStatus",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -371,7 +427,8 @@
         {
           "name": "getProjectPhotos",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -382,12 +439,14 @@
         {
           "name": "getMyProfile",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateMyProfile",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -398,7 +457,8 @@
         {
           "name": "uploadProjectPhoto",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -409,42 +469,50 @@
         {
           "name": "getProjects",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectById",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectPlanInfo",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectDemoInfo",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createProject",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateProject",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateProjectStatus",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteProject",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -455,32 +523,38 @@
         {
           "name": "getPunchListItems",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getPunchListItemById",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createPunchListItem",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updatePunchListStatus",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updatePunchListItem",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deletePunchListItem",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -491,27 +565,32 @@
         {
           "name": "getQCQAReports",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getQCQAReportById",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createQCQAReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateQCQAReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteQCQAReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -522,37 +601,44 @@
         {
           "name": "getRFIs",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getRFIById",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createRFI",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateRFIStatus",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "addRFIResponse",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateRFI",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteRFI",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -563,27 +649,32 @@
         {
           "name": "getSafetyIncidents",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getSafetyIncident",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createSafetyIncident",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateSafetyIncident",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteSafetyIncident",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -594,7 +685,8 @@
         {
           "name": "globalSearch",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -605,32 +697,38 @@
         {
           "name": "getSubmittals",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getSubmittalById",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createSubmittal",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateSubmittalStatus",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateSubmittal",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteSubmittal",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -641,32 +739,38 @@
         {
           "name": "getProjectMembers",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getRecentMembers",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "addProjectMember",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "removeProjectMember",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "leaveProject",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateMemberRole",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -677,47 +781,56 @@
         {
           "name": "getUpReportingWorkspace",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "configureProjectRailCommandWorkbook",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "uploadProjectUpTemplateVariant",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "assignProjectUpTemplateVariant",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectUpReportPrefill",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createProjectUpWeeklyReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getProjectUpWeeklyReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateProjectUpWeeklyReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "generateProjectUpReportArtifact",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -728,22 +841,26 @@
         {
           "name": "getMyNotifications",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "markUserNotificationRead",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "markAllUserNotificationsRead",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "dismissUserNotification",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -754,27 +871,32 @@
         {
           "name": "getWeeklyReports",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "getWeeklyReportById",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "createWeeklyReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "updateWeeklyReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         },
         {
           "name": "deleteWeeklyReport",
           "mobile": "gap-or-unverified",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
         }
       ]
     },
@@ -785,7 +907,8 @@
         {
           "name": "getOfflineProjectSnapshot",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "native-offline"
         }
       ]
     },
@@ -796,17 +919,20 @@
         {
           "name": "syncOfflineDailyLogOperation",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "native-offline"
         },
         {
           "name": "prepareOfflineDailyLogPhotoUpload",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "native-offline"
         },
         {
           "name": "finalizeOfflineDailyLogPhotoUpload",
           "mobile": "implemented-partial",
-          "deviceVerified": false
+          "deviceVerified": false,
+          "delivery": "native-offline"
         }
       ]
     }
@@ -820,5 +946,6 @@
     "Privacy declarations",
     "Caleb feedback not yet supplied",
     "Canonical release-branch integration"
-  ]
+  ],
+  "deliveryStrategy": "Shared authenticated in-app web workspace for online features; retained native Field tools for offline work. See SHARED_WORKSPACE_RELEASE_20260917.md. Device acceptance remains pending."
 }

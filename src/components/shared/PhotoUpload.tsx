@@ -112,20 +112,20 @@ export default function PhotoUpload({
         });
 
         if (result.error) {
-          onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
+          onPhotosChange(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error } : p));
           alert(`Upload failed: ${result.error}`);
         } else {
           onPhotosChange(
             photosRef.current.map((p) =>
               p.id === photo.id
-                ? { ...p, uploading: false, file: result.data?.file ?? p.file }
+                ? { ...p, uploading: false, uploadError: undefined, file: result.data?.file ?? p.file }
                 : p
             )
           );
           if (result.data) onUploadComplete?.(result.data.attachment);
         }
       } catch {
-        onPhotosChange(photosRef.current.filter((p) => p.id !== photo.id));
+        onPhotosChange(photosRef.current.map((p) => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Upload could not be confirmed. Retry while this page is open.' } : p));
         alert(`Upload failed for ${photo.file.name}`);
       }
     }
@@ -247,6 +247,17 @@ export default function PhotoUpload({
                     <Loader2 className="size-8 animate-spin text-white" />
                   </div>
                 )}
+                {photo.uploadError && <div className="absolute inset-x-0 top-0 bg-red-50 p-2 text-xs text-red-800">
+                  <p>{photo.uploadError}</p>
+                  {entityType && entityId && projectId && <Button type="button" size="sm" variant="outline" onClick={async () => {
+                    onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: true } : p));
+                    try {
+                      const result = await uploadPhotoAttachment({ file: photo.file, category: photo.category, entityType, entityId, projectId, geoLat: photo.geo_lat, geoLng: photo.geo_lng });
+                      onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: result.error, file: result.data?.file ?? p.file } : p));
+                      if (result.data) onUploadComplete?.(result.data.attachment);
+                    } catch { onPhotosChange(photosRef.current.map(p => p.id === photo.id ? { ...p, uploading: false, uploadError: 'Could not upload. Keep this page open and retry.' } : p)); }
+                  }}>Retry photo</Button>}
+                </div>}
                 {/* Overlay badges */}
                 <div className="absolute bottom-1 left-1 flex flex-wrap gap-1">
                   <Badge

@@ -39,6 +39,7 @@ const expectedRouteMethods = [
   'records/detail#GET',
   'records/options#GET',
   'reports/pdf#POST',
+  'web-session#POST',
 ].sort();
 
 function actualRouteMethods(directory = mobileRouteRoot): string[] {
@@ -114,6 +115,7 @@ describe('production mobile pilot gate', () => {
   it('classifies report generation as read-only and unknown non-GET routes as mutations', () => {
     assert.equal(isMobileMutation('/api/mobile/v1/reports/pdf', 'POST'), false);
     assert.equal(isMobileMutation('/api/mobile/v1/future-route', 'POST'), true);
+    assert.equal(isMobileMutation('/api/mobile/v1/web-session', 'POST'), true);
     assert.deepEqual(decide({ mode: 'read-only', users: allowedUser, method: 'POST', path: '/api/mobile/v1/reports/pdf' }), { allowed: true });
   });
 

@@ -14,7 +14,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -22,6 +22,13 @@ jobs:
 
       - name: Web/mobile action inventory
         run: node scripts/verify-web-mobile-parity.mjs
+
+      - name: Mobile backend compatibility and data safety
+        run: node --import tsx node_modules/mocha/bin/mocha.js 'src/lib/mobile-api/*.test.ts'
+
+      - name: Native field tools and workspace checks
+        if: ${{ hashFiles('apps/mobile/package.json') != '' }}
+        run: npm run typecheck --workspace @railcommand/mobile && npm run test --workspace @railcommand/mobile
 
       - name: Lint
         run: npm run lint

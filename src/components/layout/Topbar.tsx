@@ -1,5 +1,6 @@
 'use client';
 
+import { nativeWorkspace } from '@/lib/native-workspace';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -394,6 +395,11 @@ export default function Topbar({ children }: TopbarProps) {
   }, [router]);
 
   async function handleSignOut() {
+    const native = nativeWorkspace();
+    if (native) {
+      native.postMessage(JSON.stringify({ type: 'account' }));
+      return; // Native sign-out checks preserved drafts and queued work first.
+    }
     const supabase = createClient();
     await supabase.auth.signOut();
     await fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
