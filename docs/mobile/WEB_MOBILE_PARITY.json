@@ -1,0 +1,824 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-17",
+  "webBaseline": "edb985a",
+  "nativeBaseline": "48cc92c",
+  "status": "NOT_FULL_PARITY",
+  "meaning": "Action inventory from released backend source. Implemented-partial means native code exists but full behavior and device parity are not accepted. Browser links and RailBot tools are not substitutes for complete native workflows.",
+  "areas": [
+    {
+      "area": "activity-log",
+      "webSource": "src/lib/actions/activity-log.ts",
+      "actions": [
+        {
+          "name": "getActivityLog",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "attachments",
+      "webSource": "src/lib/actions/attachments.ts",
+      "actions": [
+        {
+          "name": "uploadAttachment",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "recordAttachment",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteAttachment",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getSignedUrl",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getAttachments",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getDocumentAttachmentsForDownload",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getAttachmentsWithSignedUrls",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "avatar",
+      "webSource": "src/lib/actions/avatar.ts",
+      "actions": [
+        {
+          "name": "uploadMyAvatar",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "change-orders",
+      "webSource": "src/lib/actions/change-orders.ts",
+      "actions": [
+        {
+          "name": "getChangeOrders",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getChangeOrderById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createChangeOrder",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateChangeOrder",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteChangeOrder",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "daily-logs",
+      "webSource": "src/lib/actions/daily-logs.ts",
+      "actions": [
+        {
+          "name": "getDailyLogs",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "getDailyLogById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "createDailyLog",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateDailyLog",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "dashboard",
+      "webSource": "src/lib/actions/dashboard.ts",
+      "actions": [
+        {
+          "name": "getDashboardData",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "documents",
+      "webSource": "src/lib/actions/documents.ts",
+      "actions": [
+        {
+          "name": "getProjectDocuments",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectDocumentById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createProjectDocument",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateProjectDocument",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteProjectDocument",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "earthcam",
+      "webSource": "src/lib/actions/earthcam.ts",
+      "actions": [
+        {
+          "name": "getEarthCamWorkspace",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getEarthCamEmbeds",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "saveEarthCamEmbed",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteEarthCamEmbed",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "saveEarthCamConnection",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "upsertEarthCamCamera",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteEarthCamCamera",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createEarthCamEvidence",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteEarthCamEvidence",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createEarthCamAccessLink",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "syncEarthCamCameras",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "invitations",
+      "webSource": "src/lib/actions/invitations.ts",
+      "actions": [
+        {
+          "name": "createInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getInvitationByToken",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "acceptInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "declineInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getPendingInvitationsForUser",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectInvitations",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "resendInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "cancelInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "milestones",
+      "webSource": "src/lib/actions/milestones.ts",
+      "actions": [
+        {
+          "name": "getMilestones",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createMilestone",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateMilestone",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteMilestone",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "modifications",
+      "webSource": "src/lib/actions/modifications.ts",
+      "actions": [
+        {
+          "name": "getModifications",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getModificationById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createModification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateModification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteModification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "notification-preferences",
+      "webSource": "src/lib/actions/notification-preferences.ts",
+      "actions": [
+        {
+          "name": "getNotificationPreferences",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateNotificationPreferences",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "onboarding",
+      "webSource": "src/lib/actions/onboarding.ts",
+      "actions": [
+        {
+          "name": "setupBusiness",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "checkOnboardingStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "photos",
+      "webSource": "src/lib/actions/photos.ts",
+      "actions": [
+        {
+          "name": "getProjectPhotos",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "profiles",
+      "webSource": "src/lib/actions/profiles.ts",
+      "actions": [
+        {
+          "name": "getMyProfile",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateMyProfile",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "project-photo-upload",
+      "webSource": "src/lib/actions/project-photo-upload.ts",
+      "actions": [
+        {
+          "name": "uploadProjectPhoto",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "projects",
+      "webSource": "src/lib/actions/projects.ts",
+      "actions": [
+        {
+          "name": "getProjects",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectPlanInfo",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectDemoInfo",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateProjectStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "punch-list",
+      "webSource": "src/lib/actions/punch-list.ts",
+      "actions": [
+        {
+          "name": "getPunchListItems",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getPunchListItemById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createPunchListItem",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updatePunchListStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updatePunchListItem",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deletePunchListItem",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "qcqa",
+      "webSource": "src/lib/actions/qcqa.ts",
+      "actions": [
+        {
+          "name": "getQCQAReports",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getQCQAReportById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createQCQAReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateQCQAReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteQCQAReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "rfis",
+      "webSource": "src/lib/actions/rfis.ts",
+      "actions": [
+        {
+          "name": "getRFIs",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "getRFIById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "createRFI",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateRFIStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "addRFIResponse",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateRFI",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteRFI",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "safety",
+      "webSource": "src/lib/actions/safety.ts",
+      "actions": [
+        {
+          "name": "getSafetyIncidents",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "search",
+      "webSource": "src/lib/actions/search.ts",
+      "actions": [
+        {
+          "name": "globalSearch",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "submittals",
+      "webSource": "src/lib/actions/submittals.ts",
+      "actions": [
+        {
+          "name": "getSubmittals",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "getSubmittalById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "createSubmittal",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateSubmittalStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateSubmittal",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteSubmittal",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "team",
+      "webSource": "src/lib/actions/team.ts",
+      "actions": [
+        {
+          "name": "getProjectMembers",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "getRecentMembers",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "addProjectMember",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "removeProjectMember",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "leaveProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateMemberRole",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "up-weekly-reports",
+      "webSource": "src/lib/actions/up-weekly-reports.ts",
+      "actions": [
+        {
+          "name": "getUpReportingWorkspace",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "configureProjectRailCommandWorkbook",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "uploadProjectUpTemplateVariant",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "assignProjectUpTemplateVariant",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectUpReportPrefill",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createProjectUpWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getProjectUpWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateProjectUpWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "generateProjectUpReportArtifact",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "user-notifications",
+      "webSource": "src/lib/actions/user-notifications.ts",
+      "actions": [
+        {
+          "name": "getMyNotifications",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "markUserNotificationRead",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "markAllUserNotificationsRead",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "dismissUserNotification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "weekly-reports",
+      "webSource": "src/lib/actions/weekly-reports.ts",
+      "actions": [
+        {
+          "name": "getWeeklyReports",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "getWeeklyReportById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "createWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "updateWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        },
+        {
+          "name": "deleteWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "offline",
+      "webSource": "src/lib/actions/offline.ts",
+      "actions": [
+        {
+          "name": "getOfflineProjectSnapshot",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        }
+      ]
+    },
+    {
+      "area": "offline-sync",
+      "webSource": "src/lib/actions/offline-sync.ts",
+      "actions": [
+        {
+          "name": "syncOfflineDailyLogOperation",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "prepareOfflineDailyLogPhotoUpload",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        },
+        {
+          "name": "finalizeOfflineDailyLogPhotoUpload",
+          "mobile": "implemented-partial",
+          "deviceVerified": false
+        }
+      ]
+    }
+  ],
+  "additionalGates": [
+    "RailBot chat/history/voice/tool parity and physical-device lifecycle",
+    "Authentication including Google and password recovery",
+    "Web-to-mobile and mobile-to-web record/attachment visibility",
+    "Existing saved-log recovery on physical iPhone",
+    "External Apple review and demo-only reviewer credentials",
+    "Privacy declarations",
+    "Caleb feedback not yet supplied",
+    "Canonical release-branch integration"
+  ]
+}

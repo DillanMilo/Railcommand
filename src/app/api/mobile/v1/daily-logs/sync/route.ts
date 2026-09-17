@@ -56,7 +56,7 @@ export async function POST(request: Request): Promise<Response> {
       const sameDate = rpcResult.error.message?.includes('daily_logs_project_id_log_date_key');
       return mobileJson({
         error: sameDate
-          ? 'A daily log already exists for this project and date. This queued log and its photos are still on your device; nothing was overwritten. Review the existing daily log before resolving this conflict.'
+          ? 'A daily log already exists for this project and date. This queued log and its photos are still on your device; nothing was overwritten. Update the app if needed, then open Review saved log in the Sync Center to keep this as a separate log.'
           : 'This queued log conflicts with an existing record. Your work remains on this device; nothing was overwritten.',
         retryable: false,
       }, 409);

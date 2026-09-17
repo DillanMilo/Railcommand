@@ -25,6 +25,7 @@ type Fault = { query: Query; status: number; code?: string; token?: string; plai
 
 function harness(options: {
   row?: Record<string, unknown>;
+  rows?: Record<string, unknown>[];
   authenticated?: boolean;
   member?: boolean;
   role?: 'member' | 'admin';
@@ -60,8 +61,8 @@ function harness(options: {
       if (table === 'daily_logs') {
         assert.equal(url.searchParams.get('limit'), '91');
         assert.equal(url.searchParams.get('offset'), '0');
-        assert.equal(url.searchParams.get('order'), 'log_date.desc');
-        return Response.json([options.row ?? rich]);
+        assert.equal(url.searchParams.get('order'), 'log_date.desc,created_at.desc,id.desc');
+        return Response.json(options.rows ?? [options.row ?? rich]);
       }
       assert.ok(['project_members', 'submittals', 'rfis', 'punch_list_items', 'earthcam_embeds'].includes(table!));
       return Response.json([]);
@@ -112,6 +113,19 @@ async function assertSafeFailure(response: Response, status: number, error: stri
 }
 
 describe('richer daily-log bootstrap readback (synthetic transport)', () => {
+  it('returns every same-day log with its own identity and author', async () => {
+    const h = harness({ rows: [
+      { ...rich, created_by_profile: { full_name: 'Crew One' } },
+      { ...rich, id: '30000000-0000-4000-8000-000000000002', created_by_profile: [{ full_name: 'Crew Two' }] },
+    ] });
+    const response = await h.read();
+    const body = await response.json();
+    assert.equal(body.dailyLogs.length, 2);
+    assert.deepEqual(body.dailyLogs.map((log: { authorName: string }) => log.authorName), ['Crew One', 'Crew Two']);
+    assert.notEqual(body.dailyLogs[0].id, body.dailyLogs[1].id);
+    assert.equal(body.dailyLogs[0].logDate, body.dailyLogs[1].logDate);
+  });
+
   it('selects project-scoped child relations and maps all richer fields without raw database extras', async () => {
     const h = harness(); const response = await h.read();
     assert.equal(response.status, 200);

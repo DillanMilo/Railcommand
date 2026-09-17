@@ -99,10 +99,12 @@ Use the PR template; for work without a PR, include this in its durable handoff:
 - User screenshot confirms two September 16 daily logs remain conflicted because
   a log already exists for the same project/date. No photos are queued. Do not mark
   those entries delivered because the banner also shows a last-sync time.
-- Still decide whether the product supports multiple separate logs per project/day
-  or one shared daily log. Preserve the two device entries until a deliberate
-  recovery workflow is implemented and verified; do not remove the live uniqueness
-  constraint or rewrite field data based solely on this documentation task.
+- Same-day log decision (September 17): support separate authored logs with explicit
+  review of a queued collision, stable identities and idempotent delivery. See
+  `docs/mobile/PARITY_AND_DAILY_LOG_PLAN_20260917.md`. Implementation and staging
+  verification are in progress; do not call the two phone entries delivered.
+- Read `docs/mobile/WEB_MOBILE_PARITY_AUDIT.md` and the action matrix before planning
+  feature work. Native parity is incomplete. Web links are not native completion.
 - External beta review/privacy requirements and broader device acceptance remain
   tracked in the mobile release handoffs. Do not infer general field readiness from
   an internal TestFlight assignment.

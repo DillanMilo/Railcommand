@@ -102,6 +102,8 @@ export async function getDailyLogById(
 export async function createDailyLog(
   projectId: string,
   data: {
+    clientId?: string;
+    allow_same_day?: boolean;
     log_date: string;
     weather_temp: number;
     weather_conditions: string;
@@ -122,92 +124,26 @@ export async function createDailyLog(
     const perm = await checkPermission(supabase, user.id, projectId, ACTIONS.DAILY_LOG_CREATE);
     if (!perm.allowed) return { error: perm.error };
 
-    // Insert the daily log
-    const { data: log, error: logError } = await supabase
-      .from('daily_logs')
-      .insert({
-        project_id: projectId,
-        log_date: data.log_date,
-        created_by: user.id,
-        weather_temp: data.weather_temp,
-        weather_conditions: data.weather_conditions,
-        weather_wind: data.weather_wind,
-        work_summary: data.work_summary,
-        safety_notes: data.safety_notes,
-        geo_tag: data.geo_tag ?? null,
-      })
-      .select()
-      .single();
-
-    if (logError) return { error: logError.message };
-
-    // Insert nested personnel rows (filter out empty entries)
-    const validPersonnel = data.personnel.filter((p) => p.role.trim() !== '');
-    if (validPersonnel.length > 0) {
-      const { error: personnelError } = await supabase
-        .from('daily_log_personnel')
-        .insert(
-          validPersonnel.map((p) => ({
-            daily_log_id: log.id,
-            role: p.role,
-            headcount: p.headcount,
-            company: p.company,
-          }))
-        );
-
-      if (personnelError) {
-        console.error('Failed to insert personnel:', personnelError.message);
-      }
+    // Use the same atomic/idempotent operation as mobile; a date is not a record ID.
+    const clientId = data.clientId ?? crypto.randomUUID();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
+      return { error: 'Invalid daily-log identity. Your entries have not been saved.' };
     }
-
-    // Insert nested equipment rows
-    const validEquipment = data.equipment.filter((e) => e.equipment_type.trim() !== '');
-    if (validEquipment.length > 0) {
-      const { error: equipmentError } = await supabase
-        .from('daily_log_equipment')
-        .insert(
-          validEquipment.map((e) => ({
-            daily_log_id: log.id,
-            equipment_type: e.equipment_type,
-            count: e.count,
-            notes: e.notes,
-          }))
-        );
-
-      if (equipmentError) {
-        console.error('Failed to insert equipment:', equipmentError.message);
+    const { data: receipt, error: createError } = await supabase.rpc('sync_daily_log_create', {
+      p_project_id: projectId, p_client_id: clientId, p_idempotency_key: `daily-log-create:${clientId}`,
+      p_payload: { ...data, geo_tag: data.geo_tag ?? null },
+    });
+    if (createError) {
+      if (createError.code === '23505' && createError.message?.includes('daily_logs_project_id_log_date_key')) {
+        return { error: 'A daily log already exists for this project and date. Review the existing logs, then select Keep as a separate log if this is additional field work.' };
       }
+      return { error: 'The daily log could not be saved. Your form is unchanged; check access and field values, then retry.' };
     }
-
-    // Insert nested work items
-    const validWorkItems = data.work_items.filter((w) => w.description.trim() !== '');
-    if (validWorkItems.length > 0) {
-      const { error: workItemsError } = await supabase
-        .from('daily_log_work_items')
-        .insert(
-          validWorkItems.map((w) => ({
-            daily_log_id: log.id,
-            description: w.description,
-            quantity: w.quantity,
-            unit: w.unit,
-            location: w.location,
-          }))
-        );
-
-      if (workItemsError) {
-        console.error('Failed to insert work items:', workItemsError.message);
-      }
+    if (!receipt || receipt.id !== clientId || receipt.project_id !== projectId || typeof receipt.duplicate !== 'boolean') {
+      return { error: 'The save receipt could not be verified. Retry this form to check the original submission.' };
     }
-
-    await logActivity(
-      supabase,
-      projectId,
-      'daily_log',
-      log.id,
-      'created',
-      `created daily log for ${data.log_date}`,
-      user.id
-    );
+    const log = { id: clientId };
+    if (!receipt.duplicate) await logActivity(supabase, projectId, 'daily_log', log.id, 'created', `created daily log for ${data.log_date}`, user.id);
 
     revalidatePath(`/projects/${projectId}/daily-logs`);
 
@@ -225,8 +161,7 @@ export async function createDailyLog(
       .single();
 
     if (fetchError) {
-      // Return the base log even if the re-fetch fails
-      return { success: true, data: log as DailyLog };
+      return { error: 'The log was saved, but its details could not be read. Retry this form to retrieve the original record.' };
     }
 
     return { success: true, data: fullLog as DailyLog };
