@@ -39,3 +39,10 @@ export function finishWorkspaceFile(file: WorkspaceFile, id: unknown): string {
   if (id !== file.id || base64.length / 4 * 3 - padding !== file.size) throw new Error('The export was incomplete. Please export it again.');
   return base64;
 }
+
+export function workspaceToolRequest(message: Record<string, unknown>): { destination: '/(tabs)' | '/railbot'; projectId: string | null } | null {
+  if (message.type !== 'field-tools' && message.type !== 'railbot') return null;
+  const id = message.projectId;
+  if (id !== null && (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))) return null;
+  return { destination: message.type === 'railbot' ? '/railbot' : '/(tabs)', projectId: id };
+}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
@@ -8,7 +8,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { mobileApiForUser } from '@/lib/api';
 import { mobileConfig } from '@/lib/config';
-import { appendWorkspaceChunk, beginWorkspaceFile, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, workspaceHandoffSource, type WorkspaceSource, type WorkspaceFile } from '@/lib/workspace-policy';
+import { appendWorkspaceChunk, beginWorkspaceFile, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, workspaceHandoffSource, workspaceToolRequest, type WorkspaceSource, type WorkspaceFile } from '@/lib/workspace-policy';
 import { shareWorkspaceFile } from '@/lib/workspace-share';
 import { colors, fonts } from '@/theme';
 
@@ -64,7 +64,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
     });
   }, [attempt, current, online, origin, path, userId]);
   useEffect(() => {
-    web.current?.injectJavaScript(`window.railcommandWorkspaceOnline=${online};true;`);
+    web.current?.injectJavaScript(`window.railcommandWorkspaceOnline=${online};window.railcommandNativeTools=true;true;`);
   }, [online]);
   useEffect(() => {
     if (!ready || !online || !current() || handledRequest.current === request) return;
@@ -98,10 +98,10 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
     if (!online) { Alert.alert('Workspace is online-only', 'Reconnect before navigating. This page stays open.'); return; }
     confirmLeave(() => { if (canGoBack) web.current?.goBack(); else void openFieldTools(); });
   }, [canGoBack, confirmLeave, online, openFieldTools]);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => { goBack(); return true; });
     return () => subscription.remove();
-  }, [goBack]);
+  }, [goBack]));
   const isStoredFile = (url: string) => {
     try { const parsed = new URL(url); return parsed.origin === new URL(mobileConfig.supabaseUrl).origin && parsed.pathname.startsWith('/storage/v1/object/'); } catch { return false; }
   };
@@ -124,6 +124,11 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
         setLoading(false); setError('');
       }
       if (message.type === 'account') router.push('/(tabs)/account');
+      const tool = workspaceToolRequest(message);
+      if (tool) {
+        workspaceProject.current = tool.projectId;
+        void openFieldTools(tool.destination);
+      }
       if (message.type === 'file-start') {
         if (sharing.current || transfer.current) throw new Error('Finish the current export before starting another.');
         transfer.current = beginWorkspaceFile(message);
@@ -150,15 +155,8 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
     web.current?.injectJavaScript(`window.dispatchEvent(new CustomEvent('railcommand:download',{detail:${JSON.stringify({ url })}}));true;`);
   };
   return <SafeAreaView edges={['top', 'bottom']} style={styles.page}>
-    <View style={styles.toolbar}>
-      <Pressable accessibilityRole="button" onPress={goBack} style={styles.button}><Text style={styles.buttonText}>Back</Text></Pressable>
-      <Text numberOfLines={1} style={styles.title}>RailCommand</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Refresh workspace" disabled={!online || !source} onPress={() => confirmLeave(() => web.current?.reload())} style={styles.button}><Text style={styles.buttonText}>Refresh</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => void openFieldTools()} style={styles.button}><Text style={styles.buttonText}>Field tools</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => void openFieldTools('/railbot')} style={styles.button}><Text style={styles.buttonText}>RailBot</Text></Pressable>
-    </View>
-    <Text accessibilityLiveRegion="polite" style={[styles.notice, !online && styles.offline]}>{online ? 'Online workspace · Save changes before closing the app.' : 'Offline · This page stays open. Reconnect to save. Use Field tools for offline logs.'}</Text>
-    {error ? <View style={styles.error}><Text style={styles.body}>{error}</Text><Pressable disabled={!online} onPress={() => confirmLeave(() => { transfer.current = null; dirtyRef.current = false; setDirty(false); setReady(false); setSource(undefined); started.current = false; setAttempt((value) => value + 1); })} style={styles.button}><Text style={styles.buttonText}>Reconnect workspace</Text></Pressable></View> : null}
+    {!online ? <Text accessibilityLiveRegion="polite" style={[styles.notice, styles.offline]}>Offline · Your open page is retained. Use Field tools for offline logs.</Text> : null}
+    {error ? <View style={styles.error}><Text style={styles.body}>{error}</Text><Pressable disabled={!online} onPress={() => confirmLeave(() => { transfer.current = null; dirtyRef.current = false; setDirty(false); setReady(false); setSource(undefined); started.current = false; setAttempt((value) => value + 1); })} style={styles.button}><Text style={styles.buttonText}>Reconnect workspace</Text></Pressable><Pressable accessibilityRole="button" onPress={() => void openFieldTools()} style={styles.button}><Text style={styles.buttonText}>Open Field tools</Text></Pressable></View> : null}
     {loading ? <ActivityIndicator accessibilityLabel="Opening workspace" style={styles.loading} /> : null}
     {source ? <View style={styles.webContainer}>
       <WebView ref={web} source={source} style={styles.web}
@@ -166,7 +164,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
         originWhitelist={['*']} allowsBackForwardNavigationGestures={false} allowsLinkPreview={false}
         setSupportMultipleWindows={false} javaScriptCanOpenWindowsAutomatically={false}
         allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false} mixedContentMode="never"
-        injectedJavaScriptBeforeContentLoaded={`window.railcommandWorkspaceOnline=${online};true;`}
+        injectedJavaScriptBeforeContentLoaded={`window.railcommandWorkspaceOnline=${online};window.railcommandNativeTools=true;true;`}
         onMessage={onMessage}
         onShouldStartLoadWithRequest={(request) => {
           if (!current()) return false;
@@ -182,18 +180,18 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
         onOpenWindow={({ nativeEvent }) => { if (sameWorkspaceOrigin(nativeEvent.targetUrl, origin)) web.current?.injectJavaScript(`window.location.assign(${JSON.stringify(nativeEvent.targetUrl)});true;`); else external(nativeEvent.targetUrl); }}
         onFileDownload={({ nativeEvent }) => download(nativeEvent.downloadUrl)}
         onNavigationStateChange={(state) => setCanGoBack(state.canGoBack && !state.url.includes('/auth/mobile-session'))}
-        onLoadEnd={() => { setLoading(false); web.current?.injectJavaScript(`window.railcommandWorkspaceOnline=${online};true;`); }}
+        onLoadEnd={() => { setLoading(false); web.current?.injectJavaScript(`window.railcommandWorkspaceOnline=${online};window.railcommandNativeTools=true;true;`); }}
         onHttpError={({ nativeEvent }) => { if (nativeEvent.url.includes('/auth/mobile-session')) { setLoading(false); setError('Workspace sign-in could not be completed. Reconnect to try again.'); } }}
         onError={() => { setLoading(false); setError('The workspace could not load. Check connectivity. Reconnecting may discard unsaved workspace changes.'); }}
         onContentProcessDidTerminate={() => setError('iOS closed the workspace page to free memory. Saved field drafts and queued work remain on this device. Reconnect to reopen the workspace.')}
       />
-      {!online ? <View style={styles.offlineCover}><Text style={styles.offlineTitle}>Workspace paused while offline</Text><Text style={styles.body}>Your open page is retained. Reconnect to continue, or open Field tools to work on offline daily logs.</Text></View> : null}
-    </View> : !loading ? <View style={styles.empty}><Text style={styles.body}>{online ? 'Open the workspace to use your existing web features.' : 'Connect to open the workspace. Your saved projects and daily-log queue are available in Field tools.'}</Text></View> : null}
+      {!online ? <View style={styles.offlineCover}><Text style={styles.offlineTitle}>Workspace paused while offline</Text><Text style={styles.body}>Your open page is retained. Reconnect to continue, or open Field tools to work on offline daily logs.</Text><Pressable accessibilityRole="button" onPress={() => void openFieldTools()} style={styles.button}><Text style={styles.buttonText}>Open Field tools</Text></Pressable></View> : null}
+    </View> : !loading ? <View style={styles.empty}><Text style={styles.body}>{online ? 'Open the workspace to use your existing web features.' : 'Connect to open the workspace. Your saved projects and daily-log queue are available in Field tools.'}</Text><Pressable accessibilityRole="button" onPress={() => void openFieldTools()} style={styles.button}><Text style={styles.buttonText}>Open Field tools</Text></Pressable></View> : null}
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.paper }, toolbar: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: colors.controlLine, paddingHorizontal: 5 },
-  title: { flex: 1, color: colors.ink, fontFamily: fonts.heading, fontSize: 15 }, button: { paddingVertical: 13, paddingHorizontal: 9, minHeight: 44 }, buttonText: { color: colors.orangeText, fontFamily: fonts.bodyMedium, fontSize: 13 },
+  page: { flex: 1, backgroundColor: colors.paper },
+  button: { paddingVertical: 13, paddingHorizontal: 9, minHeight: 44 }, buttonText: { color: colors.orangeText, fontFamily: fonts.bodyMedium, fontSize: 13 },
   notice: { padding: 8, color: colors.muted, backgroundColor: '#F1F5F9', fontSize: 11, fontFamily: fonts.body }, offline: { backgroundColor: '#FEF3C7', color: '#78350F' },
   webContainer: { flex: 1 }, web: { flex: 1 }, loading: { padding: 12 }, error: { padding: 12, backgroundColor: '#FFF1F2' }, body: { color: colors.ink, fontFamily: fonts.body, fontSize: 14, lineHeight: 21 }, empty: { padding: 24 },
   offlineCover: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(248,250,252,0.94)', padding: 28, justifyContent: 'center' }, offlineTitle: { color: colors.ink, fontFamily: fonts.heading, fontSize: 20, marginBottom: 12 },

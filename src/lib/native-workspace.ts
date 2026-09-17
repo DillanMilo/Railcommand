@@ -22,3 +22,13 @@ export async function shareWorkspaceBlob(blob: Blob, name: string): Promise<bool
   bridge.postMessage(JSON.stringify({ type: 'file-end', id }));
   return true;
 }
+
+/** Older app builds retain their native toolbar; only newer builds opt into More. */
+export function hasNativeWorkspaceTools(): boolean {
+  return Boolean(nativeWorkspace() && (window as Window & { railcommandNativeTools?: boolean }).railcommandNativeTools === true);
+}
+
+export function openNativeWorkspaceTool(type: 'field-tools' | 'railbot', projectId: string): void {
+  if (!hasNativeWorkspaceTools()) return;
+  nativeWorkspace()?.postMessage(JSON.stringify({ type, projectId: projectId || null }));
+}

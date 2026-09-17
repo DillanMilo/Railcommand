@@ -65,7 +65,6 @@ import {
   getQCQAReportById as fetchQCQAReportById,
 } from '@/lib/actions/qcqa';
 import {
-  getProjectDocuments as fetchProjectDocuments,
   getProjectDocumentById as fetchProjectDocumentById,
 } from '@/lib/actions/documents';
 import {
@@ -77,7 +76,7 @@ import {
   getProjectInvitations as fetchProjectInvitations,
   getPendingInvitationsForUser as fetchPendingInvitations,
 } from '@/lib/actions/invitations';
-import { getProjectPhotos as fetchProjectPhotos } from '@/lib/actions/photos';
+import { readProjectCollection } from '@/lib/project-collection-client';
 import {
   getEarthCamEmbeds as fetchEarthCamEmbeds,
   getEarthCamWorkspace as fetchEarthCamWorkspace,
@@ -623,7 +622,7 @@ export function useQCQAReportDetail(projectId: string, reportId: string) {
 export function useProjectDocuments(projectId: string | null) {
   return useQuery<ProjectDocument[]>(
     () => (projectId ? store.getProjectDocuments(projectId) : []),
-    () => (projectId ? fetchProjectDocuments(projectId) : Promise.resolve({ data: [] })),
+    () => (projectId ? readProjectCollection('documents', projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
   );
@@ -653,7 +652,7 @@ export function usePendingInvitations() {
 export function useProjectPhotos(projectId: string | null) {
   return useQuery<Attachment[]>(
     () => (projectId ? store.getAllProjectPhotos(projectId) : []),
-    () => (projectId ? fetchProjectPhotos(projectId) : Promise.resolve({ data: [] })),
+    () => (projectId ? readProjectCollection('photos', projectId) : Promise.resolve({ data: [] })),
     [projectId],
     [],
   );

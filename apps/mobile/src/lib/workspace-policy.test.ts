@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
-import { beginWorkspaceFile, appendWorkspaceChunk, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, workspaceHandoffSource, MAX_WORKSPACE_FILE } from './workspace-policy';
+import { beginWorkspaceFile, appendWorkspaceChunk, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, workspaceHandoffSource, workspaceToolRequest, MAX_WORKSPACE_FILE } from './workspace-policy';
 import { workspacePostAllowed } from '../../../../src/lib/mobile-api/workspace-ticket';
 describe('workspace navigation and bounded exports', () => {
   it('blocks origin lookalikes, HTTP, credentials to external origins and unsafe destinations', () => {
@@ -37,5 +37,14 @@ describe('workspace navigation and bounded exports', () => {
     assert.throws(() => appendWorkspaceChunk(file, { id: 'one', index: 1, data: 'YWJj' }));
     assert.throws(() => finishWorkspaceFile(file, 'two'));
     assert.equal(finishWorkspaceFile(file, 'one'), 'YWJj');
+  });
+});
+
+describe('More native tools', () => {
+  it('accepts only known tools and a valid project or explicit no-project selection', () => {
+    const projectId = '10000000-0000-4000-8000-000000000001';
+    assert.deepEqual(workspaceToolRequest({ type: 'field-tools', projectId }), { destination: '/(tabs)', projectId });
+    assert.deepEqual(workspaceToolRequest({ type: 'railbot', projectId: null }), { destination: '/railbot', projectId: null });
+    for (const value of [{ type: 'sign-out', projectId }, { type: 'railbot', projectId: 'bad' }, { type: 'field-tools' }, { type: 'field-tools', projectId: '//evil.test' }]) assert.equal(workspaceToolRequest(value), null);
   });
 });
