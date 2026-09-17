@@ -50,10 +50,20 @@ or photos are removed automatically by this rollout.
 - Final review added prepared-share invalidation, immediate photo-removal state,
   lightbox failure text, and mirrored PDF rendering. Final backend and candidate builds and TypeScript checks passed (exit 0).
 - Final 301-test rerun passed; focused ESLint has no errors.
-- Browser local visual check was blocked by the browser (ERR_BLOCKED_BY_CLIENT).
-  Physical iPhone acceptance remains pending; automated tests do not prove
+- Local visual check reported ERR_BLOCKED_BY_CLIENT; server logs also showed missing
+  local public Supabase environment. Staged production-env demo detail/edit screens
+  render, including Saved DFR photos and refresh controls. Physical iPhone acceptance
+  remains pending; automated tests do not prove
   Caleb's incident or all field workflows resolved. No new database migration needed.
-- Web photo-fix deployment pending. Current rollback is dpl_AH14LTcuJkBKqT7StPXdPwhysVgk.
+- Staged deployment dpl_36LoCT8KqjExbxukXS7GbMBpLhvX is READY from runtime commit
+  8d78abd. Nine missing/forged-token and nonpilot auth checks passed with no-store.
+  Promotion was rejected by automatic approval review: exact live-promotion approval
+  is required while physical iPhone acceptance remains incomplete. User approval
+  requested; no retry or workaround performed. Live remains on
+  dpl_AH14LTcuJkBKqT7StPXdPwhysVgk (also the rollback target).
+- CI 35251438295 caught the new action missing from the parity inventory. Added its
+  online-only shared-workspace assessment without marking device acceptance passed;
+  inventory now covers 127 actions. CI rerun 35251835975 passed on e710ade (runtime unchanged from 8d78abd).
 
 ## iPhone availability
 
@@ -68,3 +78,9 @@ Workspace projects, an authorized test DFR/photo, export/share, and native queue
 review. Physical restart/offline/device acceptance and external beta review remain
 required. Docker, Xcode, Simulator and iPhone Mirroring need not stay open for this
 cloud build/distribution or shared web update.
+
+Browser verification used the isolated public demo on the staged URL: sign-in shell,
+demo dashboard, DFR list, detail and edit rendered. The demo showed empty saved-photo
+lists, so real attachment preview/removal and mobile upload/export still require
+authorized test-account/device acceptance. No demo or live DFR was edited during
+this check. Native build availability is verified; installation remains unconfirmed.
