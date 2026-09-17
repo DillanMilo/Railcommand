@@ -42,8 +42,10 @@ Existing Workspace forms retain the prior online-only limitations.
   existing signing credentials. Build FINISHED and IPA bundle/version verified.
   SHA-256: fa6b8b93178083632fedf2690b0944f9e66334de8df1782ae1a9503b524e3b93.
   Signed archive also contains the new factory/error-message strings.
-  Submission is IN_QUEUE; Apple upload/processing/assignment pending; internal group membership rechecked
-  as Dillan only. No external release requested or performed.
+  Submission FINISHED. Apple build b6da7948-cc59-4d33-9f66-7b1bfffe5815 is VALID
+  and IN_BETA_TESTING. Assignment to internal group
+  b92ba7eb-1a88-40ec-8af2-f38c499dee30 was written and read back successfully;
+  membership verified as only dillanxx@gmail.com. No external release performed.
   Do not call the repair installed or accepted before the user's iPhone opens
   Workspace successfully.
 - No web deployment or database migration required for this native repair.
