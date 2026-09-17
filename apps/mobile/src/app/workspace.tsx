@@ -8,7 +8,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
 import { mobileApiForUser } from '@/lib/api';
 import { mobileConfig } from '@/lib/config';
-import { appendWorkspaceChunk, beginWorkspaceFile, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, type WorkspaceFile } from '@/lib/workspace-policy';
+import { appendWorkspaceChunk, beginWorkspaceFile, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, workspaceHandoffSource, type WorkspaceSource, type WorkspaceFile } from '@/lib/workspace-policy';
 import { shareWorkspaceFile } from '@/lib/workspace-share';
 import { colors, fonts } from '@/theme';
 
@@ -30,7 +30,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
   const transfer = useRef<WorkspaceFile | null>(null);
   const workspaceProject = useRef<string | null>(null);
   const sharing = useRef(false);
-  const [source, setSource] = useState<{ uri: string; method: 'POST'; headers: Record<string, string>; body: string }>();
+  const [source, setSource] = useState<WorkspaceSource>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -54,7 +54,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
     void mobileApiForUser(userId, current).createWorkspaceSession(path).then((result) => {
       if (!current()) return;
       if (result.userId !== userId || typeof result.ticket !== 'string' || result.ticket.length > 4096) throw new Error('The workspace identity could not be verified.');
-      setSource({ uri: `${origin}/auth/mobile-session`, method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `ticket=${encodeURIComponent(result.ticket)}` });
+      setSource(workspaceHandoffSource(origin, result.ticket));
     }).catch((reason: unknown) => {
       if (current()) { setLoading(false); setError(reason instanceof Error ? reason.message : 'Could not open the workspace.'); }
     });
@@ -159,7 +159,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
         onFileDownload={({ nativeEvent }) => download(nativeEvent.downloadUrl)}
         onNavigationStateChange={(state) => setCanGoBack(state.canGoBack && !state.url.includes('/auth/mobile-session'))}
         onLoadEnd={() => { setLoading(false); web.current?.injectJavaScript(`window.railcommandWorkspaceOnline=${online};true;`); }}
-        onHttpError={({ nativeEvent }) => { if (nativeEvent.url.includes('/auth/mobile-session')) { setLoading(false); setError('The workspace sign-in expired. Reconnect to try again.'); } }}
+        onHttpError={({ nativeEvent }) => { if (nativeEvent.url.includes('/auth/mobile-session')) { setLoading(false); setError('Workspace sign-in could not be completed. Reconnect to try again.'); } }}
         onError={() => { setLoading(false); setError('The workspace could not load. Check connectivity. Reconnecting may discard unsaved workspace changes.'); }}
         onContentProcessDidTerminate={() => setError('iOS closed the workspace page to free memory. Saved field drafts and queued work remain on this device. Reconnect to reopen the workspace.')}
       />

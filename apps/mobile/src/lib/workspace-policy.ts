@@ -9,6 +9,18 @@ export function workspaceDestination(value: unknown): string {
 export function sameWorkspaceOrigin(url: string, origin: string): boolean {
   try { return new URL(url).origin === new URL(origin).origin && new URL(url).protocol === 'https:'; } catch { return false; }
 }
+export type WorkspaceSource = { uri: string; method: 'POST'; headers: Record<string, string>; body: string };
+export function workspaceHandoffSource(origin: string, ticket: string): WorkspaceSource {
+  const url = new URL(origin);
+  if (url.protocol !== 'https:' || url.origin !== origin || !/^[a-zA-Z0-9_-]{1,4096}$/.test(ticket)) throw new Error('The workspace sign-in request is invalid.');
+  return {
+    uri: `${origin}/auth/mobile-session`, method: 'POST',
+    // WKWebView supplies an opaque Origin for an app-initiated POST unless we
+    // set it explicitly. Preserve the server's strict same-origin checks.
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: origin },
+    body: `ticket=${encodeURIComponent(ticket)}`,
+  };
+}
 export type WorkspaceFile = { id: string; name: string; mime: string; size: number; chunks: string[]; next: number; received: number };
 export function beginWorkspaceFile(message: Record<string, unknown>): WorkspaceFile {
   if (typeof message.id !== 'string' || !/^[a-zA-Z0-9-]{1,64}$/.test(message.id) || !Number.isSafeInteger(message.size) || Number(message.size) < 1 || Number(message.size) > MAX_WORKSPACE_FILE) throw new Error('This file is too large for mobile export. Use the website for files over 20 MB.');

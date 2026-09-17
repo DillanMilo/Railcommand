@@ -1,11 +1,24 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
-import { beginWorkspaceFile, appendWorkspaceChunk, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, MAX_WORKSPACE_FILE } from './workspace-policy';
+import { beginWorkspaceFile, appendWorkspaceChunk, finishWorkspaceFile, sameWorkspaceOrigin, workspaceDestination, workspaceHandoffSource, MAX_WORKSPACE_FILE } from './workspace-policy';
+import { workspacePostAllowed } from '../../../../src/lib/mobile-api/workspace-ticket';
 describe('workspace navigation and bounded exports', () => {
   it('blocks origin lookalikes, HTTP, credentials to external origins and unsafe destinations', () => {
     assert.equal(sameWorkspaceOrigin('https://railcommand.io/projects/a', 'https://railcommand.io'), true);
     for (const url of ['http://railcommand.io', 'https://railcommand.io.evil.test', 'https://railcommand.io@evil.test', 'javascript:alert(1)', 'file:///private']) assert.equal(sameWorkspaceOrigin(url, 'https://railcommand.io'), false);
     for (const path of ['//evil.test', '/projects/../../auth/mobile-session', '/projects/%2e%2e/auth', '/auth/mobile-session']) assert.equal(workspaceDestination(path), '/dashboard');
+  });
+  it('sends the exact HTTPS origin accepted by the server instead of WebKit opaque Origin', () => {
+    const source = workspaceHandoffSource('https://railcommand.io', 'synthetic_ticket');
+    assert.equal(source.uri, 'https://railcommand.io/auth/mobile-session');
+    assert.equal(source.method, 'POST');
+    assert.equal(new URLSearchParams(source.body).get('ticket'), 'synthetic_ticket');
+    assert.equal(source.uri.includes('synthetic_ticket'), false);
+    assert.equal(workspacePostAllowed(new Request(source.uri, source)), true);
+    assert.equal(workspacePostAllowed(new Request(source.uri, { ...source, headers: { ...source.headers, Origin: 'null' } })), false);
+    assert.equal(workspacePostAllowed(new Request(source.uri, { ...source, headers: { ...source.headers, 'Sec-Fetch-Site': 'cross-site' } })), false);
+    for (const origin of ['http://railcommand.io', 'https://railcommand.io/path', 'https://user:password@railcommand.io', 'https://railcommand.io/']) assert.throws(() => workspaceHandoffSource(origin, 'synthetic_ticket'));
+    for (const ticket of ['', 'not a ticket', 'x'.repeat(4097)]) assert.throws(() => workspaceHandoffSource('https://railcommand.io', ticket));
   });
   it('reassembles exact file bytes with a bounded safe filename', () => {
     const file = beginWorkspaceFile({ id: 'one', size: 5, name: '../../project.pdf', mime: 'application/pdf' });

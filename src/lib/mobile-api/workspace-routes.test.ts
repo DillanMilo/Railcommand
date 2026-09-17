@@ -89,6 +89,20 @@ describe('workspace routes with real Supabase client transport', () => {
     assert.equal((await h.exchange(h.exchangeRequest(body.ticket))).status, 403);
     assert.deepEqual(h.calls, ['/auth/v1/user', '/auth/v1/admin/generate_link', '/auth/v1/verify', '/auth/v1/verify']);
   });
+  it('rejects the initial WebKit opaque origin but accepts an explicit first-party native POST', async () => {
+    const h = harness();
+    const { ticket } = await (await h.issue(h.issueRequest())).json();
+    const opaque = h.exchangeRequest(ticket); opaque.headers.set('Origin', 'null');
+    const rejected = await h.exchange(opaque);
+    assert.equal(rejected.status, 403); assert.equal(rejected.headers.get('set-cookie'), null);
+    assert.ok(!h.calls.includes('/auth/v1/verify'));
+    const corrected = h.exchangeRequest(ticket); corrected.headers.set('Origin', 'https://railcommand.io');
+    corrected.headers.set('Sec-Fetch-Site', 'none');
+    const accepted = await h.exchange(corrected);
+    assert.equal(accepted.status, 303); assert.match(accepted.headers.get('set-cookie')!, /sb-gwvftrrknusdfdgiwuij-auth-token/);
+    const replay = h.exchangeRequest(ticket); replay.headers.set('Origin', 'https://railcommand.io');
+    assert.equal((await h.exchange(replay)).status, 403);
+  });
   it('rejects missing/invalid authentication before issuing anything', async () => {
     for (const auth of [null, 'Bearer invalid']) {
       const h = harness(); assert.equal((await h.issue(h.issueRequest(auth))).status, 401);
