@@ -37,7 +37,30 @@ Source: https://nextjs.org/docs/app/getting-started/mutating-data
 Supabase SSR guidance was reviewed; no auth method or library changed. Current
 changelog breaking changes found concern other features, not this GET transport.
 
-Tests/builds and release IDs will be recorded after verification. Physical checks:
+Validation: 234 native tests and 20 targeted Workspace/auth/cache tests pass;
+mobile TypeScript, focused lint, backend production build and TypeScript pass.
+Candidate web production build and TypeScript also pass in a tracked-source
+snapshot with clean typeRoots, excluding pre-existing Finder duplicate @types
+folders without modifying source dependencies. Backend CI 35274634096 passed
+on runtime 8e31314; native runtime is 6f99e79.
+
+Release: backend 8e31314 is live as dpl_Ecd6PajWijoFUJKaBt8qQNqSbSui.
+Five auth/no-store checks and two collection unauthenticated-denial checks pass
+on staged/live endpoints. The collection requests are denied by existing login
+middleware (307 with no project data); authenticated handler responses are
+private/no-store, verified in focused tests. Staged handoff checks used the
+authorized Vercel protection bypass; a direct protected request returns Vercel's
+SSO redirect and is not evidence about the application handler.
+A fresh live-domain inspection confirmed this deployment; the post-promotion
+10-minute error scan returned no entries. Rollback: dpl_5RfdY5kutDSpjCPkter7aWFhfPxn.
+
+Production iOS build 300012: a59d9feb-7eaf-40ad-9ae2-30b4f4d74a83;
+auto-submission c9948436-c181-43c3-8c4f-de6b7888e97b. EAS build FINISHED. Submission remains IN_QUEUE with no upload logs;
+Apple does not yet list 300012 and internal assignment is pending. Build 300011 is superseded by this combined update;
+do not ask the tester to install it first. No external distribution, schema,
+permissions, live-record test writes or device queue changes accompany this patch.
+
+Physical checks:
 confirm one header, More tools and selected project, offline/reconnect access,
 repeat Documents/Photos navigation, and an authorized test export. Full web/mobile
 parity and every report type are not claimed accepted by this bounded change.
