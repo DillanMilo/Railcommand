@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe,it } from 'mocha';
+type WorkerEvent={request?:{url:string;method:string;mode:string};respondWith?:(response:Promise<unknown>)=>void;waitUntil?:(promise:unknown)=>void};
 describe('workspace public cache boundary',()=>{
  function worker(fail=false){
-  const events:Record<string,(event:any)=>void>={};const puts:string[]=[];const removed:string[]=[];
-  runInNewContext(readFileSync(new URL('../../../public/sw.js',import.meta.url),'utf8'),{URL,Set,Promise,self:{location:{origin:'https://railcommand.io'},addEventListener:(type:string,fn:any)=>{events[type]=fn;},skipWaiting:()=>{},clients:{claim:()=>{}}},fetch:async()=>{if(fail)throw new Error('offline');return {ok:true,type:'basic',clone:()=>({})};},caches:{keys:async()=>['railcommand-v2','unrelated-app'],delete:async(key:string)=>{removed.push(key);},match:async(key:unknown)=>key==='/offline.html'?'neutral offline page':undefined,open:async()=>({put:async(req:any)=>{puts.push(req.url);},addAll:async(paths:string[])=>{assert.ok(!paths.includes('/dashboard'));}})}});
+  const events:Record<string,(event:WorkerEvent)=>void>={};const puts:string[]=[];const removed:string[]=[];
+  runInNewContext(readFileSync(new URL('../../../public/sw.js',import.meta.url),'utf8'),{URL,Set,Promise,self:{location:{origin:'https://railcommand.io'},addEventListener:(type:string,fn:(event:WorkerEvent)=>void)=>{events[type]=fn;},skipWaiting:()=>{},clients:{claim:()=>{}}},fetch:async()=>{if(fail)throw new Error('offline');return {ok:true,type:'basic',clone:()=>({})};},caches:{keys:async()=>['railcommand-v2','unrelated-app'],delete:async(key:string)=>{removed.push(key);},match:async(key:unknown)=>key==='/offline.html'?'neutral offline page':undefined,open:async()=>({put:async(req:{url:string})=>{puts.push(req.url);},addAll:async(paths:string[])=>{assert.ok(!paths.includes('/dashboard'));}})}});
   return {events,puts,removed};
  }
  it('does not intercept or cache private API, auth, project/RSC or signed storage reads',()=>{

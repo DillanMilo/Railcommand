@@ -4,10 +4,10 @@ import { runInNewContext } from 'node:vm';
 import { describe, it } from 'mocha';
 import ts from 'typescript';
 import * as paths from '../attachments-shared';
-function load(file: string, deps: Record<string, unknown>) {
-  const exports: Record<string, any> = {};
+function load<T>(file: string, deps: Record<string, unknown>): T {
+  const exports: Record<string, unknown> = {};
   runInNewContext(ts.transpileModule(readFileSync(new URL(file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,crypto,console,Date,require:(name:string)=>{if(!(name in deps))throw new Error(name);return deps[name];}});
-  return exports;
+  return exports as T;
 }
 const id='10000000-0000-4000-8000-000000000001';
 const input={clientId:id,projectId:'project',entityId:'log',entityType:'daily_log',storagePath:'project/daily_log/log/file.jpg',bucket:'project-photos',fileName:'file.jpg',fileType:'image/jpeg',fileSize:5,photoCategory:'standard'};
@@ -22,7 +22,7 @@ function metadataHarness(options:{existing?:Record<string,unknown>; ambiguous?:b
       row=value; return options.ambiguous?{data:null,error:{code:'504',message:'Response lost'}}:{data:row,error:null};
     }};return q;
   }};
-  const action=load('../actions/attachments.ts',{'@/lib/supabase/server':{createClient:async()=>db},'next/cache':{revalidatePath:()=>{}},'./permissions-helper':{getAuthenticatedUser:async()=>({user:{id:'owner'}})},'@/lib/attachments-shared':paths,'@/lib/permissions':{ACTIONS:{}}}).recordAttachment;
+  const action=load<{recordAttachment: (input: Record<string, unknown>) => Promise<{success?: boolean; error?: string}>}>('../actions/attachments.ts',{'@/lib/supabase/server':{createClient:async()=>db},'next/cache':{revalidatePath:()=>{}},'./permissions-helper':{getAuthenticatedUser:async()=>({user:{id:'owner'}})},'@/lib/attachments-shared':paths,'@/lib/permissions':{ACTIONS:{}}}).recordAttachment;
   return {action,counts:()=>({inserts,removals}),row:()=>row};
 }
 describe('attachment receipt recovery',()=>{
@@ -45,7 +45,7 @@ function clientHarness() {
   let owner='owner';let loseReceipt=true;let compressions=0;let uploaded=false;
   const uploads:string[]=[];const receipts:Record<string,unknown>[]=[];const stored=new Map<string,Record<string,unknown>>();
   const db={auth:{getUser:async()=>({data:{user:{id:owner}},error:null})},storage:{from:()=>({upload:async(path:string)=>{uploads.push(path);const duplicate=uploaded;uploaded=true;return {error:duplicate?{message:'The resource already exists',statusCode:'409'}:null};}})}};
-  const fn=load('../attachment-upload-retry.ts',{'@/lib/actions/attachments':{recordAttachment:async(record:Record<string,unknown>)=>{receipts.push(record);stored.set(String(record.clientId),record);if(loseReceipt){loseReceipt=false;return {error:'Response lost; receipt uncertain'};}return {success:true,data:stored.get(String(record.clientId))};}},'@/lib/supabase/client':{createClient:()=>db},'@/lib/attachments-shared':paths,'@/lib/compressImage':{compressImage:async(file:File)=>{compressions++;return new File([file],'compressed.jpg',{type:'image/jpeg'});}}}).uploadFileWithReceipt;
+  const fn=load<{uploadFileWithReceipt: (input: Record<string, unknown>) => Promise<{success?: boolean; error?: string; data?: {file: File}}>}>('../attachment-upload-retry.ts',{'@/lib/actions/attachments':{recordAttachment:async(record:Record<string,unknown>)=>{receipts.push(record);stored.set(String(record.clientId),record);if(loseReceipt){loseReceipt=false;return {error:'Response lost; receipt uncertain'};}return {success:true,data:stored.get(String(record.clientId))};}},'@/lib/supabase/client':{createClient:()=>db},'@/lib/attachments-shared':paths,'@/lib/compressImage':{compressImage:async(file:File)=>{compressions++;return new File([file],'compressed.jpg',{type:'image/jpeg'});}}}).uploadFileWithReceipt;
   return {fn,uploads,receipts,stored,compressions:()=>compressions,setOwner:(value:string)=>{owner=value;}};
 }
 describe('page-lifetime upload identity',()=>{
@@ -53,7 +53,7 @@ describe('page-lifetime upload identity',()=>{
     const h=clientHarness(); const values={file:new File(['hello'],'original.jpg',{type:'image/jpeg'}),category:'standard',projectId:'project',entityType:'daily_log',entityId:'log'};
     assert.ok((await h.fn(values)).error); const accepted=await h.fn(values);assert.equal(accepted.success,true);
     assert.equal(h.uploads[0],h.uploads[1]);assert.equal(h.receipts[0].clientId,h.receipts[1].clientId);assert.equal(h.stored.size,1);assert.equal(h.compressions(),1);
-    assert.equal((await h.fn({...values,file:accepted.data.file})).success,true);assert.equal(h.stored.size,1);assert.equal(h.compressions(),1);
+    assert.equal((await h.fn({...values,file:accepted.data!.file})).success,true);assert.equal(h.stored.size,1);assert.equal(h.compressions(),1);
   });
   it('partitions a selected file by user and parent rather than reusing another scope receipt',async()=>{
     const h=clientHarness();const values={file:new File(['hello'],'original.pdf',{type:'application/pdf'}),category:'document',projectId:'project',entityType:'daily_log',entityId:'log'};

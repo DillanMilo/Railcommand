@@ -8,9 +8,9 @@ const projectId = '20000000-0000-4000-8000-000000000001';
 const clientId = '30000000-0000-4000-8000-000000000001';
 const values = { clientId, log_date: '2026-09-16', weather_temp: 70, weather_conditions: 'Clear', weather_wind: '', work_summary: 'Crew work', safety_notes: '', personnel: [], equipment: [], work_items: [] };
 function harness(options: { permitted?: boolean; authenticated?: boolean; duplicate?: boolean; error?: { code: string; message: string }; badReceipt?: boolean } = {}) {
-  const calls: Array<{ name: string; args: any }> = []; let activity = 0;
+  const calls: Array<{ name: string; args: {p_client_id: string; p_idempotency_key: string; p_payload: {allow_same_day?: boolean}} }> = []; let activity = 0;
   const query = { select: () => query, eq: () => query, single: async () => ({ data: { id: clientId, ...values }, error: null }) };
-  const db = { from: () => query, rpc: async (name: string, args: unknown) => {
+  const db = { from: () => query, rpc: async (name: string, args: {p_client_id: string; p_idempotency_key: string; p_payload: {allow_same_day?: boolean}}) => {
     calls.push({ name, args });
     return { data: { id: options.badReceipt ? projectId : clientId, project_id: projectId, duplicate: !!options.duplicate }, error: options.error ?? null };
   } };
