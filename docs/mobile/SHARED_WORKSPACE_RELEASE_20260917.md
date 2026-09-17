@@ -189,3 +189,13 @@ POST omitted an explicit Origin, incompatible with WebKit opaque-origin behavior
 and the server’s unchanged same-origin guard. Repair dbc59b9 is built as 300010;
 upload/Apple assignment remains pending. See `WORKSPACE_ORIGIN_REPAIR_20260917.md`
 for source evidence, regression checks, release IDs and remaining device acceptance.
+
+## Build 300010 available for internal acceptance
+
+Apple processing is VALID and internal state IN_BETA_TESTING. Build
+`b6da7948-cc59-4d33-9f66-7b1bfffe5815` (1.0.0 / 300010) is assigned to
+Dillan’s existing private internal group; membership and assignment were read back
+from Apple. This supersedes the pending-upload note above. User asked to update in
+place and confirm Workspace and Photos open; phone acceptance is still pending.
+No live records or native queued work were modified by this assignment. External
+Mark/Caleb distribution and broader device acceptance remain open.
