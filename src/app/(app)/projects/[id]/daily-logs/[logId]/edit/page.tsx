@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import SavedDailyLogPhotos from '@/components/daily-logs/SavedDailyLogPhotos';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { updateDailyLog as storeUpdateDailyLog } from '@/lib/store';
@@ -278,13 +279,12 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
         </CardContent>
       </Card>
 
-      {/* Photo Upload */}
+      <SavedDailyLogPhotos key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove />
+
+      {/* New photos upload only on Save, avoiding competing automatic uploads. */}
       <PhotoUpload
         photos={photos}
         onPhotosChange={setPhotos}
-        entityType="daily_log"
-        entityId={logId}
-        projectId={projectId}
       />
 
       {errorMsg && (
@@ -306,7 +306,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs/${logId}`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting}
+          disabled={photos.some(photo => photo.preparing) || success || submitting}
           onClick={async () => {
             setErrorMsg(null);
             setSubmitting(true);

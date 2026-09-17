@@ -179,6 +179,32 @@ export async function recordAttachment(input: {
   }
 }
 
+/** Remove only this DFR's attachment record. Never delete shared stored bytes. */
+export async function removeDailyLogPhoto(attachmentId: string, projectId: string, logId: string): Promise<ActionResult<undefined>> {
+  try {
+    const supabase = await createClient();
+    const { user, error } = await getAuthenticatedUser(supabase);
+    if (!user || error) return { error: error ?? 'Not authenticated' };
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.DAILY_LOG_UPDATE);
+    if (!permission.allowed) return { error: permission.error };
+    const { data: photo, error: readError } = await supabase.from('attachments').select('*')
+      .eq('id', attachmentId).eq('project_id', projectId).eq('entity_type', 'daily_log').eq('entity_id', logId).maybeSingle();
+    if (readError) return { error: 'Could not check this photo. Refresh photos and retry.' };
+    if (!photo) return { error: 'This photo is no longer attached to this DFR. Refresh photos.' };
+    if (!photo.file_type?.startsWith('image/') && photo.photo_category !== 'thermal') return { error: 'This item is not a DFR photo.' };
+    if (photo.uploaded_by !== user.id) {
+      const deletion = await checkPermission(supabase, user.id, projectId, ACTIONS.PHOTO_DELETE);
+      if (!deletion.allowed) return { error: deletion.error };
+    }
+    const { data: removed, error: removeError } = await supabase.from('attachments').delete()
+      .eq('id', attachmentId).eq('project_id', projectId).eq('entity_type', 'daily_log').eq('entity_id', logId).select('id');
+    if (removeError || !removed?.some(row => row.id === attachmentId)) return { error: 'Removal was not confirmed. Refresh photos before retrying; no stored file was deleted.' };
+    revalidatePath(`/projects/${projectId}/daily-logs/${logId}`);
+    revalidatePath(`/projects/${projectId}/photos`);
+    return { success: true, data: undefined };
+  } catch { return { error: 'Removal could not be confirmed. Refresh photos before retrying.' }; }
+}
+
 export async function deleteAttachment(
   attachmentId: string,
   projectId: string
@@ -429,7 +455,7 @@ export async function getAttachmentsWithSignedUrls(
       if (!PRIVATE_BUCKETS.has(bucket)) continue;
 
       const urlParts = att.file_url.split(`/${bucket}/`);
-      if (urlParts.length !== 2) continue;
+      if (urlParts.length !== 2) { attachments[i] = { ...att, signed_url_error: 'Stored file path could not be resolved.' }; continue; }
 
       if (!grouped[bucket]) grouped[bucket] = [];
       grouped[bucket].push({ index: i, path: urlParts[1] });
@@ -442,20 +468,18 @@ export async function getAttachmentsWithSignedUrls(
     await Promise.all(
       bucketEntries.map(async ([bucket, items]) => {
         const paths = items.map((item) => item.path);
-        const { data, error } = await supabase.storage
-          .from(bucket)
-          .createSignedUrls(paths, 3600); // 1 hour expiry
-
-        if (error || !data) return;
-
-        for (let j = 0; j < data.length; j++) {
-          const signedUrl = data[j]?.signedUrl ?? undefined;
-          if (signedUrl) {
-            attachments[items[j].index] = {
-              ...attachments[items[j].index],
-              signed_url: signedUrl,
+        try {
+          const { data, error } = await supabase.storage.from(bucket).createSignedUrls(paths, 3600);
+          for (const item of items) {
+            const signedUrl = !error ? data?.find(entry => entry.path === item.path)?.signedUrl : undefined;
+            attachments[item.index] = {
+              ...attachments[item.index],
+              signed_url: signedUrl || undefined,
+              signed_url_error: signedUrl ? undefined : 'Preview could not be loaded. Refresh photos before adding this file again.',
             };
           }
+        } catch {
+          for (const item of items) attachments[item.index] = { ...attachments[item.index], signed_url_error: 'Preview unavailable while disconnected. Reconnect and refresh photos.' };
         }
       })
     );

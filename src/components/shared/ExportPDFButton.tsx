@@ -17,9 +17,11 @@ export default function ExportPDFButton({
   fileName,
   variant = 'default',
 }: ExportPDFButtonProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleExport = useCallback(async () => {
+    setErrorMessage(null);
     setLoading(true);
     try {
       const [{ pdf }, pdfDocument] = await Promise.all([
@@ -38,7 +40,7 @@ export default function ExportPDFButton({
       window.document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Could not generate the PDF. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -46,6 +48,7 @@ export default function ExportPDFButton({
 
   if (variant === 'icon') {
     return (
+      <span>
       <Button
         variant="outline"
         size="icon"
@@ -55,13 +58,18 @@ export default function ExportPDFButton({
       >
         <FileDown className={loading ? 'animate-pulse' : ''} />
       </Button>
+      {errorMessage && <span role="alert" className="block text-sm text-red-600">{errorMessage}</span>}
+      </span>
     );
   }
 
   return (
+    <span>
     <Button variant="outline" onClick={handleExport} disabled={loading}>
       <FileDown />
       {loading ? 'Generating...' : 'Export PDF'}
     </Button>
+    {errorMessage && <span role="alert" className="block text-sm text-red-600">{errorMessage}</span>}
+    </span>
   );
 }

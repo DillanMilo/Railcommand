@@ -6,7 +6,7 @@ import ts from 'typescript';
 import * as paths from '../attachments-shared';
 function load<T>(file: string, deps: Record<string, unknown>): T {
   const exports: Record<string, unknown> = {};
-  runInNewContext(ts.transpileModule(readFileSync(new URL(file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,crypto,console,Date,require:(name:string)=>{if(!(name in deps))throw new Error(name);return deps[name];}});
+  runInNewContext(ts.transpileModule(readFileSync(new URL(file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,crypto,TextEncoder,console,Date,require:(name:string)=>{if(!(name in deps))throw new Error(name);return deps[name];}});
   return exports as T;
 }
 const id='10000000-0000-4000-8000-000000000001';
@@ -48,12 +48,22 @@ function clientHarness() {
   const fn=load<{uploadFileWithReceipt: (input: Record<string, unknown>) => Promise<{success?: boolean; error?: string; data?: {file: File}}>}>('../attachment-upload-retry.ts',{'@/lib/actions/attachments':{recordAttachment:async(record:Record<string,unknown>)=>{receipts.push(record);stored.set(String(record.clientId),record);if(loseReceipt){loseReceipt=false;return {error:'Response lost; receipt uncertain'};}return {success:true,data:stored.get(String(record.clientId))};}},'@/lib/supabase/client':{createClient:()=>db},'@/lib/attachments-shared':paths,'@/lib/compressImage':{compressImage:async(file:File)=>{compressions++;return new File([file],'compressed.jpg',{type:'image/jpeg'});}}}).uploadFileWithReceipt;
   return {fn,uploads,receipts,stored,compressions:()=>compressions,setOwner:(value:string)=>{owner=value;}};
 }
-describe('page-lifetime upload identity',()=>{
+describe('content-scoped upload identity',()=>{
   it('retries the same object and metadata identity after an uncertain response, including compressed-file reuse',async()=>{
     const h=clientHarness(); const values={file:new File(['hello'],'original.jpg',{type:'image/jpeg'}),category:'standard',projectId:'project',entityType:'daily_log',entityId:'log'};
     assert.ok((await h.fn(values)).error); const accepted=await h.fn(values);assert.equal(accepted.success,true);
     assert.equal(h.uploads[0],h.uploads[1]);assert.equal(h.receipts[0].clientId,h.receipts[1].clientId);assert.equal(h.stored.size,1);assert.equal(h.compressions(),1);
     assert.equal((await h.fn({...values,file:accepted.data!.file})).success,true);assert.equal(h.stored.size,1);assert.equal(h.compressions(),1);
+  });
+  it('reuses the same receipt after reselecting identical bytes, including a fresh page context',async()=>{
+    const h=clientHarness(); const values={category:'standard',projectId:'project',entityType:'daily_log',entityId:'log'};
+    await h.fn({...values,file:new File(['same original photo'],'IMG_1.jpg',{type:'image/jpeg'})});
+    await h.fn({...values,file:new File(['same original photo'],'renamed.jpg',{type:'image/jpeg'})});
+    assert.equal(h.receipts[0].clientId,h.receipts[1].clientId); assert.equal(h.uploads[0],h.uploads[1]); assert.equal(h.stored.size,1);
+    const reopened=clientHarness(); await reopened.fn({...values,file:new File(['same original photo'],'IMG_1.jpg',{type:'image/jpeg'})});
+    assert.equal(reopened.receipts[0].clientId,h.receipts[0].clientId);
+    await h.fn({...values,file:new File(['different photo'],'IMG_1.jpg',{type:'image/jpeg'})});
+    assert.notEqual(h.receipts[2].clientId,h.receipts[0].clientId);
   });
   it('partitions a selected file by user and parent rather than reusing another scope receipt',async()=>{
     const h=clientHarness();const values={file:new File(['hello'],'original.pdf',{type:'application/pdf'}),category:'document',projectId:'project',entityType:'daily_log',entityId:'log'};

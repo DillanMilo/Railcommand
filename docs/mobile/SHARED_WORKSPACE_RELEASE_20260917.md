@@ -164,3 +164,10 @@ not depend on it. Disabling workspace entry can fall back to existing Field tool
   privacy acceptance. Their draft email has not been sent by this work.
 - The 126-action matrix remains unverified; shared UI is implementation reuse, not
   proof that every device workflow passed. Do not promise blanket full parity yet.
+
+## September 17 subsequent status
+
+Build 300009 is now VALID and assigned to Dillan’s existing internal TestFlight
+group; the earlier upload-queue note is superseded. Backend CI 35241568752 passed.
+Caleb’s DFR photo feedback has now been supplied and is being addressed in
+`DFR_PHOTO_REPAIR_20260917.md`. Physical device acceptance remains open.

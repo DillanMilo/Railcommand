@@ -364,7 +364,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting || (isOffline && isDemo)}
+          disabled={photos.some(photo => photo.preparing) || success || submitting || (isOffline && isDemo)}
           onClick={async () => {
             setErrorMsg(null);
             setQueuedMessage(null);
