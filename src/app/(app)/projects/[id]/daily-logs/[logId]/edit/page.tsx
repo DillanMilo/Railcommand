@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import SavedDailyLogPhotos from '@/components/daily-logs/SavedDailyLogPhotos';
 import PhotoUpload, { type PhotoFile } from '@/components/shared/PhotoUpload';
 import GeoTagInput from '@/components/shared/GeoTagInput';
 import { updateDailyLog as storeUpdateDailyLog } from '@/lib/store';
@@ -19,7 +20,7 @@ import { useProject } from '@/components/providers/ProjectProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDailyLogDetail } from '@/hooks/useData';
 import { ACTIONS } from '@/lib/permissions';
-import type { GeoTag } from '@/lib/types';
+import type { GeoTag, DailyLog } from '@/lib/types';
 
 const CONDITIONS = ['Clear', 'Partly Cloudy', 'Overcast', 'Light Snow', 'Snow', 'Rain', 'Foggy'] as const;
 const UNITS = ['LF', 'CY', 'each', 'SF', 'tons', 'hours'] as const;
@@ -37,6 +38,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
   const { can } = usePermissions(projectId);
   const { data: log, loading } = useDailyLogDetail(projectId, logId);
 
+  const [baseline, setBaseline] = useState<DailyLog | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [date, setDate] = useState('');
   const [temp, setTemp] = useState<number | ''>('');
@@ -57,6 +59,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
   // Populate form when log data loads
   useEffect(() => {
     if (log && !initialized) {
+      setBaseline(log);
       setDate(log.log_date);
       setTemp(log.weather_temp);
       setConditions(log.weather_conditions);
@@ -289,13 +292,12 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
         </CardContent>
       </Card>
 
-      {/* Photo Upload */}
+      <SavedDailyLogPhotos key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove />
+
+      {/* New photos upload only on Save, avoiding competing automatic uploads. */}
       <PhotoUpload
         photos={photos}
         onPhotosChange={setPhotos}
-        entityType="daily_log"
-        entityId={logId}
-        projectId={projectId}
       />
 
       {errorMsg && (
@@ -317,7 +319,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs/${logId}`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting}
+          disabled={photos.some(photo => photo.preparing) || success || submitting}
           onClick={async () => {
             setErrorMsg(null);
             setSubmitting(true);
@@ -340,6 +342,7 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
               setTimeout(() => router.push(`/projects/${projectId}/daily-logs/${logId}`), 1500);
             } else {
               const result = await serverUpdateDailyLog(projectId, logId, {
+                expected: baseline ?? undefined,
                 log_date: date,
                 weather_temp: typeof temp === 'number' ? temp : 0,
                 weather_conditions: conditions,
@@ -357,6 +360,8 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
                 setSubmitting(false);
                 return;
               }
+
+              if (result.data?.personnel) setBaseline(result.data);
 
               // Upload any new photos
               if (photos.length > 0) {

@@ -1,3 +1,4 @@
+import { shareWorkspaceBlob } from './native-workspace';
 import { zip, type AsyncZippable } from 'fflate';
 
 export interface DocumentDownloadFile {
@@ -137,7 +138,8 @@ function formatBytes(bytes: number): string {
   return `${Math.ceil(bytes / (1024 * 1024))} MB`;
 }
 
-export function saveDocumentArchive(archive: Uint8Array<ArrayBuffer>, fileName: string): void {
+export async function saveDocumentArchive(archive: Uint8Array<ArrayBuffer>, fileName: string): Promise<void> {
+  if (await shareWorkspaceBlob(new Blob([archive], { type: 'application/zip' }), fileName)) return;
   const url = URL.createObjectURL(new Blob([archive], { type: 'application/zip' }));
   const link = document.createElement('a');
   link.href = url;

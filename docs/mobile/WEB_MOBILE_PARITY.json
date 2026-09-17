@@ -1,0 +1,959 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-17",
+  "webBaseline": "edb985a",
+  "nativeBaseline": "48cc92c",
+  "status": "NOT_FULL_PARITY",
+  "meaning": "Action inventory from released backend source. Implemented-partial means native code exists but full behavior and device parity are not accepted. Browser links and RailBot tools are not substitutes for complete native workflows.",
+  "areas": [
+    {
+      "area": "activity-log",
+      "webSource": "src/lib/actions/activity-log.ts",
+      "actions": [
+        {
+          "name": "getActivityLog",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "attachments",
+      "webSource": "src/lib/actions/attachments.ts",
+      "actions": [
+        {
+          "name": "uploadAttachment",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "recordAttachment",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteAttachment",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "removeDailyLogPhoto",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification",
+          "offline": "online-only; native queues unchanged",
+          "evidence": "DFR_PHOTO_REPAIR_20260917.md"
+        },
+        {
+          "name": "getSignedUrl",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getAttachments",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getDocumentAttachmentsForDownload",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getAttachmentsWithSignedUrls",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "avatar",
+      "webSource": "src/lib/actions/avatar.ts",
+      "actions": [
+        {
+          "name": "uploadMyAvatar",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "change-orders",
+      "webSource": "src/lib/actions/change-orders.ts",
+      "actions": [
+        {
+          "name": "getChangeOrders",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getChangeOrderById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createChangeOrder",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateChangeOrder",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteChangeOrder",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "daily-logs",
+      "webSource": "src/lib/actions/daily-logs.ts",
+      "actions": [
+        {
+          "name": "getDailyLogs",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getDailyLogById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createDailyLog",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateDailyLog",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "dashboard",
+      "webSource": "src/lib/actions/dashboard.ts",
+      "actions": [
+        {
+          "name": "getDashboardData",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "documents",
+      "webSource": "src/lib/actions/documents.ts",
+      "actions": [
+        {
+          "name": "getProjectDocuments",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectDocumentById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createProjectDocument",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateProjectDocument",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteProjectDocument",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "earthcam",
+      "webSource": "src/lib/actions/earthcam.ts",
+      "actions": [
+        {
+          "name": "getEarthCamWorkspace",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getEarthCamEmbeds",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "saveEarthCamEmbed",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteEarthCamEmbed",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "saveEarthCamConnection",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "upsertEarthCamCamera",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteEarthCamCamera",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createEarthCamEvidence",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteEarthCamEvidence",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createEarthCamAccessLink",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "syncEarthCamCameras",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "invitations",
+      "webSource": "src/lib/actions/invitations.ts",
+      "actions": [
+        {
+          "name": "createInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getInvitationByToken",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "acceptInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "declineInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getPendingInvitationsForUser",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectInvitations",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "resendInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "cancelInvitation",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "milestones",
+      "webSource": "src/lib/actions/milestones.ts",
+      "actions": [
+        {
+          "name": "getMilestones",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createMilestone",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateMilestone",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteMilestone",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "modifications",
+      "webSource": "src/lib/actions/modifications.ts",
+      "actions": [
+        {
+          "name": "getModifications",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getModificationById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createModification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateModification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteModification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "notification-preferences",
+      "webSource": "src/lib/actions/notification-preferences.ts",
+      "actions": [
+        {
+          "name": "getNotificationPreferences",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateNotificationPreferences",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "onboarding",
+      "webSource": "src/lib/actions/onboarding.ts",
+      "actions": [
+        {
+          "name": "setupBusiness",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "checkOnboardingStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "photos",
+      "webSource": "src/lib/actions/photos.ts",
+      "actions": [
+        {
+          "name": "getProjectPhotos",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "profiles",
+      "webSource": "src/lib/actions/profiles.ts",
+      "actions": [
+        {
+          "name": "getMyProfile",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateMyProfile",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "project-photo-upload",
+      "webSource": "src/lib/actions/project-photo-upload.ts",
+      "actions": [
+        {
+          "name": "uploadProjectPhoto",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "projects",
+      "webSource": "src/lib/actions/projects.ts",
+      "actions": [
+        {
+          "name": "getProjects",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectPlanInfo",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectDemoInfo",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateProjectStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "punch-list",
+      "webSource": "src/lib/actions/punch-list.ts",
+      "actions": [
+        {
+          "name": "getPunchListItems",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getPunchListItemById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createPunchListItem",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updatePunchListStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updatePunchListItem",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deletePunchListItem",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "qcqa",
+      "webSource": "src/lib/actions/qcqa.ts",
+      "actions": [
+        {
+          "name": "getQCQAReports",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getQCQAReportById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createQCQAReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateQCQAReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteQCQAReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "rfis",
+      "webSource": "src/lib/actions/rfis.ts",
+      "actions": [
+        {
+          "name": "getRFIs",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getRFIById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createRFI",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateRFIStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "addRFIResponse",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateRFI",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteRFI",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "safety",
+      "webSource": "src/lib/actions/safety.ts",
+      "actions": [
+        {
+          "name": "getSafetyIncidents",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteSafetyIncident",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "search",
+      "webSource": "src/lib/actions/search.ts",
+      "actions": [
+        {
+          "name": "globalSearch",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "submittals",
+      "webSource": "src/lib/actions/submittals.ts",
+      "actions": [
+        {
+          "name": "getSubmittals",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getSubmittalById",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createSubmittal",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateSubmittalStatus",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateSubmittal",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteSubmittal",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "team",
+      "webSource": "src/lib/actions/team.ts",
+      "actions": [
+        {
+          "name": "getProjectMembers",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getRecentMembers",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "addProjectMember",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "removeProjectMember",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "leaveProject",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateMemberRole",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "up-weekly-reports",
+      "webSource": "src/lib/actions/up-weekly-reports.ts",
+      "actions": [
+        {
+          "name": "getUpReportingWorkspace",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "configureProjectRailCommandWorkbook",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "uploadProjectUpTemplateVariant",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "assignProjectUpTemplateVariant",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectUpReportPrefill",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createProjectUpWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getProjectUpWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateProjectUpWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "generateProjectUpReportArtifact",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "user-notifications",
+      "webSource": "src/lib/actions/user-notifications.ts",
+      "actions": [
+        {
+          "name": "getMyNotifications",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "markUserNotificationRead",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "markAllUserNotificationsRead",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "dismissUserNotification",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "weekly-reports",
+      "webSource": "src/lib/actions/weekly-reports.ts",
+      "actions": [
+        {
+          "name": "getWeeklyReports",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "getWeeklyReportById",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "createWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "updateWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        },
+        {
+          "name": "deleteWeeklyReport",
+          "mobile": "gap-or-unverified",
+          "deviceVerified": false,
+          "delivery": "shared-workspace-awaiting-device-verification"
+        }
+      ]
+    },
+    {
+      "area": "offline",
+      "webSource": "src/lib/actions/offline.ts",
+      "actions": [
+        {
+          "name": "getOfflineProjectSnapshot",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-offline"
+        }
+      ]
+    },
+    {
+      "area": "offline-sync",
+      "webSource": "src/lib/actions/offline-sync.ts",
+      "actions": [
+        {
+          "name": "syncOfflineDailyLogOperation",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-offline"
+        },
+        {
+          "name": "prepareOfflineDailyLogPhotoUpload",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-offline"
+        },
+        {
+          "name": "finalizeOfflineDailyLogPhotoUpload",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-offline"
+        }
+      ]
+    }
+  ],
+  "additionalGates": [
+    "RailBot chat/history/voice/tool parity and physical-device lifecycle",
+    "Authentication including Google and password recovery",
+    "Web-to-mobile and mobile-to-web record/attachment visibility",
+    "Existing saved-log recovery on physical iPhone",
+    "External Apple review and demo-only reviewer credentials",
+    "Privacy declarations",
+    "Caleb feedback not yet supplied",
+    "Canonical release-branch integration"
+  ],
+  "deliveryStrategy": "Shared authenticated in-app web workspace for online features; retained native Field tools for offline work. See SHARED_WORKSPACE_RELEASE_20260917.md. Device acceptance remains pending."
+}

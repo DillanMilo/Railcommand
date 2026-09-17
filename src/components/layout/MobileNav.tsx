@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { hasNativeWorkspaceTools, openNativeWorkspaceTool } from '@/lib/native-workspace';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/components/providers/ProjectProvider';
 import {
@@ -20,6 +21,8 @@ import {
   Camera,
   FileBarChart,
   Video,
+  Wrench,
+  Bot,
 } from 'lucide-react';
 import {
   Sheet,
@@ -32,6 +35,7 @@ import {
 export default function MobileNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [nativeTools, setNativeTools] = useState(false);
   const { currentProjectId } = useProject();
 
   const hasProject = Boolean(currentProjectId);
@@ -66,7 +70,7 @@ export default function MobileNav() {
         {mobileTabs.map(({ label, href, Icon, requiresProject }) => {
           if (href === '#more') {
             return (
-              <Sheet key="more" open={moreOpen} onOpenChange={setMoreOpen}>
+              <Sheet key="more" open={moreOpen} onOpenChange={(open) => { setMoreOpen(open); if (open) setNativeTools(hasNativeWorkspaceTools()); }}>
                 <SheetTrigger asChild>
                   <button
                     className={cn(
@@ -128,7 +132,16 @@ export default function MobileNav() {
                         </Link>
                       );
                     })}
+                    {nativeTools ? <>
+                      <button type="button" onClick={() => { openNativeWorkspaceTool('field-tools', currentProjectId); setMoreOpen(false); }} className="flex flex-col items-center gap-2 rounded-lg p-4 min-h-[56px] text-muted-foreground hover:bg-accent">
+                        <Wrench className="size-6" /><span className="text-xs font-medium">Field Tools</span>
+                      </button>
+                      <button type="button" onClick={() => { openNativeWorkspaceTool('railbot', currentProjectId); setMoreOpen(false); }} className="flex flex-col items-center gap-2 rounded-lg p-4 min-h-[56px] text-muted-foreground hover:bg-accent">
+                        <Bot className="size-6" /><span className="text-xs font-medium">RailBot</span>
+                      </button>
+                    </> : null}
                   </div>
+                  {nativeTools ? <p className="px-4 pb-4 text-xs text-muted-foreground">Workspace needs a connection. Save changes before closing the app. Use Field Tools for offline logs.</p> : null}
                 </SheetContent>
               </Sheet>
             );

@@ -26,6 +26,18 @@ export default function PrivacyPolicyPage() {
             policy explains what information we collect, how we use it, and how to contact us.
           </p>
 
+          <h2 className="pt-4 text-xl font-semibold text-foreground">RailBot assistant and optional voice input</h2>
+          <p>
+            When you use RailBot, messages and relevant project information available to your
+            account are processed by OpenAI to generate answers. Conversation history is stored
+            in your RailCommand account. Optional voice recordings are sent to OpenAI for
+            transcription when you request it; you can review the resulting text before sending
+            a message. Microphone access is requested only when you choose to dictate, and
+            recording does not continue in the background. Unsent text and recordings may remain
+            on your device for recovery until submitted, discarded, or removed at sign-out.
+            You can use other RailCommand features without enabling RailBot or the microphone.
+          </p>
+
           <h2 className="pt-4 text-xl font-semibold text-foreground">Information We Collect</h2>
           <p>
             We collect account information such as name, email address, organization, authentication

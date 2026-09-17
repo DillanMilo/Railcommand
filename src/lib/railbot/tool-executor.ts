@@ -40,6 +40,7 @@ export async function executeTool(
   projectId: string,
   userId: string,
   supabase: SupabaseClient,
+  creationId?: string,
 ): Promise<{ success: boolean; data?: unknown; error?: string }> {
   // ── Permission check ────────────────────────────────────────────────
   const requiredPerm = TOOL_PERMISSIONS[toolName];
@@ -84,11 +85,11 @@ export async function executeTool(
       case 'get_notifications_summary':
         return await getNotificationsSummary(supabase, projectId, args);
       case 'create_rfi':
-        return await createRFI(supabase, projectId, userId, args);
+        return await createRFI(supabase, projectId, userId, args, creationId);
       case 'create_punch_list_item':
-        return await createPunchListItem(supabase, projectId, userId, args);
+        return await createPunchListItem(supabase, projectId, userId, args, creationId);
       case 'create_daily_log':
-        return await createDailyLog(supabase, projectId, userId, args);
+        return await createDailyLog(supabase, projectId, userId, args, creationId);
       default:
         return { success: false, error: `Unhandled tool: ${toolName}` };
     }
@@ -526,6 +527,7 @@ async function createRFI(
   projectId: string,
   userId: string,
   args: Record<string, unknown>,
+  creationId?: string,
 ) {
   // Validate required fields
   if (!args.subject || typeof args.subject !== 'string' || args.subject.trim().length === 0) {
@@ -535,12 +537,13 @@ async function createRFI(
     return { success: false, error: 'Question is required for creating an RFI.' };
   }
 
-  const number = await generateNextNumber(supabase, projectId, 'rfis', 'RFI');
+  const number = creationId ? '' : await generateNextNumber(supabase, projectId, 'rfis', 'RFI');
   const today = new Date().toISOString().split('T')[0];
 
   const { data, error } = await supabase
     .from('rfis')
     .insert({
+      ...(creationId ? { id: creationId } : {}),
       project_id: projectId,
       number,
       subject: args.subject as string,
@@ -575,6 +578,7 @@ async function createPunchListItem(
   projectId: string,
   userId: string,
   args: Record<string, unknown>,
+  creationId?: string,
 ) {
   // Validate required fields
   if (!args.title || typeof args.title !== 'string' || args.title.trim().length === 0) {
@@ -587,12 +591,13 @@ async function createPunchListItem(
     return { success: false, error: 'Location is required for creating a punch list item.' };
   }
 
-  const number = await generateNextNumber(supabase, projectId, 'punch_list_items', 'PL');
+  const number = creationId ? '' : await generateNextNumber(supabase, projectId, 'punch_list_items', 'PL');
   const today = new Date().toISOString().split('T')[0];
 
   const { data, error } = await supabase
     .from('punch_list_items')
     .insert({
+      ...(creationId ? { id: creationId } : {}),
       project_id: projectId,
       number,
       title: args.title as string,
@@ -626,6 +631,7 @@ async function createDailyLog(
   projectId: string,
   userId: string,
   args: Record<string, unknown>,
+  creationId?: string,
 ) {
   // Validate required fields
   if (!args.work_summary || typeof args.work_summary !== 'string' || args.work_summary.trim().length === 0) {
@@ -637,6 +643,7 @@ async function createDailyLog(
   const { data, error } = await supabase
     .from('daily_logs')
     .insert({
+      ...(creationId ? { id: creationId } : {}),
       project_id: projectId,
       log_date: (args.log_date as string) ?? today,
       created_by: userId,
