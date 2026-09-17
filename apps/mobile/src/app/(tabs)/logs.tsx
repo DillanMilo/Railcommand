@@ -22,10 +22,16 @@ export default function LogsScreen() {
   const { bootstrap, activeProjectId, online } = useMobileData();
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const [mode, setMode] = useState<'calendar' | 'list'>('calendar');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => new Date());
   const cells = useMemo(() => monthCells(month), [month]);
   const logs = useMemo(() => recordsForProject(bootstrap?.dailyLogs, activeProjectId), [bootstrap?.dailyLogs, activeProjectId]);
-  const logsByDate = useMemo(() => new Map(logs.map((log) => [log.logDate, log])), [logs]);
+  const logsByDate = useMemo(() => {
+    const groups = new Map<string, typeof logs>();
+    for (const log of logs) groups.set(log.logDate, [...(groups.get(log.logDate) ?? []), log]);
+    return groups;
+  }, [logs]);
+  const visibleLogs = selectedDate ? logs.filter((log) => log.logDate === selectedDate) : logs;
   const today = dateKey(new Date());
 
   return <Screen>
@@ -40,7 +46,7 @@ export default function LogsScreen() {
         <SymbolView accessible={false} name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} tintColor={mode === 'calendar' ? colors.orange : colors.muted} size={19} />
         <Text style={[styles.modeText, mode === 'calendar' && styles.modeTextActive]}>Calendar</Text>
       </Pressable>
-      <Pressable accessibilityRole="tab" accessibilityState={{ selected: mode === 'list' }} onPress={() => setMode('list')} style={[styles.modeTab, mode === 'list' && styles.modeTabActive]}>
+      <Pressable accessibilityRole="tab" accessibilityState={{ selected: mode === 'list' }} onPress={() => { setSelectedDate(null); setMode('list'); }} style={[styles.modeTab, mode === 'list' && styles.modeTabActive]}>
         <SymbolView accessible={false} name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} tintColor={mode === 'list' ? colors.orange : colors.muted} size={19} />
         <Text style={[styles.modeText, mode === 'list' && styles.modeTextActive]}>List</Text>
       </Pressable>
@@ -60,24 +66,25 @@ export default function LogsScreen() {
         <View style={styles.weekdays}>{weekdays.map((day) => <View key={day} style={styles.weekday}><Text style={styles.weekdayText}>{day}</Text></View>)}</View>
         <View style={styles.days}>{cells.map((date) => {
           const key = dateKey(date);
-          const log = logsByDate.get(key);
+          const dayLogs = logsByDate.get(key) ?? [];
           const currentMonth = date.getMonth() === month.getMonth();
           return <Pressable
             key={key}
-            accessibilityRole={log ? 'button' : undefined}
-            accessibilityLabel={`${date.toLocaleDateString()}${log ? ', daily log recorded' : ''}`}
-            disabled={!log}
-            onPress={() => log && router.push(`/daily-log/${log.id}`)}
+            accessibilityRole={dayLogs.length ? 'button' : undefined}
+            accessibilityLabel={`${date.toLocaleDateString()}${dayLogs.length ? `, ${dayLogs.length} daily logs` : ''}`}
+            disabled={!dayLogs.length}
+            onPress={() => { setSelectedDate(key); setMode('list'); }}
             style={[styles.day, !currentMonth && styles.dayOutside, key === today && styles.dayToday]}
-          ><Text style={[styles.dayText, !currentMonth && styles.dayTextOutside, key === today && styles.dayTextToday]}>{date.getDate()}</Text>{log ? <View style={styles.logDot} /> : null}</Pressable>;
+          ><Text style={[styles.dayText, !currentMonth && styles.dayTextOutside, key === today && styles.dayTextToday]}>{date.getDate()}</Text>{dayLogs.length ? <Text style={styles.dayText}>{dayLogs.length} {dayLogs.length === 1 ? 'log' : 'logs'}</Text> : null}</Pressable>;
         })}</View>
       </View>
     </> : <View style={styles.list}>
-      {logs.map((log) => <Pressable key={log.id} accessibilityRole="button" onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.logRow}>
-        <View style={{ flex: 1 }}><Text style={styles.logDate}>{new Date(`${log.logDate}T12:00:00`).toLocaleDateString()}</Text><Text numberOfLines={2} style={styles.logSummary}>{log.workSummary || 'No work summary recorded'}</Text></View>
+      {selectedDate ? <Pressable accessibilityRole="button" onPress={() => setSelectedDate(null)} style={styles.monthButtonWide}><Text style={styles.logDate}>{selectedDate} · Show all dates</Text></Pressable> : null}
+      {visibleLogs.map((log) => <Pressable key={log.id} accessibilityRole="button" onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.logRow}>
+        <View style={{ flex: 1 }}><Text style={styles.logDate}>{new Date(`${log.logDate}T12:00:00`).toLocaleDateString()}</Text><Text style={styles.logSummary}>{log.authorName || 'Team member'} · {new Date(log.createdAt).toLocaleString()} · {log.id.slice(0, 8)}</Text><Text numberOfLines={2} style={styles.logSummary}>{log.workSummary || 'No work summary recorded'}</Text></View>
         <SymbolView accessible={false} name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={colors.muted} size={18} />
       </Pressable>)}
-      {logs.length === 0 ? <Text style={styles.empty}>No daily logs found.</Text> : null}
+      {visibleLogs.length === 0 ? <Text style={styles.empty}>No daily logs found.</Text> : null}
     </View>}
     <RailBotButton />
   </Screen>;
@@ -110,6 +117,7 @@ const styles = StyleSheet.create({
   dayTextOutside: { color: '#9CA3AF' },
   dayTextToday: { color: '#2563EB', fontFamily: fonts.bodyBold },
   logDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, backgroundColor: colors.orange },
+  monthButtonWide: { minHeight: 48, justifyContent: 'center' },
   list: { gap: 10 },
   logRow: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper },
   logDate: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },

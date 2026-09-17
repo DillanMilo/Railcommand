@@ -72,6 +72,66 @@ function storageHarness() {
   };
 }
 
+describe('Same-day queued log review (real SQLite)', () => {
+  const operation = {
+    operationId: '30000000-0000-4000-8000-000000000091', clientId: '30000000-0000-4000-8000-000000000091',
+    userId: userA, projectId: '20000000-0000-4000-8000-000000000091',
+    idempotencyKey: 'daily-log-create:30000000-0000-4000-8000-000000000091',
+    payload: { log_date: '2026-09-16', work_summary: 'Saved crew work', safety_notes: 'Briefing', weather_temp: 70,
+      weather_conditions: 'Clear', weather_wind: '', geo_tag: null, personnel: [{ role: 'Foreman', headcount: 2 }], equipment: [], work_items: [] },
+    status: 'failed' as const, attemptCount: 2, createdAt: '2026-09-16T12:00:00Z', updatedAt: '2026-09-16T12:00:00Z', nextAttemptAt: '2026-09-16T12:00:00Z',
+    lastError: 'A daily log already exists for this project and date. Saved work retained.',
+    photoManifestVersion: 1 as const, photoIds: ['photo-1'],
+  };
+  async function seed(h: ReturnType<typeof storageHarness>) {
+    await h.store.cacheBootstrap(userA, bootstrap);
+    const db = [...h.databases.values()][0];
+    db.prepare('INSERT INTO outbox(operation_id,project_id,payload,status,attempt_count,updated_at) VALUES(?,?,?,?,?,?)')
+      .run(operation.operationId, operation.projectId, JSON.stringify(operation), 'conflicted', 2, operation.updatedAt);
+    return db;
+  }
+  it('persists explicit consent with all original fields, identity and photo manifest unchanged', async () => {
+    const h = storageHarness();
+    try {
+      await seed(h);
+      await h.store.confirmSeparateExpoLog(userA, operation.operationId, () => true);
+      const saved = (await h.store.listExpoOutbox(userA))[0];
+      assert.deepEqual(JSON.parse(JSON.stringify(saved.payload)), { ...operation.payload, allow_same_day: true });
+      for (const key of ['operationId', 'clientId', 'idempotencyKey', 'createdAt', 'projectId', 'userId'] as const) assert.equal(saved[key], operation[key]);
+      assert.deepEqual(Array.from(saved.photoIds), operation.photoIds);
+      assert.equal(saved.photoManifestVersion, 1);
+      assert.equal(saved.status, 'pending');
+      assert.equal(saved.lastError, null);
+      // A request started before confirmation must not restore its stale payload.
+      await h.store.markExpoOutbox(userA, operation, 'conflicted', operation.lastError);
+      assert.equal((await h.store.listExpoOutbox(userA))[0].payload.allow_same_day, true);
+      assert.equal((await h.store.listExpoSyncRows(userA))[0].state, 'pending');
+      await assert.rejects(h.store.confirmSeparateExpoLog(userA, operation.operationId, () => true), /different review/);
+    } finally { h.close(); }
+  });
+  it('rejects the wrong account and unrelated failures without changing saved work', async () => {
+    const h = storageHarness();
+    try {
+      const db = await seed(h);
+      await assert.rejects(h.store.confirmSeparateExpoLog(userB, operation.operationId, () => true), /no longer queued/);
+      const unrelated = { ...operation, lastError: 'Permission denied' };
+      db.prepare('UPDATE outbox SET payload=?').run(JSON.stringify(unrelated));
+      await assert.rejects(h.store.confirmSeparateExpoLog(userA, operation.operationId, () => true), /different review/);
+      assert.equal((await h.store.listExpoOutbox(userA))[0].payload.allow_same_day, undefined);
+    } finally { h.close(); }
+  });
+  it('rolls confirmation back if the account/storage scope changes during persistence', async () => {
+    const h = storageHarness(); let current = true;
+    try {
+      await seed(h);
+      h.pauseWrite(async () => { current = false; });
+      await assert.rejects(h.store.confirmSeparateExpoLog(userA, operation.operationId, () => current), /canceled/);
+      assert.equal((await h.store.listExpoOutbox(userA))[0].payload.allow_same_day, undefined);
+      assert.equal((await h.store.listExpoSyncRows(userA))[0].state, 'conflicted');
+    } finally { h.close(); }
+  });
+});
+
 describe('Native cache purge and owner boundary (real SQLite, mocked native bridge)', () => {
   it('keeps RailBot drafts separate by account/project and warns before sign-out', async () => {
     const h = storageHarness();

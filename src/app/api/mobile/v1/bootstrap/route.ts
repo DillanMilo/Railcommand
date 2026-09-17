@@ -150,9 +150,11 @@ export async function GET(request: Request): Promise<Response> {
     const [logsResult, membersResult, submittalsResult, rfisResult, punchResult, embedsResult] = await Promise.all([
       context.supabase
         .from('daily_logs')
-        .select('id, project_id, log_date, weather_temp, weather_conditions, weather_wind, work_summary, safety_notes, geo_tag, created_at, personnel:daily_log_personnel(id, role, headcount, company), equipment:daily_log_equipment(id, equipment_type, count, notes), work_items:daily_log_work_items(id, description, quantity, unit, location)')
+        .select('id, project_id, log_date, weather_temp, weather_conditions, weather_wind, work_summary, safety_notes, geo_tag, created_at, created_by_profile:profiles!daily_logs_created_by_fkey(full_name), personnel:daily_log_personnel(id, role, headcount, company), equipment:daily_log_equipment(id, equipment_type, count, notes), work_items:daily_log_work_items(id, description, quantity, unit, location)')
         .eq('project_id', activeProjectId)
         .order('log_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .range(page.offset, page.offset + page.limit),
       context.supabase
         .from('project_members')
@@ -211,6 +213,7 @@ export async function GET(request: Request): Promise<Response> {
       workSummary: log.work_summary ?? '',
       safetyNotes: log.safety_notes ?? '',
       createdAt: log.created_at,
+      authorName: (Array.isArray(log.created_by_profile) ? log.created_by_profile[0]?.full_name : (log.created_by_profile as { full_name?: string } | null)?.full_name) ?? undefined,
       ...normalizeDailyLogReadFields({
         weatherTemp: log.weather_temp,
         weatherWind: log.weather_wind,

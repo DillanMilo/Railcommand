@@ -128,7 +128,7 @@ function SessionMobileDataProvider({ children, userId, isSessionCurrent }: Props
       if (!isCurrent()) return;
       cachedBootstrapRef.current = next;
       applyBootstrap(selected);
-      setMessage('Synchronized ' + new Date(next.synchronizedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+      setMessage('Project data refreshed ' + new Date(next.synchronizedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
     } catch (error) {
       if (!isCurrent()) return;
       let available = false;

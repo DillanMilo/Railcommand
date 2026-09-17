@@ -51,8 +51,8 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
-  function logForDay(day: Date) {
-    return rawLogs.find((l) => isSameDay(parseISO(l.log_date), day));
+  function logsForDay(day: Date) {
+    return logs.filter((log) => isSameDay(parseISO(log.log_date), day));
   }
 
   const totalHeadcount = (p: { headcount: number }[] | undefined) => (p ?? []).reduce((s, r) => s + r.headcount, 0);
@@ -167,7 +167,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
             ))}
             {calDays
               .map((day) => {
-                const log = logForDay(day);
+                const dayLogs = logsForDay(day);
                 const inMonth = isSameMonth(day, monthStart);
                 const today = isToday(day);
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6;
@@ -176,18 +176,15 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
                     key={day.toISOString()}
                     className={`min-h-[72px] p-2 ${isWeekend ? 'bg-muted/30' : 'bg-rc-card'} ${!inMonth ? 'opacity-40' : ''} ${today ? 'ring-2 ring-inset ring-rc-blue' : ''}`}
                   >
-                    {log ? (
-                      <Link href={`${basePath}/${log.id}`} className="block h-full group">
-                        <span className={`text-sm font-medium group-hover:text-rc-orange transition-colors ${today ? 'text-rc-blue font-bold' : ''}`}>
-                          {format(day, 'd')}
-                        </span>
-                        <span className="block mt-1 size-2.5 rounded-full bg-rc-emerald" />
-                      </Link>
-                    ) : (
-                      <span className={`text-sm ${today ? 'text-rc-blue font-bold' : 'text-muted-foreground'}`}>
-                        {format(day, 'd')}
-                      </span>
-                    )}
+                    <span className={`text-sm ${today ? 'text-rc-blue font-bold' : 'text-muted-foreground'}`}>
+                      {format(day, 'd')}
+                    </span>
+                    {dayLogs.length > 0 && <span className="block text-xs text-muted-foreground">{dayLogs.length} {dayLogs.length === 1 ? 'log' : 'logs'}</span>}
+                    {dayLogs.map((log) => <Link key={log.id} href={`${basePath}/${log.id}`}
+                      className="block py-2 text-xs text-rc-orange underline break-words"
+                      aria-label={`Open ${log.log_date} log by ${log.created_by_profile?.full_name || 'team member'}, ${log.id.slice(0, 8)}`}>
+                      {log.created_by_profile?.full_name || 'Team member'} · {log.id.slice(0, 8)}
+                    </Link>)}
                   </div>
                 );
               })}
@@ -217,6 +214,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
                         <ClipboardList className="size-3" />{(log.work_items ?? []).length} items
                       </Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground">{log.created_by_profile?.full_name || 'Team member'} · {format(parseISO(log.created_at), 'MMM d, h:mm a')} · {log.id.slice(0, 8)}</p>
                     <p className="text-sm text-muted-foreground line-clamp-2">{log.work_summary}</p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Cloud className="size-3" />{log.weather_temp}°F {log.weather_conditions}</span>

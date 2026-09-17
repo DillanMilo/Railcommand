@@ -23,6 +23,7 @@ export default function DailyLogDetailScreen() {
     {!log ? <Card><EmptyState title="Record unavailable" detail="This log is not in the recent device cache. Reconnect and refresh the project." /></Card> : <>
       <StatusBanner tone={online ? 'success' : 'warning'} title={online ? 'Cached copy available offline' : 'Viewing saved device data'}
         detail="Existing-record editing is unavailable in this field release. Reconnect and use RailCommand web for authorized edits." />
+      <Text style={uiStyles.muted}>{log.authorName || 'Team member'} · {new Date(log.createdAt).toLocaleString()} · {log.id.slice(0, 8)}</Text>
       <Card><Text style={styles.eyebrow}>WEATHER</Text><SectionTitle>Field conditions</SectionTitle>
         <Text style={styles.value}>{log.weatherConditions || 'Not recorded'}</Text>
         <Text style={styles.label}>Temperature</Text>

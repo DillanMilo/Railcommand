@@ -41,7 +41,7 @@ export default function SyncScreen() {
   return <Screen>
     <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="DEVICE OUTBOX / FIELD SYNCHRONIZATION" title="Sync Center"
-      badge={queuedRows.length ? `${queuedRows.length} PENDING` : 'CLEAR'} detail="Review device work, retry failures, and confirm exactly-once delivery." />
+      badge={problemCount ? `${problemCount} NEED REVIEW` : queuedRows.length ? `${queuedRows.length} PENDING` : 'CLEAR'} detail="Review device work, retry failures, and confirm delivery." />
     <View style={styles.metrics}>
       <MetricTile label="DAILY LOGS" value={queuedLogs} detail="waiting on this device" />
       <MetricTile label="PHOTOS" value={queuedPhotos} detail="child uploads waiting" />
@@ -69,7 +69,8 @@ export default function SyncScreen() {
     <View style={styles.listHeader}><Text style={styles.eyebrow}>DEVICE ACTIVITY</Text><Text style={uiStyles.muted}>Pending and recent</Text></View>
     {syncRows.length ? syncRows.map((row) => <View key={`${row.kind}:${row.id}`} style={styles.row}>
         <View style={{ flex: 1 }}><Text style={styles.label}>{row.kind === 'daily_log' ? 'Daily log' : 'Photo'} · {row.label}</Text>
-          <Text style={uiStyles.muted}>{row.detail || new Date(row.updatedAt).toLocaleString()}</Text></View>
+          <Text style={uiStyles.muted}>{row.detail || new Date(row.updatedAt).toLocaleString()}</Text>
+          {row.kind === 'daily_log' && row.state !== 'synchronized' ? <WebActionButton title="Review saved log" onPress={() => router.push(`/daily-log/queued/${row.id}`)} /> : null}</View>
         <Text style={[styles.state, styles[row.state]]}>{labels[row.state]}</Text>
       </View>) : <Card><EmptyState title="No device work yet" detail="Autosaved drafts stay in the editor. Submitted work and recent synchronization results appear here." /></Card>}
   </Screen>;

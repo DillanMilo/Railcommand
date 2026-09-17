@@ -300,7 +300,7 @@ describe('mobile provider account/project request lifetimes', () => {
   it('replaces a prior synchronized status with a clear refresh failure while retaining the current cache', async () => {
     const h = providerHarness();
     await h.start();
-    assert.match(h.value().message, /^Synchronized /);
+    assert.match(h.value().message, /^Project data refreshed /);
     const pending = h.value().refresh();
     h.requests[1].result.reject(new Error('Synthetic network failure with private response text'));
     await pending;

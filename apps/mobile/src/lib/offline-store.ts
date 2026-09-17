@@ -290,9 +290,38 @@ export async function markExpoOutbox(
   const updated = { ...operation, status: status === 'retrying' ? 'retry' as const : 'failed' as const,
     attemptCount: operation.attemptCount + 1, lastError: error, updatedAt: new Date().toISOString() };
   await db.runAsync(
-    'UPDATE outbox SET payload = ?, status = ?, attempt_count = ?, last_error = ?, updated_at = ? WHERE operation_id = ?',
+    `UPDATE outbox SET payload = ?, status = ?, attempt_count = ?, last_error = ?, updated_at = ?
+     WHERE operation_id = ? AND coalesce(json_extract(payload, '$.payload.allow_same_day'), 0) = ?`,
     JSON.stringify(updated), status, updated.attemptCount, error, updated.updatedAt, operation.operationId,
+    operation.payload.allow_same_day === true ? 1 : 0,
   );
+}
+
+/** Explicit consent only; never changes the operation identity, fields or photos. */
+export async function confirmSeparateExpoLog(userId: string, operationId: string, isCurrent: () => boolean): Promise<void> {
+  isCurrent = storageGuard(userId, isCurrent);
+  requireCurrent(isCurrent);
+  const db = await openUserDatabase(userId);
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    requireCurrent(isCurrent);
+    const row = await txn.getFirstAsync<{ payload: string; status: string }>(
+      'SELECT payload, status FROM outbox WHERE operation_id = ?', operationId,
+    );
+    if (!row) throw new Error('This entry is no longer queued. Refresh the Sync Center.');
+    const operation = JSON.parse(row.payload) as ExpoDailyLogSyncOperation;
+    if (operation.userId !== userId || operation.operationId !== operationId
+      || row.status !== 'conflicted'
+      || !operation.lastError?.startsWith('A daily log already exists for this project and date.')) {
+      throw new Error('This entry needs a different review. Nothing was changed.');
+    }
+    const updated: ExpoDailyLogSyncOperation = { ...operation,
+      payload: { ...operation.payload, allow_same_day: true }, status: 'pending',
+      lastError: null, updatedAt: new Date().toISOString(), nextAttemptAt: new Date().toISOString(),
+    };
+    await txn.runAsync(`UPDATE outbox SET payload = ?, status = 'pending', last_error = NULL, updated_at = ? WHERE operation_id = ?`,
+      JSON.stringify(updated), updated.updatedAt, operationId);
+    requireCurrent(isCurrent);
+  });
 }
 
 export async function markExpoPhoto(

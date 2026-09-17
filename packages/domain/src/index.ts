@@ -168,6 +168,7 @@ export interface MobileDashboardSummary {
 }
 
 export interface MobileDailyLog extends MobileDailyLogReadFields {
+  authorName?: string;
   id: string;
   projectId: string;
   logDate: string;
@@ -278,6 +279,8 @@ export interface MobileDailyLogSyncOperation {
   clientId: string;
   idempotencyKey: string;
   payload: {
+    /** Explicit user confirmation to keep an additional independent log for this day. */
+    allow_same_day?: boolean;
     log_date: string;
     weather_temp: number;
     weather_conditions: string;
