@@ -11,7 +11,7 @@ describe('workspace public cache boundary',()=>{
  }
  it('does not intercept or cache private API, auth, project/RSC or signed storage reads',()=>{
   const h=worker();
-  for(const url of ['https://railcommand.io/api/mobile/v1/bootstrap','https://railcommand.io/projects/a?_rsc=private','https://railcommand.io/auth/mobile-session','https://db.supabase.co/storage/v1/object/sign/private?token=secret']){
+  for(const url of ['https://railcommand.io/api/workspace/projects/a/documents','https://railcommand.io/api/workspace/projects/a/photos','https://railcommand.io/api/mobile/v1/bootstrap','https://railcommand.io/projects/a?_rsc=private','https://railcommand.io/auth/mobile-session','https://db.supabase.co/storage/v1/object/sign/private?token=secret']){
    let intercepted=false;h.events.fetch({request:{url,method:'GET',mode:'cors'},respondWith:()=>{intercepted=true;}});assert.equal(intercepted,false,url);
   }assert.equal(h.puts.length,0);
  });
