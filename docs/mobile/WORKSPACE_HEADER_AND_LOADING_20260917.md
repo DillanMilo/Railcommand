@@ -42,7 +42,7 @@ mobile TypeScript, focused lint, backend production build and TypeScript pass.
 Candidate web production build and TypeScript also pass in a tracked-source
 snapshot with clean typeRoots, excluding pre-existing Finder duplicate @types
 folders without modifying source dependencies. Backend CI 35274634096 passed
-on runtime 8e31314; native runtime is 6f99e79.
+on runtime 8e31314; documentation follow-up CI 35275186204 also passed; native runtime is 6f99e79.
 
 Release: backend 8e31314 is live as dpl_Ecd6PajWijoFUJKaBt8qQNqSbSui.
 Five auth/no-store checks and two collection unauthenticated-denial checks pass
@@ -55,8 +55,22 @@ A fresh live-domain inspection confirmed this deployment; the post-promotion
 10-minute error scan returned no entries. Rollback: dpl_5RfdY5kutDSpjCPkter7aWFhfPxn.
 
 Production iOS build 300012: a59d9feb-7eaf-40ad-9ae2-30b4f4d74a83;
-auto-submission c9948436-c181-43c3-8c4f-de6b7888e97b. EAS build FINISHED. Submission remains IN_QUEUE with no upload logs;
-Apple does not yet list 300012 and internal assignment is pending. Build 300011 is superseded by this combined update;
+EAS build FINISHED. The queued Expo submission
+c9948436-c181-43c3-8c4f-de6b7888e97b was confirmed CANCELED before direct
+submission, avoiding duplicate upload of the same version. Apple's altool first
+validated the unchanged IPA successfully, then uploaded it successfully at
+2026-09-17 21:35:04 UTC with no errors. Delivery UUID:
+63f090af-3c0d-49d9-93c6-2eded1603260. Artifact identity was verified as
+io.railcommand.app / 1.0.0 / 300012, source 6f99e79; SHA256:
+bc2a85646ce9d3c16fae518332f2488ac4ff74dd28443e8c9713b156579901da.
+The existing app-specific submission credential was used through a private
+short-lived file; cleanup was verified after validation and upload. Apple
+processing completed successfully. Apple build 63f090af-3c0d-49d9-93c6-2eded1603260 is VALID
+and IN_BETA_TESTING. Assignment was read back in the existing internal group
+b92ba7eb-1a88-40ec-8af2-f38c499dee30 (RailCommand Private Beta), verified to contain
+only dillanxx@gmail.com with public links disabled. This confirms tester
+availability, not installation or physical acceptance. No Mark/Caleb release.
+Build 300011 is superseded by this combined update;
 do not ask the tester to install it first. No external distribution, schema,
 permissions, live-record test writes or device queue changes accompany this patch.
 
