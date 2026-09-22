@@ -36,7 +36,13 @@ export default function MobileNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const [nativeTools, setNativeTools] = useState(false);
-  const { currentProjectId } = useProject();
+  const { currentProjectId, currentUserId, isDemo, readCollection } = useProject();
+
+  function prepareCollection(href: string) {
+    if (isDemo || !currentUserId || !navigator.onLine) return;
+    const collection = href.endsWith('/documents') ? 'documents' : href.endsWith('/photos') ? 'photos' : null;
+    if (collection) void readCollection(collection, currentProjectId);
+  }
 
   const hasProject = Boolean(currentProjectId);
 
@@ -114,7 +120,9 @@ export default function MobileNav() {
                         <Link
                           key={item.href}
                           href={item.href}
-                          onClick={() => setMoreOpen(false)}
+                          prefetch={item.label === 'Documents' || item.label === 'Photos' ? true : undefined}
+                          onPointerDown={() => prepareCollection(item.href)}
+                          onClick={() => { prepareCollection(item.href); setMoreOpen(false); }}
                           className={cn(
                             'flex flex-col items-center gap-2 rounded-lg p-4 transition-colors min-h-[56px]',
                             active ? 'bg-rc-orange/10 text-rc-orange' : 'hover:bg-accent text-muted-foreground'
