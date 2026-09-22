@@ -1,13 +1,15 @@
 'use client';
 
-import { createContext, useContext, useCallback, useEffect, useState } from 'react';
+import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { getProjects as fetchProjects } from '@/lib/actions/projects';
+import { createProjectCollectionReader, readProjectCollection } from '@/lib/project-collection-client';
 import type { Project } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 
 interface ProjectContextValue {
+  readCollection: typeof readProjectCollection;
   currentProject: Project | null;
   currentProjectId: string;
   projects: Project[];
@@ -20,6 +22,7 @@ interface ProjectContextValue {
 }
 
 const ProjectContext = createContext<ProjectContextValue>({
+  readCollection: readProjectCollection,
   currentProject: null,
   currentProjectId: '',
   projects: [],
@@ -91,6 +94,10 @@ export default function ProjectProvider({
   const [storedProjectId, setStoredProjectId] = useState<string>('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentUserId, setCurrentUserIdState] = useState<string>('');
+  // Scope pending navigation reads to this mounted user/session, never module globals.
+  const collectionReader = useMemo(() => createProjectCollectionReader(`${isDemo ? 'demo' : 'live'}:${currentUserId}`), [currentUserId, isDemo]);
+  useEffect(() => () => collectionReader.clear(), [collectionReader]);
+
 
   // Rehydrate from localStorage on mount (client-only)
   useEffect(() => {
@@ -232,6 +239,7 @@ export default function ProjectProvider({
 
   return (
     <ProjectContext.Provider value={{
+      readCollection: collectionReader.read,
       currentProject,
       currentProjectId,
       projects,
