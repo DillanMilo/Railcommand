@@ -58,3 +58,8 @@ these metadata changes.
   remain unverified. Awaiting owner identification of a safe demonstration project
   before test writes; project name alone is not authorization to use its records as
   disposable fixtures. Camera/microphone checks still require physical-phone help.
+
+Loading follow-up is live as dpl_24dy7zEsST2H7edtbcU1uLwPVTfd. See
+WORKSPACE_NAVIGATION_OVERLAP_20260922.md for checks and remaining phone acceptance.
+External invitations and reviewer-account blocker are unchanged. Apple browser
+sign-in is accessible; the App Store submission form is distinct from beta review.
