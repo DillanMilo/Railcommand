@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import QueryError from '@/components/shared/QueryError';
 import { useProject } from '@/components/providers/ProjectProvider';
 import { useProjectPhotos } from '@/hooks/useData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -88,7 +89,7 @@ export default function PhotosPage({
   const { currentUserId, isDemo } = useProject();
   const { can } = usePermissions(projectId);
 
-  const { data: photos, loading, refetch } = useProjectPhotos(projectId);
+  const { data: photos, loading, error, refetch } = useProjectPhotos(projectId);
 
   const [filter, setFilter] = useState<PhotoFilter>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<Attachment | null>(null);
@@ -163,6 +164,15 @@ export default function PhotosPage({
     return (
       <div className="flex items-center justify-center h-64">
         <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Photos & Media' }]} />
+        <QueryError message="Couldn't load photos. Your saved photos have not been removed." onRetry={refetch} />
       </div>
     );
   }
