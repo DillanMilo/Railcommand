@@ -3,6 +3,11 @@
 User authorizes sending Mark and Caleb invitations if the app is ready. It is not
 ready for external installation yet; no invitations or review submission sent.
 
+**Latest update:** The separate review login has now been created, isolated,
+verified on the live mobile API/workspace and saved into Apple's beta review
+fields. See [Apple review account](APPLE_REVIEW_ACCOUNT_20260922.md). The initial
+missing-login observations below describe the earlier check, not current state.
+
 ## Verified directly in App Store Connect
 
 - App 6803576049, build 300012 / 1.0.0 is VALID and internally IN_BETA_TESTING.
@@ -25,10 +30,9 @@ ready for external installation yet; no invitations or review submission sent.
 1. Obtain user report for build 300012: sign-in, save log/photo, confirm web readback,
    DFR PDF export, plus pending relevant device/offline checks. User was asked; no
    response received during this check. Shared UI is not blanket device acceptance.
-2. Verify the dedicated reviewer identity, demo-only membership and mobile pilot
-   eligibility. Have the owner enter its password privately in Apple, then verify
-   the required fields are present without printing the password. Do not substitute
-   a customer's login, reset passwords, or expose customer records to Apple.
+2. **Completed:** dedicated reviewer identity, demo-only membership, mobile pilot
+   access and Apple review credentials verified. Use the account handoff above;
+   do not substitute a customer's login or expose customer records to Apple.
 3. Complete outstanding privacy/review checks, submit the intended build for Beta
    App Review, and wait for approval before distributing usable invitations.
 4. Invite only the authorized intended recipients; verify actual invitation state.
@@ -61,5 +65,7 @@ these metadata changes.
 
 Loading follow-up is live as dpl_24dy7zEsST2H7edtbcU1uLwPVTfd. See
 WORKSPACE_NAVIGATION_OVERLAP_20260922.md for checks and remaining phone acceptance.
-External invitations and reviewer-account blocker are unchanged. Apple browser
+External invitations remain pending. The reviewer-account blocker was resolved by
+the linked account setup. Current deployment is `dpl_93nt1tL7FW63Guh94XiBjtfXAgGh`
+(same runtime code, with reviewer added to the pilot allowlist). Apple browser
 sign-in is accessible; the App Store submission form is distinct from beta review.
