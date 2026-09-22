@@ -74,7 +74,8 @@ Authenticated as the reviewer using the public client key, not the admin client:
 
 ## Remaining release work
 
-The review-login blocker is resolved. Beta App Review submission/approval,
+The review-login blocker is resolved. Build 300012 was subsequently submitted at
+20:32 UTC and Apple returned **WAITING_FOR_REVIEW**. Beta App Review approval,
 external invitations and the remaining physical-device acceptance items in
 [external readiness](EXTERNAL_TESTFLIGHT_READINESS_20260922.md) are separate work.
 Do not call the whole mobile app fully accepted from this account verification.
