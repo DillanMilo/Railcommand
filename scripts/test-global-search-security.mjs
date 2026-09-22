@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
-const migration = readFileSync(process.env.SECURITY_MIGRATION_UNDER_TEST || new URL('../supabase/migrations/20260921184333_scope_global_search_profiles.sql', import.meta.url), 'utf8');
+const migration = readFileSync(process.env.SECURITY_MIGRATION_UNDER_TEST || new URL('../supabase/migrations/20260922194359_scope_global_search_profiles.sql', import.meta.url), 'utf8');
 const uid = n => `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`;
 const pid = n => `10000000-0000-0000-0000-${String(n).padStart(12, '0')}`;
 const keys = ['daily_logs', 'matched_profiles', 'milestones', 'punch_list', 'rfis', 'submittals'];
