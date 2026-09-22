@@ -43,9 +43,11 @@ an outbound-network-blocking preload. Production database test requests: zero.
 
 ## Release and rollback
 
-Base: released backend branch `codex/mobile-live-backend-20260916`, commit
-`4c87511b4098203050b71d1b0cdd83851876f40c`. The original web/offline checkout and
-native worktree are untouched. Do not deploy their unrelated in-progress changes.
+Prepared from released backend branch `codex/mobile-live-backend-20260916`, commit
+`4c87511b4098203050b71d1b0cdd83851876f40c`, then integrated with release commit
+`2243dda1566890cc52a17bcf1e64daa5be4b9407` before source review. The original
+web/offline checkout and native worktree are untouched. Do not deploy their
+unrelated in-progress changes.
 
 Applied to production project `gwvftrrknusdfdgiwuij` on September 22, 2026 at
 19:43:59 UTC. Supabase recorded migration
@@ -98,6 +100,7 @@ Hosted staging UI and physical-device acceptance were not performed; the narrow
 SQL patch was verified in isolated Postgres fixtures and by live metadata/API
 checks. Broader web/mobile field acceptance remains a separate tracked item.
 
-This branch remains an isolated change set based on the released backend. Merge
-the recorded migration and test into the canonical release source before the next
-migration release; do not deploy unrelated root/offline/native work wholesale.
+Source integration records the already-applied migration and its regression test
+on the released backend branch. It requires no second live database migration.
+Keep this migration in subsequent release history; do not deploy unrelated
+root/offline/native work wholesale.
