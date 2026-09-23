@@ -1,6 +1,11 @@
-# TestFlight preparation — sending held by owner
+# TestFlight preparation — historical sending hold
 
-**Current instruction (September 23): “Don't send anything yet. Just let me know
+**Hold released; invitations sent.** The owner subsequently authorized sending.
+Mark, Caleb and the owner alternate are now INVITED to build 300012. See
+[the verified sending record](FIELD_INVITATIONS_SENT_20260923.md). The preparation
+below is historical; incomplete device checks remain tracked, not passed.
+
+**Historical instruction (September 23, before release): “Don't send anything yet. Just let me know
 when it's ready.” This supersedes earlier permission to send invitations when
 ready. Do not send TestFlight invitations, notification emails or the custom email
 until the owner explicitly releases this hold.**
