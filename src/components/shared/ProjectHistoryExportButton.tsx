@@ -1,5 +1,6 @@
 'use client';
 
+import { shareWorkspaceBlob } from '@/lib/native-workspace';
 import React, { useMemo, useState } from 'react';
 import { Download, FileDown, FileText, Table } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,8 @@ function orderSections(sections: HistoryExportSection[]) {
   return HISTORY_EXPORT_SECTIONS.map((section) => section.id).filter((section) => sections.includes(section));
 }
 
-function downloadBlob(blob: Blob, fileName: string) {
+async function downloadBlob(blob: Blob, fileName: string) {
+  if (await shareWorkspaceBlob(blob, fileName)) return;
   const url = URL.createObjectURL(blob);
   const link = window.document.createElement('a');
   link.href = url;
@@ -111,7 +113,7 @@ export default function ProjectHistoryExportButton({
 
       if (format === 'csv') {
         const csv = buildProjectHistoryCsv(data, orderedSections);
-        downloadBlob(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }), fileName);
+        await downloadBlob(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }), fileName);
       } else {
         const [{ pdf }, { default: ProjectHistoryPDF }] = await Promise.all([
           import('@react-pdf/renderer'),
@@ -119,7 +121,7 @@ export default function ProjectHistoryExportButton({
         ]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const blob = await pdf(<ProjectHistoryPDF data={data} sections={orderedSections} generatedBy={generatedBy} /> as any).toBlob();
-        downloadBlob(blob, fileName);
+        await downloadBlob(blob, fileName);
       }
 
       setOpen(false);

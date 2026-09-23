@@ -1,5 +1,6 @@
 'use client';
 
+import { shareWorkspaceBlob } from '@/lib/native-workspace';
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Download, FileSpreadsheet, ShieldCheck } from 'lucide-react';
@@ -17,13 +18,14 @@ import {
   type UpReportWorkspaceDetail,
 } from '@/lib/actions/up-weekly-reports';
 
-function downloadBase64(contentBase64: string, mimeType: string, fileName: string) {
+async function downloadBase64(contentBase64: string, mimeType: string, fileName: string) {
   const binary = window.atob(contentBase64);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
   }
   const blob = new Blob([bytes], { type: mimeType });
+  if (await shareWorkspaceBlob(blob, fileName)) return;
   const url = URL.createObjectURL(blob);
   const link = window.document.createElement('a');
   link.href = url;
@@ -72,7 +74,7 @@ export default function ProjectUpWeeklyReportPage({
     if (result.success !== true) {
       setError(result.error);
     } else {
-      downloadBase64(
+      await downloadBase64(
         result.data.contentBase64,
         result.data.mimeType,
         result.data.fileName,

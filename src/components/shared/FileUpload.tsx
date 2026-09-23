@@ -12,9 +12,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { recordAttachment, deleteAttachment } from '@/lib/actions/attachments';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
+import { deleteAttachment } from '@/lib/actions/attachments';
+import { uploadFileWithReceipt } from '@/lib/attachment-upload-retry';
 import type { Attachment } from '@/lib/types';
 
 export interface PendingFile {
@@ -87,7 +86,7 @@ export default function FileUpload({
   const totalCount = existingAttachments.length + (pendingFiles?.length ?? 0) + uploading.length;
 
   const handleFiles = useCallback(
-    async (fileList: FileList | null) => {
+    async (fileList: FileList | File[] | null) => {
       if (!fileList) return;
 
       const remaining = maxFiles - totalCount;
@@ -120,43 +119,11 @@ export default function FileUpload({
 
       setUploading((prev) => [...prev, ...pending]);
 
-      const supabase = createSupabaseBrowserClient();
-      const bucket = getBucket('document');
-
       for (const pf of pending) {
         try {
-          const storagePath = buildStoragePath(projectId!, entityType!, entityId!, pf.file.name);
-
-          // 1. Upload directly to Supabase Storage — bypasses Vercel body limit.
-          const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(storagePath, pf.file, { contentType: pf.file.type, upsert: false });
-
-          if (uploadError) {
-            setUploading((prev) =>
-              prev.map((f) =>
-                f.id === pf.id ? { ...f, uploading: false, uploadError: uploadError.message } : f
-              )
-            );
-            continue;
-          }
-
-          // 2. Record the attachment row via a tiny server action.
-          const result = await recordAttachment({
-            entityType: entityType!,
-            entityId: entityId!,
-            projectId: projectId!,
-            storagePath,
-            bucket,
-            fileName: pf.file.name,
-            fileType: pf.file.type,
-            fileSize: pf.file.size,
-            photoCategory: 'document',
-          });
+          const result = await uploadFileWithReceipt({ file: pf.file, category: 'document', projectId: projectId!, entityType: entityType!, entityId: entityId! });
 
           if (result.error) {
-            // Roll back the uploaded object if the DB insert failed.
-            await supabase.storage.from(bucket).remove([storagePath]);
             setUploading((prev) =>
               prev.map((f) =>
                 f.id === pf.id ? { ...f, uploading: false, uploadError: result.error } : f
@@ -164,7 +131,7 @@ export default function FileUpload({
             );
           } else {
             setUploading((prev) => prev.filter((f) => f.id !== pf.id));
-            if (result.data) onUploadComplete?.(result.data);
+            if (result.data) onUploadComplete?.(result.data.attachment);
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Upload failed';
@@ -373,6 +340,15 @@ export default function FileUpload({
                 {pf.uploadError && (
                   <span className="text-xs text-red-500 shrink-0">{pf.uploadError}</span>
                 )}
+                {pf.uploadError && <Button type="button" variant="outline" size="sm" onClick={async () => {
+                    if (!projectId || !entityType || !entityId) return;
+                    setUploading(previous => previous.map(row => row.id === pf.id ? { ...row, uploading: true } : row));
+                    try {
+                      const result = await uploadFileWithReceipt({ file: pf.file, category: 'document', projectId, entityType, entityId });
+                      if (result.error) setUploading(previous => previous.map(row => row.id === pf.id ? { ...row, uploading: false, uploadError: result.error } : row));
+                      else { removeUploading(pf.id); if (result.data) onUploadComplete?.(result.data.attachment); }
+                    } catch { setUploading(previous => previous.map(row => row.id === pf.id ? { ...row, uploading: false, uploadError: 'Keep this page open and retry the upload.' } : row)); }
+                  }}>Retry</Button>}
                 {!pf.uploading && (
                   <Button
                     type="button"

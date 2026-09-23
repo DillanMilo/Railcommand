@@ -1,3 +1,4 @@
+import NativeWorkspaceBridge from '@/components/shared/NativeWorkspaceBridge';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
@@ -18,6 +19,7 @@ export default async function AppLayout({
     <ProjectProvider demoSlug={demoSlug ?? null}>
       <div className="rc-command-shell flex h-screen overflow-hidden bg-rc-bg">
         {/* Sidebar - desktop only */}
+        <NativeWorkspaceBridge />
         <Sidebar />
 
         {/* Main content area */}

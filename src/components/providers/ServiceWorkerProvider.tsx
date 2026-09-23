@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeWorkspace } from '@/lib/native-workspace';
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 const isDevelopment = process.env.NODE_ENV === "development";
@@ -89,6 +90,7 @@ export default function ServiceWorkerProvider({
   // Register service worker
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    if (nativeWorkspace()) return; // The isolated online workspace must not register a worker.
 
     // Skip on localhost for dev
     const isLocalhost = window.location.hostname === "localhost"

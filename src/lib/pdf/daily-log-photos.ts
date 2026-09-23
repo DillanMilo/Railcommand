@@ -7,8 +7,7 @@ export interface DailyLogPdfPhoto {
 
 export function getDailyLogPhotoAttachments(attachments: Attachment[]): Attachment[] {
   return attachments.filter((attachment) =>
-    ['image/jpeg', 'image/png'].includes((attachment.file_type ?? '').toLowerCase()) &&
-    Boolean(attachment.signed_url ?? attachment.file_url)
+    ((attachment.file_type ?? '').toLowerCase().startsWith('image/') || attachment.photo_category === 'thermal')
   );
 }
 
@@ -26,6 +25,8 @@ export async function loadDailyLogPdfPhotos(attachments: Attachment[]): Promise<
   const loaded = await Promise.all(photos.map(async (photo) => {
     try {
       const source = photo.signed_url ?? photo.file_url;
+      if (photo.signed_url_error || !source) throw new Error('Photo is unavailable');
+      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(photo.file_type.toLowerCase())) throw new Error('This photo format needs conversion before PDF export.');
       if (source.startsWith('data:')) {
         return { source, caption: photo.file_name } satisfies DailyLogPdfPhoto;
       }
@@ -34,15 +35,15 @@ export async function loadDailyLogPdfPhotos(attachments: Attachment[]): Promise<
         source,
         source.startsWith('http:') || source.startsWith('https:') ? { cache: 'no-store' } : undefined
       );
-      if (!response.ok) return null;
+      if (!response.ok) throw new Error('Photo download failed');
       return {
         source: await blobToDataUrl(await response.blob()),
         caption: photo.file_name,
       } satisfies DailyLogPdfPhoto;
     } catch {
-      return null;
+      throw new Error(`Could not include "${photo.file_name}" in the PDF. Refresh photos and retry. If its format is not JPEG or PNG, add a JPEG/PNG copy. The saved original is unchanged.`);
     }
   }));
 
-  return loaded.filter((photo): photo is DailyLogPdfPhoto => photo !== null);
+  return loaded;
 }

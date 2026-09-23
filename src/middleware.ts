@@ -9,7 +9,14 @@ import {
   getIpReputationCookieName,
 } from '@/lib/ip-reputation';
 
+import { evaluateMobilePilotAccess } from '@/lib/mobile-api/pilot-gate';
+
 const GEO_RESTRICTED_PAGE = '/geo-restricted';
+
+const MOBILE_ASSOCIATION_PATHS = new Set([
+  '/.well-known/apple-app-site-association',
+  '/.well-known/assetlinks.json',
+]);
 
 const GEO_RESTRICTED_EXACT_PATHS = new Set(['/login']);
 
@@ -29,6 +36,7 @@ const GEO_RESTRICTED_PREFIXES = [
   '/api/chat',
   '/api/demo',
   '/api/email/send',
+  '/api/mobile/v1',
   '/api/notifications',
 ];
 
@@ -143,6 +151,7 @@ function isGeoRestrictedPath(pathname: string): boolean {
 
 function isPublicRoute(pathname: string): boolean {
   return (
+    pathname.startsWith('/api/mobile/v1/') ||
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/reset-password' ||
@@ -169,6 +178,7 @@ function isPublicRoute(pathname: string): boolean {
 
 function canSkipAuthForPublicRoute(pathname: string): boolean {
   return (
+    pathname.startsWith('/api/mobile/v1/') ||
     pathname === '/' ||
     pathname === '/client' ||
     pathname === '/privacy' ||
@@ -264,6 +274,26 @@ function getIpReputationBlockedResponse(request: NextRequest, pathname: string) 
   return NextResponse.redirect(url);
 }
 
+function getMobilePilotBlockedResponse(request: NextRequest, reason: 'disabled' | 'configuration' | 'user' | 'read-only') {
+  const readOnly = reason === 'read-only';
+  const response = NextResponse.json(
+    {
+      error: readOnly
+        ? 'This mobile pilot is read-only. Saved field work remains on this device.'
+        : 'Mobile access is not enabled for this account.',
+      retryable: false,
+    },
+    { status: 403 },
+  );
+  response.headers.set('Cache-Control', 'no-store, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Vary', 'Origin, Authorization');
+  if (request.headers.get('origin') === 'capacitor://localhost') {
+    response.headers.set('Access-Control-Allow-Origin', 'capacitor://localhost');
+  }
+  return response;
+}
+
 function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
   for (const cookie of cookies) {
     response.cookies.set(cookie.name, cookie.value, {
@@ -280,6 +310,25 @@ function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Apple and Android fetch these machine-readable files without a RailCommand
+  // session. They must never redirect to login or depend on Supabase availability.
+  if (MOBILE_ASSOCIATION_PATHS.has(pathname)) return NextResponse.next();
+
+  if (pathname.startsWith('/api/mobile/v1/')) {
+    const pilot = evaluateMobilePilotAccess({
+      authorization: request.headers.get('authorization'),
+      env: {
+        MOBILE_BACKEND_ENV: process.env.MOBILE_BACKEND_ENV,
+        MOBILE_PILOT_MODE: process.env.MOBILE_PILOT_MODE,
+        MOBILE_PILOT_USER_IDS: process.env.MOBILE_PILOT_USER_IDS,
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      },
+      method: request.method,
+      pathname,
+    });
+    if (!pilot.allowed) return getMobilePilotBlockedResponse(request, pilot.reason);
+  }
 
   // Supabase can fall back to the configured Site URL when a recovery
   // redirect is omitted or rejected. Preserve the one-time PKCE code and

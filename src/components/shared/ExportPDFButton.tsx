@@ -1,5 +1,6 @@
 'use client';
 
+import { shareWorkspaceBlob } from '@/lib/native-workspace';
 import React, { useState, useCallback, useEffect } from 'react';
 import { FileDown, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ export default function ExportPDFButton({
   allowShare = false,
   shareTitle = 'RailCommand PDF',
 }: ExportPDFButtonProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareSupported, setShareSupported] = useState(false);
@@ -43,9 +45,11 @@ export default function ExportPDFButton({
   }, [fileName, getDocument]);
 
   const handleExport = useCallback(async () => {
+    setErrorMessage(null);
     setLoading(true);
     try {
       const { blob, completeFileName } = await generatePdf();
+      if (await shareWorkspaceBlob(blob, completeFileName)) return;
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;
@@ -55,13 +59,14 @@ export default function ExportPDFButton({
       window.document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Could not generate the PDF. Please retry.');
     } finally {
       setLoading(false);
     }
   }, [generatePdf]);
 
   const handleShare = useCallback(async () => {
+    setErrorMessage(null);
     setSharing(true);
     try {
       let file = preparedShareFile;
@@ -79,7 +84,7 @@ export default function ExportPDFButton({
       setPreparedShareFile(null);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
-      console.error('Failed to share PDF:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Could not share the PDF. Please retry.');
     } finally {
       setSharing(false);
     }
@@ -87,6 +92,7 @@ export default function ExportPDFButton({
 
   if (variant === 'icon') {
     return (
+      <span>
       <Button
         variant="outline"
         size="icon"
@@ -96,6 +102,8 @@ export default function ExportPDFButton({
       >
         <FileDown className={loading ? 'animate-pulse' : ''} />
       </Button>
+      {errorMessage && <span role="alert" className="block text-sm text-red-600">{errorMessage}</span>}
+      </span>
     );
   }
 
@@ -111,6 +119,7 @@ export default function ExportPDFButton({
           {sharing ? 'Preparing...' : preparedShareFile ? 'Tap to Share PDF' : 'Share PDF'}
         </Button>
       )}
+      {errorMessage && <p role="alert" className="w-full text-sm text-red-600">{errorMessage}</p>}
     </div>
   );
 }
