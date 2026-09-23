@@ -1,5 +1,12 @@
 # External TestFlight readiness — September 22, 2026
 
+**September 23 superseding update:** Apple approved build 300012. The owner now
+explicitly says **do not send anything yet**. External invitations remain unsent;
+the group is now RailCommand Field Beta, automatic notifications are off and final
+build assignment is held. Follow
+[the preparation/hold record](TESTER_PREPARATION_HOLD_20260923.md) before any release.
+The dated observations below remain as history.
+
 User authorizes sending Mark and Caleb invitations if the app is ready. It is not
 ready for external installation yet; no invitations sent. Build 300012 was
 submitted for Beta App Review at 20:32 UTC and is **WAITING_FOR_REVIEW**.
