@@ -52,4 +52,9 @@ create policy "project managers can write earthcam embeds"
     )
   );
 
+-- Explicit Data API access for fresh databases (October 2026 defaults).
+-- RLS above still controls row access. No anonymous access is added.
+grant select, insert, update, delete on table public.earthcam_embeds to authenticated;
+grant select, insert, update, delete on table public.earthcam_embeds to service_role;
+
 notify pgrst, 'reload schema';

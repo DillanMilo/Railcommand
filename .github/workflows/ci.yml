@@ -20,6 +20,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Database grants and isolated PostgreSQL permissions
+        run: npm run check:db-grants && npm run test:db-grants
+
       - name: Web/mobile action inventory
         run: node scripts/verify-web-mobile-parity.mjs
 

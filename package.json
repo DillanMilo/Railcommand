@@ -10,7 +10,9 @@
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:up-report": "mocha --require tsx \"src/lib/up-reports/__tests__/*.test.ts\"",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
-    "test:email": "tsx scripts/test-email.ts"
+    "test:email": "tsx scripts/test-email.ts",
+    "check:db-grants": "node scripts/check-database-grants.mjs",
+    "test:db-grants": "node --test scripts/check-database-grants.test.mjs && node scripts/test-database-grants.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
