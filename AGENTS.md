@@ -138,3 +138,17 @@ A feature is ready for handoff only when:
   explicitly deferred with a tracked follow-up.
 - Online-only controls fail clearly and safely while disconnected.
 - `npm run build`, `npx tsc --noEmit`, and relevant focused tests pass.
+
+## Explicit Supabase grants
+
+New `public` tables must declare role-specific grants and enable RLS in the
+same table-creation migration. RLS does not grant table access. Do not add
+anonymous access to private project records, restore broad default privileges,
+or grant every role every operation. Server-only tables should grant only
+`service_role`; preserve column-level grants and RPC-only write contracts.
+
+Use schema-qualified literal SQL for table creation and access declarations.
+Run `npm run check:db-grants` and `npm run test:db-grants` (local Docker required).
+The latter provisions disposable PostgreSQL databases with synthetic data and
+no automatic table grants. See [the grant rollout record](docs/SUPABASE_EXPLICIT_GRANTS.md)
+for reset/preview limitations and production approval requirements.

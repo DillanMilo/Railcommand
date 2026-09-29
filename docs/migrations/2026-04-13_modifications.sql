@@ -82,4 +82,9 @@ create policy "issuer or managers can delete modifications"
   );
 
 -- 4. Notify PostgREST -------------------------------------------------------
+-- Explicit Data API access for fresh databases (October 2026 defaults).
+-- RLS above still controls row access. No anonymous access is added.
+grant select, insert, update, delete on table public.modifications to authenticated;
+grant select, insert, update, delete on table public.modifications to service_role;
+
 notify pgrst, 'reload schema';

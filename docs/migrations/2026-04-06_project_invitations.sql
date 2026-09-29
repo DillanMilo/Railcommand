@@ -88,4 +88,9 @@ create policy "invitees can update their own invitations"
   );
 
 -- 4. Notify PostgREST to reload schema cache --------------------------------
+-- Explicit Data API access for fresh databases (October 2026 defaults).
+-- RLS above still controls row access. No anonymous access is added.
+grant select, insert, update on table public.project_invitations to authenticated;
+grant select, insert, update, delete on table public.project_invitations to service_role;
+
 notify pgrst, 'reload schema';
