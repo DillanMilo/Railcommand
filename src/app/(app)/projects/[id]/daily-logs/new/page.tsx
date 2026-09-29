@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useRef, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,9 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
   const { isOffline } = usePWA();
   const { can } = usePermissions(projectId);
 
+  const [clientId] = useState(() => crypto.randomUUID());
+  const [allowSameDay, setAllowSameDay] = useState(false);
+  const submittingRef = useRef(false);
   const [date, setDate] = useState(getLocalDateString);
   const [temp, setTemp] = useState<number | ''>('');
   const [conditions, setConditions] = useState('');
@@ -112,7 +115,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
       {/* Date */}
       <Card>
         <CardHeader><CardTitle>Date</CardTitle></CardHeader>
-        <CardContent><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="max-w-xs" /></CardContent>
+        <CardContent><Input type="date" value={date} onChange={(e) => { setDate(e.target.value); setAllowSameDay(false); }} className="max-w-xs" /></CardContent>
       </Card>
 
       {/* Weather */}
@@ -307,14 +310,24 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
         </Alert>
       )}
 
+      {errorMsg?.startsWith('A daily log already exists for this project and date.') && <Alert>
+        <AlertTitle>Review before adding another log</AlertTitle>
+        <AlertDescription>
+          <a href={`/projects/${projectId}/daily-logs`} target="_blank" rel="noopener noreferrer" className="underline">Open existing daily logs in a new tab</a>
+          <label className="flex items-center gap-3 py-3"><input type="checkbox" checked={allowSameDay} onChange={(event) => setAllowSameDay(event.target.checked)} />Keep as a separate log. Existing logs will stay unchanged.</label>
+        </AlertDescription>
+      </Alert>}
       <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pb-8">
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/projects/${projectId}/daily-logs`)}>Cancel</Button>
         <Button
           className="bg-rc-orange hover:bg-rc-orange-dark text-white"
-          disabled={success || submitting}
+          disabled={photos.some(photo => photo.preparing) || success || submitting || isOffline}
           onClick={async () => {
+            if (submittingRef.current || isOffline) return;
+            submittingRef.current = true;
             setErrorMsg(null);
             setSubmitting(true);
+            try {
 
             if (isDemo) {
               const log = addDailyLog(projectId, {
@@ -352,6 +365,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
               setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
             } else {
               const result = await serverCreateDailyLog(projectId, {
+                clientId, allow_same_day: allowSameDay,
                 log_date: date,
                 weather_temp: typeof temp === 'number' ? temp : 0,
                 weather_conditions: conditions,
@@ -385,6 +399,9 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
               setSuccess(true);
               setTimeout(() => router.push(`/projects/${projectId}/daily-logs`), 1500);
             }
+            } catch {
+              setErrorMsg('The connection was interrupted. Your form is still here. Retry to check the original submission; do not start another log.');
+            } finally { submittingRef.current = false; setSubmitting(false); }
           }}
         >
           {uploadProgress ?? (submitting && !success ? 'Submitting…' : 'Submit Log')}

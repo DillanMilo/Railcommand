@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from '@/components/ui/table';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
-import PhotoGallery from '@/components/shared/PhotoGallery';
+import SavedDailyLogPhotos from '@/components/daily-logs/SavedDailyLogPhotos';
 import FileUpload from '@/components/shared/FileUpload';
 import { getProfiles, getAttachments } from '@/lib/store';
 import { useProject } from '@/components/providers/ProjectProvider';
@@ -38,6 +38,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       ? (log as DailyLog & { attachments?: Attachment[] }).attachments!
       : isDemo ? getAttachments('daily_log', logId) : []
     : [];
+  const [photoRevision, setPhotoRevision] = useState(0);
   const [signedAttachments, setSignedAttachments] = useState<Attachment[]>([]);
 
   const resolveSignedUrls = useCallback(async () => {
@@ -89,11 +90,13 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
         </div>
         <div className="flex items-center gap-2">
           <ExportPDFButton
+            key={`${logId}:${photoRevision}`}
             getDocument={async () => {
               const { default: DailyLogPDF } = await import('@/lib/pdf/DailyLogPDF');
               const refreshed = isDemo
                 ? { data: attachments }
                 : await getAttachmentsWithSignedUrls('daily_log', logId);
+              if ('error' in refreshed && refreshed.error) throw new Error(refreshed.error);
               const pdfPhotos = await loadDailyLogPdfPhotos(refreshed.data ?? attachments);
               return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} photos={pdfPhotos} />;
             }}
@@ -208,7 +211,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       )}
 
       {/* Photos */}
-      <PhotoGallery attachments={attachments} />
+      <SavedDailyLogPhotos key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove={can(ACTIONS.DAILY_LOG_UPDATE)} onPhotosChanged={() => setPhotoRevision(value => value + 1)} />
 
       {/* Document attachments */}
       {!isDemo && (

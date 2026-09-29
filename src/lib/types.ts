@@ -404,6 +404,8 @@ export interface Attachment {
   created_at: string;
   /** Transient field — populated at fetch time for private buckets, never stored in DB */
   signed_url?: string;
+  /** Transient preview error; the attachment record remains visible. */
+  signed_url_error?: string;
   /** Transient field — smaller image URL for grids/previews, never stored in DB */
   thumbnail_url?: string;
 }

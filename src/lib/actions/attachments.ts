@@ -74,7 +74,7 @@ export async function uploadAttachment(
       .single();
 
     if (dbError) {
-      await supabase.storage.from(bucket).remove([storagePath]);
+      // Preserve uploaded bytes: a failed response may hide a committed receipt.
       return { error: dbError.message };
     }
 
@@ -97,6 +97,7 @@ export async function uploadAttachment(
  * trivially. RLS on the attachments table still enforces project membership.
  */
 export async function recordAttachment(input: {
+  clientId?: string;
   entityType: string;
   entityId: string;
   projectId: string;
@@ -128,9 +129,22 @@ export async function recordAttachment(input: {
       .getPublicUrl(input.storagePath);
     const fileUrl = urlData.publicUrl;
 
+    if (input.clientId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.clientId)) return { error: 'Invalid attachment identity.' };
+    if (input.bucket !== getBucket(input.photoCategory ?? 'document') || !input.storagePath.startsWith(`${input.projectId}/${input.entityType}/${input.entityId}/`) || input.storagePath.split('/').some(segment => segment === '..' || segment === '.')) return { error: 'Invalid attachment path.' };
+    const findReceipt = async (): Promise<Attachment | null> => {
+      if (!input.clientId) return null;
+      const { data: existing, error } = await supabase.from('attachments').select('*').eq('id',input.clientId).maybeSingle();
+      if (error || !existing) return null;
+      if (existing.uploaded_by !== user.id || existing.project_id !== input.projectId || existing.entity_id !== input.entityId || existing.entity_type !== input.entityType || existing.file_url !== fileUrl || existing.file_size !== input.fileSize || existing.file_type !== input.fileType) return null;
+      return existing as Attachment;
+    };
+    const existing = await findReceipt();
+    if (existing) return { success: true, data: existing };
+
     const { data: attachment, error: dbError } = await supabase
       .from('attachments')
       .insert({
+        ...(input.clientId ? { id: input.clientId } : {}),
         entity_type: input.entityType,
         entity_id: input.entityId,
         project_id: input.projectId,
@@ -148,8 +162,11 @@ export async function recordAttachment(input: {
       .single();
 
     if (dbError) {
-      // Best-effort cleanup — orphan object otherwise
-      await supabase.storage.from(input.bucket).remove([input.storagePath]);
+      // Never delete bytes after an ambiguous metadata response.
+      if (input.clientId) {
+        const reconciled = await findReceipt();
+        if (reconciled) return { success: true, data: reconciled };
+      }
       return { error: dbError.message };
     }
 
@@ -160,6 +177,32 @@ export async function recordAttachment(input: {
       error: err instanceof Error ? err.message : 'Failed to record attachment',
     };
   }
+}
+
+/** Remove only this DFR's attachment record. Never delete shared stored bytes. */
+export async function removeDailyLogPhoto(attachmentId: string, projectId: string, logId: string): Promise<ActionResult<undefined>> {
+  try {
+    const supabase = await createClient();
+    const { user, error } = await getAuthenticatedUser(supabase);
+    if (!user || error) return { error: error ?? 'Not authenticated' };
+    const permission = await checkPermission(supabase, user.id, projectId, ACTIONS.DAILY_LOG_UPDATE);
+    if (!permission.allowed) return { error: permission.error };
+    const { data: photo, error: readError } = await supabase.from('attachments').select('*')
+      .eq('id', attachmentId).eq('project_id', projectId).eq('entity_type', 'daily_log').eq('entity_id', logId).maybeSingle();
+    if (readError) return { error: 'Could not check this photo. Refresh photos and retry.' };
+    if (!photo) return { error: 'This photo is no longer attached to this DFR. Refresh photos.' };
+    if (!photo.file_type?.startsWith('image/') && photo.photo_category !== 'thermal') return { error: 'This item is not a DFR photo.' };
+    if (photo.uploaded_by !== user.id) {
+      const deletion = await checkPermission(supabase, user.id, projectId, ACTIONS.PHOTO_DELETE);
+      if (!deletion.allowed) return { error: deletion.error };
+    }
+    const { data: removed, error: removeError } = await supabase.from('attachments').delete()
+      .eq('id', attachmentId).eq('project_id', projectId).eq('entity_type', 'daily_log').eq('entity_id', logId).select('id');
+    if (removeError || !removed?.some(row => row.id === attachmentId)) return { error: 'Removal was not confirmed. Refresh photos before retrying; no stored file was deleted.' };
+    revalidatePath(`/projects/${projectId}/daily-logs/${logId}`);
+    revalidatePath(`/projects/${projectId}/photos`);
+    return { success: true, data: undefined };
+  } catch { return { error: 'Removal could not be confirmed. Refresh photos before retrying.' }; }
 }
 
 export async function deleteAttachment(
@@ -412,7 +455,7 @@ export async function getAttachmentsWithSignedUrls(
       if (!PRIVATE_BUCKETS.has(bucket)) continue;
 
       const urlParts = att.file_url.split(`/${bucket}/`);
-      if (urlParts.length !== 2) continue;
+      if (urlParts.length !== 2) { attachments[i] = { ...att, signed_url_error: 'Stored file path could not be resolved.' }; continue; }
 
       if (!grouped[bucket]) grouped[bucket] = [];
       grouped[bucket].push({ index: i, path: urlParts[1] });
@@ -425,20 +468,18 @@ export async function getAttachmentsWithSignedUrls(
     await Promise.all(
       bucketEntries.map(async ([bucket, items]) => {
         const paths = items.map((item) => item.path);
-        const { data, error } = await supabase.storage
-          .from(bucket)
-          .createSignedUrls(paths, 3600); // 1 hour expiry
-
-        if (error || !data) return;
-
-        for (let j = 0; j < data.length; j++) {
-          const signedUrl = data[j]?.signedUrl ?? undefined;
-          if (signedUrl) {
-            attachments[items[j].index] = {
-              ...attachments[items[j].index],
-              signed_url: signedUrl,
+        try {
+          const { data, error } = await supabase.storage.from(bucket).createSignedUrls(paths, 3600);
+          for (const item of items) {
+            const signedUrl = !error ? data?.find(entry => entry.path === item.path)?.signedUrl : undefined;
+            attachments[item.index] = {
+              ...attachments[item.index],
+              signed_url: signedUrl || undefined,
+              signed_url_error: signedUrl ? undefined : 'Preview could not be loaded. Refresh photos before adding this file again.',
             };
           }
+        } catch {
+          for (const item of items) attachments[item.index] = { ...attachments[item.index], signed_url_error: 'Preview unavailable while disconnected. Reconnect and refresh photos.' };
         }
       })
     );

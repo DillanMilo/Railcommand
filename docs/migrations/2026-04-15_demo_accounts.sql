@@ -56,4 +56,9 @@ create policy "demo_team_logins_select"
 -- All mutations go through the admin API using the service-role client
 
 -- 5. Schema Notification ------------------------------------------------
+-- Explicit Data API access for fresh databases (October 2026 defaults).
+-- RLS above still controls row access. No anonymous access is added.
+grant select, insert, update, delete on table public.demo_accounts to service_role;
+grant select, insert, update, delete on table public.demo_team_logins to service_role;
+
 notify pgrst, 'reload schema';
