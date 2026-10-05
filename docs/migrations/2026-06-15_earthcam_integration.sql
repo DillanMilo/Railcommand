@@ -188,4 +188,13 @@ create policy "project editors can delete earthcam evidence"
     )
   );
 
+-- Explicit Data API access for fresh databases (October 2026 defaults).
+-- RLS above still controls row access. No anonymous access is added.
+grant select, insert, update on table public.earthcam_connections to authenticated;
+grant select, insert, update, delete on table public.earthcam_connections to service_role;
+grant select, insert, update, delete on table public.earthcam_cameras to authenticated;
+grant select, insert, update, delete on table public.earthcam_cameras to service_role;
+grant select, insert, delete on table public.earthcam_evidence to authenticated;
+grant select, insert, update, delete on table public.earthcam_evidence to service_role;
+
 notify pgrst, 'reload schema';

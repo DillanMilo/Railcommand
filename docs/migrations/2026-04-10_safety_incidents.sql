@@ -82,4 +82,9 @@ create policy "reporters can delete safety incidents"
   );
 
 -- 4. Notify PostgREST -------------------------------------------------------
+-- Explicit Data API access for fresh databases (October 2026 defaults).
+-- RLS above still controls row access. No anonymous access is added.
+grant select, insert, update, delete on table public.safety_incidents to authenticated;
+grant select, insert, update, delete on table public.safety_incidents to service_role;
+
 notify pgrst, 'reload schema';
