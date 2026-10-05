@@ -161,7 +161,7 @@ export default function DocumentsListPage({ params, searchParams }: { params: Pr
 
       const archive = await createDocumentArchive(files);
       const archiveName = `RailCommand-Documents-${new Date().toISOString().slice(0, 10)}.zip`;
-      saveDocumentArchive(archive, archiveName);
+      await saveDocumentArchive(archive, archiveName);
 
       const documentIdsWithFiles = new Set(files.map((file) => file.document_id));
       const missingCount = selectedDocuments.filter((doc) => !documentIdsWithFiles.has(doc.id)).length;

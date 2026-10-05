@@ -10,7 +10,9 @@
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:up-report": "mocha --require tsx \"src/lib/up-reports/__tests__/*.test.ts\"",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
-    "test:email": "tsx scripts/test-email.ts"
+    "test:email": "tsx scripts/test-email.ts",
+    "check:db-grants": "node scripts/check-database-grants.mjs",
+    "test:db-grants": "node --test scripts/check-database-grants.test.mjs && node scripts/test-database-grants.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -23,7 +25,7 @@
     "date-fns": "^4.4.0",
     "fflate": "^0.8.3",
     "lucide-react": "^0.575.0",
-    "next": "16.3.0",
+    "next": "16.3.8",
     "openai": "^6.39.1",
     "radix-ui": "^1.4.3",
     "react": "19.2.7",
@@ -41,7 +43,7 @@
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19",
     "eslint": "^9.39.4",
-    "eslint-config-next": "16.3.0",
+    "eslint-config-next": "16.3.8",
     "mocha": "^11.7.6",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4.3.0",

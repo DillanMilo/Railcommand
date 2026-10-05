@@ -1,7 +1,4 @@
-import { recordAttachment } from '@/lib/actions/attachments';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getBucket, buildStoragePath } from '@/lib/attachments-shared';
-import { compressImage } from '@/lib/compressImage';
+import { uploadFileWithReceipt } from '@/lib/attachment-upload-retry';
 import type { PhotoFile } from '@/components/shared/PhotoUpload';
 import type { Attachment, PhotoCategory } from '@/lib/types';
 
@@ -26,39 +23,7 @@ export async function uploadPhotoAttachment(input: {
   geoLat?: number | null;
   geoLng?: number | null;
 }): Promise<{ success?: boolean; data?: UploadedPhotoAttachment; error?: string }> {
-  const supabase = createSupabaseBrowserClient();
-  const compressed = await compressImage(input.file, input.category);
-  const bucket = getBucket(input.category);
-  const storagePath = buildStoragePath(input.projectId, input.entityType, input.entityId, compressed.name);
-
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(storagePath, compressed, { contentType: compressed.type, upsert: false });
-
-  if (uploadError) {
-    return { error: uploadError.message };
-  }
-
-  const recordResult = await recordAttachment({
-    entityType: input.entityType,
-    entityId: input.entityId,
-    projectId: input.projectId,
-    storagePath,
-    bucket,
-    fileName: compressed.name,
-    fileType: compressed.type,
-    fileSize: compressed.size,
-    photoCategory: input.category,
-    geoLat: input.geoLat ?? null,
-    geoLng: input.geoLng ?? null,
-  });
-
-  if (recordResult.error || !recordResult.data) {
-    await supabase.storage.from(bucket).remove([storagePath]);
-    return { error: recordResult.error ?? 'Failed to record attachment' };
-  }
-
-  return { success: true, data: { attachment: recordResult.data, file: compressed } };
+  return uploadFileWithReceipt(input);
 }
 
 /**
@@ -134,39 +99,10 @@ export async function uploadFilesAfterCreate(
 ): Promise<UploadResult> {
   const result: UploadResult = { total: files.length, succeeded: 0, failed: 0, errors: [] };
 
-  const supabase = createSupabaseBrowserClient();
-  const bucket = getBucket('document');
-
   const uploadPromises = files.map(async (file) => {
     try {
-      const storagePath = buildStoragePath(projectId, entityType, entityId, file.name);
-
-      // 1. Direct upload to Supabase Storage — bypasses Vercel body limits.
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(storagePath, file, { contentType: file.type, upsert: false });
-
-      if (uploadError) {
-        return { success: false, name: file.name, error: uploadError.message };
-      }
-
-      // 2. Tiny server action to record the attachment row.
-      const recordResult = await recordAttachment({
-        entityType,
-        entityId,
-        projectId,
-        storagePath,
-        bucket,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        photoCategory: 'document',
-      });
-
-      if (recordResult.error) {
-        await supabase.storage.from(bucket).remove([storagePath]);
-        return { success: false, name: file.name, error: recordResult.error };
-      }
+      const uploadResult = await uploadFileWithReceipt({ file, category: 'document', entityType, entityId, projectId });
+      if (uploadResult.error) return { success: false, name: file.name, error: uploadResult.error };
 
       return { success: true, name: file.name };
     } catch (err) {
