@@ -66,9 +66,16 @@ UI, bundled logic, plugins and permissions normally need a new signed mobile bui
 and TestFlight/Play distribution. The current Expo app has no configured OTA update
 mechanism; do not promise an automatic mobile code update after a web deployment.
 
-## Current source locations — verify before deployment
+## Source locations — verify before deployment
 
-As recorded in the September 16 release handoff:
+The October 5, 2026 reconciliation in PR #20 carries the released mobile backend
+and its already-reviewed provisioning changes into `main`, together with the
+Next.js 16.3.8 patch. `main` is the canonical web/backend release source after
+that merge. Native bundled source remains on `codex/mobile-beta-20260910`; this
+reconciliation does not merge the native app or the unfinished web/offline branch.
+See `docs/DEPENDENCY_RELEASE_20261005.md` for compatibility, validation and rollback.
+
+Historical locations from the September 16 release handoff:
 
 | Area | Location / branch | Responsibility |
 | --- | --- | --- |
@@ -82,9 +89,10 @@ main or the root checkout contains all deployed mobile routes. Before deploying 
 web revision, verify it retains the currently released mobile API, authentication,
 allowlist, RailBot and sync behavior. Prefer integrating reviewed changes into one
 canonical release branch through a reviewed merge; never deploy the root's unrelated
-uncommitted work wholesale. Branch consolidation is an outstanding follow-up, not
-completed by adding this policy. Keep this policy and AGENTS.md in the canonical
-repository, and carry them through active release branches while split work remains.
+uncommitted work wholesale. The web/backend reconciliation above resolves the old
+`main` release gap; native and unfinished offline development remain separate.
+Keep this policy and AGENTS.md in the canonical repository, and carry them through
+active release branches while split work remains.
 
 ## Impact record template
 
