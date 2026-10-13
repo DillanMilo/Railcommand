@@ -38,3 +38,6 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Isolated beta account security and retry checks
+        run: npm run test:beta-accounts

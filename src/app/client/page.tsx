@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import styles from './client.module.css';
+import BetaInvitationForm from './BetaInvitationForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -739,6 +740,7 @@ export default async function ClientDashboardPage({
         </div>
         <div className={styles.railLabel}>OWNER CONSOLE</div>
         <nav aria-label="Owner console sections">
+          <Link href="/client#invite"><UserPlus size={17} />Invite account</Link>
           <Link href="/client#overview" className={styles.activeNav}>
             <ShieldCheck size={17} />
             Overview
@@ -785,6 +787,7 @@ export default async function ClientDashboardPage({
             </button>
           </form>
           <nav className={styles.mobileSectionNav} aria-label="Dashboard sections">
+            <Link href="/client#invite">Invite</Link>
             <Link href="/client#overview">Overview</Link>
             <Link href="/client#projects">Projects</Link>
             <Link href="/client#activity">Activity</Link>
@@ -793,6 +796,7 @@ export default async function ClientDashboardPage({
         </header>
 
         <div className={styles.consoleContent}>
+          <BetaInvitationForm />
           <section id="overview" className={styles.consoleHero}>
             <div>
               <p className={styles.eyebrow}>BUSINESS CONTROL / REAL-TIME</p>

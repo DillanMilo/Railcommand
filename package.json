@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "test:beta-accounts": "mocha --require tsx src/lib/beta-accounts.test.ts",
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:up-report": "mocha --require tsx \"src/lib/up-reports/__tests__/*.test.ts\"",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
