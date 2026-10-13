@@ -1,0 +1,28 @@
+{
+  "feature": "Owner console isolated beta account invitations",
+  "date": "2026-10-13",
+  "entry_point": "/client#invite; /admin/clients redirects to /client",
+  "user_visible_change": "Owner enters an email and optional name/workspace name, creates a real enterprise beta account in an empty separate workspace, and copies its private password-activation link or a ready-to-send message. No email is sent automatically and no initial project is created.",
+  "web_impact": "New responsive owner-console form and authenticated server action. The existing signed owner-console cookie is checked on every action before the admin client is constructed. Existing activation/password/login/project-creation screens are reused.",
+  "mobile_impact": "Owner administration is intentionally browser-only; a phone browser uses the same responsive form. Native customer APIs, permissions and binary are unchanged. TestFlight distribution and native pilot enrollment remain the separate documented administration step; the form states this limitation.",
+  "shared_api_domain_database_impact": "Shared provisioning service uses existing Auth, organizations, profiles and project membership contracts. No schema, RPC, RLS or role-grant changes. Service-managed app_metadata stores a stable organization UUID for retry recovery; user_metadata is not trusted for this decision.",
+  "offline_classification": "Online-only: authentication and provider-side provisioning require connectivity. The button disables offline; controlled fields survive a lost connection or failed action while the page stays open. A restarted page does not retain unsubmitted owner form input. Retry with the same email recovers an already-started pending account without duplicating its workspace. No private field values or activation links enter localStorage, IndexedDB, public Cache Storage or an outbox.",
+  "permissions_idempotency_conflicts": "New accounts receive profile manager, never platform admin, and no project memberships. Existing activated/unmanaged accounts, accounts with projects/memberships, shared organizations and changed profile assignments are refused. Auth email uniqueness, a service-controlled stable organization UUID, insert conflict recovery and compare-and-set profile updates protect retries and concurrent requests. Invitation tokens are returned only to the unlocked owner and are not persisted in application tables or logs.",
+  "installed_client_compatibility": "Based on production commit 2d82288380f1384b399998aaea37e197f8746fcd. Released /api/mobile/v1 routes, auth, pilot controls, RailBot, shared packages, offline payloads and public/sw.js have no diff. No new mobile build or device queue upgrade is required.",
+  "web_mobile_verification": "Administrative form verified in the browser at desktop and 390x844 phone width with no horizontal overflow. Customer native-to-web and web-to-native data flows have no changed contracts and were not re-exercised. Physical native-device acceptance remains separately tracked.",
+  "validation": {
+    "focused_tests": "16 provisioning, email-only setup, isolation, concurrent retry, partial failure, trusted origin and gate tests passed; added to CI.",
+    "browser_story": "Actual form -> Next server action -> synthetic HTTP Auth/REST provider -> exactly one account and one enterprise non-demo workspace -> activation link and clipboard copy. Repeated submission retains one user/organization. Synthetic recipient link opens the existing password setup screen. No synthetic password was entered and no production fixture records were created.",
+    "authorization": "Direct local POSTs without owner cookie, with a forged cookie and with a foreign Origin were refused before provider writes.",
+    "offline": "Real browser network emulation disabled creation and preserved email/name/workspace fields; normal connectivity and viewport restored.",
+    "build": "npm run build passed after final form changes.",
+    "typescript": "npx tsc --noEmit passed.",
+    "lint": "Focused ESLint passed.",
+    "action_inventory": "127 existing web actions remain covered; this does not declare full native parity.",
+    "database_grants": "Static repository checks and disposable local PostgreSQL preview/reset/legacy-defaults checks passed.",
+    "pending": "Recipient physical-device acceptance and individual TestFlight enrollment are separate from this web administration feature. Existing supported platform acceptance gaps remain in the mobile handoffs."
+  },
+  "rollout": "Deploy only this isolated feature worktree, preserving production environment and existing pilot identities. Runtime artifact/source/PR identifiers will be recorded in the release handoff.",
+  "rollback": "Restore the preceding production deployment to remove the owner form. Do not delete accounts, workspaces, recipient projects or offline drafts as part of rollback; existing accounts remain valid.",
+  "tracked_gap": "Native TestFlight/pilot enrollment remains manual through the procedure in docs/mobile/FIELD_INVITATIONS_SENT_20260923.md. Automating Apple distribution/native enrollment is a separate feature and is explicitly disclosed in the UI."
+}

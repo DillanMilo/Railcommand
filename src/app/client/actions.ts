@@ -2,11 +2,16 @@
 
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { provisionBetaAccount, type BetaAccountInput, type BetaAccountResult } from '@/lib/beta-accounts';
+import { ZodError } from 'zod';
 import {
   CLIENT_DASHBOARD_COOKIE,
   getDashboardPassword,
   getGateSignature,
   safeCompare,
+  isDashboardSession,
 } from './gate';
 
 const UNLOCK_WINDOW_MS = 15 * 60 * 1000;
@@ -25,6 +30,23 @@ function checkUnlockRateLimit(key: string): boolean {
   if (entry.count >= UNLOCK_ATTEMPT_LIMIT) return false;
   entry.count += 1;
   return true;
+}
+
+export async function createBetaAccount(input: BetaAccountInput): Promise<
+  { account: BetaAccountResult } | { error: string }
+> {
+  const cookie = (await cookies()).get(CLIENT_DASHBOARD_COOKIE)?.value;
+  if (!isDashboardSession(cookie)) return { error: 'Unlock the owner console before creating an invitation.' };
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+    if (!siteUrl) return { error: 'The RailCommand invitation URL is not configured.' };
+    const account = await provisionBetaAccount(createAdminClient(), input, siteUrl);
+    revalidatePath('/client');
+    return { account };
+  } catch (error) {
+    if (error instanceof ZodError) return { error: error.issues[0]?.message ?? 'Check the invitation fields.' };
+    return { error: error instanceof Error ? error.message : 'Could not create the invitation. Retry with the same email.' };
+  }
 }
 
 async function getRequestKey(): Promise<string> {

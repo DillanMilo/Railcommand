@@ -20,3 +20,8 @@ export function safeCompare(a: string, b: string): boolean {
   if (aBuffer.length !== bBuffer.length) return false;
   return timingSafeEqual(aBuffer, bBuffer);
 }
+
+export function isDashboardSession(value: string | undefined): boolean {
+  const signature = getGateSignature();
+  return !!signature && !!value && safeCompare(value, signature);
+}
