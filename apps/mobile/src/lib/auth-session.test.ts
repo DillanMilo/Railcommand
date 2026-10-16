@@ -11,6 +11,7 @@ type AuthValue = {
   loading: boolean;
   googleEnabled: boolean | null;
   isSessionCurrent(userId: string | null, revision: number): boolean;
+  requestPasswordReset(email: string): Promise<string | null>;
 };
 type Slot = { value?: unknown; deps?: readonly unknown[]; setter?: (value: unknown) => void; cleanup?: () => void };
 type Context = { value: unknown; Provider: { context: Context } };
@@ -34,6 +35,8 @@ function authHarness(settingsResponse: { ok: boolean; json?: () => Promise<unkno
   const slots: Slot[] = [];
   const effects: { slot: Slot; effect: () => void | (() => void) }[] = [];
   const writes: unknown[] = [];
+  const recoveryRequests: { email: string; redirectTo: string }[] = [];
+  let recoveryError: { message: string } | null = null;
   const nextSlot = () => slots[cursor] ?? (slots[cursor] = {});
   const takeSlot = () => { const slot = nextSlot(); cursor += 1; return slot; };
   const sameDeps = (left: readonly unknown[] | undefined, right: readonly unknown[] | undefined) =>
@@ -94,6 +97,10 @@ function authHarness(settingsResponse: { ok: boolean; json?: () => Promise<unkno
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === '@/lib/supabase') return { supabase: { auth: {
         getSession: () => initial,
+        resetPasswordForEmail: async (email: string, options: { redirectTo: string }) => {
+          recoveryRequests.push({ email, redirectTo: options.redirectTo });
+          return { error: recoveryError };
+        },
         onAuthStateChange: (callback: (event: string, next: TestSession | null) => void) => {
           listener = callback;
           return { data: { subscription: { unsubscribe: () => { unsubscribed += 1; } } } };
@@ -121,7 +128,8 @@ function authHarness(settingsResponse: { ok: boolean; json?: () => Promise<unkno
     for (let tick = 0; tick < 20; tick += 1) { if (live && dirty) render(); await Promise.resolve(); }
   };
   return {
-    writes, flush,
+    writes, flush, recoveryRequests,
+    setRecoveryError: (error: { message: string } | null) => { recoveryError = error; },
     value: () => (compiled.exports.useAuth as () => AuthValue)(),
     initialSession: (next: TestSession | null) => finishInitial({ data: { session: next } }),
     emit(event: string, next: TestSession | null) { assert.ok(listener); listener(event, next); },
@@ -195,6 +203,27 @@ describe('auth provider session ownership lifetime', () => {
     h.emit('SIGNED_IN', session('user-b'));
     await h.flush();
     assert.equal(h.writes.length, 0, 'No state write is accepted after cleanup');
+  });
+});
+
+describe('native password recovery requests', () => {
+  it('trims the email and requests the callback with explicit recovery routing', async () => {
+    const h = authHarness();
+    await h.flush();
+    assert.equal(await h.value().requestPasswordReset('  recovery@railcommand.test  '), null);
+    assert.deepEqual(h.recoveryRequests, [{
+      email: 'recovery@railcommand.test',
+      redirectTo: 'https://staging.example.invalid/auth/callback?type=recovery&next=%2Freset-password',
+    }]);
+    h.unmount();
+  });
+
+  it('returns service failures to the sign-in screen instead of claiming success', async () => {
+    const h = authHarness();
+    await h.flush();
+    h.setRecoveryError({ message: 'Email rate limit exceeded' });
+    assert.equal(await h.value().requestPasswordReset('recovery@railcommand.test'), 'Email rate limit exceeded');
+    h.unmount();
   });
 });
 import { URL } from 'node:url';
