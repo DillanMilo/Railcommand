@@ -503,6 +503,8 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/invite/') ||
       pathname.startsWith('/auth/') ||
       pathname === '/login' ||
+      pathname === '/reset-password' ||
+      pathname === '/api/auth/password-reset' ||
       pathname === '/privacy' ||
       pathname === '/terms';
 

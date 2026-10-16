@@ -68,7 +68,7 @@ function buildRecoveryEmail(resetUrl: string): string {
           </a>
         </div>
         <p style="color:#9ca3af;font-size:12px;text-align:center">
-          This link expires in 24 hours and can only be used once. If you didn't request
+          This link expires in 1 hour and can only be used once. If you didn't request
           a password reset, you can safely ignore this email.
         </p>
       </div>
