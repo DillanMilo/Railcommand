@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { headers } from 'next/headers';
+import { isRecoveryConfirmationNonce, RECOVERY_CONFIRMATION_HEADER } from '@/lib/auth/recovery-confirmation';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -14,7 +16,8 @@ export default async function ConfirmRecoveryPage({
 }: {
   searchParams: Promise<{ token_hash?: string | string[]; error?: string | string[] }>;
 }) {
-  const params = await searchParams;
+  const [params, requestHeaders] = await Promise.all([searchParams, headers()]);
+  const confirmation = requestHeaders.get(RECOVERY_CONFIRMATION_HEADER);
   const token = typeof params.token_hash === 'string' && params.token_hash.length <= 1024
     ? params.token_hash : '';
 
@@ -34,9 +37,16 @@ export default async function ConfirmRecoveryPage({
                 We couldn’t connect to verify your link. Check your connection and try again.
               </p>
             )}
-            {token ? (
+            {params.error === 'confirmation_required' && (
+              <p role="alert" className="border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                Please continue from this page to verify your link. If this message repeats,
+                allow cookies for railcommand.io, then reopen your newest reset email.
+              </p>
+            )}
+            {token && isRecoveryConfirmationNonce(confirmation) ? (
               <form action="/auth/recovery/confirm" method="post">
                 <input type="hidden" name="token_hash" value={token} />
+                <input type="hidden" name="confirmation" value={confirmation} />
                 <button type="submit" className="min-h-12 w-full bg-orange-500 px-4 py-3 font-semibold text-white hover:bg-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600">
                   Continue to reset password
                 </button>

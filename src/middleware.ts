@@ -10,6 +10,12 @@ import {
 } from '@/lib/ip-reputation';
 
 import { evaluateMobilePilotAccess } from '@/lib/mobile-api/pilot-gate';
+import {
+  createRecoveryConfirmationNonce,
+  recoveryConfirmationCookieName,
+  RECOVERY_CONFIRMATION_HEADER,
+  RECOVERY_CONFIRMATION_TTL_SECONDS,
+} from '@/lib/auth/recovery-confirmation';
 
 const GEO_RESTRICTED_PAGE = '/geo-restricted';
 
@@ -407,6 +413,23 @@ export async function middleware(request: NextRequest) {
   }
 
   if (publicRoute && canSkipAuthForPublicRoute(pathname)) {
+    if (pathname === '/auth/recovery' && request.method === 'GET') {
+      const nonce = createRecoveryConfirmationNonce();
+      const headers = new Headers(request.headers);
+      // Overwrite any caller-supplied value. Only this freshly generated nonce
+      // may be rendered into the form, paired with its first-party cookie.
+      headers.set(RECOVERY_CONFIRMATION_HEADER, nonce);
+      const response = NextResponse.next({ request: { headers } });
+      response.cookies.set(recoveryConfirmationCookieName(), nonce, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: RECOVERY_CONFIRMATION_TTL_SECONDS,
+      });
+      response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+      return applyPendingCookies(response, pendingCookies);
+    }
     return applyPendingCookies(NextResponse.next({ request }), pendingCookies);
   }
 

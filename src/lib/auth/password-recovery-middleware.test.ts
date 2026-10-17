@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'mocha';
 import { NextRequest } from 'next/server';
 import { middleware } from '../../middleware';
+import { recoveryConfirmationCookieName, RECOVERY_CONFIRMATION_HEADER } from './recovery-confirmation';
 
 describe('password recovery before organization onboarding', () => {
   const originalFetch = globalThis.fetch;
@@ -81,6 +82,25 @@ describe('password recovery before organization onboarding', () => {
     } finally {
       globalThis.fetch = fetchBefore;
     }
+  });
+
+  it('pairs a fresh form nonce with a private first-party cookie and ignores a forged request header', async () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 2; i++) {
+      const response = await middleware(new NextRequest('https://railcommand.io/auth/recovery?token_hash=synthetic', {
+        headers: { [RECOVERY_CONFIRMATION_HEADER]: 'attacker-controlled' },
+      }));
+      const cookie = response.cookies.get(recoveryConfirmationCookieName());
+      assert.ok(cookie?.httpOnly);
+      assert.equal(cookie.sameSite, 'strict');
+      assert.equal(cookie.path, '/');
+      assert.equal(cookie.maxAge, 900);
+      assert.match(cookie.value, /^[a-f0-9]{64}$/);
+      assert.equal(response.headers.get(`x-middleware-request-${RECOVERY_CONFIRMATION_HEADER}`), cookie.value);
+      assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+      seen.add(cookie.value);
+    }
+    assert.equal(seen.size, 2);
   });
 
   it('still requires organization onboarding for project work', async () => {
