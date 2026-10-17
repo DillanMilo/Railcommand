@@ -38,7 +38,11 @@ describe('password recovery before organization onboarding', () => {
     };
   });
 
-  beforeEach(() => { profileQueries = 0; });
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://recovery-qa.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'synthetic-anon-key';
+    profileQueries = 0;
+  });
 
   after(() => {
     globalThis.fetch = originalFetch;
@@ -49,6 +53,9 @@ describe('password recovery before organization onboarding', () => {
   });
 
   for (const [path, method] of [
+    ['/auth/callback?token_hash=synthetic&type=recovery', 'GET'],
+    ['/auth/recovery?token_hash=synthetic', 'GET'],
+    ['/auth/recovery/confirm', 'POST'],
     ['/reset-password', 'GET'],
     ['/api/auth/password-reset', 'POST'],
     ['/api/auth/password-reset', 'DELETE'],
@@ -62,6 +69,19 @@ describe('password recovery before organization onboarding', () => {
       assert.equal(profileQueries, 0);
     });
   }
+
+  it('lets the confirmation and callback routes load without a Supabase session lookup', async () => {
+    const fetchBefore = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error('Auth network unavailable'); };
+    try {
+      for (const path of ['/auth/callback', '/auth/recovery', '/auth/recovery/confirm']) {
+        const r = await middleware(new NextRequest(`https://railcommand.io${path}`));
+        assert.equal(r.status, 200);
+      }
+    } finally {
+      globalThis.fetch = fetchBefore;
+    }
+  });
 
   it('still requires organization onboarding for project work', async () => {
     const response = await middleware(new NextRequest('https://railcommand.io/projects', { headers: { cookie } }));
