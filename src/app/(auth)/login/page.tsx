@@ -495,7 +495,12 @@ function LoginPageInner() {
   // Show errors from auth callback redirects (e.g. ?error=auth_callback_error)
   useEffect(() => {
     const error = searchParams.get('error');
-    if (error === 'recovery_link_invalid') {
+    if (error === 'recovery_browser_mismatch') {
+      setForgotMode(true);
+      setAuthError(
+        'This older reset link was opened in a different app or browser. Request a new link below, then open the newest email.'
+      );
+    } else if (error === 'recovery_link_invalid') {
       setForgotMode(true);
       setAuthError(
         'This password reset link is expired or has already been used. Request a new link below.'

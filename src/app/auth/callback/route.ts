@@ -1,61 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
-import { DEMO_SESSION_COOKIE, DEMO_SLUG_COOKIE } from '@/lib/demo/session-cookie';
 import {
-  createPasswordRecoveryToken,
-  PASSWORD_RECOVERY_COOKIE,
-  PASSWORD_RECOVERY_TTL_SECONDS,
-} from '@/lib/auth/password-recovery';
+  prepareAuthenticatedResponse,
+  privateAuthResponse,
+} from '@/lib/auth/callback-response';
 
 function getSafeRedirectPath(value: string | null): string | null {
   if (!value || !value.startsWith('/') || value.startsWith('//')) {
     return null;
   }
   return value;
-}
-
-function clearDemoSlugCookie(response: NextResponse): void {
-  response.cookies.set(DEMO_SLUG_COOKIE, '', {
-    maxAge: 0,
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
-}
-
-function prepareAuthenticatedResponse(
-  response: NextResponse,
-  isRecovery: boolean,
-  userId?: string
-): NextResponse {
-  response.cookies.set('rc-remember', 'true', {
-    path: '/',
-    maxAge: isRecovery ? 15 * 60 : 60 * 60 * 24 * 7,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
-
-  if (isRecovery && userId) {
-    response.cookies.set(
-      PASSWORD_RECOVERY_COOKIE,
-      createPasswordRecoveryToken(userId),
-      {
-        httpOnly: true,
-        path: '/',
-        maxAge: PASSWORD_RECOVERY_TTL_SECONDS,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      }
-    );
-  } else {
-    response.cookies.delete(PASSWORD_RECOVERY_COOKIE);
-  }
-
-  response.cookies.delete('rc-mode');
-  response.cookies.delete(DEMO_SESSION_COOKIE);
-  clearDemoSlugCookie(response);
-  return response;
 }
 
 export async function GET(request: Request) {
@@ -66,6 +21,14 @@ export async function GET(request: Request) {
   const defaultNext = type === 'recovery' ? '/reset-password' : '/dashboard';
   const next = getSafeRedirectPath(searchParams.get('next')) ?? defaultNext;
   const isRecovery = type === 'recovery' || next === '/reset-password';
+
+  // Keep the callback URL understood by installed native clients. Browsers must
+  // confirm with a POST so email security scanners cannot spend the token on GET.
+  if (token_hash && type === 'recovery') {
+    const confirmation = new URL('/auth/recovery', origin);
+    confirmation.searchParams.set('token_hash', token_hash);
+    return privateAuthResponse(NextResponse.redirect(confirmation));
+  }
 
   // Email confirmation via token_hash (e.g. signup confirmation)
   if (token_hash && type) {
@@ -98,10 +61,15 @@ export async function GET(request: Request) {
         data.session?.user.id
       );
     }
+    if (isRecovery && error?.code === 'pkce_code_verifier_not_found') {
+      return privateAuthResponse(NextResponse.redirect(
+        `${origin}/login?error=recovery_browser_mismatch`
+      ));
+    }
   }
 
   // Auth code exchange failed. Recovery links are one-time use, so give the
   // login page enough context to explain how to request a fresh link.
   const error = isRecovery ? 'recovery_link_invalid' : 'auth_callback_error';
-  return NextResponse.redirect(`${origin}/login?error=${error}`);
+  return privateAuthResponse(NextResponse.redirect(`${origin}/login?error=${error}`));
 }

@@ -178,6 +178,9 @@ function isPublicRoute(pathname: string): boolean {
 
 function canSkipAuthForPublicRoute(pathname: string): boolean {
   return (
+    pathname === '/auth/recovery' ||
+    pathname === '/auth/recovery/confirm' ||
+    pathname === '/auth/callback' ||
     pathname.startsWith('/api/mobile/v1/') ||
     pathname === '/' ||
     pathname === '/client' ||
