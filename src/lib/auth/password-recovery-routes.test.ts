@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe, it } from 'mocha';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import ts from 'typescript';
 import * as crypto from 'node:crypto';
 
@@ -33,11 +33,12 @@ function harness(result: AuthResult = { data: { user: { id: userId }, session: {
       require(name: string) {
         if (name === 'server-only') return {};
         if (name === 'node:crypto') return crypto;
-        if (name === 'next/server') return { NextResponse };
+        if (name === 'next/server') return { NextRequest, NextResponse };
         if (name === '@/lib/supabase/server') return { createClient: async () => ({ auth }) };
         if (name === '@/lib/demo/session-cookie') return { DEMO_SESSION_COOKIE: 'rc-demo-session', DEMO_SLUG_COOKIE: 'rc-demo-slug' };
         if (name === '@/lib/auth/password-recovery') return load('./password-recovery.ts');
         if (name === '@/lib/auth/callback-response') return load('./callback-response.ts');
+        if (name === '@/lib/auth/recovery-confirmation') return load('./recovery-confirmation.ts');
         throw new Error(`Unexpected route dependency: ${name}`);
       },
     });
@@ -45,16 +46,25 @@ function harness(result: AuthResult = { data: { user: { id: userId }, session: {
     return compiled.exports;
   };
   const GET = load('../../app/auth/callback/route.ts').GET as (r: Request) => Promise<NextResponse>;
-  const POST = load('../../app/auth/recovery/confirm/route.ts').POST as (r: Request) => Promise<NextResponse>;
+  const POST = load('../../app/auth/recovery/confirm/route.ts').POST as (r: NextRequest) => Promise<NextResponse>;
   const validCookie = load('./password-recovery.ts').isValidPasswordRecoveryToken as (t: string, id: string) => boolean;
   return { calls, GET, POST, validCookie };
 }
 
 const origin = 'https://railcommand.io';
-function confirmation(token = 'synthetic-recovery-hash', requestOrigin: string | null = origin) {
-  return new Request(`${origin}/auth/recovery/confirm`, {
-    method: 'POST', headers: requestOrigin === null ? {} : { origin: requestOrigin },
-    body: new URLSearchParams({ token_hash: token, type: 'invite', next: 'https://untrusted.example' }),
+const nonce = 'a'.repeat(64);
+function confirmation(token = 'synthetic-recovery-hash', requestOrigin: string | null = origin,
+  options: { cookie?: string | null; formNonce?: string | null; fetchSite?: string } = {}) {
+  const headers = new Headers();
+  if (requestOrigin !== null) headers.set('origin', requestOrigin);
+  const cookieNonce = options.cookie === undefined ? nonce : options.cookie;
+  if (cookieNonce !== null) headers.set('cookie', `__Host-rc-recovery-confirmation=${cookieNonce}`);
+  if (options.fetchSite) headers.set('sec-fetch-site', options.fetchSite);
+  const body = new URLSearchParams({ token_hash: token, type: 'invite', next: 'https://untrusted.example' });
+  const formNonce = options.formNonce === undefined ? nonce : options.formNonce;
+  if (formNonce !== null) body.set('confirmation', formNonce);
+  return new NextRequest(`${origin}/auth/recovery/confirm`, {
+    method: 'POST', headers, body,
   });
 }
 function assertPrivate(response: NextResponse) {
@@ -90,18 +100,54 @@ describe('recovery browser confirmation and native callback compatibility', () =
     assert.equal(h.validCookie(cookie.value, userId), true);
     assert.equal(h.validCookie(cookie.value, 'another-user'), false);
     assert.equal(r.cookies.get('rc-demo-session')?.value, '');
+    assert.equal(r.cookies.get('__Host-rc-recovery-confirmation')?.value, '');
     assertPrivate(r);
   });
 
-  for (const requestOrigin of [null, 'null', 'https://untrusted.example', 'https://railcommand.io.untrusted.example']) {
+  for (const requestOrigin of [null, 'null']) {
+    it(`accepts browser privacy origin ${requestOrigin} only with a matching cookie and form nonce`, async () => {
+      const h = harness();
+      const r = await h.POST(confirmation('synthetic-recovery-hash', requestOrigin, { fetchSite: 'same-origin' }));
+      assert.equal(r.status, 303);
+      assert.equal(r.headers.get('location'), `${origin}/reset-password`);
+      assert.equal(h.calls.length, 1);
+    });
+  }
+
+  for (const requestOrigin of ['https://untrusted.example', 'https://railcommand.io.untrusted.example']) {
     it(`rejects origin ${requestOrigin} without consuming a token`, async () => {
       const h = harness();
       const r = await h.POST(confirmation('synthetic-hash', requestOrigin));
-      assert.equal(r.status, 403);
+      assert.equal(r.status, 303);
+      assert.equal(r.headers.get('location'), `${origin}/login?error=recovery_confirmation_required`);
       assert.equal(h.calls.length, 0);
       assertPrivate(r);
     });
   }
+
+  for (const requestOrigin of [origin, null, 'null']) {
+    for (const options of [{ cookie: null }, { formNonce: null }, { cookie: 'b'.repeat(64) }, { formNonce: 'invalid' }]) {
+      it(`rejects missing/mismatched browser confirmation with origin ${requestOrigin} (${Object.keys(options)[0]})`, async () => {
+        const h = harness();
+        const r = await h.POST(confirmation('synthetic-recovery-hash', requestOrigin, options));
+        assert.equal(r.status, 303);
+        const destination = new URL(r.headers.get('location')!);
+        assert.equal(destination.pathname, '/auth/recovery');
+        assert.equal(destination.searchParams.get('error'), 'confirmation_required');
+        assert.equal(destination.searchParams.get('token_hash'), 'synthetic-recovery-hash');
+        assert.equal(h.calls.length, 0);
+        assert.equal(r.cookies.get('rc-password-recovery'), undefined);
+        assertPrivate(r);
+      });
+    }
+  }
+
+  it('rejects cross-site browser metadata even if Origin is suppressed and nonces match', async () => {
+    const h = harness();
+    const r = await h.POST(confirmation('synthetic-recovery-hash', 'null', { fetchSite: 'cross-site' }));
+    assert.equal(r.headers.get('location'), `${origin}/login?error=recovery_confirmation_required`);
+    assert.equal(h.calls.length, 0);
+  });
 
   for (const token of ['', 'x'.repeat(1025)]) {
     it(`rejects an invalid token length (${token.length}) before verification`, async () => {
@@ -114,8 +160,9 @@ describe('recovery browser confirmation and native callback compatibility', () =
 
   it('rejects a malformed form without authentication', async () => {
     const h = harness();
-    const r = await h.POST(new Request(`${origin}/auth/recovery/confirm`, { method: 'POST', headers: { origin }, body: '{' }));
-    assert.equal(r.status, 400);
+    const r = await h.POST(new NextRequest(`${origin}/auth/recovery/confirm`, { method: 'POST', headers: { origin }, body: '{' }));
+    assert.equal(r.status, 303);
+    assert.equal(r.headers.get('location'), `${origin}/login?error=recovery_confirmation_required`);
     assert.equal(h.calls.length, 0);
   });
 

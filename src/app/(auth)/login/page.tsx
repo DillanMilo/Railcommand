@@ -495,7 +495,12 @@ function LoginPageInner() {
   // Show errors from auth callback redirects (e.g. ?error=auth_callback_error)
   useEffect(() => {
     const error = searchParams.get('error');
-    if (error === 'recovery_browser_mismatch') {
+    if (error === 'recovery_confirmation_required') {
+      setForgotMode(true);
+      setAuthError(
+        'We couldn’t confirm this request. Reopen your newest password reset email and continue from that page. Allow cookies for railcommand.io if prompted.'
+      );
+    } else if (error === 'recovery_browser_mismatch') {
       setForgotMode(true);
       setAuthError(
         'This older reset link was opened in a different app or browser. Request a new link below, then open the newest email.'
