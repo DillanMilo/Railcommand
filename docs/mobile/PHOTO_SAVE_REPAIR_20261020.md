@@ -57,3 +57,33 @@ backend to production; main/PR #25 remain the canonical web/backend source.
 Build IDs, installation/preservation outcomes and production assignment will be
 recorded after actual completion. PR #25 must not be merged on the strength of
 these automated checks alone.
+
+## Locked release checks and signed builds
+
+Staging iOS build 300004 (`d7043bc1-0a3c-45db-bd63-0ebcce7e6e8f`) finished
+from `a10419f`. Its signed bundle/team/device identity was checked before an
+in-place update of `io.railcommand.app.staging`. Every baseline draft/photo/outbox
+row and every app-owned file remained unchanged; SQLite integrity passed. No
+uninstall, sign-out, purge or direct device-database edit was used. Subsequent
+physical capture/sync acceptance remains pending.
+
+Production iOS build 300013 (`1f002d45-76ea-4a28-8851-54a27d7d9bdc`) finished
+from `c92e159`; it has not been submitted/distributed yet. The change between
+those source revisions is test-only lint cleanup. iOS and Android Hermes exports
+passed. Existing EAS signing credentials were reused without modification.
+
+Remote CI exposed inherited test-type/CommonJS lint issues and a false-positive
+ref-read report for a factory that stores, but does not call, an account guard.
+Corrected test types and documented the specific factory/CommonJS boundaries.
+TypeScript emission of all touched application/plugin files was compared against
+`c92e159` and is identical after comment removal. Native TypeScript and all 247
+native tests pass after the cleanup. Only the photo-copy await changes runtime
+behavior.
+
+Expo Doctor using the installed, locked SDK's bundled compatibility inventory
+passes 21/21 checks. CI now keeps this deterministic compatibility check as a
+release gate and reports online recommendations for newer patches separately.
+The online check currently recommends newer Expo 57 patches and React Native
+0.86.3. Track their evaluation/update and physical acceptance as
+**NATIVE-SDK-PATCH-REFRESH**; no dependency versions or lockfile were changed by
+this photo repair. This does not claim the app uses the latest available patches.

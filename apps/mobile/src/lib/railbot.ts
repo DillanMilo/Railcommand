@@ -9,7 +9,13 @@ export function parseBotDraft(raw: string, projectId: string): BotDraft {
   return value;
 }
 // Native streams may split JSON and UTF-8 anywhere. Do not treat truncated streams as success.
-export function createBotStreamParser(accept: (chunk: Record<string, any>) => void) {
+export type BotStreamChunk =
+  | { type: 'conversation'; conversationId: string }
+  | { type: 'text'; content?: string }
+  | { type: 'proposal'; proposal: BotProposal }
+  | { type: 'error'; error?: string }
+  | { type: 'done' };
+export function createBotStreamParser(accept: (chunk: BotStreamChunk) => void) {
   let buffer = '';
   return (text: string) => {
     buffer += text;

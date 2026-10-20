@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { describe, it } from 'mocha';
 import { newBotDraft } from './railbot';
+type Tree = { props: { label?: string; children?: unknown; onPress?: () => void } };
 
 describe('RailBot navigation native recorder lifetime', () => {
   it('can leave an idle screen after Expo releases its recorder, even when audio-mode reset fails', async () => {
@@ -34,20 +35,21 @@ describe('RailBot navigation native recorder lifetime', () => {
       '@/components/railbot-message': {},
       '@/theme': { colors: {}, fonts: {} },
     };
-    const exports: Record<string, any> = {};
+    const exports = {} as { default: () => { type: (props: unknown) => unknown; props: unknown } };
     const source = ts.transpileModule(readFileSync(new URL('../app/railbot.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText;
     runInNewContext(source, { exports, require: (name: string) => { assert.ok(name in modules, name); return modules[name]; }, AbortController, setTimeout, clearTimeout });
     const screen = exports.default();
     const tree = screen.type(screen.props);
-    const findBack = (node: any): any => {
-      if (!node || typeof node !== 'object') return null;
-      if (node.props?.label === 'Back') return node;
-      for (const child of [node.props?.children].flat()) { const found = findBack(child); if (found) return found; }
+    const findBack = (node: unknown): Tree | null => {
+      if (!node || typeof node !== 'object' || !('props' in node)) return null;
+      const element = node as Tree;
+      if (element.props?.label === 'Back') return element;
+      for (const child of [element.props?.children].flat()) { const found = findBack(child); if (found) return found; }
       return null;
     };
     const cleanups = effects.map(effect => effect());
     await Promise.resolve();
-    findBack(tree).props.onPress();
+    const back = findBack(tree); assert.ok(back); back.props.onPress?.();
     assert.equal(navigations, 1);
     for (const cleanup of cleanups) cleanup?.();
     await new Promise(resolve => setTimeout(resolve, 0));

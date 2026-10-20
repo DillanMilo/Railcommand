@@ -42,6 +42,8 @@ function ProjectRailBot({ userId, projectId, revision }: { userId: string; proje
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, directory: 'document' });
   const sessionCurrent = useCallback(() => isSessionCurrent(userId, revision), [isSessionCurrent, userId, revision]);
   const current = useCallback(() => alive.current && sessionCurrent(), [sessionCurrent]);
+  // The factory stores the guard; it reads refs only when a request is invoked.
+  // eslint-disable-next-line react-hooks/refs -- No guard is called during render.
   const api = useMemo(() => railbotClient(userId, current), [userId, current]);
   const projectName = bootstrap?.projects.find(p => p.id === projectId)?.name ?? 'Current project';
   const patch = useCallback((change: Partial<BotDraft>, persist = true) => {
