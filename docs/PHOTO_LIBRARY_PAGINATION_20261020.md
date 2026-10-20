@@ -409,8 +409,10 @@ Required core release checks (PHOTOS-PAGE-ACCEPTANCE):
 - [x] Fixed signed Staging 300004 installed in place with baseline row/file
   preservation; actual physical native camera save now has a readable 3,022,716
   byte file and matching SQLite photo row under the original draft/client UUID.
-- [ ] Submit the original synthetic native draft through its normal outbox,
-  verify exactly one parent/photo receipt and authorized signed web readback.
+- [x] Submit the original synthetic native draft through its normal outbox;
+  verify exactly one parent/photo receipt, authorized web metadata readback and
+  matching uploaded object bytes/checksum. Same-author physical gallery preview
+  remains part of PHOTOS-MOBILE-EXTENDED, not a claimed signed-image fetch.
 - [ ] Native compile gates, signed production distribution, exact main/web
   deployment and availability verification.
 
@@ -434,8 +436,8 @@ Explicit follow-ups, not passed checks:
   remains online-only and does not promise durable background uploads.
 
 Earlier broader all-device checklist is superseded by this scoped release record;
-none of its unexecuted checks is relabeled as passed. Main remains unmerged while
-normal native-photo synchronization and release verification are pending.
+none of its unexecuted checks is relabeled as passed. Normal native-photo synchronization has now passed. Production merge/build
+availability and post-release verification are recorded separately below.
 
 
 ### Normal submission: same-day safety review retained both items
@@ -454,3 +456,40 @@ SQLite edits, date reassignment, cleanup or manual server replay were used.
 The bell description now also directs users to update RailCommand through
 TestFlight for the native iPhone Field Tools photo-save fix. Its publication
 remains coupled to the gallery/native release, not a premature live announcement.
+
+
+## Completed normal synchronization and release preparation
+
+The user confirmed the separate synthetic log through the normal app review.
+A fresh private read-only device snapshot passes SQLite integrity checking and
+shows zero drafts/photos/outbox rows and two synchronization receipts. Staging
+contains exactly one parent `f0b307db-a0e5-450e-85f7-43953d2185c7` and one child
+`162f7707-3cfb-4d5a-890e-c9eaa1edad72`, with their original author/project IDs.
+Normal authenticated web reads confirm the parent fields match the original
+saved draft and the new attachment appears on the first 12-item cursor page.
+The stored object is 3,022,716 bytes; its ETag is
+`d3864341dd5061f7714443ae985a27ba`, equal to the preserved local photo's MD5.
+No existing record was overwritten or used as a disposable fixture.
+
+The web QA account differs from the phone's author. Existing staging Storage
+policies restrict daily-log photo reads to their author: the QA account can read
+attachment metadata but correctly cannot sign this other author's image (11 of
+12 first-page images sign; only this new cross-author object is denied). The
+original automated signed-image assertion therefore did not pass. No Storage
+policy, ownership or record URL was changed to bypass that restriction. The
+same-author installed gallery visual check remains explicitly pending under
+PHOTOS-MOBILE-EXTENDED; this is separate from verified file persistence/delivery.
+
+All native application-code CI gates passed at `92981c3` (run 39474837705),
+including both iOS/Android unsigned builds. Current native `ec3a09b` changes only
+its handoff document; checks/mobile-tests/Android also pass on it, while the
+redundant iOS job is queued. Documentation-only changes do not require another
+application build under the repository policy. Main application revision
+`fbe799c` passed CI, Vercel preview, local build, TypeScript and focused lint.
+
+Production iOS 300013 was submitted to the existing private TestFlight group as
+EAS submission `5a31259d-19d8-4f27-b6d9-3a0dc2ca1f0b`. Its current status is
+IN_QUEUE, not available/installed. No group or invitation was created. Web
+production is still the prior main deployment until the authorized merge below.
+The core persistence, upload, metadata, checksum and compatibility checks are
+complete; extended physical scenarios remain the named follow-ups above.
