@@ -436,3 +436,21 @@ Explicit follow-ups, not passed checks:
 Earlier broader all-device checklist is superseded by this scoped release record;
 none of its unexecuted checks is relabeled as passed. Main remains unmerged while
 normal native-photo synchronization and release verification are pending.
+
+
+### Normal submission: same-day safety review retained both items
+
+The user submitted the synthetic native draft once. A private read-only snapshot
+passed integrity checking and showed the atomic draft-to-outbox transition:
+zero drafts, one conflicted parent operation and one conflicted photo. The
+original parent/client UUID, photo UUID and project UUID remain unchanged. The
+message is the expected same-day review because the existing synthetic web
+report has today's date; no existing report was overwritten. Two items means
+one parent and its child photo, not two separate logs. The user was directed
+through normal Review saved log -> Keep as a separate log -> Keep separate log.
+Confirmation and actual server delivery/readback are still pending. No direct
+SQLite edits, date reassignment, cleanup or manual server replay were used.
+
+The bell description now also directs users to update RailCommand through
+TestFlight for the native iPhone Field Tools photo-save fix. Its publication
+remains coupled to the gallery/native release, not a premature live announcement.

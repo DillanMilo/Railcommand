@@ -12,7 +12,7 @@ export const PATCH_NOTES: PatchNote[] = [
     id: 'v2.8.1-photo-gallery-improvements',
     version: '2.8.1',
     title: 'Photo Gallery Improvements',
-    description: 'Photos & Media now loads 12 photos at a time on web and in the mobile workspace. Filter by All, Standard or Thermal, use Previous and Next to browse, and select Refresh photos to see new uploads. Pending uploads stay on the page if browsing fails or the connection drops. Photo browsing requires an internet connection.',
+    description: 'Photos & Media now loads 12 photos at a time on web and in the mobile workspace. Filter by All, Standard or Thermal, use Previous and Next to browse, and select Refresh photos to see new uploads. Pending uploads stay on the page if browsing fails or the connection drops. Photo browsing requires an internet connection. Update RailCommand through TestFlight to receive the iPhone Field Tools photo-save fix.',
     date: '2026-10-20',
   },
   {
