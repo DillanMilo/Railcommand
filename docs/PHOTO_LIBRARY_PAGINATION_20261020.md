@@ -210,9 +210,22 @@ its Field tools (nine cached logs and two cached team members). This older stagi
 binary presents deferred web modules rather than the current shared workspace;
 it cannot establish acceptance of this gallery. The production app was launched
 without reinstalling or signing out, but remained on a loading spinner before
-its workspace opened. Installed-app gallery, bell, lifecycle and queue checks
-therefore remain blocked; the user was asked to inspect the existing session.
-No app reinstall, sign-out, device restart, manual queue replay or data reset was
+its workspace opened. It subsequently completed the authenticated session
+handoff and opened the existing signed-in project. Native Field tools and the
+account view also opened; returning to the photo workspace began normal page
+loading. The sign-in was retained across background/foreground. Build 300012's
+release handoff identifies native source `6f99e79`; the later inspected candidate
+source is `75d9145`. Workspace, workspace-policy and API-client sources have no
+diff between those revisions. An installed-app check is separate from testing the new UI
+in physical Safari.
+
+A private read-only copy of this production app's offline SQLite files passed
+`PRAGMA integrity_check`. Its current user scope contained zero daily-log drafts,
+record drafts, RailBot drafts, outbox operations and queued photos at this
+checkpoint. This is a baseline for this phone/account, not evidence that the
+September conflicted entries on another scope/device were delivered. Copies are
+local/private, not repository artifacts or an uploaded user-data backup. No app
+reinstall, sign-out, device restart, manual queue replay or data reset was
 performed. Existing drafts/conflicts were not discarded or reassigned.
 
 The Android API 36 phone emulator booted with an older installed 1.0.0 (300001);
@@ -220,6 +233,32 @@ its native UI was not accepted. The user has no physical Android test device.
 Physical Android remains an explicit device gap, not a passed check. The existing
 offline alpha's iOS/Android restart/network gate is separate and is not advanced
 by this read-only gallery work.
+
+### Staging hostname and remaining device setup
+
+The existing public staging hostname `mobile-staging.railcommand.io` was verified
+to point to the older preview `dpl_37ak9wcmcCa9vd3YAr5MKAoniEqS`. It now points to
+the accepted `e25bc0a` preview `dpl_F8Dm4kb2Vq4aoJNUGks87HjFmLn2`.
+Unauthenticated mobile bootstrap on that hostname still returns 401. Deployment
+protection settings were not changed. Roll back this staging alias to the former
+preview if needed. `railcommand.io` and its production deployment remain unchanged.
+The Vercel project's separate Development/Production variable targets still refer
+to an older backend; they were not edited or used for this preview. Those variable
+targets do not identify the deployment serving the custom staging hostname.
+
+The installed staging app's existing local scope is distinct from the production
+scope. A private read-only SQLite copy also passed integrity checking and found
+zero saved drafts, outbox operations and queued photos in that staging scope. To avoid signing out/reinstalling it, the proposed next test uses its
+current account with contractor/edit membership only in the new synthetic PR25
+project. Automatic approval review rejected adding two manager/edit memberships;
+no membership was added. A narrower, one-account contractor/edit request was sent
+to the user, together with a separate request for a blank-card photo and brief
+physical network disconnect/reconnect. These approvals and the dependent device
+checks remain pending. The Mac device viewer later regressed to a scaled window
+thumbnail and then a ScreenCaptureKit capture failure; phone actions stopped
+when the view could no longer be read reliably. A private-profile email/name lookup was also rejected;
+no profile details were returned, and only non-PII local database-scope metadata
+was used to identify the staging account.
 
 ## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
 
