@@ -46,7 +46,12 @@ assert.deepEqual(
 assert.ok(statSync(featureGraphic).size <= 15 * 1024 * 1024, 'Google Play feature graphic exceeds 15 MB');
 
 assert.match(expoConfig, /ACCESS_BACKGROUND_LOCATION/, 'Background location must be explicitly blocked');
-assert.match(expoConfig, /RECORD_AUDIO/, 'Microphone access must be explicitly blocked');
+// RailBot dictation requires foreground microphone access; keep its existing
+// store-declared prompt and background-recording restriction checked together.
+assert.match(expoConfig, /expo-audio/, 'RailBot foreground dictation plugin is missing');
+assert.match(expoConfig, /microphonePermission: 'RailBot records your voice only when you tap Dictate/, 'Dictation must explain its user-initiated microphone access');
+assert.match(expoConfig, /enableBackgroundRecording: false/, 'Background recording must remain disabled');
+assert.doesNotMatch(expoConfig.match(/blockedPermissions:[\s\S]*?\]/)?.[0] ?? '', /RECORD_AUDIO/, 'Foreground dictation must retain its existing microphone permission');
 assert.match(expoConfig, /SYSTEM_ALERT_WINDOW/, 'Release overlay access must be explicitly blocked');
 assert.match(expoConfig, /CoarseLocation/, 'Approximate-location collection must be declared');
 assert.match(expoConfig, /with-foreground-location-only/, 'Foreground-only iOS location cleanup is missing');

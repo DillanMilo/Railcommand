@@ -87,3 +87,10 @@ The online check currently recommends newer Expo 57 patches and React Native
 0.86.3. Track their evaluation/update and physical acceptance as
 **NATIVE-SDK-PATCH-REFRESH**; no dependency versions or lockfile were changed by
 this photo repair. This does not claim the app uses the latest available patches.
+
+Remote asset validation also retained a pre-dictation expectation that microphone
+access be blocked. Aligned it with the existing RailBot store-declaration and
+Android-manifest checks: user-initiated dictation prompt, foreground audio plugin,
+no blocked recording permission and background recording disabled. This changes
+validation only; no application permission or runtime configuration changed.
+A fresh locked installation passed root TypeScript and the production web build.
