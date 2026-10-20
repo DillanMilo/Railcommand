@@ -279,6 +279,34 @@ synthetic 600-pixel test card is prepared locally for the approved camera check.
 Existing apps, sessions and stored data remain in place. CI on documentation
 revision `4418837` passed in 2m7s; its Vercel preview passed as well.
 
+### Mac viewer recovery and installed staging readback
+
+At the user's request, Device Hub alone was force-quit and reopened through the
+Mac's normal recovery controls. No RailCommand app was stopped, replaced,
+uninstalled or signed out. Moving the viewer to another connected display
+restored a readable phone feed temporarily. The installed staging app refreshed
+its authorized project list, showed the newly approved synthetic project and
+selected it successfully. Its Logs view displayed the web-created synthetic
+October 20 daily log; its detail showed the exact synthetic work summary. This
+is physical older-client web-to-native daily-log readback, not acceptance of the
+new shared-workspace gallery or photo readback.
+
+Opening New Daily Log in that synthetic project created one automatically saved
+device draft. No test text, camera photo, upload, queue submission, network change
+or restart was completed. A subsequent private read-only staging SQLite copy
+passed integrity checking: one draft, zero outbox operations and zero photos,
+compared with the prior zero/zero/zero baseline. The synthetic draft remains on
+the phone for normal resumption; no stored draft or queue was discarded.
+
+The viewer repeatedly returned to a transformed thumbnail and then capture
+errors (-3811/-3812), including after a second Mac-viewer-only restart and a fresh
+control session. Phone actions stopped when the view was unreadable. The user
+was asked for an uninterrupted foreground Device Hub session before continuing.
+All staging membership and blank-card/network approvals are already granted;
+the remaining issue is reliable device control, not missing approval. CI and
+Vercel checks on documentation revision `a0b49c4` passed. The release gate below
+remains pending and production remains unchanged.
+
 ## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
 
 The PR must stay a draft until the following checks are recorded. These are
