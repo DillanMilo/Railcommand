@@ -94,3 +94,38 @@ Android-manifest checks: user-initiated dictation prompt, foreground audio plugi
 no blocked recording permission and background recording disabled. This changes
 validation only; no application permission or runtime configuration changed.
 A fresh locked installation passed root TypeScript and the production web build.
+
+
+## Physical capture verified on fixed Staging 300004
+
+The user opened the original native draft through Workspace More -> Field Tools
+-> Logs -> New Log and used a selected test camera photo, leaving it unsubmitted.
+Apple's read-only device screenshot confirms `1 photo persisted on this device`.
+A fresh private read-only Documents/SQLite copy passes integrity checking and
+contains exactly one pending photo, the original draft and zero outbox rows.
+The photo's project and parent-client UUID match the original saved draft; its
+actual readable JPEG is 3,022,716 bytes, exactly matching its stored size. Its
+SHA-256 is `70610c6441523a17a8c1c64220fc8a29413310c944574a730adbe1915db8aca1`.
+All original draft fields and baseline app-owned file bytes remain unchanged.
+No phone database edits or file/queue deletion were used. This supersedes the
+previous pending fixed-capture status; offline restart and normal synchronization
+are still pending. The photo is private test evidence, not a publication asset.
+
+The Mac viewer still rejects remote taps/capture, but Xcode's read-only
+`devicectl device capture screenshot` works. All actual phone UI steps are being
+performed by the user; do not misrepresent screenshot inspection as remote input.
+The user has been asked to save the draft, disconnect with Airplane Mode/Wi-Fi off,
+restart, unlock and reopen the original draft offline before submission.
+
+
+## Scoped lifecycle follow-up
+
+The user questioned the burden of restarting/repeating phone tests after the
+fixed save had passed. No repeat capture is needed. Physical OS restart and
+network-disrupted WebView upload are explicitly deferred as
+PHOTOS-DEVICE-LIFECYCLE in PR #25's impact record; Android hardware acceptance is
+PHOTOS-ANDROID-DEVICE and extended native WebView interactions are
+PHOTOS-MOBILE-EXTENDED. No such check is marked passed, and the broader offline
+alpha is not accepted. The repair changes only copy sequencing, with no storage
+migration or operation-identity change. Normal synthetic parent/photo outbox
+synchronization and authorized web readback remain required before release.
