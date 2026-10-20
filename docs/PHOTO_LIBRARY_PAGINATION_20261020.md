@@ -394,22 +394,45 @@ cookie -> authorized paginated photo read passed (200/303/200, first page 12);
 replaying the ticket was rejected with 403. Device WebView acceptance remains a
 separate pending check. Production railcommand.io remains unchanged.
 
-## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
+## Release checks and tracked coverage
 
-The PR must stay a draft until the following checks are recorded. These are
-explicit acceptance gaps, not passed checks:
+Required core release checks (PHOTOS-PAGE-ACCEPTANCE):
 
 - [x] Authenticated staging query and Storage/RLS smoke with synthetic records,
-  including a removed membership, a user from another project and the relative
-  Storage URL format on the corrected deployed revision.
-- [ ] Web -> installed iPhone/iPad and Android workspace: upload a synthetic photo
-  on web, refresh the same authorized project on device and find it; exercise
-  categories and more than one page, lightbox, camera/file picker, and retry.
-- [ ] Mobile workspace -> web: upload a synthetic photo, refresh web and find it;
-  confirm the older native API, current account/project identity and permissions.
-- [ ] Physical network loss/reconnect with a pending gallery upload, plus app
-  background/foreground and OS restart. Confirm the online-only limitation and
-  independently check existing native Field drafts/queues survive the update.
-- [x] Legacy no-query staging reads, native bearer bootstrap and bounded page
-  response sizes/`Server-Timing` passed on the recorded deployed revision.
-  Physical installed-client gallery/session checks remain separately pending.
+  including removed membership, an outsider and the relative Storage URL format.
+- [x] Real desktop Chromium/WebKit phone gallery paging, filters, lightbox,
+  network-loss/reconnect and page-lifetime pending-upload retention; physical
+  iPhone Safari paging/filter/lightbox/bell. Production mobile APIs retained.
+- [x] Web-created synthetic daily log and its 26 saved photos opened in the
+  installed iPhone's online workspace. Native bearer -> one-use web handoff ->
+  authenticated photo paging passed, and replay was denied.
+- [x] Fixed signed Staging 300004 installed in place with baseline row/file
+  preservation; actual physical native camera save now has a readable 3,022,716
+  byte file and matching SQLite photo row under the original draft/client UUID.
+- [ ] Submit the original synthetic native draft through its normal outbox,
+  verify exactly one parent/photo receipt and authorized signed web readback.
+- [ ] Native compile gates, signed production distribution, exact main/web
+  deployment and availability verification.
+
+Explicit follow-ups, not passed checks:
+
+- **PHOTOS-DEVICE-LIFECYCLE:** physical OS restart and disconnected reopening,
+  plus network disruption with a pending upload in the actual native WebView.
+  The user questioned the disproportionate restart/repeat burden after the fixed
+  capture passed. No repeat capture or phone restart is required for this small
+  await-only repair; retain the existing automated draft/queue/retry tests,
+  measured in-place data preservation and normal camera-return lifecycle evidence.
+  Track these extended scenarios for the broader offline-alpha acceptance rather
+  than claiming they were completed here. No offline-alpha advancement.
+- **PHOTOS-ANDROID-DEVICE:** supported Android physical camera/import, update,
+  offline/restart and WebView acceptance remain untested because the user has no
+  Android device and supplied an iPhone. Android compile/export checks do not
+  replace this gap. This release must state the limitation explicitly.
+- **PHOTOS-MOBILE-EXTENDED:** repeat category/paging/lightbox and workspace file
+  picker/retry inside current native WebView; physical Safari/WebKit coverage and
+  installed authorized workspace readback are the current evidence. The gallery
+  remains online-only and does not promise durable background uploads.
+
+Earlier broader all-device checklist is superseded by this scoped release record;
+none of its unexecuted checks is relabeled as passed. Main remains unmerged while
+normal native-photo synchronization and release verification are pending.
