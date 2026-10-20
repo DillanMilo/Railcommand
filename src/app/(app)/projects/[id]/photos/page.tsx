@@ -18,11 +18,11 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import QueryError from '@/components/shared/QueryError';
 import { useProject } from '@/components/providers/ProjectProvider';
-import { useProjectPhotos } from '@/hooks/useData';
+import { useProjectPhotoPage } from '@/hooks/useProjectPhotoPage';
 import { usePermissions } from '@/hooks/usePermissions';
 import * as store from '@/lib/store';
 import ProjectPhotoUpload from '@/components/shared/ProjectPhotoUpload';
-import { PROJECT_PHOTO_PAGE_SIZE } from '@/lib/project-photo-policy';
+import type { ProjectPhotoFilter } from '@/lib/project-photo-page';
 import { ACTIONS } from '@/lib/permissions';
 import type { Attachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -31,9 +31,7 @@ import { cn } from '@/lib/utils';
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-type PhotoFilter = 'all' | 'standard' | 'thermal';
-
-const FILTER_TABS: { label: string; value: PhotoFilter }[] = [
+const FILTER_TABS: { label: string; value: ProjectPhotoFilter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Standard', value: 'standard' },
   { label: 'Thermal', value: 'thermal' },
@@ -87,13 +85,18 @@ export default function PhotosPage({
   const { id: projectId } = use(params);
   use(searchParams);
   const { currentUserId, isDemo } = useProject();
+  if (!currentUserId) return <p role="status">Opening project photos…</p>;
+  return <ProjectPhotosGallery key={`${isDemo}:${currentUserId}:${projectId}`} projectId={projectId} />;
+}
+
+function ProjectPhotosGallery({ projectId }: { projectId: string }) {
+  const { currentUserId, isDemo } = useProject();
   const { can } = usePermissions(projectId);
 
-  const { data: photos, loading, error, refetch } = useProjectPhotos(projectId);
+  const [filter, setFilter] = useState<ProjectPhotoFilter>('all');
+  const { data: photos, loading, error, refetch, online, pageNumber, hasPrevious, hasNext, previous, next } = useProjectPhotoPage(projectId, filter);
 
-  const [filter, setFilter] = useState<PhotoFilter>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<Attachment | null>(null);
-  const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState(false);
 
   const canDeletePhoto = useCallback(
@@ -102,24 +105,12 @@ export default function PhotosPage({
     [can, currentUserId, isDemo]
   );
 
-  /* ---- Filter ---- */
-  const filtered = useMemo(() => {
-    if (filter === 'all') return photos;
-    return photos.filter((p) => p.photo_category === filter);
-  }, [photos, filter]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PROJECT_PHOTO_PAGE_SIZE));
-  const activePage = Math.min(page, pageCount - 1);
-  const visiblePhotos = useMemo(() => filtered.slice(
-    activePage * PROJECT_PHOTO_PAGE_SIZE, (activePage + 1) * PROJECT_PHOTO_PAGE_SIZE
-  ), [filtered, activePage]);
-
   /* ---- Group by date ---- */
   const grouped = useMemo(() => {
     const groups: { key: string; photos: Attachment[] }[] = [];
     const map = new Map<string, Attachment[]>();
 
-    for (const photo of visiblePhotos) {
+    for (const photo of photos) {
       const dateStr = photo.captured_at ?? photo.created_at;
       const key = getDateKey(dateStr);
       if (!map.has(key)) {
@@ -130,7 +121,7 @@ export default function PhotosPage({
     }
 
     return groups;
-  }, [visiblePhotos]);
+  }, [photos]);
 
   /* ---- Delete handler ---- */
   const handleDelete = useCallback(
@@ -159,24 +150,6 @@ export default function PhotosPage({
     [isDemo, projectId, refetch]
   );
 
-  /* ---- Loading state ---- */
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <span className="size-6 border-2 border-rc-orange/30 border-t-rc-orange rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <Breadcrumbs items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Photos & Media' }]} />
-        <QueryError message="Couldn't load photos. Your saved photos have not been removed." onRetry={refetch} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <Breadcrumbs
@@ -192,15 +165,17 @@ export default function PhotosPage({
           <div className="flex items-center gap-2">
             <h1 className="font-heading text-2xl font-bold">Photos & Media</h1>
             <Badge variant="secondary" className="text-xs">
-              {photos.length}
+              {photos.length} on this page
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {photos.filter((p) => p.photo_category === 'standard').length} standard,{' '}
-            {photos.filter((p) => p.photo_category === 'thermal').length} thermal
+            Browse project photos online. Refresh to see new uploads.
           </p>
         </div>
-        <ProjectPhotoUpload key={`${currentUserId}:${projectId}`} projectId={projectId} onUpload={refetch} />
+        <div className="flex flex-wrap items-start gap-2">
+          <Button variant="outline" disabled={!online || loading} onClick={refetch}>Refresh photos</Button>
+          <ProjectPhotoUpload key={`${currentUserId}:${projectId}`} projectId={projectId} onUpload={refetch} />
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -208,7 +183,9 @@ export default function PhotosPage({
         {FILTER_TABS.map((t) => (
           <button
             key={t.value}
-            onClick={() => { setFilter(t.value); setPage(0); }}
+            onClick={() => { setFilter(t.value); setSelectedPhoto(null); }}
+            disabled={!online}
+            aria-pressed={filter === t.value}
             className={`whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px min-h-[44px] ${
               filter === t.value
                 ? 'border-rc-orange text-rc-orange'
@@ -216,28 +193,20 @@ export default function PhotosPage({
             }`}
           >
             {t.label}
-            {t.value === 'all' && (
-              <span className="ml-1.5 text-xs text-muted-foreground">({photos.length})</span>
-            )}
-            {t.value === 'thermal' && (
-              <span className="ml-1.5 text-xs text-muted-foreground">
-                ({photos.filter((p) => p.photo_category === 'thermal').length})
-              </span>
-            )}
-            {t.value === 'standard' && (
-              <span className="ml-1.5 text-xs text-muted-foreground">
-                ({photos.filter((p) => p.photo_category === 'standard').length})
-              </span>
-            )}
           </button>
         ))}
       </div>
 
       {/* Photo grid grouped by date */}
-      {filtered.length === 0 ? (
+      {!online && <p role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">Photo browsing needs a connection. Your open page and pending upload stay here. Reconnect to continue; use Field tools for offline daily logs.</p>}
+      {error ? (
+        <QueryError message={error} onRetry={online ? refetch : undefined} />
+      ) : loading ? (
+        <div role="status" className="flex items-center justify-center gap-2 h-64"><Loader2 className="size-5 animate-spin" /> Loading photos…</div>
+      ) : photos.length === 0 && online ? (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-rc-border py-16 text-muted-foreground">
           <ImageOff className="size-10 mb-3" />
-          <p className="text-sm font-medium">No photos yet</p>
+          <p className="text-sm font-medium">{hasPrevious ? 'No more photos on this page' : 'No photos in this filter yet'}</p>
           <p className="text-xs mt-1">
             Take a photo or choose an existing photo saved on your device
           </p>
@@ -258,13 +227,13 @@ export default function PhotosPage({
                     className="group relative rounded-lg overflow-hidden border border-rc-border bg-muted text-left transition-shadow hover:shadow-md"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    {photo.signed_url_error ? <div className="aspect-square flex items-center justify-center p-3 text-center text-xs text-muted-foreground">Preview unavailable. Refresh to retry.</div> : <img
                       src={getPhotoUrl(photo, 'thumbnail')}
                       loading="lazy"
                       decoding="async"
                       alt={photo.file_name}
                       className="aspect-square w-full object-cover"
-                    />
+                    />}
                     {/* Overlay badges */}
                     <div className="absolute top-1.5 left-1.5 flex flex-wrap gap-1">
                       <Badge
@@ -314,29 +283,29 @@ export default function PhotosPage({
         </div>
       )}
 
-      {pageCount > 1 && (
+      {(hasPrevious || hasNext) && (
         <nav aria-label="Photo gallery pages" className="flex items-center justify-center gap-3">
-          <Button variant="outline" disabled={activePage === 0} onClick={() => setPage(activePage - 1)}>Previous</Button>
-          <span className="text-sm">Page {activePage + 1} of {pageCount}</span>
-          <Button variant="outline" disabled={activePage + 1 >= pageCount} onClick={() => setPage(activePage + 1)}>Next</Button>
+          <Button variant="outline" disabled={!online || loading || !hasPrevious} onClick={previous}>Previous</Button>
+          <span className="text-sm" aria-live="polite">Page {pageNumber}</span>
+          <Button variant="outline" disabled={!online || loading || !hasNext} onClick={next}>Next</Button>
         </nav>
       )}
 
       {/* Lightbox / detail dialog */}
       <Dialog
-        open={!!selectedPhoto}
+        open={!!selectedPhoto && !error}
         onOpenChange={() => setSelectedPhoto(null)}
       >
         <DialogContent className="max-w-3xl p-0 overflow-hidden">
           <DialogTitle className="sr-only">{selectedPhoto?.file_name ?? 'Photo details'}</DialogTitle>
-          {selectedPhoto && (
+          {selectedPhoto && !error && (
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {selectedPhoto.signed_url_error ? <p role="status" className="p-6 text-center">Preview unavailable. Close this photo and refresh to retry.</p> : <img
                 src={getPhotoUrl(selectedPhoto, 'full')}
                 alt={selectedPhoto.file_name}
                 className="w-full max-h-[70vh] object-contain bg-black"
-              />
+              />}
               <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">{selectedPhoto.file_name}</p>
@@ -416,7 +385,7 @@ export default function PhotosPage({
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={deleting}
+                      disabled={deleting || !online}
                       onClick={() => handleDelete(selectedPhoto)}
                       className="text-muted-foreground hover:text-red-500 hover:bg-red-50 h-8 px-2"
                     >

@@ -29,6 +29,9 @@ jobs:
       - name: Authentication and mobile backend compatibility
         run: node --import tsx node_modules/mocha/bin/mocha.js 'src/lib/auth/*.test.ts' 'src/lib/mobile-api/*.test.ts'
 
+      - name: Project photo pagination and upload preservation
+        run: npm run test:project-photos
+
       - name: Native field tools and workspace checks
         if: ${{ hashFiles('apps/mobile/package.json') != '' }}
         run: npm run typecheck --workspace @railcommand/mobile && npm run test --workspace @railcommand/mobile
