@@ -142,13 +142,18 @@ function InventoryWorkspace({
           </Text>
           <Text style={uiStyles.muted}>
             Field input stays saved. Private decision input stays only in the
-            current session; after restart, check the original receipt before
-            re-entering it. Replay is unavailable without the original input.
+            current session. Resolve online to return an accepted receipt or durably
+            close a never-applied operation without replaying private input.
           </Text>
           <SecondaryButton
             title="Check receipt"
             disabled={!online || controller.busy}
             onPress={() => void controller.recover()}
+          />
+          <SecondaryButton
+            title="Resolve original operation online"
+            disabled={!online || controller.busy}
+            onPress={() => void controller.settle()}
           />
           <SecondaryButton
             title="Retry saved operation"

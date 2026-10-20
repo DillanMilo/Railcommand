@@ -24,10 +24,10 @@ export async function executeInventory(
   operationId: string,
   command: InventoryCommand,
 ): Promise<InventoryResult> {
-  const { data, error } = await db.rpc("inventory_execute", {
+  const { data, error } = await db.rpc(command.action === "settle" ? "inventory_settle" : "inventory_execute", {
     p_project_id: projectId,
     p_operation_id: operationId,
-    p_command: command,
+    ...(command.action !== "settle" && { p_command: command }),
   });
   if (error)
     throw new Error(

@@ -143,7 +143,7 @@ export class InventoryController {
     }
     if (this.draft?.pending?.command.receiptOnly) {
       this.message =
-        "This online-only decision retained its original receipt identity. Check the receipt; private input was not saved and cannot be replayed after restart.";
+        "This online-only decision retained its original receipt identity. Check the receipt or resolve this identity online without replay. Private input was not saved.";
       this.changed();
       return;
     }
@@ -179,7 +179,16 @@ export class InventoryController {
         pending.command,
       );
       if (!this.valid()) return;
-      await this.finish(result, pending.command);
+      if (result.code === "operation_conflict") {
+        // A changed payload must never clear an accepted original operation.
+        const original = await this.ports.receipt(pending.operationId);
+        if (!this.valid()) return;
+        if (original) await this.finish(original, pending.command);
+        else {
+          this.message = "Original receipt unavailable. Keep this identity and check again or resolve it online.";
+          this.changed();
+        }
+      } else await this.finish(result, pending.command);
     } catch (e) {
       this.fail(e);
     } finally {
@@ -213,6 +222,37 @@ export class InventoryController {
       : (result.error ?? "Operation denied; input remains saved.");
     this.changed();
   }
+  /** Explicit settlement is serialized with the original delivery on the server.
+   * Null receipt alone never permits abandonment, including old minimal envelopes.
+   */
+  async settle() {
+    const pending = this.draft?.pending;
+    if (!pending || this.busy || !this.ports.online()) return;
+    this.busy = true;
+    this.changed();
+    try {
+      await this.saves;
+      if (!this.valid()) return;
+      await this.ports.execute(pending.operationId, { action: "settle" });
+      if (!this.valid()) return;
+      // Only a durable receipt can unlock: denied/old-server/malformed responses
+      // and a lost settlement response leave the same original pending identity.
+      const result = await this.ports.receipt(pending.operationId);
+      if (!this.valid()) return;
+      if (result) await this.finish(result, pending.command);
+      else {
+        this.message = "Settlement not confirmed. Keep the original identity and check its receipt or resolve again online.";
+        this.changed();
+      }
+    } catch (e) {
+      this.fail(e);
+    } finally {
+      if (this.valid()) {
+        this.busy = false;
+        this.changed();
+      }
+    }
+  }
   async recover() {
     const pending = this.draft?.pending;
     if (!pending || this.busy || !this.ports.online()) return;
@@ -225,7 +265,7 @@ export class InventoryController {
       else {
         this.message =
           pending.command.receiptOnly
-            ? "No receipt found yet. Keep checking the original receipt before re-entering this online-only decision. Private input was not saved; replay after restart is unavailable."
+            ? "No receipt found yet for the original receipt identity. Resolve it online without replay to safely resume work; private input was not saved."
             : "No receipt found yet. Retry the saved operation safely with its original identity.";
         this.changed();
       }

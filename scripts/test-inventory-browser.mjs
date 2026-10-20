@@ -25,7 +25,7 @@ const actors = {
 const projectId = randomUUID(),
   lotId = randomUUID(),
   receipts = new Map();
-let drop = true, dropPrivate = true, pmFinance = true;
+let drop = true, dropPrivate = true, dropBeforePrivate = false, pmFinance = true;
 const privateReason = "Budget hold USD 2800; landed value USD 68000";
 const requests = [],
   events = [];
@@ -71,9 +71,13 @@ function execute(actor, id, command) {
     digest = JSON.stringify(command);
   if (receipts.has(key)) {
     const old = receipts.get(key);
-    return old.digest === digest
+    return command.action === "settle" || old.digest === digest
       ? old.result
       : { error: "Operation conflict", code: "operation_conflict" };
+  }
+  if (command.action === "settle") {
+    const result = { ok: false, code: "operation_not_applied", error: "Original operation was not applied. Saved field work is available." };
+    receipts.set(key, { digest, result }); return result;
   }
   let result;
   if (command.action === "submit") {
@@ -185,6 +189,10 @@ const server = createServer(async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
     if (req.method === "POST") {
       const b = JSON.parse(body);
+      if (dropBeforePrivate && actor === "pm" && b.command.action === "reject") {
+        dropBeforePrivate = false;
+        res.end(JSON.stringify({ syntheticDroppedResponse: true })); return;
+      }
       const result = execute(actor, b.operationId, b.command);
       if (drop && actor === "foreman" && b.command.action === "submit") {
         drop = false;
@@ -493,7 +501,7 @@ try {
   await page.getByRole("heading", { name: "Unconfirmed operation" }).waitFor();
   const pendingPrivate = await page.evaluate(() => window.inventoryTest.drafts.readInventoryDraft(window.inventoryTest.userId, window.inventoryTest.projectId));
   const privateId = pendingPrivate.pending.operationId;
-  assert.deepEqual(pendingPrivate.pending.command, { action: "reject", receiptOnly: true });
+  assert.deepEqual(pendingPrivate.pending.command, { action: "reject", receiptOnly: true, requestId: privateRequest.requestId, expectedVersion: 2, lotVersion });
   const originalReceipt = receipts.get(`pm:${privateId}`);
   assert.ok(originalReceipt);
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
@@ -553,6 +561,64 @@ try {
   await page.getByRole("status").filter({ hasText: "Confirmed by server" }).waitFor();
   assert.equal(events.filter((e) => e.action === "reject").length, 1);
   assert.doesNotMatch(await page.locator("body").innerText(), /USD|2800|68000/);
+  // R3: actual PM handler, pre-execution failure, complete Chromium restart,
+  // original scope/baselines, explicit same-identity settlement and usable fields.
+  pmFinance = true;
+  const neverRequest = execute("foreman", randomUUID(), { action: "submit", lotId, lotVersion,
+    quantity: 10, workLocation: "Never received", reason: "Operational" });
+  execute("lead", randomUUID(), { action: "verify", requestId: neverRequest.requestId, expectedVersion: 1, lotVersion });
+  await page.goto(`${base}/?actor=pm`);
+  await page.getByRole("button", { name: "Request from this lot" }).click();
+  await page.getByLabel("Quantity of ties").fill("25");
+  await page.getByLabel("Work location", { exact: true }).fill("Preserved ordinary draft");
+  await page.getByLabel("Reason", { exact: true }).fill("Ordinary field work");
+  await page.getByRole("status").filter({ hasText: "Saved on this device" }).waitFor();
+  dropBeforePrivate = true;
+  page.once("dialog", d => d.accept(privateReason));
+  await page.getByRole("button", { name: "Reject with reason" }).click();
+  await page.getByRole("heading", { name: "Unconfirmed operation" }).waitFor();
+  const never = await page.evaluate(() => window.inventoryTest.drafts.readInventoryDraft(window.inventoryTest.userId, window.inventoryTest.projectId));
+  assert.deepEqual(never.pending.command, { action: "reject", receiptOnly: true,
+    requestId: neverRequest.requestId, expectedVersion: 2, lotVersion });
+  assert.equal(receipts.has(`pm:${never.pending.operationId}`), false);
+  assert.equal(requests.find(r => r.id === neverRequest.requestId).state, "verified");
+  assert.doesNotMatch(await rawStores(), /USD|2800|68000/);
+  await context.close(); context = await launch(); page = context.pages()[0];
+  await page.goto(`${base}/?actor=pm`);
+  await page.getByRole("heading", { name: "Unconfirmed operation" }).waitFor();
+  await page.getByRole("button", { name: "Check receipt" }).click();
+  await page.getByRole("status").filter({ hasText: "No receipt found yet" }).waitFor();
+  assert.equal(await page.getByLabel("Quantity of ties").inputValue(), "25");
+  await page.getByRole("button", { name: "Resolve original operation online" }).click();
+  await page.getByRole("status").filter({ hasText: "Original operation was not applied" }).waitFor();
+  assert.equal(receipts.get(`pm:${never.pending.operationId}`).result.code, "operation_not_applied");
+  assert.equal(events.filter(e => e.action === "reject" && e.request_id === neverRequest.requestId).length, 0);
+  assert.equal(execute("pm", never.pending.operationId, { action: "reject", requestId: neverRequest.requestId,
+    expectedVersion: 2, lotVersion, reason: privateReason }).code, "operation_conflict");
+  await page.getByLabel("Quantity of ties").fill("26");
+  await page.getByRole("status").filter({ hasText: "Saved on this device" }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Submit request online" }).isEnabled(), true);
+  await page.getByRole("button", { name: "Authorize & post release" }).click();
+  await page.getByRole("status").filter({ hasText: "Confirmed by server" }).waitFor();
+  assert.equal(requests.find(r => r.id === neverRequest.requestId).state, "posted");
+  assert.equal(await page.getByLabel("Quantity of ties").inputValue(), "26");
+  // All other private envelopes, including old minimal ones, use the same real
+  // UI/store/controller recovery. No original versions are inferred on restart.
+  for (const action of ["cancel", "cost", "configuration"]) {
+    const id = randomUUID();
+    await page.evaluate(async ({ action, id }) => {
+      const t = window.inventoryTest, d = await t.drafts.readInventoryDraft(t.userId, t.projectId);
+      await t.drafts.saveInventoryDraft({ ...d, phase: "unknown", pending: { operationId: id, command: { action, receiptOnly: true } } });
+    }, { action, id });
+    await page.reload();
+    await page.getByRole("heading", { name: "Unconfirmed operation" }).waitFor();
+    await page.getByRole("button", { name: "Resolve original operation online" }).click();
+    await page.getByRole("status").filter({ hasText: "Original operation was not applied" }).waitFor();
+    assert.equal(receipts.get(`pm:${id}`).result.code, "operation_not_applied");
+    assert.equal(await page.getByLabel("Quantity of ties").inputValue(), "26");
+    assert.doesNotMatch(await rawStores(), /USD|2800|68000/);
+  }
+  await page.screenshot({ path: "/tmp/tia-correction2-recovered.png", fullPage: true });
   await page.goto(`${base}/?actor=foreman`);
   await page.getByRole("heading", { name: "Stock by lot" }).waitFor();
   // Neutral shell reveals no user/project before explicit device-draft access.
@@ -613,7 +679,7 @@ try {
   );
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: actual rendered phone-width UI; real IndexedDB commit/quota preservation/full Chromium restart; A→B→A; offline input and disabled submission; dropped-response receipt recovery; preserved old outbox/blob; selective legacy finance removal; private rejection/finance event raw-store exclusion, legacy sanitation, role downgrade/restart and receipt-only no-replay; web→typed mobile and typed mobile→web synthetic transport; lead→PM; no field financial DOM; neutral fallback restart/edit. Screenshot /tmp/tia-inventory-phone.png. Synthetic session/HTTP transport; RLS/transactions established separately by test-inventory-db.mjs.",
+    "PASS: actual rendered phone-width UI; real IndexedDB commit/quota preservation/full Chromium restart; A→B→A; offline input and disabled submission; dropped-response receipt recovery; preserved old outbox/blob; selective legacy finance removal; private rejection/finance event raw-store exclusion, legacy sanitation, role downgrade/restart and receipt-only no-replay; never-received private restart same-identity settlement, original scope/versions, legacy minimal cancel/cost/configuration recovery, preserved ordinary draft edits and subsequent authorization; web→typed mobile and typed mobile→web synthetic transport; lead→PM; no field financial DOM; neutral fallback restart/edit. Screenshot /tmp/tia-inventory-phone.png. Synthetic session/HTTP transport; RLS/transactions established separately by test-inventory-db.mjs.",
   );
 } catch (error) {
   if (context) {

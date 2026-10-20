@@ -230,6 +230,104 @@ describe("Phase 1 shared contracts", () => {
       assert.notEqual(reopened.draft?.operationId, original);
     }
   });
+  it("settles never-received private actions and legacy minimal envelopes without replay, preserving field work", async () => {
+    for (const action of ["reject", "cancel", "cost", "configuration"] as const) {
+      for (const legacy of [false, true]) {
+        let saved: InventoryDraft | null = null;
+        let receipt: import("@railcommand/domain").InventoryResult | null = null;
+        let originalId = "", calls = 0;
+        const ports: InventoryPorts = {
+          userId: "u", projectId: "p", current: () => true, online: () => true, uuid: randomUUID,
+          read: async () => ({ projectId: "p", lots: [], events: [] }) as unknown as InventorySnapshot,
+          readCache: async () => null, cache: async () => {}, readDraft: async () => saved,
+          saveDraft: async d => { saved = structuredClone(inventoryDeviceDraft(d)); },
+          deleteDraft: async () => { saved = null; }, receipt: async () => receipt,
+          execute: async (id, command) => {
+            calls++;
+            if (command.action !== "settle") {
+              originalId = id;
+              throw Error("Transport failed before execution");
+            }
+            assert.equal(id, originalId);
+            assert.deepEqual(command, { action: "settle" });
+            receipt = { ok: false, code: "operation_not_applied", error: "Original operation was not applied" };
+            return receipt;
+          },
+        };
+        const first = new InventoryController(ports); await first.open();
+        await first.edit({ lotId: "field-lot", quantity: 25, reason: "Saved ordinary work" });
+        await first.act({ action, requestId: "original-request", lotId: "original-lot",
+          expectedVersion: 2, lotVersion: 7, costVersion: 3, reason: "USD 68000 private",
+          components: { log: 68000 }, annualRate: 0.08 });
+        assert.deepEqual(saved!.pending!.command, { action, receiptOnly: true,
+          requestId: "original-request", lotId: "original-lot", expectedVersion: 2, lotVersion: 7, costVersion: 3 });
+        if (legacy) saved!.pending!.command = { action, receiptOnly: true };
+        first.dispose();
+        const restarted = new InventoryController(ports); await restarted.open();
+        await restarted.recover(); await restarted.act(); assert.equal(calls, 1);
+        assert.equal(restarted.draft!.pending!.operationId, originalId);
+        assert.doesNotMatch(JSON.stringify(saved), /68000|annualRate|components/);
+        await restarted.settle();
+        assert.equal(calls, 2); assert.equal(restarted.draft!.pending, undefined);
+        assert.equal(restarted.draft!.command.quantity, 25);
+        await restarted.edit({ quantity: 26 });
+        assert.equal(saved!.command.quantity, 26);
+        assert.notEqual(saved!.operationId, originalId);
+      }
+    }
+  });
+  it("settlement uses only a durable original receipt, including accepted response loss, conflicts and denied settlement", async () => {
+    let saved: InventoryDraft | null = null;
+    let receipt: import("@railcommand/domain").InventoryResult | null = null;
+    let phase = "lost", calls = 0;
+    const ports: InventoryPorts = {
+      userId: "u", projectId: "p", current: () => true, online: () => true, uuid: randomUUID,
+      read: async () => ({ lots: [], events: [] }) as unknown as InventorySnapshot,
+      cache: async () => {}, readCache: async () => null, readDraft: async () => saved,
+      saveDraft: async d => { saved = structuredClone(inventoryDeviceDraft(d)); }, deleteDraft: async () => { saved = null; },
+      receipt: async () => receipt,
+      execute: async () => {
+        calls++;
+        if (phase === "lost") throw Error("Lost response");
+        if (phase === "denied") return { code: "denied" };
+        return { code: "operation_conflict" };
+      },
+    };
+    const c = new InventoryController(ports); await c.open();
+    await c.edit({ lotId: "lot", reason: "Preserved", quantity: 25 });
+    await c.act({ action: "reject", requestId: "r", expectedVersion: 2, reason: "Private" });
+    const original = c.draft!.pending!.operationId;
+    phase = "denied"; await c.settle();
+    assert.equal(c.draft!.pending!.operationId, original); // no fabricated terminal receipt
+    phase = "conflict"; await c.act();
+    assert.equal(c.draft!.pending!.operationId, original); // null lookup cannot clear it
+    receipt = { ok: true, requestId: "original-accepted" };
+    await c.act(); // changed-payload conflict recovers accepted original, not a new mutation
+    assert.equal(c.draft!.pending, undefined); assert.equal(c.draft!.command.reason, "Preserved");
+    await c.act({ action: "cost", lotId: "lot", costVersion: 1 });
+    // Conflict receipt resolves the original; no extra execute is needed to recover it.
+    assert.equal(c.draft!.pending, undefined); assert.equal(calls, 5);
+  });
+  it("recovers a lost settlement response after another restart without replay or a new identity", async () => {
+    let saved: InventoryDraft | null = { schemaVersion: 1, userId: "u", projectId: "p", operationId: "field",
+      updatedAt: "now", phase: "unknown", command: { action: "submit", lotId: "lot", quantity: 25 },
+      pending: { operationId: "original-private", command: { action: "configuration", receiptOnly: true } } };
+    let receipt: import("@railcommand/domain").InventoryResult | null = null, calls = 0;
+    const ports: InventoryPorts = {
+      userId: "u", projectId: "p", current: () => true, online: () => true, uuid: randomUUID,
+      read: async () => ({ lots: [], events: [] }) as unknown as InventorySnapshot,
+      cache: async () => {}, readCache: async () => null, readDraft: async () => saved,
+      saveDraft: async d => { saved = structuredClone(inventoryDeviceDraft(d)); }, deleteDraft: async () => { saved = null; },
+      receipt: async () => receipt, execute: async (id, command) => {
+        calls++; assert.equal(id, "original-private"); assert.deepEqual(command, { action: "settle" });
+        receipt = { ok: false, code: "operation_not_applied" }; throw Error("Settlement response lost");
+      },
+    };
+    const c = new InventoryController(ports); await c.open(); await c.settle();
+    assert.equal(c.draft!.pending!.operationId, "original-private"); c.dispose();
+    const restarted = new InventoryController(ports); await restarted.open(); await restarted.recover();
+    assert.equal(calls, 1); assert.equal(restarted.draft!.pending, undefined); assert.equal(restarted.draft!.command.quantity, 25);
+  });
   it("preserves complete operational approval, count and revision retry payloads", () => {
     for (const action of ["submit", "verify", "authorize", "count", "revise"] as const) {
       const d = { command: { action: "submit", reason: "Field request" }, pending: {

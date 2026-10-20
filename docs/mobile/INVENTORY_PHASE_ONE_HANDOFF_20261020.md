@@ -18,7 +18,7 @@ Cached quantities/status are **offline read-only**, carry an as-of time, and nev
 
 Submission and decisions are **online-only**. Exact operational pending command and operation UUID are saved first; a lost response remains unknown until receipt lookup or an explicit retry of that same operation. No new UUID is silently substituted. Storage/quota errors preserve current input and the last complete saved snapshot. Web sign-out inspects existing drafts/outbox and requires two discard confirmations when work remains; native's existing guard includes the new record drafts. Existing log/photo rows, identities, conflicts and blobs are not migrated or purged. Legacy financial cache sanitation modifies only cache records, preserving unsent work.
 
-Finance is **online-only**. Financial editor input stays in the current account's memory across connectivity loss, and original expected cost/configuration versions remain pinned until an explicit review/rebase. Rates/threshold proposals stay unconfirmed and never affect operational calculations or the two required approvals. Monetary inputs are not written into device cache. An ambiguous financial edit or private rejection/cancellation decision retains only its receipt identity across a process restart; the app can check that original receipt, but cannot replay financial values that were intentionally not persisted. This is distinct from the fully durable field-submit/approval command lifecycle.
+Finance is **online-only**. Financial editor input stays in the current account's memory across connectivity loss, and original expected cost/configuration versions remain pinned until an explicit review/rebase. Rates/threshold proposals stay unconfirmed and never affect operational calculations or the two required approvals. Monetary inputs are not written into device cache. An ambiguous financial edit or private rejection/cancellation decision retains its receipt identity and allowlisted original request/lot scope and versions across a process restart. The app can check the original receipt or explicitly settle that same identity online without replaying forgotten private values. This is distinct from the fully durable field-submit/approval command lifecycle.
 
 ## Cost, stock and budget rules
 
@@ -63,21 +63,49 @@ Rejection and cancellation reasons are private decision evidence, matching the
 server's event boundary. Their pending payloads join cost/configuration in
 receipt-only device persistence. Operational submit/revise/count input and ordinary
 verify/authorize payloads retain their exact durable retry behavior. An active
-session still holds the original private input in memory. After restart, only the
-original operation UUID/action is available; redacted payload replay is disabled.
-A missing receipt leaves that private decision visibly unresolved and locked:
-continue checking its original receipt. There is no abandon/re-entry bypass that
-could resend changed input or create a second operation while the first outcome is
-unknown. Once its receipt is found, the controller clears the pending envelope
-and permits fresh online input with a new operation identity. This intentional
-restart recovery limit must be evaluated in the new independent Review and actual
-signed-device acceptance; no successful receipt or live acceptance is assumed.
+session still holds the original private input in memory. After restart, the
+original UUID/action and allowlisted original scope/versions remain, with no
+commercial payload. Redacted payload replay stays disabled. A null receipt alone
+never unlocks work. Both UIs offer **Resolve original operation online**: the
+additive `inventory_settle(project, operation)` RPC authenticates the current
+actor, checks current same-organization project membership and write permission,
+and takes the identical actor/UUID transaction advisory lock as execution. If the
+original won, it returns that original immutable receipt. Otherwise it writes an
+immutable `operation_not_applied` receipt before releasing the lock. A late
+original then conflicts and cannot mutate stock/evidence. Only the durable receipt
+unlocks preserved ordinary field work. Lost settlement responses retain the same
+identity for receipt lookup/repeated settlement. Existing minimal receipt envelopes
+settle without inventing scope or versions from a new snapshot. Changed-payload
+conflicts retrieve the original receipt instead of clearing pending state.
+
+The additive local migration `20261020172309_inventory_operation_settlement.sql`
+must be deployed with the new server/API behavior before the client resolve control
+is released. Existing execute/receipt signatures and old v1 requests remain intact;
+new `settle` HTTP commands route to the dedicated RPC. No hosted migration ran.
+Rolling back the resolve UI/server can leave the additive immutable receipt RPC in
+place; never delete resolved receipts or retry those identities as fresh work.
+Settlement is explicit and online-only; it is not a material outbox. New decisions
+after a never-applied receipt require review of current data and use ordinary new
+operation identities only after the old identity is durably resolved.
 
 Committed regressions cover the exact commercial reason in raw Chromium IndexedDB
 and on-disk SQLite, legacy sanitation and reopen/role downgrade, authorized online
 evidence, lost responses, original receipt lookup and changed-payload prevention.
 The disposable PostgreSQL test also verifies authorized reason retention, field
-omission and permanent UUID/digest conflict protection. No schema, hosted data,
-rate/threshold confirmation, installed-client payload contract or old queue format
-changed. A new signed mobile build remains required; the prior physical/hosted/pilot
+omission and permanent UUID/digest conflict protection. The settlement migration adds one narrowly granted RPC; no hosted data,
+rate/threshold confirmation, existing installed-client payload contract or old queue
+format changed. A new signed mobile build remains required; the prior physical/hosted/pilot
 release gates above remain pending.
+
+## R3 correction verification
+
+Controller, actual Chromium/IndexedDB, and actual on-disk SQLite regressions cover
+pre-execution loss, full restart, original scope/version retention, private-value
+absence, legacy minimal envelopes, explicit same-identity resolution, and resumed
+ordinary draft editing/actions. Real disposable PostgreSQL uses two connections and
+a pre-commit barrier to prove both original-first and settlement-first lock orders
+for reject, cancel, cost and configuration, plus changed-payload conflict recovery,
+permission revocation and foreign-project denial. Accepted-response-lost and old
+field/log/photo regression coverage remains. Exact results are in the current Build
+report. This is local coding evidence; all signed-device/hosted/pilot gates above
+remain pending and a new independent Review is mandatory.

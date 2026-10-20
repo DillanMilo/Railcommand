@@ -20,6 +20,7 @@ export type CostComponent = {
 };
 export type InventoryCommand = {
   action:
+    | "settle"
     | "assign"
     | "opening"
     | "configuration"
@@ -294,10 +295,19 @@ export function parseInventoryDraft(
 export function inventoryDeviceDraft(draft: InventoryDraft): InventoryDraft {
   // Request/revision/count text is operational field input. Decision reasons
   // are private event evidence; preserve only their original receipt identity.
-  const safeCommand = (command: InventoryCommand): InventoryCommand =>
-    ["cost", "configuration", "reject", "cancel"].includes(command.action)
-      ? { action: command.action, receiptOnly: true }
-      : command;
+  const safeCommand = (command: InventoryCommand): InventoryCommand => {
+    if (!["cost", "configuration", "reject", "cancel"].includes(command.action))
+      return command;
+    // Retain only original operational scope/baselines, never commercial input.
+    // Missing legacy metadata remains missing; a fresh snapshot cannot supply it.
+    const safe: InventoryCommand = { action: command.action, receiptOnly: true };
+    for (const key of ["requestId", "lotId"])
+      if (typeof command[key] === "string") safe[key] = command[key];
+    for (const key of ["expectedVersion", "lotVersion", "costVersion"])
+      if (Number.isSafeInteger(command[key]) && Number(command[key]) >= 0)
+        safe[key] = command[key];
+    return safe;
+  };
   const command = safeCommand(draft.command);
   const pending = draft.pending ?? (command.receiptOnly
     ? { operationId: draft.operationId, command }

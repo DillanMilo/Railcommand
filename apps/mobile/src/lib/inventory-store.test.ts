@@ -161,19 +161,26 @@ describe("inventory actual SQLite persistence and isolation", () => {
       await downgraded.open();
       assert.doesNotMatch(JSON.stringify(downgraded.snapshot), /2800|68000|cost|configuration|reason/);
       downgraded.dispose();
-      for (const action of ["reject", "cancel"] as const) {
-        let calls = 0, receipt: {ok: boolean} | null = null;
+      for (const action of ["reject", "cancel", "cost", "configuration"] as const) {
+        let calls = 0, receipt: import("@railcommand/domain").InventoryResult | null = null;
         const ports: InventoryPorts = {
           userId: a, projectId: project, current: () => true, online: () => true,
           uuid: randomUUID, read: async () => online,
           readCache: () => store.readCache(a, project, () => true), cache: (s) => store.cache(a, s, () => true),
           readDraft: () => store.readDraft(a, project, () => true), saveDraft: (d) => store.saveDraft(d, () => true),
           deleteDraft: () => store.deleteDraft(a, project, () => true), receipt: async () => receipt,
-          execute: async (_id, command) => { calls++; assert.equal(command.reason, privateReason); throw Error("Synthetic lost response"); },
+          execute: async (id, command) => {
+            calls++;
+            if (command.action === "settle") {
+              assert.equal(id, (await store.readDraft(a, project, () => true))!.pending!.operationId);
+              receipt = { ok: false, code: "operation_not_applied" }; return receipt;
+            }
+            assert.equal(command.reason, privateReason); throw Error("Synthetic pre-execution failure");
+          },
         };
         await store.saveDraft(draft, () => true);
         const first = new InventoryController(ports); await first.open();
-        await first.act({ action, requestId: "r", expectedVersion: 2, reason: privateReason });
+        await first.act({ action, requestId: "r", expectedVersion: 2, lotId: "original-lot", lotVersion: 7, costVersion: 3, reason: privateReason });
         const original = first.draft!.pending!.operationId;
         const rawDraft = () => connections.get(a)!.prepare("SELECT payload FROM record_drafts WHERE draft_key=?").get(`inventory:${project}`)!.payload as string;
         assert.doesNotMatch(rawDraft(), /2800|68000/);
@@ -184,8 +191,13 @@ describe("inventory actual SQLite persistence and isolation", () => {
         await restarted.act(); await restarted.recover(); assert.equal(calls, 1);
         assert.match(restarted.message, /No receipt.*original receipt/);
         assert.doesNotMatch(rawDraft(), /2800|68000/);
-        receipt = { ok: true }; await restarted.recover();
+        assert.deepEqual(restarted.draft?.pending?.command, { action, receiptOnly: true, requestId: "r", expectedVersion: 2, lotId: "original-lot", lotVersion: 7, costVersion: 3 });
+        await restarted.settle();
+        assert.equal(restarted.draft?.pending, undefined);
         assert.equal(restarted.draft?.command.reason, "Field work");
+        await restarted.edit({ quantity: 26 });
+        assert.equal((await store.readDraft(a, project, () => true))?.command.quantity, 26);
+        assert.equal(calls, 2);
         // Legacy unknown draft is scrubbed on read, keeping original identity.
         const legacy = { ...draft, phase: "unknown", pending: { operationId: original, command: { action, reason: privateReason } } };
         await (await open(a)).runAsync("UPDATE record_drafts SET payload=? WHERE draft_key=?", JSON.stringify(legacy), `inventory:${project}`);
@@ -194,6 +206,31 @@ describe("inventory actual SQLite persistence and isolation", () => {
         assert.equal(sanitized?.pending?.command.receiptOnly, true);
         assert.doesNotMatch(rawDraft(), /2800|68000/);
         restarted.dispose();
+        // An old receipt-only envelope has no recoverable baselines. Settlement
+        // still uses only its identity; it never invents versions from online data.
+        const minimal = { ...legacy, pending: { operationId: original, command: { action, receiptOnly: true } } };
+        await store.saveDraft(minimal as InventoryDraft, () => true);
+        connections.get(a)!.close(); connections.delete(a);
+        receipt = null;
+        const oldClientRestart = new InventoryController(ports); await oldClientRestart.open();
+        assert.deepEqual(oldClientRestart.draft?.pending?.command, { action, receiptOnly: true });
+        await oldClientRestart.settle();
+        assert.equal(oldClientRestart.draft?.pending, undefined);
+        assert.equal(oldClientRestart.draft?.command.reason, "Field work");
+        assert.doesNotMatch(rawDraft(), /2800|68000/);
+        oldClientRestart.dispose();
+        // Retain the original accepted-but-response-lost SQLite regression too:
+        // a second process restart recovers its receipt without any execute.
+        await store.saveDraft(minimal as InventoryDraft, () => true);
+        connections.get(a)!.close(); connections.delete(a);
+        receipt = { ok: true };
+        const beforeRecovery = calls;
+        const acceptedRestart = new InventoryController(ports); await acceptedRestart.open();
+        await acceptedRestart.recover();
+        assert.equal(acceptedRestart.draft?.pending, undefined);
+        assert.equal(acceptedRestart.draft?.command.reason, "Field work");
+        assert.equal(calls, beforeRecovery);
+        acceptedRestart.dispose();
       }
       assert.equal((await (await open(a)).getFirstAsync<{id:string}>("SELECT * FROM outbox"))?.id, oldId);
 

@@ -141,6 +141,7 @@ try {
       "utf8",
     ),
   );
+  sql(readFileSync(new URL("../supabase/migrations/20261020172309_inventory_operation_settlement.sql", import.meta.url), "utf8"));
   assert.equal(
     command("pm", { action: "assign", leadId: ids.lead, pmId: ids.pm }).ok,
     true,
@@ -669,6 +670,61 @@ try {
   assert.equal(JSON.parse(as("pm", `select public.inventory_receipt('${ids.project}','${rejectionOperation}')`)).ok, true);
   assert.equal(command("pm", { action: "reject", requestId: reasonRequest,
     lotVersion: 1, expectedVersion: 2, reason: "Changed private reason" }, rejectionOperation).code, "operation_conflict");
+  const settle = (user, op, project = ids.project) => JSON.parse(as(user,
+    `select public.inventory_settle('${project}','${op}')`));
+  assert.deepEqual(settle("pm", rejectionOperation), JSON.parse(as("pm", `select public.inventory_receipt('${ids.project}','${rejectionOperation}')`)));
+  assert.equal(settle("outsider", randomUUID()).code, "denied");
+  assert.equal(settle("pm", rejectionOperation, ids.foreign).code, "denied");
+  assert.equal(sql("select has_function_privilege('anon','public.inventory_settle(uuid,uuid)','execute')"), "f");
+  const revokedOp = randomUUID();
+  sql(`update public.project_members set can_edit=false where profile_id='${ids.pm}'`);
+  assert.equal(settle("pm", revokedOp).code, "denied");
+  assert.equal(sql(`select count(*) from public.inventory_receipts where operation_id='${revokedOp}'`), "0");
+  sql(`update public.project_members set can_edit=true where profile_id='${ids.pm}'`);
+  // Deterministically exercise both lock orders using independent DB sessions.
+  // Holder sleeps after applying under the op lock but before COMMIT; its rival
+  // must wait, then recover the exact durable winner, never mutate twice.
+  for (const action of ["reject", "cancel", "cost", "configuration"]) {
+    for (const originalFirst of [true, false]) {
+      const lot = openingLot(), request = submit(lot);
+      assert.equal(verify(request).ok, true);
+      const user = action === "cancel" ? "foreman" : "pm", op = randomUUID();
+      const cmd = action === "configuration"
+        ? { action, expectedVersion: read("pm").finance.configuration.version, source: "Unconfirmed race proposal" }
+        : action === "cost"
+        ? { action, lotId: lot, lotVersion: 1, costVersion: 1, components: comp, funding: "funded", sourceKey: randomUUID(), source: "Race source" }
+        : { action, requestId: request, lotVersion: 1, expectedVersion: 2, reason: privateReason };
+      const originalSql = `select public.inventory_execute('${ids.project}','${op}','${JSON.stringify(cmd).replaceAll("'", "''")}'::jsonb)`;
+      const settleSql = `select public.inventory_settle('${ids.project}','${op}')`;
+      const holderName = `tia_${op}`;
+      const holder = asyncSql(`set application_name='${holderName}';set role authenticated;set request.jwt.claim.sub='${ids[user]}';begin;${originalFirst ? originalSql : settleSql};select pg_sleep(0.5);commit`);
+      let ready = false;
+      for (let i = 0; i < 100; i++) {
+        if (sql(`select count(*) from pg_stat_activity where application_name='${holderName}' and wait_event='PgSleep'`) === "1") { ready = true; break; }
+        await new Promise(r => setTimeout(r, 10));
+      }
+      assert.ok(ready, "holder reached pre-commit lock barrier");
+      const rival = asyncSql(`set role authenticated;set request.jwt.claim.sub='${ids[user]}';${originalFirst ? settleSql : originalSql}`);
+      const [held, raced] = await Promise.all([holder, rival]);
+      const heldResult = JSON.parse(held.split("\n").find(x => x.startsWith("{"))), raceResult = JSON.parse(raced);
+      const durable = JSON.parse(as(user, `select public.inventory_receipt('${ids.project}','${op}')`));
+      if (originalFirst) {
+        assert.equal(heldResult.ok, true, `${action} accepted original`);
+        assert.deepEqual(raceResult, heldResult); assert.deepEqual(durable, heldResult);
+      } else {
+        assert.equal(heldResult.code, "operation_not_applied");
+        assert.equal(raceResult.code, "operation_conflict"); assert.deepEqual(durable, heldResult);
+      }
+      assert.deepEqual(settle(user, op), durable);
+      assert.equal(command(user, { ...cmd, changedPrivateInput: true }, op).code, "operation_conflict");
+      assert.deepEqual(JSON.parse(as(user, `select public.inventory_receipt('${ids.project}','${op}')`)), durable);
+      assert.equal(sql(`select count(*) from public.inventory_receipts where actor_id='${ids[user]}' and operation_id='${op}'`), "1");
+      assert.equal(sql(`select count(*) from public.inventory_events where operation_id='${op}'`), originalFirst ? "1" : "0");
+      assert.equal(sql(`select count(*) from public.inventory_movements where lot_id='${lot}' and kind<>'opening'`), "0");
+      assert.equal(read("pm").lots.find(l => l.id === lot).balance, 1000);
+    }
+  }
+  console.log("PASS: same-identity settlement, accepted/lost original receipt, both deterministic original/settlement lock orders for reject/cancel/cost/configuration, denied/revoked/foreign scope, immutable one receipt/no duplicate evidence/stock");
   console.log(
     "PASS: real budget hold 2800; draft CO zero; signed CO +3000 once; explicit rebase/reapproval; 200 headroom; shared source counted once across material lines; pinned posted exposure; concurrent 600+600 never overspends; transactional rollback; current permissions; generic foreign probe; drying denied; legacy DB finance boundary",
   );

@@ -413,3 +413,17 @@ restart cannot replay forgotten private input: it keeps the original identity an
 remains unresolved until receipt lookup succeeds. See the platform handoff's
 bounded privacy correction section and the new exact-revision Build report.
 No Phase 2/3, schema, policy-confirmation, hosted or release scope was added.
+
+### 20 October 2026 — R3 bounded correction
+
+Completed same-identity online settlement for private receipt-only restart recovery
+on web and native. New envelopes retain allowlisted original request/lot scope and
+expected versions without private values. Missing receipts never imply abandonment:
+the additive settlement RPC shares the original actor/UUID lock, returns an accepted
+receipt or durably resolves never-applied; late original delivery cannot mutate.
+Legacy minimal envelopes need no inferred versions. Changed-payload conflicts look
+up the original receipt. Field drafts/old queues remain intact. Finance/decisions
+stay online-only; cached operations read-only; field drafts remain draft-only.
+See the platform handoff and current TIA-P1 Build report for exact local evidence.
+No policy amounts confirmed, Phase 2/3 added, hosted writes, distribution or merge.
+Independent Review and physical/signed/hosted/pilot release gates remain required.

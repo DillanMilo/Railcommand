@@ -8,6 +8,7 @@ const input = z.object({
   command: z
     .object({
       action: z.enum([
+        "settle",
         "assign",
         "opening",
         "configuration",

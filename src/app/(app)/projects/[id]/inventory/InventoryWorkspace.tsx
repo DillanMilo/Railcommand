@@ -167,13 +167,19 @@ export function InventoryWorkspace({
             Keep this operation identity:{" "}
             {controller.draft.pending?.operationId}. Check the receipt before
             changing the saved input. Private decision input stays only in the
-            current session; after restart, only receipt lookup is available.
+            current session. Resolve online to return an accepted receipt or durably close a never-applied operation, without replaying private input.
           </p>
           <button
             disabled={!online || controller.busy}
             onClick={() => void controller.recover()}
           >
             Check receipt
+          </button>
+          <button
+            disabled={!online || controller.busy}
+            onClick={() => void controller.settle()}
+          >
+            Resolve original operation online
           </button>
           <button
             disabled={!online || controller.busy || !!controller.draft?.pending?.command.receiptOnly}
