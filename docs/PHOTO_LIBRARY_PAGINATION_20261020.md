@@ -307,6 +307,51 @@ the remaining issue is reliable device control, not missing approval. CI and
 Vercel checks on documentation revision `a0b49c4` passed. The release gate below
 remains pending and production remains unchanged.
 
+### Physical camera check: installed staging failure
+
+With the Mac made available, the viewer displayed the phone clearly after Window
+-> Bring All to Front. Native coordinate input still failed with
+`noWindowsAvailable`, although Mac accessibility controls and screenshots worked.
+The user therefore performed the approved one-photo capture in the synthetic
+project's saved draft and reported that its count showed one but no preview.
+
+The phone displayed a red “Photo could not be saved on this device. Free storage
+and try again. The draft remains saved.” banner. The inspected native form renders
+a photo count rather than thumbnails, so the missing preview alone is not proof
+of failure. The save banner and local persistence discrepancy are the failure:
+a fresh private SQLite copy passed integrity checking but contained one synthetic
+draft, zero photos and zero outbox rows. Rebuilding the WAL index in a separate
+local forensic clone produced the same counts. No device database was edited.
+
+The app-owned synthetic photo file nevertheless exists (297,180 bytes, readable
+JPEG, 3024 x 4032). A private read-only copy of that exact test file was preserved
+locally and visually decoded successfully. It shows a plain blue surface with no
+personal material. The file and draft were left on the phone; no cleanup,
+submission, network transition or restart was attempted after the save failure.
+The user was told to keep the draft open and not submit or retake it. The private
+copy is evidence/preservation for the synthetic test only, not a full user backup.
+
+This is an installed older staging binary's local capture/persistence failure,
+not evidence of a gallery API regression. Its exact underlying exception and
+installed binary source revision remain unverified; the generic error does not establish
+that device storage is full. A current isolated native QA build with an observed
+save error and verified file-to-SQLite persistence is needed before claiming the
+native photo flow passes. Do not repair this by directly inserting device SQLite
+rows, reinstalling/resetting the existing apps, or submitting a photo-less draft.
+The physical photo gate remains failed/pending and PR #25 remains a draft.
+
+Read-only EAS inventory found completed staging build 300003 at source `7758aeb`
+(build `9e66f8a0-750e-4b99-9b61-830e81fcf335`) and 300002 at `679f5bb`.
+There are multiple completed 300001 staging artifacts (`1896799`, `3c494bf`,
+`f8f79a5`), so the installed build number alone does not select an exact source.
+Those staging builds predate the current shared-workspace binary. No newer
+staging build was created or installed during this check. Track the native
+capture/persistence diagnosis as **PHOTOS-NATIVE-PERSISTENCE**, a dependency of
+PHOTOS-PAGE-ACCEPTANCE: observe the underlying file/SQLite exception in an
+isolated native QA build, preserve the failed file/draft, verify durable
+file-plus-photo-row storage, then repeat native-to-web, retry and lifecycle tests.
+Do not attribute the native failure to PR #25 without a measured comparison.
+
 ## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
 
 The PR must stay a draft until the following checks are recorded. These are
