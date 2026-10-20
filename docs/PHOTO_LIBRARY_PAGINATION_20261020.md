@@ -48,8 +48,8 @@ release and compare production p50/p95 and response bytes after rollout.
   filters after a web refresh. Native source at `codex/mobile-beta-20260910`
   (`75d9145`) was inspected: `apps/mobile/src/app/workspace.tsx` mounts the
   authenticated, account-scoped WebView and covers it while offline. This change
-  requires a web/backend rollout, not a new bundled implementation. Browser
-  emulation is not physical-device acceptance. See the pending gate below.
+  requires a web/backend rollout, not a new bundled implementation. Physical Safari acceptance and the separate installed-app gap are recorded
+  below; Safari does not establish native WebView acceptance.
 - **Native Field tools:** their separate offline daily-log capture, persisted
   drafts, photos, outbox, authentication and sync APIs are unaffected. No native
   files, queue payloads, operation identities, idempotency keys or shared domain
@@ -82,8 +82,10 @@ release and compare production p50/p95 and response bytes after rollout.
   library/date-priority behavior and is not migrated by this gallery patch;
   pagination there remains a separate optimization. The new gallery does not
   require any queued payload migration or destructive storage reset.
-- **Rollout/rollback:** no deployment or TestFlight/Play assignment made by this
-  change. Review the PR and complete the gate below, then deploy the web/backend.
+- **Rollout/rollback:** production has not been deployed for this change; no
+  TestFlight/Play build or tester assignment is needed for the shared gallery.
+  Protected staging previews are recorded below. Review the
+  PR and complete the gate below, then deploy the web/backend.
   Verify the installed app reloads the same gallery. Roll back the web commit to
   restore the old read; no database rollback or queue manipulation is required.
 
@@ -91,12 +93,15 @@ release and compare production p50/p95 and response bytes after rollout.
 
 - Production Next build and `npx tsc --noEmit`: passed.
 - `npm run lint`: passed with 36 pre-existing warnings; changed files clean.
-- Focused photo/collection/cache tests: 31 passed; mobile API/shared domain/client
+- Focused photo/collection/cache tests: 32 passed (24 photo tests after the
+  relative-URL regression fix plus eight collection/cache tests); mobile API/shared domain/client
   tests: 349 passed (these suites overlap on collection/cache tests).
 - `npm run check:db-grants`: passed (56 table definitions in 44 SQL files).
 - `npm run test:db-grants`: nine static assertions passed; disposable PostgreSQL
   integration could not start because the Docker daemon is unavailable. No schema
-  or access grants change in this patch; CI runs that gate on its Docker host.
+  or access grants change in this patch. GitHub CI on `e25bc0a` passed the
+  disposable PostgreSQL integration, auth/mobile compatibility, focused photos,
+  lint, TypeScript and beta-account gates (run `39459395803`).
 - Web/mobile action inventory: passed; inventory is not parity/device acceptance.
 - Integrated production Next app: local synthetic demo session opened the gallery
   at 390 pixels with no browser exceptions or horizontal overflow. The test build
@@ -117,14 +122,113 @@ release and compare production p50/p95 and response bytes after rollout.
   `node scripts/e2e-project-photo-pages.cjs`. Optional screenshots are written to
   `RAILCOMMAND_E2E_SCREENSHOT_DIR` when supplied.
 
+## Staging acceptance progress — October 20
+
+The designated Supabase staging backend, `rxuvchdqbzvovqijvfhx`, was paused. It
+was resumed and returned `ACTIVE_HEALTHY`; its Auth health check returned 200.
+Production Supabase and `railcommand.io` were not changed. All test writes used
+two newly created synthetic member accounts and projects with identifiers
+`a1020000-0000-4000-8000-000000000001/2` and
+`b1020000-0000-4000-8000-000000000001/2`. No existing account, project, device
+draft, queue, idempotency identity or installed native binary was modified.
+
+Staging preview `dpl_CZGVRf4QzwnnM6MVpx1ZEbA234EU` ran source `3ccab90`.
+Normal authenticated uploads and attachment inserts created 25 synthetic
+daily-log photos. Actual deployed pagination returned 12/12/1 rows; Standard
+returned 18 and Thermal 7. Every page had private/no-store headers and signed
+previews; a signed image request returned 200. The first page was 25,488 bytes
+versus 52,876 bytes for the unchanged 25-row legacy response. Three observed
+service totals were 889.4, 611.5 and 290.8 ms. These are individual staging
+samples, not p95 measurements or evidence of production improvement.
+
+An authenticated member received 403 for another synthetic project; the other
+project's user saw zero attachment rows through RLS and could not sign its
+Storage objects. Removing the first synthetic membership made the deployed
+paginated route return 403 and direct attachment reads return zero rows. The
+membership was restored afterward. Invalid category input returned 400; the
+legacy array transport and native bearer bootstrap returned 200.
+
+Review of the existing gallery upload contract found that it stores relative
+Storage URLs. The paginated reader now accepts that existing format when deriving
+the bucket path, while retaining the project-prefix check and authenticated
+Storage signing. This fix does not rewrite records or files. A regression test
+uses the existing uploader's project/user path format. Build, standalone
+TypeScript, changed-file lint and 24 focused photo tests passed after the fix.
+Corrected source is `e25bc0ab22f669813c311e263fdbc42e23985aa1`; its staging
+preview is `dpl_F8Dm4kb2Vq4aoJNUGks87HjFmLn2`. A 26th synthetic attachment
+references an existing test object using a root-relative URL for verification.
+
+The corrected staging preview returned 12/12/2 rows, including the relative-path
+fixture with an authorized signed preview. Standard returned 19 and Thermal 7;
+legacy reads returned all 26 rows. Response sizes were 25,488, 25,495 and 4,223
+bytes versus 54,956 bytes for the legacy read. Observed service totals were
+720.2, 516.6 and 377.6 ms. Cross-project denial, Storage/RLS isolation, invalid
+input and native bearer bootstrap passed again on this revision.
+
+Actual authenticated browser checks against that deployment passed in desktop
+Chromium (1440 pixels) and phone-sized WebKit (390 pixels): paging, filters,
+signed-image lightbox, no overflow, offline page retention and disabled paging,
+and recovery after reconnect. Neither browser reported uncaught exceptions.
+These checks use real staging services, not fixture API interception.
+
+Staging has older, deliberately restricted provisioning: direct `project_photo`
+uploads are denied. Its notification sheet initially failed because the existing
+`user_notifications` table and profile avatar field were absent. Staging-only
+migration `20261020164250_staging_notification_acceptance_prerequisites` applied
+the existing reviewed notification creation SQL and added nullable
+`profiles.avatar_url`. It did not backfill existing records. Verification found
+RLS enabled, no anonymous SELECT, authenticated SELECT but no INSERT, and UPDATE
+limited to read/dismissed state rather than content. The new table contained zero
+rows. After explicit user approval, staging-only migration
+`20261020164626_staging_activity_read_transport_grant` granted authenticated
+SELECT on `activity_log`; its unchanged RLS has no SELECT policy and still hides
+every activity row. No write grant or activity policy was added. The live
+notification bell then displayed v2.8.1 in both authenticated browser checks.
+Production schema, grants, records and deployed source were not changed.
+
+The paired physical iPhone 17 Pro Max reports iOS 27.0 and production
+RailCommand 1.0.0 (300012). Although iPhone Mirroring failed, Xcode Device Hub's
+screen viewer allowed physical touch testing. Safari reached the protected
+`e25bc0a` staging preview through its existing Vercel authentication; no shared
+bypass URL or reduced deployment protection was used. A new test tab used only
+the synthetic staging member account. Its password was not saved to Keychain.
+Existing personal tabs were retained.
+
+On physical Safari, the same synthetic project showed All (12 on its first
+page), Thermal (seven), and Standard (12 then seven on page two). Next and
+Previous traversed the Standard pages; the first page returned after Previous.
+The signed-image lightbox opened a synthetic fixture and displayed its filename,
+size and image. The responsive layout and page controls fit the device. The
+notification bell's Updates section displayed “Photo Gallery Improvements,”
+v2.8.1, with the online requirement and pending-upload explanation. The photo
+chooser offered Photo Library, Take Photo and Choose File; it was dismissed
+without selecting a personal file or taking a photograph. No camera permission
+was granted and no physical upload was performed.
+
+The separately installed staging app opened an existing synthetic project and
+its Field tools (nine cached logs and two cached team members). This older staging
+binary presents deferred web modules rather than the current shared workspace;
+it cannot establish acceptance of this gallery. The production app was launched
+without reinstalling or signing out, but remained on a loading spinner before
+its workspace opened. Installed-app gallery, bell, lifecycle and queue checks
+therefore remain blocked; the user was asked to inspect the existing session.
+No app reinstall, sign-out, device restart, manual queue replay or data reset was
+performed. Existing drafts/conflicts were not discarded or reassigned.
+
+The Android API 36 phone emulator booted with an older installed 1.0.0 (300001);
+its native UI was not accepted. The user has no physical Android test device.
+Physical Android remains an explicit device gap, not a passed check. The existing
+offline alpha's iOS/Android restart/network gate is separate and is not advanced
+by this read-only gallery work.
+
 ## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
 
 The PR must stay a draft until the following checks are recorded. These are
 explicit acceptance gaps, not passed checks:
 
-- [ ] Authenticated staging query and Storage/RLS smoke with synthetic records,
-  including a removed membership and a user from another project. The connected
-  Supabase account did not permit SQL reads for RailCommand in this session.
+- [x] Authenticated staging query and Storage/RLS smoke with synthetic records,
+  including a removed membership, a user from another project and the relative
+  Storage URL format on the corrected deployed revision.
 - [ ] Web -> installed iPhone/iPad and Android workspace: upload a synthetic photo
   on web, refresh the same authorized project on device and find it; exercise
   categories and more than one page, lightbox, camera/file picker, and retry.
@@ -133,6 +237,6 @@ explicit acceptance gaps, not passed checks:
 - [ ] Physical network loss/reconnect with a pending gallery upload, plus app
   background/foreground and OS restart. Confirm the online-only limitation and
   independently check existing native Field drafts/queues survive the update.
-- [ ] Confirm no-query/older installed-client reads on staging and compare bounded
-  page response sizes plus `Server-Timing` stages. Record deployed revision and
-  tester/device/build IDs here or in the PR before accepting release.
+- [x] Legacy no-query staging reads, native bearer bootstrap and bounded page
+  response sizes/`Server-Timing` passed on the recorded deployed revision.
+  Physical installed-client gallery/session checks remain separately pending.
