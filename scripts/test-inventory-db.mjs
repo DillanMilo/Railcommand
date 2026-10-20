@@ -655,6 +655,20 @@ try {
     JSON.stringify(read("foreman")),
     /budget|carrying|threshold|annual_rate|creosote|configuration/,
   );
+  // Private event reasons remain available to authorized online readers only.
+  const reasonLot = openingLot(), reasonRequest = submit(reasonLot);
+  assert.equal(verify(reasonRequest).ok, true);
+  const privateReason = "Budget hold USD 2800; landed value USD 68000";
+  const rejectionOperation = randomUUID();
+  assert.equal(command("pm", { action: "reject", requestId: reasonRequest,
+    lotVersion: 1, expectedVersion: 2, reason: privateReason }, rejectionOperation).ok, true);
+  assert.equal(read("pm").events.find((e) => e.request_id === reasonRequest && e.action === "reject").reason, privateReason);
+  const fieldEvidence = read("foreman");
+  assert.equal("reason" in fieldEvidence.events.find((e) => e.request_id === reasonRequest && e.action === "reject"), false);
+  assert.ok(fieldEvidence.events.every((e) => !["cost", "configuration"].includes(e.action)));
+  assert.equal(JSON.parse(as("pm", `select public.inventory_receipt('${ids.project}','${rejectionOperation}')`)).ok, true);
+  assert.equal(command("pm", { action: "reject", requestId: reasonRequest,
+    lotVersion: 1, expectedVersion: 2, reason: "Changed private reason" }, rejectionOperation).code, "operation_conflict");
   console.log(
     "PASS: real budget hold 2800; draft CO zero; signed CO +3000 once; explicit rebase/reapproval; 200 headroom; shared source counted once across material lines; pinned posted exposure; concurrent 600+600 never overspends; transactional rollback; current permissions; generic foreign probe; drying denied; legacy DB finance boundary",
   );

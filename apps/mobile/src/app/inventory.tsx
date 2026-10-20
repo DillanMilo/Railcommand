@@ -141,7 +141,9 @@ function InventoryWorkspace({
             {controller.draft?.pending?.operationId}
           </Text>
           <Text style={uiStyles.muted}>
-            Input stays saved. Check the receipt before retrying or changing it.
+            Field input stays saved. Private decision input stays only in the
+            current session; after restart, check the original receipt before
+            re-entering it. Replay is unavailable without the original input.
           </Text>
           <SecondaryButton
             title="Check receipt"
@@ -150,7 +152,7 @@ function InventoryWorkspace({
           />
           <SecondaryButton
             title="Retry saved operation"
-            disabled={!online || controller.busy}
+            disabled={!online || controller.busy || !!controller.draft?.pending?.command.receiptOnly}
             onPress={() => void controller.act()}
           />
         </Card>

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createInventoryStore } from "./inventory-store";
-import type { InventoryDraft } from "@railcommand/domain";
+import { InventoryController, type InventoryPorts, type InventorySnapshot, type InventoryDraft } from "@railcommand/domain";
 type Adapter = {
   runAsync(
     sql: string,
@@ -136,6 +136,67 @@ describe("inventory actual SQLite persistence and isolation", () => {
         (await store.readDraft(a, project, () => true))?.pending?.operationId,
         draft.operationId,
       );
+      const privateReason = "Budget hold USD 2800; landed value USD 68000";
+      const event = { id: "e", action: "reject", reason: privateReason };
+      const online = { projectId: project, asOf: draft.updatedAt, lots: [], requests: [],
+        events: [event, { ...event, action: "cost" }, { ...event, action: "configuration" }],
+        finance: { budget: { base: 68000 } } } as unknown as InventorySnapshot;
+      await store.cache(a, online, () => true);
+      assert.equal(online.events[0].reason, privateReason);
+      let raw = () => connections.get(a)!.prepare("SELECT payload FROM cache_records WHERE cache_key=?").get(`inventory:${project}`)!.payload as string;
+      assert.doesNotMatch(raw(), /2800|68000|cost|configuration|reason/);
+      // Pre-correction installed clients could have written this exact legacy row.
+      await (await open(a)).runAsync("UPDATE cache_records SET payload=? WHERE cache_key=?", JSON.stringify(online), `inventory:${project}`);
+      connections.get(a)!.close(); connections.delete(a);
+      const offline = await store.readCache(a, project, () => true);
+      assert.deepEqual(offline!.events.map((e) => e.action), ["reject"]);
+      assert.doesNotMatch(raw(), /2800|68000|cost|configuration|reason/);
+      const downgraded = new InventoryController({
+        userId: a, projectId: project, current: () => true, online: () => false, uuid: randomUUID,
+        read: async () => { throw Error("Offline after role downgrade"); },
+        readCache: () => store.readCache(a, project, () => true), cache: async () => {},
+        readDraft: async () => null, saveDraft: async () => {}, deleteDraft: async () => {},
+        execute: async () => { throw Error("Offline"); }, receipt: async () => null,
+      });
+      await downgraded.open();
+      assert.doesNotMatch(JSON.stringify(downgraded.snapshot), /2800|68000|cost|configuration|reason/);
+      downgraded.dispose();
+      for (const action of ["reject", "cancel"] as const) {
+        let calls = 0, receipt: {ok: boolean} | null = null;
+        const ports: InventoryPorts = {
+          userId: a, projectId: project, current: () => true, online: () => true,
+          uuid: randomUUID, read: async () => online,
+          readCache: () => store.readCache(a, project, () => true), cache: (s) => store.cache(a, s, () => true),
+          readDraft: () => store.readDraft(a, project, () => true), saveDraft: (d) => store.saveDraft(d, () => true),
+          deleteDraft: () => store.deleteDraft(a, project, () => true), receipt: async () => receipt,
+          execute: async (_id, command) => { calls++; assert.equal(command.reason, privateReason); throw Error("Synthetic lost response"); },
+        };
+        await store.saveDraft(draft, () => true);
+        const first = new InventoryController(ports); await first.open();
+        await first.act({ action, requestId: "r", expectedVersion: 2, reason: privateReason });
+        const original = first.draft!.pending!.operationId;
+        const rawDraft = () => connections.get(a)!.prepare("SELECT payload FROM record_drafts WHERE draft_key=?").get(`inventory:${project}`)!.payload as string;
+        assert.doesNotMatch(rawDraft(), /2800|68000/);
+        first.dispose(); connections.get(a)!.close(); connections.delete(a);
+        const restarted = new InventoryController(ports); await restarted.open();
+        assert.equal(restarted.draft?.pending?.operationId, original);
+        assert.equal(restarted.draft?.pending?.command.receiptOnly, true);
+        await restarted.act(); await restarted.recover(); assert.equal(calls, 1);
+        assert.match(restarted.message, /No receipt.*original receipt/);
+        assert.doesNotMatch(rawDraft(), /2800|68000/);
+        receipt = { ok: true }; await restarted.recover();
+        assert.equal(restarted.draft?.command.reason, "Field work");
+        // Legacy unknown draft is scrubbed on read, keeping original identity.
+        const legacy = { ...draft, phase: "unknown", pending: { operationId: original, command: { action, reason: privateReason } } };
+        await (await open(a)).runAsync("UPDATE record_drafts SET payload=? WHERE draft_key=?", JSON.stringify(legacy), `inventory:${project}`);
+        const sanitized = await store.readDraft(a, project, () => true);
+        assert.equal(sanitized?.pending?.operationId, original);
+        assert.equal(sanitized?.pending?.command.receiptOnly, true);
+        assert.doesNotMatch(rawDraft(), /2800|68000/);
+        restarted.dispose();
+      }
+      assert.equal((await (await open(a)).getFirstAsync<{id:string}>("SELECT * FROM outbox"))?.id, oldId);
+
     } finally {
       for (const db of connections.values()) db.close();
       rmSync(folder, { recursive: true, force: true });

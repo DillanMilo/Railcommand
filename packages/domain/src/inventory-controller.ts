@@ -143,7 +143,7 @@ export class InventoryController {
     }
     if (this.draft?.pending?.command.receiptOnly) {
       this.message =
-        "This online-only editor retained the receipt identity. Check the original receipt; financial input is never cached.";
+        "This online-only decision retained its original receipt identity. Check the receipt; private input was not saved and cannot be replayed after restart.";
       this.changed();
       return;
     }
@@ -224,7 +224,9 @@ export class InventoryController {
       if (result) await this.finish(result, pending.command);
       else {
         this.message =
-          "No receipt found yet. Retry the saved operation safely with its original identity.";
+          pending.command.receiptOnly
+            ? "No receipt found yet. Keep checking the original receipt before re-entering this online-only decision. Private input was not saved; replay after restart is unavailable."
+            : "No receipt found yet. Retry the saved operation safely with its original identity.";
         this.changed();
       }
     } catch (e) {

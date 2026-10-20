@@ -166,7 +166,8 @@ export function InventoryWorkspace({
           <p>
             Keep this operation identity:{" "}
             {controller.draft.pending?.operationId}. Check the receipt before
-            changing the saved input.
+            changing the saved input. Private decision input stays only in the
+            current session; after restart, only receipt lookup is available.
           </p>
           <button
             disabled={!online || controller.busy}
@@ -175,7 +176,7 @@ export function InventoryWorkspace({
             Check receipt
           </button>
           <button
-            disabled={!online || controller.busy}
+            disabled={!online || controller.busy || !!controller.draft?.pending?.command.receiptOnly}
             onClick={() => void controller.act()}
           >
             Retry saved operation

@@ -89,7 +89,7 @@ export async function readInventoryDraft(
   return inventoryDeviceTransaction(
     userId,
     "drafts",
-    "readonly",
+    "readwrite",
     (s, done, reject) => {
       const r = s.get(`inventory:${projectId}`);
       r.onsuccess = () => {
@@ -100,7 +100,11 @@ export async function readInventoryDraft(
               "Saved inventory draft needs a supported app version. It has not been deleted.",
             ),
           );
-        done(parseInventoryDraft(raw, userId, projectId));
+        const parsed = parseInventoryDraft(raw, userId, projectId);
+        const safe = parsed ? inventoryDeviceDraft(parsed) : null;
+        if (safe && JSON.stringify(safe) !== JSON.stringify(raw))
+          s.put({ ...r.result, value: safe });
+        done(safe);
       };
     },
   );
@@ -146,11 +150,16 @@ export async function readCachedInventory(
   return inventoryDeviceTransaction(
     userId,
     "records",
-    "readonly",
+    "readwrite",
     (s, done) => {
       const r = s.get(`inventory:${projectId}`);
-      r.onsuccess = () =>
-        done(r.result?.value ? operationalInventory(r.result.value) : null);
+      r.onsuccess = () => {
+        const raw = r.result?.value;
+        const safe = raw ? operationalInventory(raw) : null;
+        if (safe && JSON.stringify(safe) !== JSON.stringify(raw))
+          s.put({ ...r.result, value: safe });
+        done(safe);
+      };
     },
   );
 }

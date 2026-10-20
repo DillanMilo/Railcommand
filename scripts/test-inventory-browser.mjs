@@ -25,7 +25,8 @@ const actors = {
 const projectId = randomUUID(),
   lotId = randomUUID(),
   receipts = new Map();
-let drop = true;
+let drop = true, dropPrivate = true, pmFinance = true;
+const privateReason = "Budget hold USD 2800; landed value USD 68000";
 const requests = [],
   events = [];
 let balance = 1000,
@@ -56,8 +57,14 @@ const snapshot = (actor) => ({
     },
   ],
   requests,
-  events,
+  events: actor === "pm" && pmFinance ? events : events
+    .filter((e) => !["cost", "configuration"].includes(e.action))
+    .map(({ reason: _reason, ...safe }) => safe),
   denials: [],
+  ...(actor === "pm" && pmFinance ? { finance: {
+    budget: { base: 130000, spent: 126000, adjusted: 130000, postedNewExposure: 0, changeOrders: [] },
+    costs: [], sources: [], milestones: [], configuration: null, evaluation: "incomplete_awaiting_wendy",
+  } } : {}),
 });
 function execute(actor, id, command) {
   const key = `${actor}:${id}`,
@@ -111,6 +118,9 @@ function execute(actor, id, command) {
       balance -= r.quantity;
       lotVersion++;
       result = { ok: true, requestId: r.id, version: r.version, balance };
+    } else if (command.action === "reject" && actor === "pm" && r.state === "verified") {
+      r.state = "rejected"; r.version++;
+      result = { ok: true, requestId: r.id, version: r.version };
     } else result = { error: "Denied", code: "denied" };
   }
   receipts.set(key, { digest, result });
@@ -122,7 +132,7 @@ function execute(actor, id, command) {
     revision: 1,
     previous_state: null,
     next_state: requests.find((r) => r.id === result.requestId)?.state ?? null,
-    reason: null,
+    reason: command.action === "reject" ? command.reason : null,
     created_at: new Date().toISOString(),
   });
   return result;
@@ -178,6 +188,11 @@ const server = createServer(async (req, res) => {
       const result = execute(actor, b.operationId, b.command);
       if (drop && actor === "foreman" && b.command.action === "submit") {
         drop = false;
+        res.end(JSON.stringify({ syntheticDroppedResponse: true }));
+        return;
+      }
+      if (dropPrivate && actor === "pm" && b.command.action === "reject") {
+        dropPrivate = false;
         res.end(JSON.stringify({ syntheticDroppedResponse: true }));
         return;
       }
@@ -465,6 +480,81 @@ try {
     path: "/tmp/tia-inventory-phone.png",
     fullPage: true,
   });
+  // Reproduce the private decision path through actual production handlers and
+  // raw Chromium stores, including pre-correction rows and a role downgrade.
+  const privateRequest = execute("foreman", randomUUID(), { action: "submit", lotId, lotVersion,
+    quantity: 10, workLocation: "Private decision fixture", reason: "Operational field reason" });
+  execute("lead", randomUUID(), { action: "verify", requestId: privateRequest.requestId, expectedVersion: 1, lotVersion });
+  events.push({ id: randomUUID(), action: "cost", reason: privateReason, created_at: new Date().toISOString() },
+    { id: randomUUID(), action: "configuration", reason: privateReason, created_at: new Date().toISOString() });
+  await page.goto(`${base}/?actor=pm`);
+  page.once("dialog", (d) => d.accept(privateReason));
+  await page.getByRole("button", { name: "Reject with reason" }).click();
+  await page.getByRole("heading", { name: "Unconfirmed operation" }).waitFor();
+  const pendingPrivate = await page.evaluate(() => window.inventoryTest.drafts.readInventoryDraft(window.inventoryTest.userId, window.inventoryTest.projectId));
+  const privateId = pendingPrivate.pending.operationId;
+  assert.deepEqual(pendingPrivate.pending.command, { action: "reject", receiptOnly: true });
+  const originalReceipt = receipts.get(`pm:${privateId}`);
+  assert.ok(originalReceipt);
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.getByText(privateReason, { exact: false }).filter({ hasText: "reject" }).waitFor();
+  const rawStores = async () => page.evaluate(async () => {
+    const t = window.inventoryTest, db = await t.openOfflineDatabase(t.userId);
+    try { return await new Promise((resolve, reject) => {
+      const tx = db.transaction(["records", "drafts"], "readonly"), rows = {};
+      for (const name of ["records", "drafts"]) { const r = tx.objectStore(name).getAll(); r.onsuccess = () => { rows[name] = r.result; }; }
+      tx.oncomplete = () => resolve(JSON.stringify(rows)); tx.onerror = () => reject(tx.error);
+    }); } finally { db.close(); }
+  });
+  assert.doesNotMatch(await rawStores(), /USD|2800|68000|"action":"cost"|"action":"configuration"/);
+  const sanitizedCache = await page.evaluate(async (legacy) => {
+    const t = window.inventoryTest;
+    await t.drafts.inventoryDeviceTransaction(t.userId, "records", "readwrite", (s, done) => {
+      s.put({ key: `inventory:${t.projectId}`, entityType: "inventory", value: legacy }); done();
+    });
+    await t.drafts.sanitizeOfflineFinance(t.userId);
+    return t.drafts.inventoryDeviceTransaction(t.userId, "records", "readonly", (s, done) => {
+      const r = s.get(`inventory:${t.projectId}`); r.onsuccess = () => done(JSON.stringify(r.result));
+    });
+  }, snapshot("pm"));
+  assert.doesNotMatch(sanitizedCache, /USD|2800|68000|"action":"cost"|"action":"configuration"/);
+  // A legacy role-scoped cache and unsafely saved unknown rejection are repaired
+  // by reads themselves, without needing another authorized online snapshot.
+  await page.evaluate(async ({ legacy, id, reason }) => {
+    const t = window.inventoryTest, db = await t.openOfflineDatabase(t.userId);
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(["records", "drafts"], "readwrite");
+      tx.objectStore("records").put({ key: `inventory:${t.projectId}`, entityType: "inventory", value: legacy });
+      tx.objectStore("drafts").put({ draftId: `inventory:${t.projectId}`, kind: "inventory", value: {
+        schemaVersion: 1, userId: t.userId, projectId: t.projectId, operationId: "unrelated-field-operation",
+        updatedAt: new Date().toISOString(), phase: "unknown", command: { action: "submit" },
+        pending: { operationId: id, command: { action: "reject", requestId: "r", reason } },
+      } });
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    }); db.close();
+  }, { legacy: snapshot("pm"), id: privateId, reason: privateReason });
+  pmFinance = false;
+  await context.close(); context = await launch(); page = context.pages()[0];
+  await page.route("**/synthetic-inventory**", (route) => route.abort());
+  await page.goto(`${base}/?actor=pm`);
+  await page.getByRole("heading", { name: "Unconfirmed operation" }).waitFor();
+  await context.setOffline(true);
+  assert.doesNotMatch(await page.locator("body").innerText(), /USD|2800|68000/);
+  assert.doesNotMatch(await rawStores(), /USD|2800|68000|"action":"cost"|"action":"configuration"/);
+  assert.equal(await page.getByRole("button", { name: "Retry saved operation" }).isDisabled(), true);
+  await context.setOffline(false); await page.unroute("**/synthetic-inventory**");
+  receipts.delete(`pm:${privateId}`);
+  await page.getByRole("button", { name: "Check receipt" }).click();
+  await page.getByRole("status").filter({ hasText: "No receipt found yet" }).waitFor();
+  assert.equal((await page.evaluate(() => window.inventoryTest.drafts.readInventoryDraft(window.inventoryTest.userId, window.inventoryTest.projectId))).pending.operationId, privateId);
+  assert.equal(events.filter((e) => e.action === "reject").length, 1);
+  receipts.set(`pm:${privateId}`, originalReceipt);
+  await page.getByRole("button", { name: "Check receipt" }).click();
+  await page.getByRole("status").filter({ hasText: "Confirmed by server" }).waitFor();
+  assert.equal(events.filter((e) => e.action === "reject").length, 1);
+  assert.doesNotMatch(await page.locator("body").innerText(), /USD|2800|68000/);
+  await page.goto(`${base}/?actor=foreman`);
+  await page.getByRole("heading", { name: "Stock by lot" }).waitFor();
   // Neutral shell reveals no user/project before explicit device-draft access.
   await page.getByRole("button", { name: "Request from this lot" }).click();
   await page.getByLabel("Quantity of ties").fill("25");
@@ -523,7 +613,7 @@ try {
   );
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: actual rendered phone-width UI; real IndexedDB commit/quota preservation/full Chromium restart; A→B→A; offline input and disabled submission; dropped-response receipt recovery; preserved old outbox/blob; selective legacy finance removal; web→typed mobile and typed mobile→web synthetic transport; lead→PM; no field financial DOM; neutral fallback restart/edit. Screenshot /tmp/tia-inventory-phone.png. Synthetic session/HTTP transport; RLS/transactions established separately by test-inventory-db.mjs.",
+    "PASS: actual rendered phone-width UI; real IndexedDB commit/quota preservation/full Chromium restart; A→B→A; offline input and disabled submission; dropped-response receipt recovery; preserved old outbox/blob; selective legacy finance removal; private rejection/finance event raw-store exclusion, legacy sanitation, role downgrade/restart and receipt-only no-replay; web→typed mobile and typed mobile→web synthetic transport; lead→PM; no field financial DOM; neutral fallback restart/edit. Screenshot /tmp/tia-inventory-phone.png. Synthetic session/HTTP transport; RLS/transactions established separately by test-inventory-db.mjs.",
   );
 } catch (error) {
   if (context) {

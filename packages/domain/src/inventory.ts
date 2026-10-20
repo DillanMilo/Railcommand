@@ -89,7 +89,7 @@ export type InventoryEvent = {
   revision: number | null;
   previous_state: string | null;
   next_state: string | null;
-  reason: string | null;
+  reason?: string | null;
   created_at: string;
 };
 export type InventoryCost = {
@@ -183,7 +183,28 @@ export function operationalInventory(
   snapshot: InventorySnapshot,
 ): InventorySnapshot {
   const { finance: _finance, ...field } = snapshot;
-  return field;
+  // Match the server's field boundary. Unknown/new event classes stay online
+  // until explicitly reviewed for operational persistence. No event reason is
+  // public to field clients, even when the current online reader has finance.
+  const actions = new Set([
+    "assign", "opening", "count", "submit", "revise", "cancel", "verify",
+    "authorize", "reject",
+  ]);
+  return {
+    ...field,
+    ...(field.events && {
+      events: field.events.filter((e) => actions.has(e.action)).map((e) => ({
+        id: e.id,
+        request_id: e.request_id,
+        action: e.action,
+        actor_id: e.actor_id,
+        revision: e.revision,
+        previous_state: e.previous_state,
+        next_state: e.next_state,
+        created_at: e.created_at,
+      })),
+    }),
+  };
 }
 /** Explicitly supplied example inputs, never an operational rate or config default. */
 export function basicHoldingExample(
@@ -271,19 +292,27 @@ export function parseInventoryDraft(
 }
 
 export function inventoryDeviceDraft(draft: InventoryDraft): InventoryDraft {
-  if (
-    draft.pending &&
-    ["cost", "configuration"].includes(draft.pending.command.action)
-  ) {
-    return {
-      ...draft,
+  // Request/revision/count text is operational field input. Decision reasons
+  // are private event evidence; preserve only their original receipt identity.
+  const safeCommand = (command: InventoryCommand): InventoryCommand =>
+    ["cost", "configuration", "reject", "cancel"].includes(command.action)
+      ? { action: command.action, receiptOnly: true }
+      : command;
+  const command = safeCommand(draft.command);
+  const pending = draft.pending ?? (command.receiptOnly
+    ? { operationId: draft.operationId, command }
+    : undefined);
+  return {
+    ...draft,
+    command,
+    ...(command.receiptOnly && !draft.pending ? { phase: "unknown" as const } : {}),
+    ...(pending && {
       pending: {
-        operationId: draft.pending.operationId,
-        command: { action: draft.pending.command.action, receiptOnly: true },
+        operationId: pending.operationId,
+        command: safeCommand(pending.command),
       },
-    };
-  }
-  return draft;
+    }),
+  };
 }
 
 /** Partial manual cost totals only. An unconfirmed carrying rate never becomes zero. */

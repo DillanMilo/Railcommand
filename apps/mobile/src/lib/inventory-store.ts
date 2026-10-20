@@ -51,7 +51,18 @@ export function createInventoryStore(
         throw new Error(
           "Saved inventory draft needs a supported app version; it was preserved.",
         );
-      return d;
+      const safe = inventoryDeviceDraft(d);
+      if (JSON.stringify(safe) !== row.payload) {
+        await db.withExclusiveTransactionAsync(async (tx) => {
+          if (!current()) throw new Error("Account changed");
+          await tx.runAsync(
+            "UPDATE record_drafts SET payload=? WHERE draft_key=? AND payload=?",
+            JSON.stringify(safe), `inventory:${project}`, row.payload,
+          );
+          if (!current()) throw new Error("Account changed");
+        });
+      }
+      return current() ? safe : null;
     },
     async deleteDraft(user: string, project: string, current: () => boolean) {
       const db = await open(user);
@@ -78,7 +89,18 @@ export function createInventoryStore(
         `inventory:${project}`,
       );
       if (!current() || !row) return null;
-      return operationalInventory(JSON.parse(row.payload) as InventorySnapshot);
+      const safe = operationalInventory(JSON.parse(row.payload) as InventorySnapshot);
+      if (JSON.stringify(safe) !== row.payload) {
+        await db.withExclusiveTransactionAsync(async (tx) => {
+          if (!current()) throw new Error("Account changed");
+          await tx.runAsync(
+            "UPDATE cache_records SET payload=? WHERE cache_key=? AND payload=?",
+            JSON.stringify(safe), `inventory:${project}`, row.payload,
+          );
+          if (!current()) throw new Error("Account changed");
+        });
+      }
+      return current() ? safe : null;
     },
   };
 }

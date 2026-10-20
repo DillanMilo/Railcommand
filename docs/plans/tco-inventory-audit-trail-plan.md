@@ -400,3 +400,16 @@ Before READY: refine the exact Phase 1 issue set around the confirmed decisions,
 ### Phase 1 implementation handoff — 20 October 2026
 
 The user's explicit 20 October build approval superseded the historical plan-only/DRAFT restriction for Phase 1. Local web and native implementation, role-safe finance reads, transactional stock/approval evidence, drafts and receipt recovery are recorded in [the Phase 1 handoff](../mobile/INVENTORY_PHASE_ONE_HANDOFF_20261020.md). Configuration remains unconfirmed; no migration, deployment, signed distribution, tester onboarding or physical-device acceptance is claimed. Phase 2/3 remain unapproved implementation scope. The exact source revision and command evidence are in `.codex-loop/reports/TIA-P1/build.md` in the isolated build worktree.
+
+
+### Phase 1 bounded privacy correction — 20 October 2026
+
+Independent Review R1/R2 identified privileged event reasons in operational device
+caches and private decision text in unknown-operation drafts. The correction uses
+an operational event allowlist on web/native writes and legacy reads, and
+receipt-only persistence for reject/cancel decisions alongside financial editors.
+Operational field work and existing log/photo identities stay durable. Receipt-only
+restart cannot replay forgotten private input: it keeps the original identity and
+remains unresolved until receipt lookup succeeds. See the platform handoff's
+bounded privacy correction section and the new exact-revision Build report.
+No Phase 2/3, schema, policy-confirmation, hosted or release scope was added.
