@@ -352,6 +352,48 @@ isolated native QA build, preserve the failed file/draft, verify durable
 file-plus-photo-row storage, then repeat native-to-web, retry and lifecycle tests.
 Do not attribute the native failure to PR #25 without a measured comparison.
 
+## Native photo-save repair and current acceptance — October 20
+
+The earlier unknown-exception note is superseded by the native investigation in
+[linked PR #26](https://github.com/DillanMilo/Railcommand/pull/26). Expo FileSystem
+57 performs `File.copy()` asynchronously. The shared camera/import helper read
+the destination size before awaiting the copy, allowing a missing-file failure
+and late orphan. The repair awaits the copy before reading size or returning
+attachment metadata. Three delayed/rejected-copy regression tests fail against
+the previous code and pass with the repair; the full native suite has 247 passing
+tests. No schema, UUID, path, idempotency or API contract changes were made.
+
+Native behavior remains **offline draft/queue**; the gallery/workspace remains
+**online-only**. Native source is maintained on the linked native release branch;
+its older web backend must never be deployed over canonical main. Existing
+production mobile API compatibility remains covered by PR #25's checks.
+
+Signed Staging iOS 1.0.0 (300004), EAS build
+`d7043bc1-0a3c-45db-bd63-0ebcce7e6e8f`, was installed as an in-place update under
+the same staging bundle/team identity. Private read-only pre/post comparisons
+verified every baseline draft/photo/outbox row and app-owned file was preserved,
+with SQLite integrity intact. The original failed synthetic JPEG remains intact.
+No app uninstall, sign-out, cache/queue purge or direct device-database write was
+used. A later read-only check still shows the original synthetic draft and no
+new photo metadata; the user was on the dashboard. The fixed capture, durable
+photo row, network/restart preservation and native-to-web synchronization are
+therefore **still pending**, not passed.
+
+Production iOS 1.0.0 (300013), EAS build
+`1f002d45-76ea-4a28-8851-54a27d7d9bdc`, is built and its production bundle/team
+identity was verified, but it is not submitted, distributed or installed. A web
+merge alone cannot ship this native file-copy correction. Physical Android is
+unavailable; track that supported-platform acceptance gap explicitly rather than
+claiming completion of the separate offline-alpha gate.
+
+The existing staging hostname now serves fresh PR #25 source `0017453` as
+`dpl_7isL3ynZXr9vmcLDQuGyTm1scxYi`. The staging Preview configuration now enables
+the existing workspace entry gate; application authentication, RLS and production
+settings are unchanged. Real synthetic native bearer -> one-use handoff -> web
+cookie -> authorized paginated photo read passed (200/303/200, first page 12);
+replaying the ticket was rejected with 403. Device WebView acceptance remains a
+separate pending check. Production railcommand.io remains unchanged.
+
 ## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
 
 The PR must stay a draft until the following checks are recorded. These are
