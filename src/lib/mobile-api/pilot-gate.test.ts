@@ -19,6 +19,7 @@ const expectedRouteMethods = [
   'account/deletion-request#GET',
   'account/deletion-request#POST',
   'account/deletion-request/cancel#POST',
+  'app-release#GET',
   'bootstrap#GET',
   'daily-logs/photos/finalize#POST',
   'daily-logs/photos/prepare#POST',
@@ -125,6 +126,7 @@ describe('production mobile pilot gate', () => {
     const readOnly = [
       ['/api/mobile/v1/railbot/conversations', 'GET'],
       ['/api/mobile/v1/railbot/conversations/id', 'GET'],
+      ['/api/mobile/v1/app-release', 'GET'],
       ['/api/mobile/v1/bootstrap', 'GET'],
       ['/api/mobile/v1/records/options', 'GET'],
       ['/api/mobile/v1/records/detail', 'GET'],
