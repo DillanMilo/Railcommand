@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventory list · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<nav aria-label="Wireframe screens">
+<div class="nav-label">Project workspace</div>
+<a href="index.html">Screen index</a>
+<a href="tco-overview.html">Cost overview</a>
+<a href="inventory-list.html" aria-current="page">Inventory</a>
+<a href="material-cost-detail.html">Material cost</a>
+<a href="approval-queue-trail.html">Approvals & trail</a>
+<a href="dashboard-audit-flags.html">Audit flags</a>
+<a href="field-crew-mobile.html">Field crew mobile</a>
+<div class="nav-foot">Synthetic Track Renewal<br>North yard · USD<br>
+<br>Individual invite-link access<br>Roles remain project scoped</div>
+</nav>
+<main id="main">
+<div class="page-top">
+<div>
+<div class="eyebrow">Operations · inventory lead with budget access</div>
+<h1>Inventory at North yard</h1>
+<p class="muted">On-hand quantity comes from approved movements. Pending issues are shown separately; a count observation does not rewrite the ledger.</p>
+</div>
+<span class="badge amber">Phase 1 pilot</span>
+</div>
+<div class="stats">
+<div class="stat">
+<span class="label">Posted on hand</span>
+<strong>1,000 ties</strong>
+<span class="small muted">TIE-0821 · no movement posted for pending request</span>
+</div>
+<div class="stat">
+<span class="label">Oldest stock</span>
+<strong>60 days</strong>
+<span class="small muted">Original receipt · 21 Aug 2026</span>
+</div>
+<div class="stat">
+<span class="label">Basic holding estimate</span>
+<strong>$44.90 / day</strong>
+<span class="small muted">Current unchanged balance · storage + capital</span>
+</div>
+</div>
+<div class="notice">Stock check needs review: 980 observed against 1,000 expected. Twenty ties are unaccounted for. Requests stay held until the discrepancy is investigated.</div>
+<section class="card">
+<h2>Lots and locations</h2>
+<div class="toolbar">
+<label>Find material or lot<input id="search" type="search" placeholder="Try ties or TIE-0821">
+</label>
+<label>Show<select id="stock-filter">
+<option value="all">All stock</option>
+<option value="aged">Aged stock</option>
+<option value="clear">No flags</option>
+</select>
+</label>
+</div>
+<p id="search-result" class="small muted" role="status">1 lot shown</p>
+<div class="table-wrap" role="region" aria-label="Inventory lots" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>Material / lot</th>
+<th>Location</th>
+<th class="num">On hand</th>
+<th>Age</th>
+<th class="num">Holding to date</th>
+<th>Condition</th>
+</tr>
+</thead>
+<tbody id="stock-rows">
+<tr data-aged="true" data-search="timber ties tie-0821 north yard">
+<td>
+<a href="material-cost-detail.html">Timber ties</a>
+<small>TIE-0821 · each</small>
+</td>
+<td>North yard / bay A<small>Received 21 Aug 2026</small>
+</td>
+<td class="num">1,000<small>100 requested, unposted</small>
+</td>
+<td>
+<span class="badge amber">60 days · review</span>
+</td>
+<td class="num">$2,694.25<small>Basic estimate</small>
+</td>
+<td>
+<span class="badge red">Count discrepancy</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p id="no-stock" class="hidden">No lots match these filters. Clear the filters to see the pilot lot.</p>
+<p class="state-note">Role-safe variant: an inventory lead without budget access receives a quantity-only response. Cost columns and carrying totals are absent from both the response and the local cache.</p>
+</section>
+<div class="grid two space">
+<section class="card">
+<h2>Stock check · observation only</h2>
+<div class="key">
+<span>Ledger at count baseline v4</span>
+<strong>1,000 ties</strong>
+<span>Observed by Alex Chen</span>
+<strong>980 ties</strong>
+<span>Difference</span>
+<strong>20 fewer ties</strong>
+</div>
+<p class="small muted">20 Oct · 08:45 project time. A movement after this baseline requires a recount; a discrepancy is not a write-off.</p>
+<a href="dashboard-audit-flags.html#missing">Open count evidence →</a>
+</section>
+<section class="card">
+<h2>Pending stock issue</h2>
+<p>
+<strong>IR-014 · 100 ties</strong>
+<br>Work location MP 42.6 · requested by Jordan Lee</p>
+<span class="badge amber">Held · count review required</span>
+<div class="actions">
+<a class="button secondary" href="approval-queue-trail.html">Open request trail</a>
+<a class="button secondary" href="field-crew-mobile.html">Crew request view</a>
+</div>
+<p class="small muted">Approval prototype uses a separate, count-cleared scenario. Neither prototype changes this stock snapshot.</p>
+</section>
+</div>
+<details>
+<summary>Other states to design and verify</summary>
+<p>Loading: show last refresh, not a zero balance. Empty: “No approved opening stock”. Unknown receipt date: “Age unknown”. Offline: cached operational quantities are read-only with as-of time; reconnect for current costs. Denied membership: no stock response. Failed refresh: retain a labeled stale operational copy; do not clear drafts.</p>
+</details>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
+</main>
+</div>
+<script>const filter=()=>{const q=document.querySelector('#search').value.toLowerCase();const f=document.querySelector('#stock-filter').value;let n=0;document.querySelectorAll('#stock-rows tr').forEach(r=>{const show=r.dataset.search.includes(q)&&(f==='all'||f==='aged'&&r.dataset.aged==='true'||f==='clear'&&r.dataset.aged!=='true');r.hidden=!show;if(show)n++;});document.querySelector('#search-result').textContent=n+' lot'+(n===1?'':'s')+' shown';document.querySelector('#no-stock').classList.toggle('hidden',n!==0);};document.querySelector('#search').addEventListener('input',filter);document.querySelector('#stock-filter').addEventListener('change',filter);</script>
+</body>
+</html>

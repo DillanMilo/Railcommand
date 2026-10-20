@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCO overview · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<nav aria-label="Wireframe screens">
+<div class="nav-label">Project workspace</div>
+<a href="index.html">Screen index</a>
+<a href="tco-overview.html" aria-current="page">Cost overview</a>
+<a href="inventory-list.html">Inventory</a>
+<a href="material-cost-detail.html">Material cost</a>
+<a href="approval-queue-trail.html">Approvals & trail</a>
+<a href="dashboard-audit-flags.html">Audit flags</a>
+<a href="field-crew-mobile.html">Field crew mobile</a>
+<div class="nav-foot">Synthetic Track Renewal<br>North yard · USD<br>
+<br>Individual invite-link access<br>Roles remain project scoped</div>
+</nav>
+<main id="main">
+<div class="page-top">
+<div>
+<div class="eyebrow">Purchasing / executive · project TCO</div>
+<h1>What the ties really cost</h1>
+<p class="muted">A single material lot with inspectable assumptions. Recorded acquisition and management estimates stay separate.</p>
+</div>
+<span class="badge amber">Phase 1 pilot</span>
+</div>
+<div class="stats">
+<div class="stat">
+<span class="label">Recorded landed acquisition</span>
+<strong>$68,000.00</strong>
+<span class="small muted">Purchase, freight and handling · synthetic sources</span>
+</div>
+<div class="stat">
+<span class="label">Basic carrying estimate · 60 days</span>
+<strong>$2,694.25</strong>
+<span class="small muted">Storage + capital · Phase 1</span>
+</div>
+<div class="stat">
+<span class="label">Phase 1 material subtotal</span>
+<strong>$70,694.25</strong>
+<span class="small muted">$70.69 per purchased tie · excludes installation/lifecycle</span>
+</div>
+</div>
+<div class="grid two">
+<section class="card">
+<div class="row">
+<h2>Why unit price misses the full picture</h2>
+<span class="badge blue">Phase 2 / 3 preview</span>
+</div>
+<p class="small muted">Full-lot scenario: install 950 of 1,000 ties after 60 days. Future work and lifecycle values are estimates.</p>
+<div class="bar" aria-label="Purchase is 36.89 percent of full lifecycle scenario">
+<span class="purchase" style="width:36.89%">
+</span>
+<span class="other" style="width:63.11%">
+</span>
+</div>
+<div class="legend">
+<span>
+<i style="background:#203e50">
+</i>Purchase · $50,000</span>
+<span>
+<i style="background:#ed985b">
+</i>All other costs · $85,529.59</span>
+</div>
+<div class="key space">
+<span>Purchase + freight + handling</span>
+<strong>$68,000.00</strong>
+<span>Carrying including expected risk</span>
+<strong>$3,029.59</strong>
+<span>Install labor + incremental disposal</span>
+<strong>$39,500.00</strong>
+<span>Future lifecycle less salvage</span>
+<strong>$25,000.00</strong>
+<span>Projected lifecycle TCO</span>
+<strong>$135,529.59</strong>
+<span>Per installed tie · 950 installed</span>
+<strong>$142.66</strong>
+</div>
+<div class="actions">
+<a class="button" href="material-cost-detail.html">Inspect cost basis</a>
+</div>
+</section>
+<section class="card">
+<div class="row">
+<h2>Compare like budgets</h2>
+<span class="badge amber">Review required</span>
+</div>
+<p>Lifecycle allowance and project spending are different comparisons.</p>
+<div class="key">
+<span>Illustrative lifecycle allowance</span>
+<strong>$130,000.00</strong>
+<span>Lifecycle scenario</span>
+<strong>$135,529.59</strong>
+<span>Lifecycle gap</span>
+<strong style="color:var(--red)">$5,529.59</strong>
+</div>
+<div class="notice space">This is a lifecycle scenario gap, not a posted project-spend overrun. No lifecycle values enter Phase 1 stock posting.</div>
+<h3>Project-control issue example · Phase 1</h3>
+<p class="small">Forecast $126,000 + incremental issue $6,800 vs adjusted budget $130,000 → $2,800 over. If the issue is already committed, incremental exposure is zero.</p>
+<a href="dashboard-audit-flags.html#budget">View budget evidence →</a>
+</section>
+</div>
+<section class="card space">
+<h2>Material lines · one-lot pilot</h2>
+<div class="table-wrap" role="region" aria-label="Material cost summary" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>Material / lot</th>
+<th>Basis</th>
+<th class="num">Landed</th>
+<th class="num">Basic carrying</th>
+<th class="num">P1 subtotal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="material-cost-detail.html">Timber ties / TIE-0821</a>
+<small>1,000 purchased · each</small>
+</td>
+<td>Recorded acquisition + estimate<small>As of 20 Oct, 09:00 project time</small>
+</td>
+<td class="num">$68,000.00</td>
+<td class="num">$2,694.25</td>
+<td class="num">$70,694.25</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="state-note">Coverage: illustrative single lot only. Full project cost is unavailable until spend, commitments and material source IDs reconcile. Approved change orders adjust budget once; they are not added again as material spend.</p>
+</section>
+<details>
+<summary>Other states to design and verify</summary>
+<p>Loading: skeleton with no totals. Empty: add an authorized opening lot. Missing cost/rate: “Estimate incomplete”. Denied: no monetary response or cached projection. Offline: reconnect for current financial data. Error: keep the last entered assumptions as a protected draft and show retry without a green budget state.</p>
+</details>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Material cost detail · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<nav aria-label="Wireframe screens">
+<div class="nav-label">Project workspace</div>
+<a href="index.html">Screen index</a>
+<a href="tco-overview.html">Cost overview</a>
+<a href="inventory-list.html">Inventory</a>
+<a href="material-cost-detail.html" aria-current="page">Material cost</a>
+<a href="approval-queue-trail.html">Approvals & trail</a>
+<a href="dashboard-audit-flags.html">Audit flags</a>
+<a href="field-crew-mobile.html">Field crew mobile</a>
+<div class="nav-foot">Synthetic Track Renewal<br>North yard · USD<br>
+<br>Individual invite-link access<br>Roles remain project scoped</div>
+</nav>
+<main id="main">
+<div class="page-top">
+<div>
+<div class="eyebrow">Authorized material cost · revision C-03</div>
+<h1>Timber ties · cost detail</h1>
+<p class="muted">Trace each component to its basis. The 100-tie request pins this revision; changed assumptions create a new revision and new approvals.</p>
+</div>
+<span class="badge amber">Phase 1 pilot</span>
+</div>
+<div class="notice info">Scenario calculator, not an inventory edit. The full lot stays unchanged until day 60, then 950 ties are installed and 50 become installation waste. No interim movements are assumed.</div>
+<div class="grid two">
+<section class="card">
+<h2>Cost assumptions</h2>
+<div class="grid two">
+<label>Purchased ties<input id="qty" type="number" value="1000" min="1" max="100000" step="1">
+</label>
+<label>Days held<input id="days" type="number" value="60" min="0" max="3650" step="1">
+</label>
+</div>
+<p class="small">Purchase $50/tie · freight $12,000/lot · handling $6,000/lot · storage $0.03/tie/day · capital 8%/year · actual/365.</p>
+<label>
+<input id="risk" type="checkbox" checked>Include expected yard risk · Phase 2 preview</label>
+<p class="small muted">Annual shrink 2% + obsolescence 1% on landed value; distinct from installation waste.</p>
+<label>
+<input id="lifecycle" type="checkbox" checked>Include install + lifecycle · Phase 2 / 3 preview</label>
+<p class="small muted">95% installed at $40/tie labor, $1,500 incremental disposal, $30,000 future work less $5,000 salvage. All are estimates.</p>
+<p class="small muted">Changing quantity preserves fixed shipment charges. A real allocator would require reviewed source quantities and currencies.</p>
+</section>
+<section class="card">
+<h2>Recalculated scenario</h2>
+<div class="key" aria-live="polite">
+<span>Landed acquisition</span>
+<strong id="landed">$68,000.00</strong>
+<span>Basic carrying</span>
+<strong id="basic">$2,694.25</strong>
+<span>Phase 1 material subtotal</span>
+<strong id="p1">$70,694.25</strong>
+<span>Selected scenario total</span>
+<strong id="scenario">$135,529.59</strong>
+<span>Per purchased tie</span>
+<strong id="per-buy">$135.53</strong>
+<span>Per installed tie · 95%</span>
+<strong id="per-install">$142.66</strong>
+</div>
+<div class="notice space">Recorded acquisition: $68,000 in the default fixture. The other values are estimates or opportunity cost; the selected total is not fully booked actual spend.</div>
+<p id="calculation-status" role="status" class="small muted">Default worked example · unrounded calculation, final cents</p>
+</section>
+</div>
+<section class="card space">
+<h2>Default worked example · source and classification</h2>
+<div class="table-wrap" role="region" aria-label="Default cost components" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Basis / source</th>
+<th>Type / phase</th>
+<th class="num">Amount</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Purchase</td>
+<td>1,000 × $50 · synthetic INV-101</td>
+<td>Recorded · P1</td>
+<td class="num">$50,000.00</td>
+</tr>
+<tr>
+<td>Freight</td>
+<td>Shipment allocation · synthetic FR-008</td>
+<td>Recorded · P1</td>
+<td class="num">$12,000.00</td>
+</tr>
+<tr>
+<td>Handling</td>
+<td>Lot allocation · synthetic H-004</td>
+<td>Recorded · P1</td>
+<td class="num">$6,000.00</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>1,000 × $0.03 × 60</td>
+<td>Estimate · P1</td>
+<td class="num">$1,800.00</td>
+</tr>
+<tr>
+<td>Capital</td>
+<td>$68,000 × 8% × 60/365</td>
+<td>Opportunity estimate · P1</td>
+<td class="num">$894.25</td>
+</tr>
+<tr class="total">
+<td>Basic material subtotal</td>
+<td>Landed + basic carrying</td>
+<td>Phase 1 total</td>
+<td class="num">$70,694.25</td>
+</tr>
+<tr class="future">
+<td>Expected yard shrink + obsolescence</td>
+<td>$223.56 + $111.78</td>
+<td>Risk estimate · P2</td>
+<td class="num">$335.34</td>
+</tr>
+<tr class="future">
+<td>Installation labor</td>
+<td>950 × $40</td>
+<td>Estimate · P2</td>
+<td class="num">$38,000.00</td>
+</tr>
+<tr class="future">
+<td>Incremental waste/disposal</td>
+<td>Flat expense · no second purchase charge</td>
+<td>Estimate · P2</td>
+<td class="num">$1,500.00</td>
+</tr>
+<tr class="future">
+<td>Future maintenance less salvage</td>
+<td>$30,000 − $5,000 · undiscounted</td>
+<td>Scenario · P3</td>
+<td class="num">$25,000.00</td>
+</tr>
+<tr class="total">
+<td>Projected lifecycle scenario</td>
+<td>950 installed</td>
+<td>Phase 2 / 3 preview</td>
+<td class="num">$135,529.59</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="state-note">This table is the fixed default example; scenario controls update only the card above. The $2,500 purchase attribution to 50 wasted ties is already inside purchase. An actual loss replaces an overlapping risk estimate.</p>
+</section>
+<details>
+<summary>Cost and approval evidence</summary>
+<p>Revision C-03 · cost basis 20 Oct 2026 · USD · source completeness: illustrative only. A later invoice or rate change creates C-04; an existing request cannot silently switch to it.</p>
+<a href="approval-queue-trail.html">View the pinned request trail →</a>
+</details>
+<details>
+<summary>Other states to design and verify</summary>
+<p>Missing source/rate/date: “Estimate incomplete”; no total presented as final. Zero installed quantity: per-installed cost unavailable. Unauthorized/offline: current financial screen unavailable, with protected entered assumptions retained. Stale revision: review a new revision before submission; never auto-approve changed amounts.</p>
+</details>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
+</main>
+</div>
+<script>const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v);const calc=()=>{const q=Number(document.querySelector('#qty').value),d=Number(document.querySelector('#days').value);if(!Number.isInteger(q)||q<1||q>100000||!Number.isInteger(d)||d<0||d>3650){document.querySelector('#calculation-status').textContent='Enter a whole quantity from 1–100,000 and days from 0–3,650.';['landed','basic','p1','scenario','per-buy','per-install'].forEach(id=>document.getElementById(id).textContent='Not available');return;}const l=q*50+18000,b=q*.03*d+l*.08*d/365,r=document.querySelector('#risk').checked?l*.03*d/365:0,f=document.querySelector('#lifecycle').checked?q*.95*40+1500+25000:0,t=l+b+r+f;Object.entries({landed:l,basic:b,p1:l+b,scenario:t,'per-buy':t/q}).forEach(([id,v])=>document.getElementById(id).textContent=money(v));document.querySelector('#per-install').textContent=document.querySelector('#lifecycle').checked?money(t/(q*.95)):'Not available';document.querySelector('#calculation-status').textContent='Scenario preview only · no cost revision is saved';};document.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));</script>
+</body>
+</html>

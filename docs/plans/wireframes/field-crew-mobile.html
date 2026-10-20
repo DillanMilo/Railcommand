@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field crew materials · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body class="mobile-page">
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<main id="main">
+<div class="mobile-preview">
+<div class="phone-top">
+<span>09:41 · Field tools</span>
+<span id="connection-label">Connected</span>
+</div>
+<div class="eyebrow">Synthetic Track Renewal</div>
+<h1 class="phone-title">Materials</h1>
+<p class="muted small">North yard → work location<br>Jordan Lee · crew foreman</p>
+<div id="connection-note" class="notice info">Last refreshed 20 Oct, 09:00. Requests need two recorded approvals before stock is released.</div>
+<div class="stat">
+<span class="label">Timber ties · TIE-0821</span>
+<strong>1,000 <span style="font-size:16px">on hand</span>
+</strong>
+<span class="small muted">North yard / bay A · each<br>Receipt age: 60 days · stock check needs review</span>
+</div>
+<section class="space">
+<h2>Request ties</h2>
+<p class="small muted">This request does not reserve or release stock.</p>
+<form id="crew-form">
+<label for="field-qty">How many ties?<input id="field-qty" type="number" min="1" max="1000" step="1" value="100" required>
+</label>
+<label for="destination">Work location<input id="destination" value="MP 42.6" required maxlength="80">
+</label>
+<label for="crew-notes">Work notes<textarea id="crew-notes" maxlength="500">Replace damaged ties on the east approach.</textarea>
+</label>
+<p id="draft-status" class="small" role="status">Draft preview · planned app saves on this device</p>
+<button id="submit-crew" class="full" type="submit">Submit for approvals</button>
+</form>
+<p id="field-result" class="small" role="status" aria-live="polite">No request submitted in this prototype.</p>
+</section>
+<section class="card space">
+<h2>Your request steps</h2>
+<ol class="trail">
+<li>
+<strong>Saved draft</strong>
+<small>Quantity and work location stay with your account.</small>
+</li>
+<li class="wait">
+<strong>Inventory check</strong>
+<small>Alex Chen · waits for submission and count review</small>
+</li>
+<li class="wait">
+<strong>Manager approval</strong>
+<small>Morgan Reed · after inventory check</small>
+</li>
+<li class="wait">
+<strong>Stock issue posted</strong>
+<small>Wait for confirmation before releasing ties.</small>
+</li>
+</ol>
+</section>
+<details>
+<summary>Preview connection and request states</summary>
+<label for="field-state">Scenario<select id="field-state">
+<option value="online">Connected</option>
+<option value="offline">Offline draft</option>
+<option value="conflict">Changed stock · review required</option>
+<option value="quota">Device storage full</option>
+<option value="denied">Project access changed</option>
+</select>
+</label>
+<p class="small muted">Scenario changes are visual only. This HTML does not store a draft after closing; the planned web and native apps must.</p>
+</details>
+<div class="bottom-nav" aria-label="Planned Field navigation">
+<span>Daily logs</span>
+<strong>Materials</strong>
+<span>My requests</span>
+<span>Account</span>
+</div>
+</div>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. Quantities and request status only.</footer>
+</main>
+</div>
+<script>let fieldMode='online';const msg=document.querySelector('#field-result'),submit=document.querySelector('#submit-crew');document.querySelector('#field-state').addEventListener('change',e=>{fieldMode=e.target.value;submit.disabled=fieldMode!=='online';document.querySelector('#connection-label').textContent=fieldMode==='offline'?'Offline':'Connected';const notes={online:'Last refreshed 20 Oct, 09:00. Requests need two recorded approvals before stock is released.',offline:'Offline · quantities are a saved read-only snapshot. Reconnect to submit; your draft stays on this device in the planned app.',conflict:'Stock changed since this draft. Review the latest balance and confirm your quantity before submission.',quota:'Not saved — device storage is full. Keep this screen open; entered fields are still here.',denied:'Project access changed. Submission is blocked; keep your entered work for explicit recovery.'};document.querySelector('#connection-note').textContent=notes[fieldMode];document.querySelector('#draft-status').textContent=fieldMode==='quota'?'Not saved — keep this screen open':'Draft preview · planned app saves on this device';submit.textContent=fieldMode==='offline'?'Reconnect to submit':fieldMode==='conflict'?'Review changed stock':fieldMode==='denied'?'Project access required':fieldMode==='quota'?'Save draft before submitting':'Submit for approvals';msg.textContent='Entered fields are preserved in this open preview.';});document.querySelector('#crew-form').addEventListener('input',()=>{document.querySelector('#draft-status').textContent=fieldMode==='quota'?'Not saved — keep this screen open':'Saved on this device · planned app status preview';});document.querySelector('#crew-form').addEventListener('submit',e=>{e.preventDefault();if(fieldMode!=='online')return;msg.textContent='Preview: request received, held for stock-count review. Fields remain here; nothing was sent to a server.';});</script>
+</body>
+</html>

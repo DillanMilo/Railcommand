@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approval queue and trail · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<nav aria-label="Wireframe screens">
+<div class="nav-label">Project workspace</div>
+<a href="index.html">Screen index</a>
+<a href="tco-overview.html">Cost overview</a>
+<a href="inventory-list.html">Inventory</a>
+<a href="material-cost-detail.html">Material cost</a>
+<a href="approval-queue-trail.html" aria-current="page">Approvals & trail</a>
+<a href="dashboard-audit-flags.html">Audit flags</a>
+<a href="field-crew-mobile.html">Field crew mobile</a>
+<div class="nav-foot">Synthetic Track Renewal<br>North yard · USD<br>
+<br>Individual invite-link access<br>Roles remain project scoped</div>
+</nav>
+<main id="main">
+<div class="page-top">
+<div>
+<div class="eyebrow">Assigned approvers · immutable request revision R-01</div>
+<h1>Approvals & recorded trail</h1>
+<p class="muted">IR-014 · request 100 ties from North yard to MP 42.6. This scenario has a cleared count and no incremental budget gap; stock can post after both steps.</p>
+</div>
+<span class="badge amber">Phase 1 pilot</span>
+</div>
+<div class="notice info">No stock posts after the first check. Different invited people must submit, verify and authorize. Changing the request supersedes this revision and its approvals.</div>
+<div class="grid two">
+<section class="card">
+<h2>Queue · current request</h2>
+<span id="request-state" class="badge amber">Awaiting inventory check</span>
+<p>
+<strong>100 timber ties · each</strong>
+<br>North yard / bay A → MP 42.6<br>Submitted by Jordan Lee · 20 Oct, 09:05 CDT</p>
+<div class="key">
+<span>Request revision / lot baseline</span>
+<strong>R-01 / v4</strong>
+<span>Pinned cost / policy revision</span>
+<strong>C-03 / P-01</strong>
+<span>Quantity on hand</span>
+<strong id="queue-stock">1,000 ties</strong>
+<span>Permitted landed value context</span>
+<strong>$6,800.00</strong>
+</div>
+<p class="small muted">Value shown for this authorized cost-review role only. Already purchased/committed value is not new spend by default.</p>
+<label>Acting identity · prototype scenario<select id="actor">
+<option value="lead">Alex Chen · assigned inventory lead</option>
+<option value="manager">Morgan Reed · assigned manager</option>
+<option value="requester">Jordan Lee · requester</option>
+</select>
+</label>
+<label>Decision reason<input id="reason" value="Quantity and work location verified" maxlength="200">
+</label>
+<div class="actions">
+<button id="check">Approve inventory check</button>
+<button id="authorize" class="secondary">Authorize & post</button>
+</div>
+<p id="approval-result" class="small" role="status" aria-live="polite">Next: Alex verifies the request; Morgan authorizes after that.</p>
+<p class="state-note">Buttons permit invalid attempts in this prototype so the denial can be inspected. The planned API rechecks role, assignment, revision, budget and sequence for every call.</p>
+</section>
+<section class="card">
+<div class="row">
+<h2>Append-only trail</h2>
+<span class="badge green">Revision R-01</span>
+</div>
+<ol id="trail" class="trail">
+<li>
+<strong>Request submitted</strong>
+<small>Jordan Lee · 20 Oct 2026, 09:05:00 CDT</small>
+<small>Event E-001 · server time · R-01 · policy P-01</small>
+</li>
+</ol>
+<div class="state-note">New actions append events. Rejected attempts leave the accepted state and balance unchanged. Server timestamps and immutable payload references determine ordering.</div>
+<details>
+<summary>What a reviewer can inspect</summary>
+<p>Actor ID/role, exact UTC timestamp, sequence, request revision/hash, policy/cost/budget version, reason and operation ID. Corrections reference prior events; they do not replace them. Export follows the same permissions.</p>
+</details>
+</section>
+</div>
+<section class="card space">
+<h2>When this request cannot proceed</h2>
+<div class="grid three">
+<div>
+<h3>Count or budget hold</h3>
+<p class="small">Keep the request and inputs. Resolve the count discrepancy or approve a distinct budget revision before retrying final authorization.</p>
+</div>
+<div>
+<h3>Stale or changed revision</h3>
+<p class="small">Show the changed fields and ask for review. Prior approvals remain in history but do not approve new content.</p>
+</div>
+<div>
+<h3>Approver unavailable</h3>
+<p class="small">Waiting state with named backup. Reassignment appends an event; there is no shared login or silent override.</p>
+</div>
+</div>
+</section>
+<details>
+<summary>Other states to design and verify</summary>
+<p>Offline: read-only previously synchronized operational status; decisions require connection. Empty queue: no assigned steps. Denied membership: no evidence response. Submit/approve timeout: look up the same operation receipt; do not create a second decision. Conflict: keep reason text, reload current revision and request explicit review.</p>
+</details>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
+</main>
+</div>
+<script>let stage=0,seq=1;const identity={lead:'Alex Chen',manager:'Morgan Reed',requester:'Jordan Lee'};const append=(title,denied,reason)=>{seq++;const li=document.createElement('li');if(denied)li.className='denied';const h=document.createElement('strong');h.textContent=title;const s=document.createElement('small');s.textContent=identity[document.querySelector('#actor').value]+' · synthetic server sequence '+seq+' · R-01';const r=document.createElement('small');r.textContent=reason;li.append(h,s,r);document.querySelector('#trail').append(li);};const act=step=>{const who=document.querySelector('#actor').value,reason=document.querySelector('#reason').value.trim();let denial='';if(!reason)denial='A reason is required.';else if(who==='requester')denial='Requester cannot approve their own request.';else if(stage===2)denial='Already posted. Retry returns the existing receipt; no new movement.';else if(step!==stage)denial='Step out of order. Complete the current step first.';else if(step===0&&who!=='lead'||step===1&&who!=='manager')denial='This identity is not assigned to the current step.';if(denial){append('Attempt denied',true,denial);document.querySelector('#approval-result').textContent=denial;return;}stage++;append(stage===1?'Inventory check approved':'Manager approved · one issue posted',false,reason);document.querySelector('#request-state').textContent=stage===1?'Awaiting manager approval':'Posted · 100 ties issued';document.querySelector('#request-state').className='badge '+(stage===2?'green':'amber');document.querySelector('#approval-result').textContent=stage===1?'Check recorded. Select Morgan Reed for final authorization.':'One movement posted. Balance: 900 ties. This is a page-only simulation.';if(stage===2)document.querySelector('#queue-stock').textContent='900 ties';};document.querySelector('#check').addEventListener('click',()=>act(0));document.querySelector('#authorize').addEventListener('click',()=>act(1));</script>
+</body>
+</html>

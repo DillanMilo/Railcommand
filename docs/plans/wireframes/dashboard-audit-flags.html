@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard audit flags · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<nav aria-label="Wireframe screens">
+<div class="nav-label">Project workspace</div>
+<a href="index.html">Screen index</a>
+<a href="tco-overview.html">Cost overview</a>
+<a href="inventory-list.html">Inventory</a>
+<a href="material-cost-detail.html">Material cost</a>
+<a href="approval-queue-trail.html">Approvals & trail</a>
+<a href="dashboard-audit-flags.html" aria-current="page">Audit flags</a>
+<a href="field-crew-mobile.html">Field crew mobile</a>
+<div class="nav-foot">Synthetic Track Renewal<br>North yard · USD<br>
+<br>Individual invite-link access<br>Roles remain project scoped</div>
+</nav>
+<main id="main">
+<div class="page-top">
+<div>
+<div class="eyebrow">Manager / auditor · evidence before conclusions</div>
+<h1>Audit flags that need attention</h1>
+<p class="muted">Every flag has a rule, evidence and an owner. A flagged pattern asks for review; it is not a finding of fraud. These cards are independent synthetic scenarios.</p>
+</div>
+<span class="badge amber">Phase 1 pilot</span>
+</div>
+<div class="stats">
+<div class="stat">
+<span class="label">Immediate holds</span>
+<strong>2 scenarios</strong>
+<span class="small muted">Budget gap and unresolved count variance</span>
+</div>
+<div class="stat">
+<span class="label">Control attempts denied</span>
+<strong>2 scenarios</strong>
+<span class="small muted">Self-approval and out-of-order approval</span>
+</div>
+<div class="stat">
+<span class="label">Stock needs review</span>
+<strong>60 days</strong>
+<span class="small muted">Age trigger · example policy, not A5 instruction</span>
+</div>
+</div>
+<div class="toolbar">
+<label>Delivery phase<select id="phase-filter">
+<option value="all">All planned rules</option>
+<option value="1">Phase 1 only</option>
+<option value="2">Phase 2 preview only</option>
+</select>
+</label>
+</div>
+<p id="flag-count" class="small muted" role="status">6 rule examples shown</p>
+<div class="grid two" id="flags">
+<section class="card flag critical" id="budget" data-phase="1">
+<div class="row">
+<h2>Budget overrun</h2>
+<span class="badge red">Hold posting</span>
+</div>
+<p>$126,000 forecast + $6,800 incremental exposure = $132,800 against $130,000 adjusted budget. Gap: $2,800. Already-committed exposure must be excluded.</p>
+<p class="meta">Rule BUD-01 · budget v7 · owner Morgan Reed</p>
+<a href="approval-queue-trail.html">Review budget basis →</a>
+<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+</section>
+<section class="card flag critical" id="sequence" data-phase="1">
+<div class="row">
+<h2>Approval attempted out of order</h2>
+<span class="badge red">Attempt denied</span>
+</div>
+<p>Manager action arrived before the inventory check on the same revision. No state transition or stock movement accepted.</p>
+<p class="meta">Rule SEQ-01 · R-01 / E-002 · owner Morgan Reed</p>
+<a href="approval-queue-trail.html">Inspect trail →</a>
+<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+</section>
+<section class="card flag " id="self" data-phase="1">
+<div class="row">
+<h2>Submitter tried to approve</h2>
+<span class="badge amber">Attempt denied</span>
+</div>
+<p>Requester Jordan Lee attempted a required approval. Separation-of-duties applies to administrators and delegated actors too.</p>
+<p class="meta">Rule SOD-01 · actor = submitter · owner Morgan Reed</p>
+<a href="approval-queue-trail.html">Inspect denied attempt →</a>
+<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+</section>
+<section class="card flag " id="split" data-phase="2">
+<div class="row">
+<h2>Possible split purchase</h2>
+<span class="badge blue">Phase 2 preview</span>
+</div>
+<p>Two positive requests: $6,000 + $5,000 = $11,000. Same supplier/category/project in seven days; each is below the illustrative $10,000 threshold.</p>
+<p class="meta">Rule SPLIT-01 · synthetic supplier S-12 · owner purchasing lead</p>
+<details>
+<summary>Evidence preview</summary>
+<p>REQ-041: $6,000 / REQ-042: $5,000. Both pending, same normalized supplier and category. Canceled/duplicate deliveries excluded. Concurrent submissions need the same policy-bucket check.</p>
+</details>
+<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+</section>
+<section class="card flag " id="aged" data-phase="1">
+<div class="row">
+<h2>Aged ties at North yard</h2>
+<span class="badge amber">Review stock plan</span>
+</div>
+<p>TIE-0821 has 1,000 ties on hand and an original receipt age of 60 days. The provisional age threshold is 60 days.</p>
+<p class="meta">Rule AGE-01 · as of 20 Oct · owner Alex Chen</p>
+<a href="inventory-list.html">Inspect lot →</a>
+<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+</section>
+<section class="card flag critical" id="missing" data-phase="1">
+<div class="row">
+<h2>Twenty ties unaccounted for</h2>
+<span class="badge red">Hold affected issue</span>
+</div>
+<p>Ledger baseline v4: 1,000 ties. Physical count: 980. Recount and investigate before any authorized adjustment; a stale baseline requires rebase.</p>
+<p class="meta">Rule COUNT-01 · observation C-017 · owner Alex Chen</p>
+<a href="inventory-list.html">Inspect stock check →</a>
+<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+</section>
+</div>
+<div class="notice space">Crew projection includes only their stock/request problems. Financial amounts, threshold patterns and restricted attempt evidence never enter crew responses, dashboard counts or caches.</div>
+<details>
+<summary>Other states to design and verify</summary>
+<p>No flags: “No matching findings as of [time]”, not a guarantee of no fraud. Missing baseline: data incomplete, not green. Loading/error: show coverage unavailable. Offline: operational stock status may be cached; current financial evidence requires connection. Resolved: retain original flag and all explanation/reopen events.</p>
+</details>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
+</main>
+</div>
+<script>document.querySelector('#phase-filter').addEventListener('change',e=>{let n=0;document.querySelectorAll('#flags > section').forEach(s=>{const show=e.target.value==='all'||s.dataset.phase===e.target.value;s.hidden=!show;if(show)n++;});document.querySelector('#flag-count').textContent=n+' rule example'+(n===1?'':'s')+' shown';});</script>
+</body>
+</html>
