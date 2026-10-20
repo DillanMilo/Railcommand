@@ -1,3 +1,4 @@
+export * from './app-release';
 import { copyDailyLogFields, dailyLogFieldPayload, type MobileDailyLogFields, type MobileDailyLogReadFields } from './daily-log-fields';
 export * from './daily-log-fields';
 
