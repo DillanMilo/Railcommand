@@ -29,6 +29,14 @@ release and compare production p50/p95 and response bytes after rollout.
 
 ## Web/mobile and offline impact record
 
+- **Product announcement:** the notification bell's Updates section includes
+  “Photo Gallery Improvements” (v2.8.1), describing page navigation, category
+  filters, refresh, retained pending uploads and the online requirement. The
+  existing shared workspace Topbar and RailBot's product-update summary consume
+  the same patch-note entry. This is bundled announcement content, not an OS push
+  notification or a change to the native Field notification-settings control.
+  It becomes visible with this web/backend release, after page refresh; it is not
+  being announced separately on current production before the feature ships.
 - **User-visible change:** smaller gallery pages and server-side category filters.
   Refresh/retry messages distinguish unavailable previews from removed records.
 - **Web:** Photos & Media uses the new cursor read. Its upload component stays
@@ -94,6 +102,10 @@ release and compare production p50/p95 and response bytes after rollout.
   at 390 pixels with no browser exceptions or horizontal overflow. The test build
   used placeholder public Supabase configuration; it is not a deployable artifact
   or evidence of live authenticated backend access.
+- Announcement follow-up: the built app's Notifications -> Updates displays
+  v2.8.1 in desktop Chromium at 1440 pixels and phone-sized WebKit at 390 pixels.
+  The WebKit check uses local HTTPS and synthetic demo/health responses; this is
+  announcement UI evidence, not live authentication or physical-device acceptance.
 - `scripts/e2e-project-photo-pages.cjs`: Chromium at 1440 and 360 pixels and WebKit
   at 390 pixels passed page traversal, server filters, retained pending upload
   through failed reads, offline/reconnect, delayed response isolation across

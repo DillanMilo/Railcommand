@@ -9,6 +9,13 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    id: 'v2.8.1-photo-gallery-improvements',
+    version: '2.8.1',
+    title: 'Photo Gallery Improvements',
+    description: 'Photos & Media now loads 12 photos at a time on web and in the mobile workspace. Filter by All, Standard or Thermal, use Previous and Next to browse, and select Refresh photos to see new uploads. Pending uploads stay on the page if browsing fails or the connection drops. Photo browsing requires an internet connection.',
+    date: '2026-10-20',
+  },
+  {
     id: 'v2.8.0-railcommand-workbooks',
     version: '2.8.0',
     title: 'RailCommand Workbooks Are Here',
