@@ -80,9 +80,18 @@ jobs:
       - name: Test mobile contracts and foundation
         run: npm run test:mobile
 
-      - name: Validate Expo dependency and native configuration
+      - name: Validate locked Expo SDK dependency and native configuration
         working-directory: apps/mobile
+        env:
+          # Validate npm ci against the installed SDK's bundled compatibility
+          # inventory. New upstream patches are a separate release decision.
+          EXPO_OFFLINE: "1"
         run: npx expo-doctor@1.20.3
+
+      - name: Report newer Expo SDK patch recommendations
+        working-directory: apps/mobile
+        continue-on-error: true
+        run: npx expo install --check
 
       - name: Verify mobile icon and splash inventory
         run: npm run verify:mobile:assets
