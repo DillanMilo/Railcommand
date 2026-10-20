@@ -54,18 +54,18 @@ function harness() {
     'expo-haptics': {}, 'expo-location': {}, 'expo-notifications': {}, 'expo-device': {},
     'react-native': {}, './config': { mobileConfig: {} }, './photo-files': photoFiles,
   };
-  const module = { exports: {} };
+  const compiledModule = { exports: {} };
   const source = readFileSync(new URL('./device.ts', import.meta.url), 'utf8');
   runInNewContext(ts.transpileModule(source, { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText, {
-    module, exports: module.exports, URL,
+    module: compiledModule, exports: compiledModule.exports, URL,
     require(name: string) {
       if (!(name in dependencies)) throw new Error(`Unexpected native dependency: ${name}`);
       return dependencies[name];
     },
   });
-  return { device: module.exports as typeof import('./device'), files,
+  return { device: compiledModule.exports as typeof import('./device'), files,
     finishCopy, failCopy, copying: () => copying, sizeReads: () => sizeReads, deletes: () => deletes };
 }
 
