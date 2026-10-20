@@ -4,6 +4,8 @@ import { runInNewContext } from 'node:vm';
 import { describe, it } from 'mocha';
 import ts from 'typescript';
 import { readProjectCollection } from '../project-collection-client';
+import { parsePhotoPageOptions } from '../project-photo-page';
+import { PhotoPageError } from '../project-photo-page-server';
 
 type Result = { data?: unknown[]; error?: string };
 function route(result: Result = { data: [] }, reject = false) {
@@ -11,14 +13,34 @@ function route(result: Result = { data: [] }, reject = false) {
   const exports: { GET?: (request: Request, context: { params: Promise<{ projectId: string; collection: string }> }) => Promise<Response> } = {};
   const code = ts.transpileModule(readFileSync(new URL('../../app/api/workspace/projects/[projectId]/[collection]/route.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
   const action = (kind: string) => async (id: string) => { calls.push(`${kind}:${id}`); if (reject) throw new Error('unavailable'); return result; };
-  runInNewContext(code, { exports, Response, require: (name: string) => {
+  runInNewContext(code, { exports, Response, URL, require: (name: string) => {
     if (name === '@/lib/actions/documents') return { getProjectDocuments: action('documents') };
     if (name === '@/lib/actions/photos') return { getProjectPhotos: action('photos') };
+    if (name === '@/lib/supabase/server') return { createClient: async () => ({ fixture: true }) };
+    if (name === '@/lib/project-photo-page') return { parsePhotoPageOptions };
+    if (name === '@/lib/project-photo-page-server') return { PhotoPageError, getProjectPhotoPage: async (_client: unknown, id: string) => {
+      calls.push(`page:${id}`);
+      if (reject) throw new Error('unavailable');
+      if (result.error) throw new PhotoPageError(result.error, 403);
+      return { page: { data: result.data, nextCursor: null }, serverTiming: 'query;dur=1.0, signing;dur=2.0' };
+    } };
     throw new Error(name);
   } });
-  return { calls, get: (collection: string, projectId = '10000000-0000-4000-8000-000000000001') => exports.GET!(new Request('https://railcommand.io/api/workspace'), { params: Promise.resolve({ projectId, collection }) }) };
+  return { calls, get: (collection: string, projectId = '10000000-0000-4000-8000-000000000001', query = '') => exports.GET!(new Request(`https://railcommand.io/api/workspace${query}`), { params: Promise.resolve({ projectId, collection }) }) };
 }
 describe('parallel private project collection reads', () => {
+  it('opts into bounded photo reads with private stage timings without changing legacy responses', async () => {
+    const h = route({ data: [{ id: 'synthetic-photo' }] });
+    const response = await h.get('photos', undefined, '?page=cursor&category=thermal');
+    assert.deepEqual(await response.json(), { data: [{ id: 'synthetic-photo' }], nextCursor: null });
+    assert.equal(response.headers.get('server-timing'), 'query;dur=1.0, signing;dur=2.0');
+    assert.match(response.headers.get('cache-control')!, /private, no-store/);
+    assert.equal(h.calls.length, 1); assert.match(h.calls[0], /^page:/);
+    assert.equal((await h.get('photos', undefined, '?page=cursor&category=invalid')).status, 400);
+    assert.equal(h.calls.length, 1);
+    assert.equal((await route({ error: 'Access revoked' }).get('photos', undefined, '?page=cursor')).status, 403);
+    assert.equal((await route({}, true).get('photos', undefined, '?page=cursor')).status, 503);
+  });
   it('delegates exact projects to existing authorized reads and never caches their responses', async () => {
     const h = route({ data: [{ id: 'synthetic-photo' }] });
     for (const kind of ['documents', 'photos']) {

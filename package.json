@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:beta-accounts": "mocha --require tsx src/lib/beta-accounts.test.ts",
+    "test:project-photos": "mocha --require tsx src/lib/project-photo-page.test.ts src/lib/project-photo-upload.test.ts src/lib/daily-log-photo-selection.test.ts src/lib/pdf/daily-log-photos.test.ts",
     "test:earthcam": "mocha --require tsx \"src/lib/earthcam/*.test.ts\"",
     "test:up-report": "mocha --require tsx \"src/lib/up-reports/__tests__/*.test.ts\"",
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
