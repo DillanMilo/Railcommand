@@ -137,6 +137,15 @@ describe('bounded project photo reads for web and the mobile workspace', () => {
     assert.ok(page.data[0].signed_url_error); assert.equal(f.signedPaths.length, 0);
   });
 
+  it('signs the root-relative paths saved by the existing project uploader', async () => {
+    const path = `${projectId}/project_photo/${projectId}/${userId}/operation-digest.jpeg`;
+    const f = fixture([photo(1, { file_url: `/storage/v1/object/public/project-photos/${path}` })]);
+    const { page } = await getProjectPhotoPage(f.client, projectId, options);
+    assert.deepEqual(f.signedPaths, [path]);
+    assert.ok(page.data[0].signed_url);
+    assert.equal(page.data[0].signed_url_error, undefined);
+  });
+
   it('rejects malformed cursors and filter injection before query construction', () => {
     const good = { createdAt: photo(1).created_at, id: photo(1).id };
     const params = new URLSearchParams({ page: 'cursor', cursor: JSON.stringify(good) });

@@ -48,7 +48,10 @@ export async function getProjectPhotoPage(supabase: SupabaseClient, projectId: s
     if (!['project-photos', 'thermal-photos'].includes(bucket)) continue;
     photos[index] = { ...photo, signed_url_error: 'Preview unavailable. Refresh photos to retry.' };
     try {
-      const url = new URL(photo.file_url);
+      // The existing project uploader stores root-relative Storage URLs. The
+      // base only parses that format; signing always uses this authenticated
+      // client's bucket after the project-path check below.
+      const url = new URL(photo.file_url, 'https://storage.invalid');
       const matchingPrefix = ['public', 'sign', 'authenticated']
         .map((access) => `/storage/v1/object/${access}/${bucket}/`)
         .find((value) => url.pathname.startsWith(value));
