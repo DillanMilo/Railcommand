@@ -943,6 +943,30 @@
           "delivery": "native-offline"
         }
       ]
+    },
+    {
+      "area": "inventory-phase-one",
+      "webSource": "src/lib/inventory/service.ts",
+      "actions": [
+        {
+          "name": "readInventory",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-field-and-shared-authorized-api; local checks only; signed successor and physical acceptance pending"
+        },
+        {
+          "name": "executeInventory",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-field-and-shared-authorized-api; local checks only; signed successor and physical acceptance pending"
+        },
+        {
+          "name": "inventoryReceipt",
+          "mobile": "implemented-partial",
+          "deviceVerified": false,
+          "delivery": "native-field-and-shared-authorized-api; local checks only; signed successor and physical acceptance pending"
+        }
+      ]
     }
   ],
   "additionalGates": [
@@ -953,7 +977,8 @@
     "External Apple review and demo-only reviewer credentials",
     "Privacy declarations",
     "Caleb feedback not yet supplied",
-    "Canonical release-branch integration"
+    "Canonical release-branch integration",
+    "TIA-P1: actual current TestFlight baseline, signed successor Field build, physical iOS restart/network/bidirectional pilot acceptance; TIA-05A Android/model expansion"
   ],
   "deliveryStrategy": "Shared authenticated in-app web workspace for online features; retained native Field tools for offline work. See SHARED_WORKSPACE_RELEASE_20260917.md. Device acceptance remains pending."
 }

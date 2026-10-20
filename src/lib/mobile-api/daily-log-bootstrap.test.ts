@@ -8,6 +8,7 @@ import { normalizeDailyLogReadFields } from '@railcommand/domain';
 import { MobileApiClient, MobileApiError } from '@railcommand/api-client';
 import { mobileJson, mobileOptions } from './auth';
 import { mobileQueryFailed, mobileQueryFailureStatus } from './query-failure';
+import { enrichProject } from '../finance-projection';
 import { ACTIONS, canPerform, canPerformWithProjectEdit } from '../permissions';
 
 const userId = '10000000-0000-4000-8000-000000000001';
@@ -37,6 +38,7 @@ function harness(options: {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: authorization }, fetch: async (input, init) => {
       const request = new Request(input, init);
+      if(new URL(request.url).pathname.endsWith('/rpc/project_finance')) { assert.equal(request.method,'POST'); return Response.json(null); }
       assert.equal(request.method, 'GET');
       assert.equal(request.headers.get('authorization'), authorization);
       assert.match(authorization, /^Bearer synthetic-(user|expired|refreshed|service)$/);
@@ -89,6 +91,7 @@ function harness(options: {
         return { items: safeRows.slice(0, limit), hasMore: safeRows.length > limit };
       },
     },
+    '@/lib/finance-projection': {enrichProject},
     '@/lib/permissions': { ACTIONS, canPerform, canPerformWithProjectEdit },
     '@/lib/supabase/admin': { createAdminClient() {
       assert.equal(options.role, 'admin', 'A non-admin read must not escalate the authenticated client');

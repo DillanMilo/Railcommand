@@ -1,10 +1,11 @@
-const STATIC_CACHE_NAME = "railcommand-static-v9";
+const STATIC_CACHE_NAME = "railcommand-static-v10";
 const RAILCOMMAND_CACHE_PREFIX = "railcommand-";
 
 // Only public, user-neutral files belong in Cache Storage. Project data and
 // authenticated Next.js/RSC responses are intentionally excluded.
 const PUBLIC_APP_SHELL = [
   "/offline.html",
+  "/offline-inventory.js",
   "/favicon-16x16.png",
   "/favicon-32x32.png",
   "/icon-192.png",

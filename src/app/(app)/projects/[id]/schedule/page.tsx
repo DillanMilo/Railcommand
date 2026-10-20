@@ -54,11 +54,11 @@ function fmtCurrency(n: number) {
 /* ---------- KPI computation ---------- */
 function useKPIs(milestones: Milestone[]) {
   return useMemo(() => {
-    const totalWeight = milestones.reduce((s, m) => s + m.budget_planned, 0);
+    const totalWeight = milestones.reduce((s, m) => s + (m.budget_planned??0), 0);
     const weightedProgress =
       totalWeight > 0
-        ? milestones.reduce((s, m) => s + m.percent_complete * m.budget_planned, 0) / totalWeight
-        : 0;
+        ? milestones.reduce((s, m) => s + m.percent_complete * (m.budget_planned??0), 0) / totalWeight
+        : (milestones.length?milestones.reduce((sum,m)=>sum+m.percent_complete,0)/milestones.length:0);
 
     const onTrack = milestones.filter(
       (m) => m.status === 'on_track' || m.status === 'complete'
@@ -66,8 +66,8 @@ function useKPIs(milestones: Milestone[]) {
     const atRiskBehind = milestones.filter(
       (m) => m.status === 'at_risk' || m.status === 'behind'
     ).length;
-    const budgetPlanned = milestones.reduce((s, m) => s + m.budget_planned, 0);
-    const budgetActual = milestones.reduce((s, m) => s + m.budget_actual, 0);
+    const budgetPlanned = milestones.reduce((s, m) => s + (m.budget_planned??0), 0);
+    const budgetActual = milestones.reduce((s, m) => s + (m.budget_actual??0), 0);
 
     return { weightedProgress: Math.round(weightedProgress), onTrack, atRiskBehind, budgetPlanned, budgetActual };
   }, [milestones]);
@@ -79,6 +79,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
   use(searchParams);
   const { currentProject, isDemo } = useProject();
   const { can } = usePermissions(projectId);
+  const canFinance=can(ACTIONS.BUDGET_VIEW)&&currentProject?.budget_total!==undefined;
   const currentProfile = getProfileWithOrg(getCurrentUserId());
   const { data: rawMilestones, loading: loadingMs, refetch } = useMilestones(projectId);
   const milestones = [...rawMilestones].sort((a, b) => a.sort_order - b.sort_order);
@@ -241,7 +242,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
       <div className="flex flex-col gap-3 mt-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold">Schedule &amp; Milestones</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <ExportPDFButton
+          {canFinance&&<><ExportPDFButton
             getDocument={async () => {
               const { default: SchedulePDF } = await import('@/lib/pdf/SchedulePDF');
               return <SchedulePDF milestones={milestones} projectName={currentProject?.name ?? 'Project'} generatedBy={currentProfile?.full_name ?? 'User'} budgetPlanned={kpis.budgetPlanned} budgetActual={kpis.budgetActual} />;
@@ -256,7 +257,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
             modifications={modifications}
             generatedBy={currentProfile?.full_name ?? 'User'}
             isDemo={isDemo}
-          />
+          /></>}
           {can(ACTIONS.SCHEDULE_EDIT) && (
             <Button onClick={() => setAddOpen(true)} className="bg-rc-orange hover:bg-rc-orange-dark text-white">
               <Plus className="size-4 mr-1" />Add Milestone
@@ -299,13 +300,13 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         <KPICard title="Overall Progress" value={`${kpis.weightedProgress}%`} icon={TrendingUp} color="blue" />
         <KPICard title="On Track" value={kpis.onTrack} icon={Flag} color="emerald" />
         <KPICard title="At Risk / Behind" value={kpis.atRiskBehind} icon={AlertTriangle} color={kpis.atRiskBehind > 0 ? 'red' : 'emerald'} />
-        <KPICard
+        {canFinance&&<KPICard
           title="Budget"
           value={fmtCurrency(kpis.budgetActual)}
           subtitle={`of ${fmtCurrency(kpis.budgetPlanned)} planned`}
           icon={DollarSign}
           color={kpis.budgetActual <= kpis.budgetPlanned ? 'emerald' : 'amber'}
-        />
+        />}
       </div>
 
       {/* Tabs */}
@@ -313,7 +314,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
         <TabsList variant="line">
           <TabsTrigger value="milestones">Milestones</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="change-orders">Change Orders</TabsTrigger>
+          {canFinance&&<TabsTrigger value="change-orders">Change Orders</TabsTrigger>}
           <TabsTrigger value="modifications">Modifications</TabsTrigger>
         </TabsList>
 
@@ -325,7 +326,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
             </div>
           )}
           {milestones.map((ms) => (
-            <MilestoneCard key={ms.id} milestone={ms} projectId={projectId} isDemo={isDemo} canEdit={can(ACTIONS.SCHEDULE_EDIT)} refetch={refetch} />
+            <MilestoneCard key={ms.id} milestone={ms} projectId={projectId} isDemo={isDemo} canEdit={can(ACTIONS.SCHEDULE_EDIT)} canFinance={canFinance} refetch={refetch} />
           ))}
         </TabsContent>
 
@@ -344,7 +345,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
           )}
         </TabsContent>
 
-        <TabsContent value="change-orders" className="mt-4 space-y-4">
+        {canFinance&&<TabsContent value="change-orders" className="mt-4 space-y-4">
           {changeOrders.length > 0 && (
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div>
@@ -378,6 +379,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
           ))}
         </TabsContent>
 
+        }
         <TabsContent value="modifications" className="mt-4 space-y-4">
           {modifications.length > 0 && (
             <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -445,14 +447,14 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
                 <label className="text-sm font-medium">% Complete</label>
                 <Input type="number" min={0} max={100} value={addPercent} onChange={(e) => setAddPercent(Number(e.target.value))} className="mt-1" />
               </div>
-              <div>
+              {canFinance&&<>              <div>
                 <label className="text-sm font-medium">Budget Planned</label>
                 <Input type="number" min={0} value={addBudgetPlanned} onChange={(e) => setAddBudgetPlanned(Number(e.target.value))} className="mt-1" />
               </div>
               <div>
                 <label className="text-sm font-medium">Budget Actual</label>
                 <Input type="number" min={0} value={addBudgetActual} onChange={(e) => setAddBudgetActual(Number(e.target.value))} className="mt-1" />
-              </div>
+              </div></>}
             </div>
           </div>
           <DialogFooter>
@@ -570,7 +572,7 @@ export default function SchedulePage({ params, searchParams }: { params: Promise
 }
 
 /* ---------- Milestone card ---------- */
-function MilestoneCard({ milestone: ms, projectId, isDemo, canEdit, refetch }: { milestone: Milestone; projectId: string; isDemo: boolean; canEdit: boolean; refetch: () => void }) {
+function MilestoneCard({ milestone: ms, projectId, isDemo, canEdit, canFinance, refetch }: { milestone: Milestone; projectId: string; isDemo: boolean; canEdit: boolean; canFinance: boolean; refetch: () => void }) {
   const submittals = ms.linked_submittals ?? [];
   const rfis = ms.linked_rfis ?? [];
 
@@ -690,9 +692,9 @@ function MilestoneCard({ milestone: ms, projectId, isDemo, canEdit, refetch }: {
 
           {/* budget + links row */}
           <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-            <div className="flex-1 max-w-xs">
+            {canFinance&&<div className="flex-1 max-w-xs">
               <BudgetTracker planned={ms.budget_planned} actual={ms.budget_actual} label="Budget" />
-            </div>
+            </div>}
             <div className="flex items-center gap-3 text-xs shrink-0">
               {submittals.length > 0 && (
                 <Link
@@ -751,14 +753,14 @@ function MilestoneCard({ milestone: ms, projectId, isDemo, canEdit, refetch }: {
                 <label className="text-sm font-medium">% Complete</label>
                 <Input type="number" min={0} max={100} value={editPercent} onChange={(e) => setEditPercent(Number(e.target.value))} className="mt-1" />
               </div>
-              <div>
+              {canFinance&&<>              <div>
                 <label className="text-sm font-medium">Budget Planned</label>
                 <Input type="number" min={0} value={editBudgetPlanned} onChange={(e) => setEditBudgetPlanned(Number(e.target.value))} className="mt-1" />
               </div>
               <div>
                 <label className="text-sm font-medium">Budget Actual</label>
                 <Input type="number" min={0} value={editBudgetActual} onChange={(e) => setEditBudgetActual(Number(e.target.value))} className="mt-1" />
-              </div>
+              </div></>}
             </div>
           </div>
           <DialogFooter>

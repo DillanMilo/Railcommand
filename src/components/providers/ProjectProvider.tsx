@@ -1,5 +1,6 @@
 'use client';
 
+import { sanitizeOfflineFinance } from '@/lib/inventory/drafts';
 import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
@@ -98,6 +99,8 @@ export default function ProjectProvider({
   const collectionReader = useMemo(() => createProjectCollectionReader(`${isDemo ? 'demo' : 'live'}:${currentUserId}`), [currentUserId, isDemo]);
   useEffect(() => () => collectionReader.clear(), [collectionReader]);
 
+
+  useEffect(()=>{if(currentUserId&&!isDemo)void sanitizeOfflineFinance(currentUserId).catch(()=>{});},[currentUserId,isDemo]);
 
   // Rehydrate from localStorage on mount (client-only)
   useEffect(() => {

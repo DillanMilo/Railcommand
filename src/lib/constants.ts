@@ -285,6 +285,7 @@ export function getNavItems(projectId: string): NavItem[] {
     { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
     { label: "Submittals", href: projectId ? `/projects/${projectId}/submittals` : "#", icon: "FileCheck", requiresProject: true },
     { label: "RFIs", href: projectId ? `/projects/${projectId}/rfis` : "#", icon: "MessageSquareMore", requiresProject: true },
+    { label: "Inventory", href: projectId ? `/projects/${projectId}/inventory` : "#", icon: "ClipboardCheck2", requiresProject: true },
     { label: "Daily Logs", href: projectId ? `/projects/${projectId}/daily-logs` : "#", icon: "ClipboardList", requiresProject: true },
     { label: "Punch List", href: projectId ? `/projects/${projectId}/punch-list` : "#", icon: "ListChecks", requiresProject: true },
     { label: "Safety", href: projectId ? `/projects/${projectId}/safety` : "#", icon: "ShieldAlert", requiresProject: true },

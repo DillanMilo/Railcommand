@@ -133,10 +133,8 @@ async function getSupabaseProjectSummary(
 
   if (canViewBudget) {
     const { data: proj } = await supabase
-      .from('projects')
-      .select('budget_total, budget_spent')
-      .eq('id', projectId)
-      .single();
+      .rpc('project_finance',{p_project_id:projectId})
+      .single<{id:string;budget_total:number;budget_spent:number}>();
     if (proj) {
       summary.budgetTotal = proj.budget_total;
       summary.budgetSpent = proj.budget_spent;

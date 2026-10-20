@@ -1,0 +1,59 @@
+{
+  "cli": {
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "development"
+      }
+    },
+    "reviewer": {
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "development"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "environment": "preview",
+      "channel": "staging",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "staging"
+      }
+    },
+    "beta": {
+      "distribution": "store",
+      "environment": "preview",
+      "channel": "beta",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "staging",
+        "MOBILE_DISTRIBUTION_TARGET": "beta"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "environment": "production",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_BUILD_PROFILE": "production"
+      }
+    }
+  },
+  "submit": {
+    "beta": {
+      "ios": {
+        "ascAppId": "6803576049",
+        "appleTeamId": "PQAGLH9L66"
+      }
+    }
+  }
+}

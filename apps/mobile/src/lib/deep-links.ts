@@ -1,0 +1,33 @@
+import type { EmailOtpType } from '@supabase/supabase-js';
+import { parseMobileDeepLink } from '@railcommand/domain';
+import { supabase } from './supabase';
+import { mobileConfig } from './config';
+
+export async function consumeAuthCallback(rawUrl: string): Promise<'authenticated' | 'password-reset' | 'ignored'> {
+  const url = new URL(rawUrl);
+  const parsedLink = parseMobileDeepLink(rawUrl, [mobileConfig.linkHost]);
+  const code = url.searchParams.get('code');
+  const tokenHash = url.searchParams.get('token_hash');
+  const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const type = (url.searchParams.get('type') ?? hash.get('type')) as EmailOtpType | null;
+  const next = url.searchParams.get('next') ?? hash.get('next');
+  const accessToken = hash.get('access_token');
+  const refreshToken = hash.get('refresh_token');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+  } else if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    if (error) throw error;
+  } else if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    if (error) throw error;
+  } else if (parsedLink.kind !== 'auth_callback') {
+    return 'ignored';
+  } else {
+    throw new Error('Authentication callback is missing credentials');
+  }
+  return type === 'recovery' || next === '/reset-password'
+    ? 'password-reset'
+    : 'authenticated';
+}

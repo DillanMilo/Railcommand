@@ -1,6 +1,7 @@
 // src/lib/actions/projects.ts
 'use server';
 
+import { PROJECT_OPERATIONAL_FIELDS,enrichProject } from '@/lib/finance-projection';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -32,7 +33,7 @@ export async function getProjects(): Promise<ActionResult<Project[]>> {
       .eq('id', user.id)
       .single();
 
-    let query = supabase.from('projects').select('*');
+    let query = supabase.from('projects').select(PROJECT_OPERATIONAL_FIELDS);
 
     if (profile?.role !== 'admin') {
       // Get project IDs where the user is a member
@@ -53,7 +54,7 @@ export async function getProjects(): Promise<ActionResult<Project[]>> {
 
     if (error) return { error: error.message };
 
-    return { success: true, data: (data as Project[]) ?? [] };
+    return { success: true, data: await Promise.all(((data??[]) as unknown as Project[]).map(row=>enrichProject(supabase,row))) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch projects' };
   }
@@ -74,14 +75,14 @@ export async function getProjectById(projectId: string): Promise<ActionResult<Pr
 
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
+      .select(PROJECT_OPERATIONAL_FIELDS)
       .eq('id', projectId)
       .single();
 
     if (error) return { error: error.message };
     if (!data) return { error: 'Project not found' };
 
-    return { success: true, data: data as Project };
+    return { success: true, data: await enrichProject(supabase,data as unknown as Project) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch project' };
   }
@@ -198,7 +199,7 @@ export async function createProject(data: {
     if (error) return { error: error.message };
     if (!project) return { error: 'Failed to create project' };
 
-    let createdProject = project as Project;
+    let createdProject = project as unknown as Project;
 
     if (!createdProject.organization_id) {
       const admin = createAdminClient();
@@ -207,7 +208,7 @@ export async function createProject(data: {
         .update({ organization_id: profile.organization_id })
         .eq('id', createdProject.id)
         .eq('created_by', user.id)
-        .select()
+        .select(PROJECT_OPERATIONAL_FIELDS)
         .single();
 
       if (updateError || !updatedProject) {
@@ -216,7 +217,7 @@ export async function createProject(data: {
         };
       }
 
-      createdProject = updatedProject as Project;
+      createdProject = updatedProject as unknown as Project;
     }
 
     await logActivity(
@@ -230,7 +231,7 @@ export async function createProject(data: {
     );
     revalidatePath('/dashboard');
     revalidatePath('/projects');
-    return { success: true, data: createdProject };
+    return { success: true, data: await enrichProject(supabase,createdProject) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to create project' };
   }
@@ -266,7 +267,7 @@ export async function updateProject(
       .from('projects')
       .update(data)
       .eq('id', projectId)
-      .select()
+      .select(PROJECT_OPERATIONAL_FIELDS)
       .single();
 
     if (error) return { error: error.message };
@@ -284,7 +285,7 @@ export async function updateProject(
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/dashboard');
 
-    return { success: true, data: project as Project };
+    return { success: true, data: await enrichProject(supabase,project as unknown as Project) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to update project' };
   }
@@ -314,7 +315,7 @@ export async function updateProjectStatus(
       .from('projects')
       .update(updateData)
       .eq('id', projectId)
-      .select()
+      .select(PROJECT_OPERATIONAL_FIELDS)
       .single();
 
     if (error) return { error: error.message };
@@ -332,7 +333,7 @@ export async function updateProjectStatus(
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/dashboard');
 
-    return { success: true, data: project as Project };
+    return { success: true, data: await enrichProject(supabase,project as unknown as Project) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to update project status' };
   }

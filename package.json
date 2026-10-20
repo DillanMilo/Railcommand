@@ -13,7 +13,10 @@
     "types:gen": "supabase gen types typescript --project-id gwvftrrknusdfdgiwuij > src/lib/supabase/database.ts",
     "test:email": "tsx scripts/test-email.ts",
     "check:db-grants": "node scripts/check-database-grants.mjs",
-    "test:db-grants": "node --test scripts/check-database-grants.test.mjs && node scripts/test-database-grants.mjs"
+    "test:db-grants": "node --test scripts/check-database-grants.test.mjs && node scripts/test-database-grants.mjs",
+    "test:inventory": "mocha --require tsx \"src/lib/inventory/__tests__/*.test.ts\"",
+    "test:inventory:db": "node scripts/test-inventory-db.mjs",
+    "test:inventory:browser": "tsx scripts/test-inventory-browser.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -45,7 +48,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.3.8",
+    "fake-indexeddb": "6.2.5",
     "mocha": "^11.7.6",
+    "playwright": "1.64.1",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4.3.0",
     "tsx": "^4.22.4",

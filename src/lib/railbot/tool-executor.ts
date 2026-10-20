@@ -1,3 +1,4 @@
+import { enrichMilestones } from '@/lib/finance-projection';
 import { canPerform, ACTIONS, type Action } from '@/lib/permissions';
 import type { ProjectMember } from '@/lib/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -251,10 +252,8 @@ async function getProjectSummary(supabase: SupabaseClient, projectId: string, pr
   // Only fetch and include budget data if the user is authorized
   if (hasBudgetView) {
     const projectResult = await supabase
-      .from('projects')
-      .select('budget_total, budget_spent')
-      .eq('id', projectId)
-      .single();
+      .rpc('project_finance',{p_project_id:projectId})
+      .single<{id:string;budget_total:number;budget_spent:number}>();
 
     if (projectResult.data) {
       summary.budgetTotal = projectResult.data.budget_total;
@@ -312,13 +311,11 @@ async function getOverdueItems(supabase: SupabaseClient, projectId: string) {
 async function getBudgetSummary(supabase: SupabaseClient, projectId: string) {
   const [projectResult, milestonesResult] = await Promise.all([
     supabase
-      .from('projects')
-      .select('budget_total, budget_spent')
-      .eq('id', projectId)
-      .single(),
+      .rpc('project_finance',{p_project_id:projectId})
+      .single<{id:string;budget_total:number;budget_spent:number}>(),
     supabase
       .from('milestones')
-      .select('id, name, budget_planned, budget_actual, status, percent_complete')
+      .select('id, name, status, percent_complete')
       .eq('project_id', projectId)
       .order('sort_order', { ascending: true }),
   ]);
@@ -333,7 +330,7 @@ async function getBudgetSummary(supabase: SupabaseClient, projectId: string) {
       budgetTotal: projectResult.data.budget_total,
       budgetSpent: projectResult.data.budget_spent,
       budgetRemaining: projectResult.data.budget_total - projectResult.data.budget_spent,
-      milestones: milestonesResult.data ?? [],
+      milestones: await enrichMilestones(supabase,projectId,milestonesResult.data??[]),
       instructions: 'Respond in natural language. Interpret the budget health — state whether the project is under/on/over budget, the burn rate, and which milestones are driving the spend. Highlight any milestones that are over their planned budget. Keep it conversational and under 100 words.',
     },
   };
@@ -382,7 +379,7 @@ async function getMilestones(
 ) {
   const hasBudgetView = canPerform(projectRole, ACTIONS.BUDGET_VIEW);
   const selectFields = hasBudgetView
-    ? 'id, name, status, percent_complete, target_date, budget_planned, budget_actual, sort_order'
+    ? 'id, name, status, percent_complete, target_date, sort_order'
     : 'id, name, status, percent_complete, target_date, sort_order';
 
   let query = supabase
@@ -395,7 +392,7 @@ async function getMilestones(
 
   const { data, error } = await query;
   if (error) return { success: false, error: error.message };
-  return { success: true, data };
+  return { success: true, data: hasBudgetView ? await enrichMilestones(supabase,projectId,data??[]) : data };
 }
 
 async function getRecentActivity(
