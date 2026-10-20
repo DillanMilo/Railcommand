@@ -1,5 +1,6 @@
 import type {
   MobileBootstrap,
+  MobileAppRelease,
   MobileAccountDeletionRequest,
   MobileAccountDeletionResult,
   MobileDailyLogPhotoFinalizeResult,
@@ -150,6 +151,10 @@ export class MobileApiClient {
       );
     }
     return body;
+  }
+
+  getAppRelease(signal?: AbortSignal): Promise<MobileAppRelease> {
+    return this.request('/api/mobile/v1/app-release', { signal });
   }
 
   getBootstrap(projectId?: string, page: MobilePageRequest = {}): Promise<MobileBootstrap> {
