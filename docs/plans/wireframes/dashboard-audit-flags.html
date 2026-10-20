@@ -67,20 +67,20 @@
 <h2>Budget overrun</h2>
 <span class="badge red">Hold posting</span>
 </div>
-<p>$126,000 forecast + $6,800 incremental exposure = $132,800 against $130,000 adjusted budget. Gap: $2,800. Already-committed exposure must be excluded.</p>
-<p class="meta">Rule BUD-01 · budget v7 · owner Morgan Reed</p>
+<p>$126,000 forecast + distinct new work cost $6,800 = $132,800 against $130,000 adjusted budget. Gap: $2,800. Already-funded tie consumption adds zero. Approved CO-007 +$3,000 raises budget to $133,000 once; rebase/reapprove before posting.</p>
+<p class="meta">Rule BUD-01 · budget v7 · investigation ownership: Phase 3</p>
 <a href="approval-queue-trail.html">Review budget basis →</a>
-<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+<p class="state-note">Condition: open in this example · original evidence remains. Investigation assignment, case disposition, exports and retention policy: Phase 3.</p>
 </section>
 <section class="card flag critical" id="sequence" data-phase="1">
 <div class="row">
 <h2>Approval attempted out of order</h2>
 <span class="badge red">Attempt denied</span>
 </div>
-<p>Manager action arrived before the inventory check on the same revision. No state transition or stock movement accepted.</p>
-<p class="meta">Rule SEQ-01 · R-01 / E-002 · owner Morgan Reed</p>
+<p>PM action arrived before the inventory check on the same revision. No state transition or stock movement accepted.</p>
+<p class="meta">Rule SEQ-01 · R-01 / E-002 · investigation ownership: Phase 3</p>
 <a href="approval-queue-trail.html">Inspect trail →</a>
-<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+<p class="state-note">Condition: open in this example · original evidence remains. Investigation assignment, case disposition, exports and retention policy: Phase 3.</p>
 </section>
 <section class="card flag " id="self" data-phase="1">
 <div class="row">
@@ -88,22 +88,22 @@
 <span class="badge amber">Attempt denied</span>
 </div>
 <p>Requester Jordan Lee attempted a required approval. Separation-of-duties applies to administrators and delegated actors too.</p>
-<p class="meta">Rule SOD-01 · actor = submitter · owner Morgan Reed</p>
+<p class="meta">Rule SOD-01 · actor = submitter · investigation ownership: Phase 3</p>
 <a href="approval-queue-trail.html">Inspect denied attempt →</a>
-<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+<p class="state-note">Condition: open in this example · original evidence remains. Investigation assignment, case disposition, exports and retention policy: Phase 3.</p>
 </section>
 <section class="card flag " id="split" data-phase="2">
 <div class="row">
 <h2>Possible split purchase</h2>
-<span class="badge blue">Phase 2 preview</span>
+<span class="badge blue">P2 · threshold unconfirmed</span>
 </div>
-<p>Two positive requests: $6,000 + $5,000 = $11,000. Same supplier/category/project in seven days; each is below the illustrative $10,000 threshold.</p>
-<p class="meta">Rule SPLIT-01 · synthetic supplier S-12 · owner purchasing lead</p>
+<p>Threshold awaiting Wendy — rule not evaluated. Amount/currency/bands are configurable unconfirmed placeholders. Expand evidence for an isolated $10,000 threshold example; it is not active configuration.</p>
+<p class="meta">Rule SPLIT-01 · synthetic supplier S-12 · investigation ownership: Phase 3</p>
 <details>
 <summary>Evidence preview</summary>
-<p>REQ-041: $6,000 / REQ-042: $5,000. Both pending, same normalized supplier and category. Canceled/duplicate deliveries excluded. Concurrent submissions need the same policy-bucket check.</p>
+<p>Example only: $10,000 threshold; REQ-041 $6,000 + REQ-042 $5,000 = $11,000. Both pending, same normalized supplier and category. Canceled/duplicate deliveries excluded. Concurrent submissions need the same policy-bucket check.</p>
 </details>
-<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+<p class="state-note">Condition: open in this example · original evidence remains. Investigation assignment, case disposition, exports and retention policy: Phase 3.</p>
 </section>
 <section class="card flag " id="aged" data-phase="1">
 <div class="row">
@@ -111,19 +111,19 @@
 <span class="badge amber">Review stock plan</span>
 </div>
 <p>TIE-0821 has 1,000 ties on hand and an original receipt age of 60 days. The provisional age threshold is 60 days.</p>
-<p class="meta">Rule AGE-01 · as of 20 Oct · owner Alex Chen</p>
+<p class="meta">Rule AGE-01 · as of 20 Oct · investigation ownership: Phase 3</p>
 <a href="inventory-list.html">Inspect lot →</a>
-<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+<p class="state-note">Condition: open in this example · original evidence remains. Investigation assignment, case disposition, exports and retention policy: Phase 3.</p>
 </section>
 <section class="card flag critical" id="missing" data-phase="1">
 <div class="row">
 <h2>Twenty ties unaccounted for</h2>
 <span class="badge red">Hold affected issue</span>
 </div>
-<p>Ledger baseline v4: 1,000 ties. Physical count: 980. Recount and investigate before any authorized adjustment; a stale baseline requires rebase.</p>
-<p class="meta">Rule COUNT-01 · observation C-017 · owner Alex Chen</p>
+<p>Ledger baseline v4: 1,000 ties. Physical count: 980. Recount and operationally verify before any authorized adjustment; a stale baseline requires rebase.</p>
+<p class="meta">Rule COUNT-01 · observation C-017 · investigation ownership: Phase 3</p>
 <a href="inventory-list.html">Inspect stock check →</a>
-<p class="state-note">Status: open · acknowledgement and resolution append reasoned events. Original evidence remains.</p>
+<p class="state-note">Condition: open in this example · original evidence remains. Investigation assignment, case disposition, exports and retention policy: Phase 3.</p>
 </section>
 </div>
 <div class="notice space">Crew projection includes only their stock/request problems. Financial amounts, threshold patterns and restricted attempt evidence never enter crew responses, dashboard counts or caches.</div>

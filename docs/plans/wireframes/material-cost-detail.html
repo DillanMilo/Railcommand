@@ -29,147 +29,201 @@
 <main id="main">
 <div class="page-top">
 <div>
-<div class="eyebrow">Authorized material cost · revision C-03</div>
+<div class="eyebrow">Authorized material cost · Wendy's bucket taxonomy</div>
 <h1>Timber ties · cost detail</h1>
-<p class="muted">Trace each component to its basis. The 100-tie request pins this revision; changed assumptions create a new revision and new approvals.</p>
+<p class="muted">Log to disposal, with drying time and creosote's oil link visible. Quantities and readiness have a separate crew-safe projection.</p>
 </div>
-<span class="badge amber">Phase 1 pilot</span>
+<span class="badge amber">Rate configuration unconfirmed</span>
 </div>
-<div class="notice info">Scenario calculator, not an inventory edit. The full lot stays unchanged until day 60, then 950 ties are installed and 50 become installation waste. No interim movements are assumed.</div>
+<div class="notice">Carrying rates await Wendy. Blank means unknown, never zero. Example mode is separate from operational totals and cannot confirm a rate.</div>
 <div class="grid two">
 <section class="card">
-<h2>Cost assumptions</h2>
+<h2>Configurable carrying placeholders</h2>
 <div class="grid two">
 <label>Purchased ties<input id="qty" type="number" value="1000" min="1" max="100000" step="1">
 </label>
-<label>Days held<input id="days" type="number" value="60" min="0" max="3650" step="1">
+<label>Days held at buyer risk<input id="days" type="number" value="60" min="0" max="3650" step="1">
+</label>
+<label>Storage / tie / day · USD<input id="storage-rate" type="number" min="0" step="0.001" placeholder="Awaiting Wendy">
+</label>
+<label>Annual capital rate · %<input id="capital-rate" type="number" min="0" max="100" step="0.01" placeholder="Awaiting Wendy">
 </label>
 </div>
-<p class="small">Purchase $50/tie · freight $12,000/lot · handling $6,000/lot · storage $0.03/tie/day · capital 8%/year · actual/365.</p>
+<p class="small muted">Draft configuration only. No active default. The example uses actual/365 and one unchanged lot; confirmed conventions remain versioned inputs.</p>
+<div class="actions">
+<button id="load-example">Load example</button>
+<button class="secondary" id="clear-example">Return to unconfirmed</button>
+</div>
+<p class="small">Example: seven upstream buckets total $68,000; install labour $38,000, inspection $2,500, disposal $1,500. No taxes/FX assumed.</p>
 <label>
-<input id="risk" type="checkbox" checked>Include expected yard risk · Phase 2 preview</label>
-<p class="small muted">Annual shrink 2% + obsolescence 1% on landed value; distinct from installation waste.</p>
+<input id="risk" type="checkbox">Include expected yard risk · Phase 2 example</label>
+<p class="small muted">Example only: annual shrink 2% + obsolescence 1% on landed value.</p>
 <label>
-<input id="lifecycle" type="checkbox" checked>Include install + lifecycle · Phase 2 / 3 preview</label>
-<p class="small muted">95% installed at $40/tie labor, $1,500 incremental disposal, $30,000 future work less $5,000 salvage. All are estimates.</p>
-<p class="small muted">Changing quantity preserves fixed shipment charges. A real allocator would require reviewed source quantities and currencies.</p>
+<input id="lifecycle" type="checkbox">Include future lifecycle · Phase 3 example</label>
+<p class="small muted">Future maintenance $30,000 less salvage $5,000; distinct dated events.</p>
 </section>
 <section class="card">
-<h2>Recalculated scenario</h2>
+<h2>Source amounts and scenario</h2>
 <div class="key" aria-live="polite">
 <span>Landed acquisition</span>
 <strong id="landed">$68,000.00</strong>
 <span>Basic carrying</span>
-<strong id="basic">$2,694.25</strong>
-<span>Phase 1 material subtotal</span>
-<strong id="p1">$70,694.25</strong>
+<strong id="basic">Awaiting Wendy</strong>
+<span>Landed + holding subtotal</span>
+<strong id="p1">Incomplete</strong>
+<span>Installed true cost · basic</span>
+<strong id="installed">Incomplete</strong>
 <span>Selected scenario total</span>
-<strong id="scenario">$135,529.59</strong>
+<strong id="scenario">Incomplete</strong>
 <span>Per purchased tie</span>
-<strong id="per-buy">$135.53</strong>
+<strong id="per-buy">Not available</strong>
 <span>Per installed tie · 95%</span>
-<strong id="per-install">$142.66</strong>
+<strong id="per-install">Not available</strong>
 </div>
-<div class="notice space">Recorded acquisition: $68,000 in the default fixture. The other values are estimates or opportunity cost; the selected total is not fully booked actual spend.</div>
-<p id="calculation-status" role="status" class="small muted">Default worked example · unrounded calculation, final cents</p>
+<p id="calculation-status" role="status" class="notice space">Unconfirmed configuration · no operational carrying/full-cost total.</p>
+<p class="small muted">Editing an example affects only this page. Neither rates nor approvals are saved. The fixed source table below remains the same illustrative worked example.</p>
 </section>
 </div>
 <section class="card space">
-<h2>Default worked example · source and classification</h2>
+<h2>Drying and creosote context</h2>
+<div class="grid two">
+<div>
+<h3>Drying · 4–10 months</h3>
+<p class="small">Synthetic supplier dates: 1 Jan → 1 Aug 2026, seven calendar months. Ready/inspection-accepted before yard receipt on 21 Aug. Yard age is separate: 60 days to 20 Oct.</p>
+</div>
+<div>
+<h3>Creosote · oil-linked</h3>
+<p class="small">Synthetic quote CR-003 · oil/index-link reference awaiting supplier evidence. Preserve the quote and as-of date; no live oil price, assumed index formula or silent repricing.</p>
+</div>
+</div>
+<p class="state-note">Buyer carrying starts when owned/funded. In this example, that is yard receipt; real buyer-funded drying requires earlier intervals. Do not bill the same storage service twice under drying and carrying.</p>
+</section>
+<section class="card space">
+<h2>Wendy's eleven buckets · isolated worked example</h2>
 <div class="table-wrap" role="region" aria-label="Default cost components" tabindex="0">
 <table>
 <thead>
 <tr>
-<th>Component</th>
+<th>Bucket</th>
 <th>Basis / source</th>
-<th>Type / phase</th>
-<th class="num">Amount</th>
+<th>Type</th>
+<th class="num">USD</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Purchase</td>
-<td>1,000 × $50 · synthetic INV-101</td>
-<td>Recorded · P1</td>
-<td class="num">$50,000.00</td>
+<td>Log</td>
+<td>1,000 × $20 · LOG-001</td>
+<td>Synthetic recorded</td>
+<td class="num">$20,000.00</td>
 </tr>
 <tr>
-<td>Freight</td>
-<td>Shipment allocation · synthetic FR-008</td>
-<td>Recorded · P1</td>
-<td class="num">$12,000.00</td>
+<td>Mill</td>
+<td>1,000 × $10 · MILL-002</td>
+<td>Synthetic recorded</td>
+<td class="num">$10,000.00</td>
 </tr>
 <tr>
-<td>Handling</td>
-<td>Lot allocation · synthetic H-004</td>
-<td>Recorded · P1</td>
+<td>Trucking</td>
+<td>TR-008</td>
+<td>Synthetic recorded</td>
+<td class="num">$8,000.00</td>
+</tr>
+<tr>
+<td>Treating</td>
+<td>TX-004 · creosote excluded</td>
+<td>Synthetic recorded</td>
 <td class="num">$6,000.00</td>
 </tr>
 <tr>
-<td>Storage</td>
-<td>1,000 × $0.03 × 60</td>
-<td>Estimate · P1</td>
-<td class="num">$1,800.00</td>
+<td>Drying</td>
+<td>Seven-month supplier process</td>
+<td>Synthetic recorded</td>
+<td class="num">$4,000.00</td>
 </tr>
 <tr>
-<td>Capital</td>
-<td>$68,000 × 8% × 60/365</td>
-<td>Opportunity estimate · P1</td>
-<td class="num">$894.25</td>
+<td>Creosote</td>
+<td>CR-003 · oil-linked quote</td>
+<td>Synthetic quote</td>
+<td class="num">$12,000.00</td>
+</tr>
+<tr>
+<td>Rail car</td>
+<td>RC-006</td>
+<td>Synthetic recorded</td>
+<td class="num">$8,000.00</td>
 </tr>
 <tr class="total">
-<td>Basic material subtotal</td>
-<td>Landed + basic carrying</td>
-<td>Phase 1 total</td>
-<td class="num">$70,694.25</td>
+<td>Landed subtotal</td>
+<td>Seven upstream buckets</td>
+<td>Partial cost</td>
+<td class="num">$68,000.00</td>
+</tr>
+<tr>
+<td>Install labour</td>
+<td>950 × $40</td>
+<td>Estimate</td>
+<td class="num">$38,000.00</td>
+</tr>
+<tr>
+<td>Inspection</td>
+<td>Supported work estimate</td>
+<td>Estimate</td>
+<td class="num">$2,500.00</td>
+</tr>
+<tr>
+<td>Carrying cost · basic</td>
+<td>Storage $1,800 + capital $894.25</td>
+<td>Unconfirmed example only</td>
+<td class="num">$2,694.25</td>
+</tr>
+<tr>
+<td>Disposal</td>
+<td>Incremental expense</td>
+<td>Estimate</td>
+<td class="num">$1,500.00</td>
+</tr>
+<tr class="total">
+<td>Installed true cost · basic</td>
+<td>950 installed; $118.63 each</td>
+<td>Example only</td>
+<td class="num">$112,694.25</td>
 </tr>
 <tr class="future">
-<td>Expected yard shrink + obsolescence</td>
-<td>$223.56 + $111.78</td>
-<td>Risk estimate · P2</td>
+<td>Additional carrying risk</td>
+<td>Shrink $223.56 + obsolescence $111.78</td>
+<td>Phase 2 example</td>
 <td class="num">$335.34</td>
 </tr>
 <tr class="future">
-<td>Installation labor</td>
-<td>950 × $40</td>
-<td>Estimate · P2</td>
-<td class="num">$38,000.00</td>
-</tr>
-<tr class="future">
-<td>Incremental waste/disposal</td>
-<td>Flat expense · no second purchase charge</td>
-<td>Estimate · P2</td>
-<td class="num">$1,500.00</td>
-</tr>
-<tr class="future">
-<td>Future maintenance less salvage</td>
-<td>$30,000 − $5,000 · undiscounted</td>
-<td>Scenario · P3</td>
+<td>Future lifecycle less salvage</td>
+<td>$30,000 − $5,000</td>
+<td>Phase 3 adjustment</td>
 <td class="num">$25,000.00</td>
 </tr>
 <tr class="total">
-<td>Projected lifecycle scenario</td>
-<td>950 installed</td>
-<td>Phase 2 / 3 preview</td>
-<td class="num">$135,529.59</td>
+<td>Projected lifecycle TCO</td>
+<td>$145.29 per installed tie</td>
+<td>Phase 2/3 example</td>
+<td class="num">$138,029.59</td>
 </tr>
 </tbody>
 </table>
 </div>
-<p class="state-note">This table is the fixed default example; scenario controls update only the card above. The $2,500 purchase attribution to 50 wasted ties is already inside purchase. An actual loss replaces an overlapping risk estimate.</p>
+<p class="state-note">The $3,400 landed-value attribution to 50 wasted ties is already inside $68,000. Carrying subcomponents are one bucket. Unknown actual inputs remain incomplete; no sample value becomes confirmed configuration.</p>
 </section>
 <details>
 <summary>Cost and approval evidence</summary>
-<p>Revision C-03 · cost basis 20 Oct 2026 · USD · source completeness: illustrative only. A later invoice or rate change creates C-04; an existing request cannot silently switch to it.</p>
-<a href="approval-queue-trail.html">View the pinned request trail →</a>
+<p>Revision C-03 · USD · source completeness: illustrative. A later quote/rate creates a new revision; approved requests never silently switch. New exports, retention policy and investigation ownership are Phase 3.</p>
+<a href="approval-queue-trail.html">View budget/CO link and pinned request →</a>
 </details>
 <details>
 <summary>Other states to design and verify</summary>
-<p>Missing source/rate/date: “Estimate incomplete”; no total presented as final. Zero installed quantity: per-installed cost unavailable. Unauthorized/offline: current financial screen unavailable, with protected entered assumptions retained. Stale revision: review a new revision before submission; never auto-approve changed amounts.</p>
+<p>Unconfirmed or missing rates: incomplete total. Drying/unaccepted lot: not releasable. Unknown oil reference: preserve quote status. Zero installed denominator: unavailable. Offline/denied: no current financial response. Stale version: explicit rebase and reapproval, preserving draft values.</p>
 </details>
 <footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
 </main>
 </div>
-<script>const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v);const calc=()=>{const q=Number(document.querySelector('#qty').value),d=Number(document.querySelector('#days').value);if(!Number.isInteger(q)||q<1||q>100000||!Number.isInteger(d)||d<0||d>3650){document.querySelector('#calculation-status').textContent='Enter a whole quantity from 1–100,000 and days from 0–3,650.';['landed','basic','p1','scenario','per-buy','per-install'].forEach(id=>document.getElementById(id).textContent='Not available');return;}const l=q*50+18000,b=q*.03*d+l*.08*d/365,r=document.querySelector('#risk').checked?l*.03*d/365:0,f=document.querySelector('#lifecycle').checked?q*.95*40+1500+25000:0,t=l+b+r+f;Object.entries({landed:l,basic:b,p1:l+b,scenario:t,'per-buy':t/q}).forEach(([id,v])=>document.getElementById(id).textContent=money(v));document.querySelector('#per-install').textContent=document.querySelector('#lifecycle').checked?money(t/(q*.95)):'Not available';document.querySelector('#calculation-status').textContent='Scenario preview only · no cost revision is saved';};document.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));</script>
+<script>let exampleMode=false;const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v);const calc=()=>{const q=Number(document.querySelector('#qty').value),d=Number(document.querySelector('#days').value);const s=document.querySelector('#storage-rate').value,c=document.querySelector('#capital-rate').value;const ids=['basic','p1','installed','scenario','per-buy','per-install'];if(!Number.isInteger(q)||q<1||q>100000||!Number.isInteger(d)||d<0||d>3650){document.querySelector('#landed').textContent='Not available';ids.forEach(id=>document.getElementById(id).textContent='Not available');document.querySelector('#calculation-status').textContent='Enter valid whole quantity and days.';return;}const l=q*68;document.querySelector('#landed').textContent=money(l);if(!exampleMode||s===''||c===''||Number(s)<0||Number(c)<0||Number(c)>100){ids.forEach(id=>document.getElementById(id).textContent=id==='basic'?'Awaiting Wendy':'Incomplete');document.querySelector('#calculation-status').textContent='Unconfirmed configuration · no operational carrying/full-cost total.';return;}const b=q*Number(s)*d+l*(Number(c)/100)*d/365,i=l+b+q*.95*40+2500+1500,r=document.querySelector('#risk').checked?l*.03*d/365:0,f=document.querySelector('#lifecycle').checked?25000:0,t=i+r+f;Object.entries({basic:b,p1:l+b,installed:i,scenario:t,'per-buy':t/q,'per-install':t/(q*.95)}).forEach(([id,v])=>document.getElementById(id).textContent=money(v));document.querySelector('#calculation-status').textContent='EXAMPLE ONLY · rates remain unconfirmed · nothing is saved.';};document.querySelector('#load-example').addEventListener('click',()=>{exampleMode=true;document.querySelector('#storage-rate').value='0.03';document.querySelector('#capital-rate').value='8';calc();});document.querySelector('#clear-example').addEventListener('click',()=>{exampleMode=false;document.querySelector('#storage-rate').value='';document.querySelector('#capital-rate').value='';document.querySelector('#risk').checked=false;document.querySelector('#lifecycle').checked=false;calc();});document.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));</script>
 </body>
 </html>
