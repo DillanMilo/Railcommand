@@ -248,17 +248,36 @@ targets do not identify the deployment serving the custom staging hostname.
 
 The installed staging app's existing local scope is distinct from the production
 scope. A private read-only SQLite copy also passed integrity checking and found
-zero saved drafts, outbox operations and queued photos in that staging scope. To avoid signing out/reinstalling it, the proposed next test uses its
-current account with contractor/edit membership only in the new synthetic PR25
-project. Automatic approval review rejected adding two manager/edit memberships;
-no membership was added. A narrower, one-account contractor/edit request was sent
-to the user, together with a separate request for a blank-card photo and brief
-physical network disconnect/reconnect. These approvals and the dependent device
-checks remain pending. The Mac device viewer later regressed to a scaled window
-thumbnail and then a ScreenCaptureKit capture failure; phone actions stopped
-when the view could no longer be read reliably. A private-profile email/name lookup was also rejected;
-no profile details were returned, and only non-PII local database-scope metadata
-was used to identify the staging account.
+zero saved drafts, outbox operations and queued photos in that staging scope.
+
+The user explicitly approved the narrower staging membership and the blank-card
+photo/network checks. One membership was added for the staging account already
+on the device (`ee8dee3d-d28e-4f0b-a40e-25f55a3dc4b0`) only in synthetic project
+`b1020000-0000-4000-8000-000000000001`: contractor role with `can_edit=true`,
+membership `79f33e4f-7cd2-45ba-af2d-a0b297fd6f7b`. An authenticated-role RLS
+read for that account returned the 26 synthetic photos. No production membership
+or existing project access was changed. The earlier two-manager request was
+rejected and never applied. The private-profile email/name lookup was also
+rejected; no profile details were returned or used.
+
+The staging hostname passed the authenticated API checks again without a Vercel
+bypass header: 12/12/2 photos, filters 19/7, legacy 26, RLS/Storage denial and
+native bearer bootstrap. Isolated desktop Chromium and phone-sized WebKit also
+passed gallery paging, filters, signed lightbox, offline retention/reconnect,
+layout and the v2.8.1 notification entry on this hostname with normal cookies
+and no bypass header; both had zero uncaught exceptions. Response bytes remained 25,488/25,495/4,223 versus
+54,956 legacy bytes. Service totals in this additional run were
+1,101.2/727.9/333.7 ms; these remain individual staging samples.
+
+The Mac device viewer regressed to a scaled window thumbnail and then a
+ScreenCaptureKit capture failure. Phone actions stopped when the view could no
+longer be read reliably. The user was asked to reopen Device Hub and restore
+View Screen; the approved physical photo/network checks remain pending that
+readable view. Both a fresh app selection and an accessibility-only read still
+failed with screen-capture errors. No blind phone actions were attempted. A
+synthetic 600-pixel test card is prepared locally for the approved camera check.
+Existing apps, sessions and stored data remain in place. CI on documentation
+revision `4418837` passed in 2m7s; its Vercel preview passed as well.
 
 ## Pending release gate — PHOTOS-PAGE-ACCEPTANCE
 
