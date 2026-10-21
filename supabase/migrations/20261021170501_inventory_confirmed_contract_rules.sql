@@ -126,7 +126,7 @@ revoke all on function inventory_private.contract_period_start(date,date) from p
 create or replace function inventory_private.annual(p uuid,l uuid) returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
 declare org uuid; e public.inventory_exposures; s public.inventory_contract_sources; pol public.inventory_org_policy;
- b public.inventory_contract_baselines; total numeric; inc numeric; evidence jsonb; sc public.inventory_supply_chain_assignments; eligible boolean; yr integer; ct public.inventory_contracts; period_start date; period_end date;
+ b public.inventory_contract_baselines; total numeric; inc numeric; evidence jsonb; sc public.inventory_supply_chain_assignments; eligible boolean; yr integer; ct public.inventory_contracts; period_start date; period_end date; already_committed boolean;
 begin
  select organization_id into org from public.projects where id=p;
  select * into pol from public.inventory_org_policy where organization_id=org order by version desc limit 1;
@@ -135,27 +135,33 @@ begin
   return jsonb_build_object('state','already_funded','incremental',0,'requiresSupplyChain',false,'policy',to_jsonb(pol));
  end if;
  select cs.* into s from public.inventory_exposure_contracts ec join public.inventory_contract_sources cs on cs.id=ec.source_id where ec.exposure_id=e.id and cs.organization_id=org;
- if e.id is null or e.funding<>'new' or s.id is null or pol.organization_id is null or s.currency<>pol.currency then
+ if e.id is null or e.funding<>'new' or s.id is null or pol.organization_id is null then
   return jsonb_build_object('state','reconciliation_required','requiresSupplyChain',null,'policy',to_jsonb(pol));
  end if;
+ -- A canonical purchase remains funded after its original period/currency changes.
+ -- Detect it before fresh-spend reconciliation holds; never relabel or recommit it.
+ already_committed:=exists(select 1 from public.inventory_contract_commitments where source_id=s.id);
+ if s.currency<>pol.currency and not already_committed then return jsonb_build_object('state','reconciliation_required','requiresSupplyChain',null,'policy',to_jsonb(pol)); end if;
  select * into ct from public.inventory_contracts where id=s.contract_id and organization_id=org;
- if ct.start_date is null or current_date<ct.start_date then return jsonb_build_object('state','period_review_required','policy',to_jsonb(pol)); end if;
+ if (ct.start_date is null or current_date<ct.start_date) and not already_committed then return jsonb_build_object('state','period_review_required','policy',to_jsonb(pol)); end if;
  period_start:=inventory_private.contract_period_start(ct.start_date,current_date);
  yr:=extract(year from period_start)::integer;
- period_end:=inventory_private.anniversary(ct.start_date,yr+1);
- if s.period_year<>yr then return jsonb_build_object('state','period_review_required','policy',to_jsonb(pol)); end if;
+ if s.period_year<>yr and not already_committed then return jsonb_build_object('state','period_review_required','policy',to_jsonb(pol)); end if;
+ -- Consumption evidence keeps the purchase's original anniversary bounds.
+ period_start:=inventory_private.anniversary(ct.start_date,s.period_year);
+ period_end:=inventory_private.anniversary(ct.start_date,s.period_year+1);
  select * into b from public.inventory_contract_baselines where contract_id=s.contract_id and period_year=s.period_year and currency=s.currency order by version desc limit 1;
  select coalesce(sum(cs.amount),0),coalesce(jsonb_agg(jsonb_build_object('sourceId',cs.id,'sourceKey',cs.source_key,'amount',cs.amount,'evidence',cs.evidence,'projectId',c.project_id,'requestId',c.request_id,'actorId',c.actor_id,'createdAt',c.created_at) order by cs.id),'[]'::jsonb)
  into total,evidence from public.inventory_contract_commitments c join public.inventory_contract_sources cs on cs.id=c.source_id where cs.contract_id=s.contract_id and cs.period_year=s.period_year and cs.currency=s.currency;
- inc:=case when exists(select 1 from public.inventory_contract_commitments where source_id=s.id) then 0 else s.amount end;
+ inc:=case when already_committed then 0 else s.amount end;
  select * into sc from public.inventory_supply_chain_assignments where project_id=p order by version desc limit 1;
  eligible:=exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p and m.profile_id=sc.actor_id and m.can_edit and m.project_role in ('manager','superintendent','engineer') and u.organization_id=org);
- return jsonb_build_object('state',case when b.id is null then 'reconciliation_required' else 'complete' end,
+ return jsonb_build_object('state',case when already_committed and (s.period_year is distinct from yr or s.currency<>pol.currency or b.id is null) then 'already_funded' when b.id is null then 'reconciliation_required' else 'complete' end,
   'contractId',s.contract_id,'periodYear',s.period_year,'periodStart',period_start,'periodEndExclusive',period_end,'currency',s.currency,'sourceId',s.id,'sourceKey',s.source_key,'proposedSource',jsonb_build_object('sourceId',s.id,'sourceKey',s.source_key,'amount',s.amount,'evidence',s.evidence,'projectId',p,'actorId',s.created_by),
   'policy',to_jsonb(pol),'baseline',to_jsonb(b),'committed',total,'incremental',inc,'forecast',b.amount+total+inc,'sources',evidence,
   'requiresSupplyChain',b.id is not null and inc>0 and b.amount+total+inc>pol.threshold_amount,
   'assignment',to_jsonb(sc),'eligibleSupplyChain',eligible,
-  'likelySplit',b.id is not null and b.amount+total+inc>pol.threshold_amount and
+  'likelySplit',s.period_year=yr and s.currency=pol.currency and b.id is not null and b.amount+total+inc>pol.threshold_amount and
    (select count(*)>=2 and sum(cs.amount)>pol.threshold_amount from public.inventory_contract_sources cs where cs.contract_id=s.contract_id and cs.period_year=s.period_year and cs.currency=s.currency and cs.amount>0 and cs.amount<=pol.threshold_amount and (cs.id=s.id or exists(select 1 from public.inventory_contract_commitments c where c.source_id=cs.id))));
 end$$;
 revoke all on function inventory_private.annual(uuid,uuid) from public,anon,authenticated;
@@ -229,7 +235,16 @@ begin
  -- All feature mutations lock project -> lot -> request, including source revisions.
  perform 1 from public.projects where id=p_project_id for update;
  perform 1 from public.project_members where project_id=p_project_id for share;
- perform 1 from public.profiles where organization_id=org for share;
+ perform 1 from public.profiles where organization_id=org or id=actor for share;
+ -- Initial checks precede a potentially long org-lock wait. Re-read under the
+ -- project/member/profile locks and retain them through the mutation's commit.
+ role_name:=inventory_private.role(p_project_id);
+ if role_name is null or not exists(select 1 from public.projects where id=p_project_id and organization_id=org) then
+  code:='access_denied'; raise exception using errcode='P0002',message=code;
+ end if;
+ if not exists(select 1 from public.project_members where project_id=p_project_id and profile_id=actor and can_edit) then
+  code:='write_denied'; raise exception using errcode='P0002',message=code;
+ end if;
  perform 1 from public.change_orders where project_id=p_project_id for share;
  select * into assigned from public.inventory_assignments where project_id=p_project_id;
  if cmd='policy' then

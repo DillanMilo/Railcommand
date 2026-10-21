@@ -65,6 +65,35 @@ merged, deployed, uploaded, distributed, invited anybody or changed hosted data.
   amount is added twice. Other buckets and overall TCO remain incomplete until
   sourced. The old explicit 8% worked example remains isolated and labeled.
 
+## Review corrections: permission waits and acquired stock
+
+Every mutation re-reads the actor's current same-organization project role and
+edit permission after acquiring organization/project/member/profile locks. The
+actor's profile is locked even if it moved organization during the wait. Current
+permissions are held through commit; revoked actors produce a denial without a
+request, revision, count, movement, finance snapshot or successful receipt. The
+initial checks remain an early denial only. Assigned-approver rechecks, original
+operation identities, digest conflicts and immutable receipt recovery remain.
+
+A canonical purchase committed in an earlier contract year remains already-funded
+stock when subsequently consumed in the same lot or linked across projects. The
+original source, currency, anniversary bounds and commitment evidence stay intact;
+no new period baseline or duplicate annual/project-budget charge is manufactured.
+Fresh requests still require current versions, requester rebase where needed,
+inventory lead verification and distinct PM authorization before release. A new,
+uncommitted purchase with a prior period, wrong currency or missing current
+baseline remains held. Old pending annual-spend reviews must rebase and reapprove;
+a rebase cannot convert an unreconciled purchase into funded stock.
+
+The expanded disposable PostgreSQL regression covers thirteen lock-wait denial
+cases (submit/revise/cancel/count; edit revocation, membership deletion and profile
+organization change, plus submit role change), the inverse authorized-write-before-
+revocation ordering, remaining historical stock within/across projects, immutable
+source/commitment identity and unchanged annual/project spend. Synthetic historical
+posting/review rows model rollover without replacing a server function or clock.
+These server-only corrections apply identically to web/native and old compatible
+clients; no bundled UI, private device storage or offline queue identity changes.
+
 ## Offline classification and installed clients
 
 Operational field input remains **offline draft/queue, draft only**. Operational
