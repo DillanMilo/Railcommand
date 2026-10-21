@@ -952,19 +952,19 @@
           "name": "readInventory",
           "mobile": "implemented-partial",
           "deviceVerified": false,
-          "delivery": "native-field-and-shared-authorized-api; local checks only; signed successor and physical acceptance pending"
+          "delivery": "native-field-and-shared-authorized-api; confirmed organization/contract-year/Supply Chain rules implemented locally; real DB and browser-native adapters only; signed/device/hosted acceptance pending"
         },
         {
           "name": "executeInventory",
           "mobile": "implemented-partial",
           "deviceVerified": false,
-          "delivery": "native-field-and-shared-authorized-api; local checks only; signed successor and physical acceptance pending"
+          "delivery": "native-field-and-shared-authorized-api; confirmed organization/contract-year/Supply Chain rules implemented locally; real DB and browser-native adapters only; signed/device/hosted acceptance pending"
         },
         {
           "name": "inventoryReceipt",
           "mobile": "implemented-partial",
           "deviceVerified": false,
-          "delivery": "native-field-and-shared-authorized-api; local checks only; signed successor and physical acceptance pending"
+          "delivery": "native-field-and-shared-authorized-api; confirmed organization/contract-year/Supply Chain rules implemented locally; real DB and browser-native adapters only; signed/device/hosted acceptance pending"
         }
       ]
     }

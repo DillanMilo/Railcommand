@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo loads config plugins as CommonJS.
 const { withInfoPlist } = require('expo/config-plugins');
 
 /**

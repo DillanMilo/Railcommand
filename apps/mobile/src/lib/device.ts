@@ -43,7 +43,7 @@ async function persistPickedPhoto(
   let copiedSize: number;
   try {
     directory.create({ idempotent: true, intermediates: true });
-    new File(asset.uri).copy(destination);
+    await new File(asset.uri).copy(destination);
     copiedSize = destination.size;
   } catch {
     try { destination.delete(); } catch { /* A partial app-owned copy is never queued. */ }

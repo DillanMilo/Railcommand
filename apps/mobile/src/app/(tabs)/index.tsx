@@ -1,3 +1,4 @@
+import { AppUpdatePrompt } from '@/components/app-update-prompt';
 import { openWorkspace } from '@/lib/workspace-navigation';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -42,6 +43,7 @@ export default function OverviewScreen() {
     }
   };
   return <Screen>
+    <AppUpdatePrompt enabled={online && !loading} />
     <WebHeader projectName={active?.name ?? 'Select project'} online={online} expanded={projectsOpen}
       onProjectPress={hasProjectChoice ? () => setProjectsOpen((open) => !open) : undefined} />
     <BreadcrumbRow current="Dashboard" />

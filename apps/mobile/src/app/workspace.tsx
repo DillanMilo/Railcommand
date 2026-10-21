@@ -1,3 +1,4 @@
+import { AppUpdatePrompt } from '@/components/app-update-prompt';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
@@ -43,6 +44,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
   const dirtyRef = useRef(false);
   const started = useRef(false);
   const origin = new URL(mobileConfig.apiBaseUrl).origin;
+  const canPromptUpdate = useCallback(() => !dirtyRef.current && !sharing.current && !transfer.current, []);
   const confirmLeave = useCallback((action: () => void) => {
     if (!dirtyRef.current) { action(); return; }
     Alert.alert('Leave this page?', 'Any unsaved workspace changes may be lost. Saved field drafts and queued logs remain on this device.', [
@@ -155,6 +157,7 @@ function AccountWorkspace({ userId, revision }: { userId: string; revision: numb
     web.current?.injectJavaScript(`window.dispatchEvent(new CustomEvent('railcommand:download',{detail:${JSON.stringify({ url })}}));true;`);
   };
   return <SafeAreaView edges={['top', 'bottom']} style={styles.page}>
+    <AppUpdatePrompt enabled={ready && online && !dirty && !loading} canPrompt={canPromptUpdate} />
     {!online ? <Text accessibilityLiveRegion="polite" style={[styles.notice, styles.offline]}>Offline · Your open page is retained. Use Field tools for offline logs.</Text> : null}
     {error ? <View style={styles.error}><Text style={styles.body}>{error}</Text><Pressable disabled={!online} onPress={() => confirmLeave(() => { transfer.current = null; dirtyRef.current = false; setDirty(false); setReady(false); setSource(undefined); started.current = false; setAttempt((value) => value + 1); })} style={styles.button}><Text style={styles.buttonText}>Reconnect workspace</Text></Pressable><Pressable accessibilityRole="button" onPress={() => void openFieldTools()} style={styles.button}><Text style={styles.buttonText}>Open Field tools</Text></Pressable></View> : null}
     {loading ? <ActivityIndicator accessibilityLabel="Opening workspace" style={styles.loading} /> : null}

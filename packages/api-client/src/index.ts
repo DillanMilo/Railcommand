@@ -1,6 +1,7 @@
 import type { InventoryCommand,InventoryResult,InventorySnapshot } from '@railcommand/domain';
 import type {
   MobileBootstrap,
+  MobileAppRelease,
   MobileAccountDeletionRequest,
   MobileAccountDeletionResult,
   MobileDailyLogPhotoFinalizeResult,
@@ -55,6 +56,10 @@ export interface MobilePageRequest {
 }
 
 export class MobileApiClient {
+  getAppRelease(signal?: AbortSignal): Promise<MobileAppRelease> {
+    return this.request('/api/mobile/v1/app-release', { signal });
+  }
+
   createWorkspaceSession(path: string): Promise<{ ticket: string; userId: string }> {
     return this.request('/api/mobile/v1/web-session',{method:'POST',body:JSON.stringify({path})});
   }

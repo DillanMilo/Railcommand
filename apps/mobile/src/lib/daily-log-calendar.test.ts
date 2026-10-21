@@ -5,11 +5,12 @@ import { runInNewContext } from 'node:vm';
 import { describe, it } from 'mocha';
 import ts from 'typescript';
 
-type Element = { type: unknown; props: Record<string, any> };
-function nodes(value: any): Element[] {
+type Element = { type: unknown; props: { children?: unknown; accessibilityLabel?: string; onPress?: () => void; [key: string]: unknown } };
+function nodes(value: unknown): Element[] {
   if (Array.isArray(value)) return value.flatMap(nodes);
-  if (!value || typeof value !== 'object' || !value.props) return [];
-  return [value, ...nodes(value.props.children)];
+  if (!value || typeof value !== 'object' || !('props' in value)) return [];
+  const element = value as Element;
+  return [element, ...nodes(element.props.children)];
 }
 describe('Native same-day calendar navigation', () => {
   it('opens every log for the selected date rather than picking one arbitrary record', () => {
@@ -20,12 +21,12 @@ describe('Native same-day calendar navigation', () => {
       { id: 'second', projectId: 'project', logDate: day, workSummary: 'Second crew work', createdAt: date.toISOString(), authorName: 'Crew Two' },
       { id: 'other', projectId: 'project', logDate: '2025-01-01', workSummary: 'Other day work', createdAt: date.toISOString() },
     ];
-    const states: any[] = []; let cursor = 0; const navigation: string[] = [];
-    const jsx = (type: unknown, props: Record<string, any>) => ({ type, props });
-    const deps: Record<string, any> = {
-      'react': { useMemo: (fn: () => unknown) => fn(), useState: (initial: any) => {
+    const states: unknown[] = []; let cursor = 0; const navigation: string[] = [];
+    const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
+    const deps: Record<string, unknown> = {
+      'react': { useMemo: (fn: () => unknown) => fn(), useState: (initial: unknown) => {
         const index = cursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
-        return [states[index], (value: any) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
+        return [states[index], (value: unknown) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
       } },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
       'react-native': { Pressable: 'Pressable', Text: 'Text', View: 'View', StyleSheet: { create: (s: unknown) => s } },
@@ -44,11 +45,11 @@ describe('Native same-day calendar navigation', () => {
     const render = () => { cursor=0; return nodes(compiled.exports.default()); };
     const calendar = render();
     const cell = calendar.find(node => node.props.accessibilityLabel?.endsWith(', 2 daily logs'));
-    assert.ok(cell); cell.props.onPress();
+    assert.ok(cell); cell.props.onPress?.();
     const list = render(); const text = list.filter(node => node.type === 'Text').map(node => node.props.children).flat().join(' ');
     assert.match(text, /First crew work/); assert.match(text, /Second crew work/); assert.doesNotMatch(text, /Other day work/);
     const logRows = list.filter(node => node.type === 'Pressable' && nodes(node).some(child => child.props.children === 'First crew work' || child.props.children === 'Second crew work'));
-    assert.equal(logRows.length, 2); logRows.forEach(row => row.props.onPress());
+    assert.equal(logRows.length, 2); logRows.forEach(row => row.props.onPress?.());
     assert.deepEqual(navigation, ['/daily-log/first', '/daily-log/second']);
   });
 });

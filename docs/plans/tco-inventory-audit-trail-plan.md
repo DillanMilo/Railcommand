@@ -427,3 +427,35 @@ stay online-only; cached operations read-only; field drafts remain draft-only.
 See the platform handoff and current TIA-P1 Build report for exact local evidence.
 No policy amounts confirmed, Phase 2/3 added, hosted writes, distribution or merge.
 Independent Review and physical/signed/hosted/pilot release gates remain required.
+
+
+## Authorized confirmed-rule delta — 21 October 2026
+
+TIA-CONFIRMED-RULES supersedes the prior unconfirmed rate/threshold and deferred
+likely-split slice only. Wendy confirms editable organization defaults of 5% per
+year carrying and an additional distinct Supply Chain sign-off strictly over
+USD 50,000 per contract year. The user confirms approved commitments plus the
+request, and contract anniversaries anchored to recorded start dates. Feb29 uses
+Feb28 in non-leap years; UTC dates, start inclusive/end exclusive. There is no
+calendar-year fallback. Missing contract/start, currency, period or verified
+external opening commitment baseline holds new spending. External baselines
+explicitly exclude tracked source identities; external procurement history still
+requires manual reconciliation. Distinct known subthreshold sources with a sum
+over the limit produce a finance-only likely-split warning, never a fraud verdict.
+
+Organization policy and contract/source/baseline/approval evidence are append-only.
+Final authorization commits source spend and stock atomically under an organization
+lock across projects, retaining the project→lot→request order. Pending approvals
+are not procurement reservations; they cannot spend/release, and a changed total
+requires explicit requester rebase and fresh approvals. Funded stock adds zero;
+canonical sources are committed once across projects. Field input remains device
+draft only and operational cached reads remain read-only; all finance, decisions,
+posting and receipt settlement are online-only. No private financial editor values
+enter device persistence; stable original operation metadata survives uncertainty.
+
+Both actual web and native components, shared domain/API, additive local migration,
+real DB concurrency/RLS, real SQLite, Chromium and the existing offline/recovery
+contracts are in scope. Current native build300014 additions are reconciled only
+from immutable ce2a1e67d913e931690f34982a45b334c7ae64db. Hosted/signed/physical
+acceptance remains a separate release gate. Parent may prepare only the authorized
+protected preview/private TestFlight; Build/Review do not push or release.

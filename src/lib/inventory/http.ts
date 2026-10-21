@@ -8,6 +8,7 @@ const input = z.object({
   command: z
     .object({
       action: z.enum([
+        "policy", "contract", "baseline", "supply_chain_assign", "supply_chain",
         "settle",
         "assign",
         "opening",

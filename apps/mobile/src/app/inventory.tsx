@@ -7,6 +7,7 @@ import {
   budgetEvaluation,
   materialCostSummary,
   basicHoldingExample,
+  operationalCarrying,
   type InventoryCommand,
   type InventorySnapshot,
   type InventoryFinance,
@@ -25,6 +26,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { useMobileData } from "@/providers/mobile-data-provider";
 import { mobileApiForUser } from "@/lib/api";
 import { inventoryStore } from "@/lib/offline-store";
+import { InventoryConfirmedRules } from "@/components/inventory-confirmed-rules";
 import { colors } from "@/theme";
 export default function InventoryScreen() {
   const { session, sessionRevision, isSessionCurrent } = useAuth();
@@ -61,6 +63,7 @@ function InventoryWorkspace({
   current: () => boolean;
 }) {
   const [, render] = useReducer((n) => n + 1, 0);
+  const [ruleInput, setRuleInput] = useState<Record<string,Record<string,string>>>({});
   const [financialEditor, setFinancialEditor] = useState<{
     editLot: string | null;
     proposal: boolean;
@@ -114,7 +117,7 @@ function InventoryWorkspace({
       <PageHeading
         eyebrow="FIELD / MATERIAL CONTROL"
         title="Inventory"
-        detail="Request → inventory lead → distinct PM → release"
+        detail="Request → inventory lead → distinct PM → required authorization → release"
       />
       <StatusBanner
         tone={online ? "neutral" : "warning"}
@@ -282,7 +285,7 @@ function InventoryWorkspace({
                     #{r.number} · {r.quantity} ties → {r.work_location}
                   </Text>
                   <Text style={styles.body}>
-                    {r.state} · revision {r.revision} · version {r.version}
+                    {r.state === "awaiting_supply_chain" ? (s.finance ? "Waiting for Supply Chain authorization" : "Waiting for required authorization") : r.state} · revision {r.revision} · version {r.version}
                   </Text>
                   <Text style={styles.body}>{r.reason}</Text>
                   <Text style={uiStyles.muted}>
@@ -308,6 +311,7 @@ function InventoryWorkspace({
                         onPress={() => act({ action: "authorize", ...base })}
                       />
                     )}
+                  {r.state === "awaiting_supply_chain" && s.finance?.supplyChainAssignment?.actor_id === userId && s.canManage && s.finance.annual?.find(a => a.lotId === r.lot_id)?.evaluation.eligibleSupplyChain && ![r.requester_id,r.verifier_id,r.approver_id].includes(userId) && <PrimaryButton title="Supply Chain authorize & post release" disabled={disabled} onPress={() => act({action:"supply_chain",...base})} />}
                   {["submitted", "verified"].includes(r.state) &&
                     [s.assignments?.lead_id, s.assignments?.pm_id].includes(
                       userId,
@@ -372,6 +376,7 @@ function InventoryWorkspace({
               </Text>
             ))}
           </Card>
+          {s.finance && online && <InventoryConfirmedRules finance={s.finance} canManage={s.canManage} disabled={disabled} values={ruleInput} setValues={setRuleInput} act={act} />}
           {s.finance && online && (
             <Finance
               editor={financialEditor}
@@ -514,8 +519,7 @@ function Finance({
     <Card>
       <SectionTitle>Material cost & budget review</SectionTitle>
       <Text style={styles.body}>
-        Awaiting Wendy · incomplete. Rates and thresholds are unconfirmed. No
-        operational carrying calculation or threshold routing is active.
+        Remaining manual cost components may be incomplete. Confirmed organization defaults and contract-year authorization apply.
       </Text>
       <Text style={styles.body}>
         Base {f.budget.base} · adjusted {f.budget.adjusted} · spent{" "}
@@ -535,7 +539,7 @@ function Finance({
               ; installed excluding carrying{" "}
               {materialCostSummary(c).installedExcludingCarrying ??
                 "incomplete"}
-              . Total incomplete; carrying awaits Wendy.
+              . Total remains incomplete until all components are sourced. Annual capital component (ACT/365; remaining quantity at opening acquisition value): {operationalCarrying(l,c,f.policy,s.asOf).annual?.toFixed(2) ?? "incomplete: valuation or receipt age unknown"}. Storage is separate and never counted twice.
             </Text>
             <Text style={styles.heading}>
               {l.material} · {l.yard} · cost revision {c?.version ?? "missing"}
@@ -606,6 +610,10 @@ function Finance({
                       ),
                     )}
                     {field("oil", "Creosote oil-linked quote/reference")}
+                    {field("contractId", "Shared contract UUID (required for new spending)")}
+                    {field("periodYear", "Contract period start year")}
+                    {field("currency", "Source currency (ISO 4217)")}
+                    {field("annualRateOverride", "Annual carrying override (fraction/year; blank uses organization default)")}
                     {field("sourceKey", "Distinct source identity")}
                     {field("source", "Source evidence")}
                     {field(
@@ -657,6 +665,10 @@ function Finance({
                           source: values.source,
                           funding: values.funding ?? "unknown",
                           exposureId: values.exposureId || null,
+                          contractId: values.contractId ?? "",
+                          periodYear: values.periodYear ?? "",
+                          currency: values.currency ?? "",
+                          annualRateOverride: values.annualRateOverride ?? "",
                           incrementalAmount: values.incrementalAmount ?? "",
                           milestoneId: values.milestoneId ?? "",
                           changeOrderId: values.changeOrderId ?? "",

@@ -161,7 +161,7 @@ describe("inventory actual SQLite persistence and isolation", () => {
       await downgraded.open();
       assert.doesNotMatch(JSON.stringify(downgraded.snapshot), /2800|68000|cost|configuration|reason/);
       downgraded.dispose();
-      for (const action of ["reject", "cancel", "cost", "configuration"] as const) {
+      for (const action of ["reject", "cancel", "cost", "configuration", "policy", "contract", "baseline", "supply_chain_assign"] as const) {
         let calls = 0, receipt: import("@railcommand/domain").InventoryResult | null = null;
         const ports: InventoryPorts = {
           userId: a, projectId: project, current: () => true, online: () => true,

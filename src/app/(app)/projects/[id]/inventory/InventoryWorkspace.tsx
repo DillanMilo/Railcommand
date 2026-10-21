@@ -6,6 +6,7 @@ import {
   budgetEvaluation,
   materialCostSummary,
   basicHoldingExample,
+  operationalCarrying,
   type InventoryCommand,
   type InventoryFinance,
 } from "@railcommand/domain";
@@ -16,6 +17,7 @@ import {
   cacheInventory,
   readCachedInventory,
 } from "@/lib/inventory/drafts";
+import { ConfirmedRules } from "./ConfirmedRules";
 import styles from "./inventory.module.css";
 import { createClient } from "@/lib/supabase/client";
 async function request<T>(
@@ -140,7 +142,7 @@ export function InventoryWorkspace({
         <div>
           <small>FIELD / MATERIAL CONTROL</small>
           <h1>Inventory & approval trail</h1>
-          <p>Request → inventory lead → distinct PM → release</p>
+          <p>Request → inventory lead → distinct PM → required authorization → release</p>
         </div>
         <button
           onClick={() => void controller.refresh()}
@@ -282,7 +284,7 @@ export function InventoryWorkspace({
             <h2>Request stock</h2>
             <p>
               Offline input stays on this device. Submission and approval are
-              online-only. No physical release before PM authorization.
+              online-only. No physical release before every required authorization.
             </p>
             <form
               onSubmit={(e) => {
@@ -390,7 +392,7 @@ export function InventoryWorkspace({
                     #{r.number} · {r.quantity} ties → {r.work_location}
                   </h3>
                   <p>
-                    {r.state} · revision {r.revision} · version {r.version}
+                    {r.state === "awaiting_supply_chain" ? (s.finance ? "Waiting for Supply Chain authorization" : "Waiting for required authorization") : r.state} · revision {r.revision} · version {r.version}
                   </p>
                   <p>{r.reason}</p>
                   <p>
@@ -418,6 +420,7 @@ export function InventoryWorkspace({
                         Authorize & post release
                       </button>
                     )}
+                  {r.state === "awaiting_supply_chain" && s.finance?.supplyChainAssignment?.actor_id === userId && s.canManage && s.finance.annual?.find(a => a.lotId === r.lot_id)?.evaluation.eligibleSupplyChain && ![r.requester_id,r.verifier_id,r.approver_id].includes(userId) && <button disabled={disabled} onClick={() => act({ action: "supply_chain", ...base })}>Supply Chain authorize & post release</button>}
                   {["submitted", "verified"].includes(r.state) &&
                     [s.assignments?.lead_id, s.assignments?.pm_id].includes(
                       userId,
@@ -632,19 +635,19 @@ function Finance({
     <section>
       <h2>Material cost & budget review</h2>
       <p className={styles.notice}>
-        Awaiting Wendy · incomplete. Carrying rates and thresholds are
-        unconfirmed; no operational carrying calculation or threshold routing is
-        active.
+        Remaining cost components may be incomplete. Confirmed organization defaults apply to annual capital costs and contract-year authorization.
       </p>
       <p>
         Base {f.budget.base} · adjusted {f.budget.adjusted} · spent{" "}
         {f.budget.spent} · posted new exposure {f.budget.postedNewExposure}
       </p>
+      <ConfirmedRules finance={f} canManage={s.canManage} disabled={disabled} values={financialInput} capture={capture} act={act} />
       {s.lots.map((l) => {
         const c = f.costs.find((c) => c.lot_id === l.id),
           source = f.sources.find((e) => e.id === c?.exposure_id);
         const evaluation = budgetEvaluation(f.budget, source, false);
         const totals = materialCostSummary(c);
+        const carrying = operationalCarrying(l,c,f.policy,s.asOf);
         return (
           <article key={l.id}>
             <h3>
@@ -667,7 +670,7 @@ function Finance({
               {totals.landed ?? "Incomplete — source/value missing"}. Installed
               subtotal excluding carrying:{" "}
               {totals.installedExcludingCarrying ?? "Incomplete"}. Total
-              incomplete; carrying awaits Wendy.
+              incomplete until all components are sourced. Annual capital component (ACT/365; remaining quantity at opening acquisition value): {carrying.annual === null ? "incomplete: valuation or receipt age unknown" : carrying.annual.toFixed(2)} · {carrying.days ?? "unknown"} days · rate {carrying.rate ?? "unknown"} per year. Storage is separate and never counted twice.
             </p>
             <dl>
               {COST_BUCKETS.map((k) => (
@@ -710,6 +713,10 @@ function Finance({
                       components,
                       creosoteOilReference: form.get("oil"),
                       exposureId: form.get("exposureId") || null,
+                      contractId: form.get("contractId"),
+                      periodYear: form.get("periodYear"),
+                      currency: form.get("currency"),
+                      annualRateOverride: form.get("annualRateOverride"),
                       sourceKey: form.get("sourceKey"),
                       source: form.get("source"),
                       funding: form.get("funding"),
@@ -824,6 +831,7 @@ function Finance({
                       ))}
                     </select>
                   </label>
+                  {[["contractId","Shared contract UUID (required for new spending)"],["periodYear","Contract period start year"],["currency","Source currency (ISO 4217)"],["annualRateOverride","Annual carrying override (fraction/year; blank uses organization default)"]].map(([name,label]) => <label key={name}>{label}<input name={name} defaultValue={financialInput[l.id]?.[name]} /></label>)}
                   <label>
                     New source identity
                     <input
