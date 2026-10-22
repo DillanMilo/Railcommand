@@ -7,14 +7,17 @@ const profiles = {
   development: {
     name: 'RailCommand Development',
     identifier: 'io.railcommand.app.dev',
+    linkHost: 'railcommand-mobile-staging.vercel.app',
   },
   staging: {
     name: 'RailCommand Staging',
     identifier: 'io.railcommand.app.staging',
+    linkHost: 'railcommand-mobile-staging.vercel.app',
   },
   production: {
     name: 'RailCommand',
     identifier: 'io.railcommand.app',
+    linkHost: 'railcommand.io',
   },
 } as const;
 
@@ -39,7 +42,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       buildNumber,
       appleTeamId: 'PQAGLH9L66',
       supportsTablet: true,
-      associatedDomains: ['applinks:railcommand.io'],
+      associatedDomains: [`applinks:${profile.linkHost}`],
       config: { usesNonExemptEncryption: false },
       infoPlist: {
         NSCameraUsageDescription: 'RailCommand uses the camera only when you attach a field photo to a record.',
@@ -58,7 +61,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
         {
           action: 'VIEW',
           autoVerify: true,
-          data: [{ scheme: 'https', host: 'railcommand.io', pathPrefix: '/' }],
+          data: [{ scheme: 'https', host: profile.linkHost, pathPrefix: '/' }],
           category: ['BROWSABLE', 'DEFAULT'],
         },
       ],
@@ -87,6 +90,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
     experiments: { typedRoutes: true, reactCompiler: true },
     extra: {
       buildProfile: profileName,
+      linkHost: profile.linkHost,
       eas: { projectId: EAS_PROJECT_ID },
     },
   };

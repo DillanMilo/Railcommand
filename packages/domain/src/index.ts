@@ -185,7 +185,10 @@ function segment(value: string | undefined): string | null {
   }
 }
 
-export function parseMobileDeepLink(rawUrl: string): MobileDeepLink {
+export function parseMobileDeepLink(
+  rawUrl: string,
+  verifiedWebHosts: readonly string[] = ['railcommand.io'],
+): MobileDeepLink {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -194,7 +197,8 @@ export function parseMobileDeepLink(rawUrl: string): MobileDeepLink {
   }
 
   const isCustom = url.protocol === 'railcommand:';
-  const isVerifiedWeb = url.protocol === 'https:' && url.hostname === 'railcommand.io';
+  const isVerifiedWeb = url.protocol === 'https:'
+    && verifiedWebHosts.some((host) => url.hostname === host.toLowerCase());
   if (!isCustom && !isVerifiedWeb) return { kind: 'unsupported' };
 
   const path = [isCustom ? url.hostname : '', ...url.pathname.split('/')]

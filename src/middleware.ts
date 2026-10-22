@@ -10,6 +10,10 @@ import {
 } from '@/lib/ip-reputation';
 
 const GEO_RESTRICTED_PAGE = '/geo-restricted';
+const MOBILE_ASSOCIATION_PATHS = new Set([
+  '/.well-known/apple-app-site-association',
+  '/.well-known/assetlinks.json',
+]);
 
 const GEO_RESTRICTED_EXACT_PATHS = new Set(['/login']);
 
@@ -235,6 +239,10 @@ function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Apple and Android fetch these machine-readable files without a RailCommand
+  // session. They must never redirect to login or depend on Supabase availability.
+  if (MOBILE_ASSOCIATION_PATHS.has(pathname)) return NextResponse.next();
 
   // Supabase can fall back to the configured Site URL when a recovery
   // redirect is omitted or rejected. Preserve the one-time PKCE code and

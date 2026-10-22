@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/providers/auth-provider';
 import { MobileDataProvider } from '@/providers/mobile-data-provider';
 import { useMobileData } from '@/providers/mobile-data-provider';
+import { mobileConfig } from '@/lib/config';
 
 function Routes() {
   const { session } = useAuth();
@@ -15,7 +16,7 @@ function Routes() {
   useEffect(() => {
     const open = async (url: unknown) => {
       if (typeof url !== 'string') return;
-      const link = parseMobileDeepLink(url);
+      const link = parseMobileDeepLink(url, [mobileConfig.linkHost]);
       if (link.kind === 'project') { await selectProject(link.projectId); router.push('/(tabs)'); }
       if (link.kind === 'daily_log') { await selectProject(link.projectId); router.push(`/daily-log/${link.dailyLogId}`); }
     };
