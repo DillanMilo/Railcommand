@@ -77,4 +77,10 @@ create policy "Members can delete project documents"
   );
 
 -- Notify PostgREST to reload schema cache
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.project_documents from public, anon, authenticated;
+grant select, insert, update, delete on table public.project_documents to authenticated;
+grant select, insert, update, delete on table public.project_documents to service_role;
+
 notify pgrst, 'reload schema';

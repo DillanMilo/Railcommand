@@ -70,4 +70,9 @@ begin
   end if;
 end $$;
 
+
+-- Additional non-secret metadata used by SAFE_CONNECTION_COLUMNS.
+grant select (api_base_url, credentials_updated_at)
+  on table public.earthcam_connections to authenticated;
+
 notify pgrst, 'reload schema';

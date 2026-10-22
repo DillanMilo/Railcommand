@@ -82,4 +82,10 @@ create policy "issuer or managers can delete modifications"
   );
 
 -- 4. Notify PostgREST -------------------------------------------------------
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.modifications from public, anon, authenticated;
+grant select, insert, update, delete on table public.modifications to authenticated;
+grant select, insert, update, delete on table public.modifications to service_role;
+
 notify pgrst, 'reload schema';

@@ -56,4 +56,13 @@ create policy "demo_team_logins_select"
 -- All mutations go through the admin API using the service-role client
 
 -- 5. Schema Notification ------------------------------------------------
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.demo_accounts from public, anon, authenticated;
+grant select, insert, update, delete on table public.demo_accounts to service_role;
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.demo_team_logins from public, anon, authenticated;
+grant select, insert, update, delete on table public.demo_team_logins to service_role;
+
 notify pgrst, 'reload schema';

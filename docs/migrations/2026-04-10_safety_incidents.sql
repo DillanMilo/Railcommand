@@ -82,4 +82,10 @@ create policy "reporters can delete safety incidents"
   );
 
 -- 4. Notify PostgREST -------------------------------------------------------
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.safety_incidents from public, anon, authenticated;
+grant select, insert, update, delete on table public.safety_incidents to authenticated;
+grant select, insert, update, delete on table public.safety_incidents to service_role;
+
 notify pgrst, 'reload schema';

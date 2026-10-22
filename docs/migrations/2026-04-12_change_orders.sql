@@ -78,4 +78,10 @@ create policy "reporters can delete change orders"
   );
 
 -- 4. Notify PostgREST -------------------------------------------------------
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.change_orders from public, anon, authenticated;
+grant select, insert, update, delete on table public.change_orders to authenticated;
+grant select, insert, update, delete on table public.change_orders to service_role;
+
 notify pgrst, 'reload schema';

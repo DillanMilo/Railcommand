@@ -52,4 +52,10 @@ create policy "project managers can write earthcam embeds"
     )
   );
 
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.earthcam_embeds from public, anon, authenticated;
+grant select, insert, update, delete on table public.earthcam_embeds to authenticated;
+grant select, insert, update, delete on table public.earthcam_embeds to service_role;
+
 notify pgrst, 'reload schema';

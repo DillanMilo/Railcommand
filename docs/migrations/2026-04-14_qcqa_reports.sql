@@ -87,4 +87,10 @@ create policy "inspector or managers can delete qcqa reports"
   );
 
 -- 4. Notify PostgREST -------------------------------------------------------
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.qcqa_reports from public, anon, authenticated;
+grant select, insert, update, delete on table public.qcqa_reports to authenticated;
+grant select, insert, update, delete on table public.qcqa_reports to service_role;
+
 notify pgrst, 'reload schema';

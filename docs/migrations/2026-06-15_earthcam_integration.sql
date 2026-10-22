@@ -188,4 +188,23 @@ create policy "project editors can delete earthcam evidence"
     )
   );
 
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.earthcam_connections from public, anon, authenticated;
+grant select, insert, update, delete on table public.earthcam_connections to service_role;
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.earthcam_cameras from public, anon, authenticated;
+grant select, insert, update, delete on table public.earthcam_cameras to authenticated;
+grant select, insert, update, delete on table public.earthcam_cameras to service_role;
+
+-- Explicit Data API access; row policies still govern client access.
+revoke all on table public.earthcam_evidence from public, anon, authenticated;
+grant select, insert, delete on table public.earthcam_evidence to authenticated;
+grant select, insert, update, delete on table public.earthcam_evidence to service_role;
+
+-- The signed-in workspace reads connection metadata, never credentials.
+grant select (id, organization_id, account_name, status, auth_mode, api_key_last4, connected_by, connected_at, last_sync_at, created_at)
+  on table public.earthcam_connections to authenticated;
+
 notify pgrst, 'reload schema';
