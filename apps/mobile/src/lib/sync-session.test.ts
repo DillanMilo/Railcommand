@@ -34,7 +34,7 @@ function operation(index: number): ExpoDailyLogSyncOperation {
 function photo(index: number): ExpoStoredPhoto {
   return { photoId: `photo-${index}`, projectId, parentClientId: `client-${index}`,
     uri: `file:///owned/${ownerA}/photo-${index}.jpg`, fileName: `photo-${index}.jpg`, fileType: 'image/jpeg',
-    size: 100, capturedAt: '2026-08-30T12:00:00Z', geoTag: null, status: 'pending', lastError: null };
+    size: 100, caption: 'Saved field caption', capturedAt: '2026-08-30T12:00:00Z', geoTag: null, status: 'pending', lastError: null };
 }
 
 // Execute the real worker, replacing only its native/auth/API/storage boundaries.
@@ -390,3 +390,16 @@ describe('mobile outbox session and purge cancellation', () => {
   });
 });
 import { URL } from 'node:url';
+
+describe('native caption synchronization', () => {
+  it('preserves captions through prepare and finalize without changing the operation identity', async () => {
+    const worker = syncHarness();
+    await worker.run();
+    for (const raw of worker.photoRequests) {
+      const operation = JSON.parse(raw) as MobileDailyLogPhotoSyncOperation;
+      assert.equal(operation.payload.caption, 'Saved field caption');
+      assert.equal(operation.idempotencyKey, `daily-log-photo:${operation.operationId}`);
+    }
+    assert.ok(worker.photoRequests.length > 0);
+  });
+});

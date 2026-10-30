@@ -4,6 +4,7 @@ import { URL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { describe, it } from 'mocha';
 import ts from 'typescript';
+import { formatDfrDate, formatDfrTimestamp } from '@railcommand/domain';
 
 type Element = { type: unknown; props: { children?: unknown; accessibilityLabel?: string; onPress?: () => void; [key: string]: unknown } };
 function nodes(value: unknown): Element[] {
@@ -24,6 +25,7 @@ describe('Native same-day calendar navigation', () => {
     const states: unknown[] = []; let cursor = 0; const navigation: string[] = [];
     const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
     const deps: Record<string, unknown> = {
+      '@railcommand/domain': { formatDfrDate, formatDfrTimestamp },
       'react': { useMemo: (fn: () => unknown) => fn(), useState: (initial: unknown) => {
         const index = cursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
         return [states[index], (value: unknown) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];

@@ -1,3 +1,4 @@
+import { formatDfrDate, formatDfrTimestamp } from '@railcommand/domain';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
@@ -79,9 +80,9 @@ export default function LogsScreen() {
         })}</View>
       </View>
     </> : <View style={styles.list}>
-      {selectedDate ? <Pressable accessibilityRole="button" onPress={() => setSelectedDate(null)} style={styles.monthButtonWide}><Text style={styles.logDate}>{selectedDate} · Show all dates</Text></Pressable> : null}
+      {selectedDate ? <Pressable accessibilityRole="button" onPress={() => setSelectedDate(null)} style={styles.monthButtonWide}><Text style={styles.logDate}>{formatDfrDate(selectedDate)} · Show all dates</Text></Pressable> : null}
       {visibleLogs.map((log) => <Pressable key={log.id} accessibilityRole="button" onPress={() => router.push(`/daily-log/${log.id}`)} style={styles.logRow}>
-        <View style={{ flex: 1 }}><Text style={styles.logDate}>{new Date(`${log.logDate}T12:00:00`).toLocaleDateString()}</Text><Text style={styles.logSummary}>{log.authorName || 'Team member'} · {new Date(log.createdAt).toLocaleString()} · {log.id.slice(0, 8)}</Text><Text numberOfLines={2} style={styles.logSummary}>{log.workSummary || 'No work summary recorded'}</Text></View>
+        <View style={{ flex: 1 }}><Text style={styles.logDate}>{formatDfrDate(log.logDate)}</Text><Text style={styles.logSummary}>{log.authorName || 'Team member'} · {formatDfrTimestamp(log.createdAt)} · {log.id.slice(0, 8)}</Text><Text numberOfLines={2} style={styles.logSummary}>{log.workSummary || 'No work summary recorded'}</Text></View>
         <SymbolView accessible={false} name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={colors.muted} size={18} />
       </Pressable>)}
       {visibleLogs.length === 0 ? <Text style={styles.empty}>No daily logs found.</Text> : null}

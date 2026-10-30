@@ -1,11 +1,11 @@
 import type { MobileDailyLogDraft } from '@railcommand/domain';
-import { createMobileDraft, draftToSyncOperation } from '@railcommand/domain';
+import { createMobileDraft, draftToSyncOperation, formatDfrDate, dfrPhotoLabel, MAX_PHOTO_CAPTION_LENGTH, dfrDateInputToIso, formatDfrDateInput } from '@railcommand/domain';
 import * as Crypto from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core/usePreventRemove';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, View } from 'react-native';
 import { BrandHeader, Card, Field, PrimaryButton, Screen, SecondaryButton, StatusBanner, uiStyles } from '@/components/ui';
 import { BreadcrumbRow, ModuleHeading, WebHeader } from '@/components/web-shell';
 import { DailyLogFieldSections, DailyLogSection } from '@/components/daily-log-fields';
@@ -34,6 +34,8 @@ function DailyLogEditor() {
   const userId = session?.user.id ?? null;
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const [draft, setDraft] = useState<MobileDailyLogDraft | null>(null);
+  const captionWrites = useRef<Promise<void>>(Promise.resolve());
+  const [captionUnsaved, setCaptionUnsaved] = useState(false);
   const [photos, setPhotos] = useState<ExpoStoredPhoto[]>([]);
   const [notice, setNotice] = useState<DailyLogNotice>({ kind: 'working', detail: 'Opening saved draft…' });
   const setStatus = useCallback((detail: string, kind: DailyLogNotice['kind']) => setNotice({ detail, kind }), []);
@@ -128,13 +130,7 @@ function DailyLogEditor() {
     void persist(next).catch(() => { if (alive.current && revision.current === editedRevision) setStatus('Could not save. Keep this form open, check device storage, and retry Save draft.', 'save-error'); });
   }, [persist, setStatus]);
 
-  usePreventRemove(dirty || busy, ({ data }) => {
-    if (queued.current) { navigation.dispatch(data.action); return; }
-    if (busyRef.current) { Alert.alert('Please wait', 'Finish the current photo, location, or queue operation before leaving.'); return; }
-    const value = draftRef.current;
-    if (value) void persist(value).then(() => { if (alive.current) navigation.dispatch(data.action); })
-      .catch(() => { if (alive.current) Alert.alert('Draft not saved', 'The form was kept open. Check storage and retry Save draft.'); });
-  });
+
 
   const takePhoto = async (source: 'camera' | 'library') => {
     if (!userId || !draft || busyRef.current) return;
@@ -153,6 +149,55 @@ function DailyLogEditor() {
     finally { busyRef.current = false; if (alive.current) setBusy(false); }
   };
 
+  const pendingCaptions = useRef(new Map<string, ExpoStoredPhoto>());
+  const changeCaption = (photo: ExpoStoredPhoto, caption: string) => {
+    if (!userId || busyRef.current || queued.current || !alive.current) return;
+    const next = { ...photo, caption };
+    pendingCaptions.current.set(photo.photoId, next);
+    setPhotos((items) => items.map((item) => item.photoId === photo.photoId ? next : item));
+    setCaptionUnsaved(true);
+    setStatus('Saving photo caption on this device…', 'saving');
+    const save = async () => {
+      await saveExpoPhoto(userId, next, () => alive.current && !queued.current);
+      if (pendingCaptions.current.get(photo.photoId) === next) pendingCaptions.current.delete(photo.photoId);
+      if (alive.current) {
+        setCaptionUnsaved(pendingCaptions.current.size > 0);
+        if (pendingCaptions.current.size === 0) setStatus('Photo caption saved on this device', 'saved');
+      }
+    };
+    captionWrites.current = captionWrites.current.catch(() => {}).then(save);
+    void captionWrites.current.catch(() => {
+      if (alive.current) setStatus('Caption not saved. Keep this form open, check storage, and retry Save draft.', 'save-error');
+    });
+  };
+  const saveWithCaptions = async (value: MobileDailyLogDraft) => {
+    const alreadyBusy = busyRef.current;
+    busyRef.current = true; setBusy(true);
+    try {
+      await captionWrites.current.catch(() => {});
+      // Retry every current caption after a storage failure as well.
+      if (userId) for (const photo of photos) {
+        await saveExpoPhoto(userId, photo, () => alive.current && !queued.current);
+      }
+      await persist(value);
+      pendingCaptions.current.clear();
+      if (alive.current) setCaptionUnsaved(false);
+    } finally {
+      if (!alreadyBusy) {
+        busyRef.current = false;
+        if (alive.current) setBusy(false);
+      }
+    }
+  };
+
+  usePreventRemove(dirty || busy || captionUnsaved, ({ data }) => {
+    if (queued.current) { navigation.dispatch(data.action); return; }
+    if (busyRef.current) { Alert.alert('Please wait', 'Finish the current photo, location, or queue operation before leaving.'); return; }
+    const value = draftRef.current;
+    if (value) void saveWithCaptions(value).then(() => { if (alive.current) navigation.dispatch(data.action); })
+      .catch(() => { if (alive.current) Alert.alert('Draft not saved', 'The form was kept open. Check storage and retry Save draft.'); });
+  });
+
   const locate = async () => {
     if (busyRef.current) return;
     busyRef.current = true; setBusy(true); setStatus('Requesting a precise field location…', 'working');
@@ -168,12 +213,12 @@ function DailyLogEditor() {
   const submit = async () => {
     const current = draftRef.current;
     if (!userId || !current || busyRef.current || queued.current) return;
-    if (!validateDailyLogDate(current.logDate)) { Alert.alert('Log date required', 'Enter a valid YYYY-MM-DD date before queueing. Your draft is kept.'); return; }
+    if (!validateDailyLogDate(current.logDate)) { Alert.alert('Log date required', 'Enter a valid MM/DD/YYYY date before queueing. Your draft is kept.'); return; }
     try { draftToSyncOperation(userId, current); }
     catch (error) { setStatus(error instanceof Error ? error.message : 'Review the daily-log fields before queueing.', 'attention'); return; }
     busyRef.current = true; setBusy(true);
     try {
-      await persist(current); if (!alive.current) return;
+      await saveWithCaptions(current); if (!alive.current) return;
       await queueExpoDraft(userId, current.projectId, photos.map((photo) => photo.photoId), () => alive.current);
       queued.current = true;
       if (!alive.current) return;
@@ -189,17 +234,18 @@ function DailyLogEditor() {
     } }
     finally { busyRef.current = false; if (alive.current) setBusy(false); }
   };
-  const statusBanner = dailyLogStatusBanner(notice, dirty, online);
+  const statusBanner = dailyLogStatusBanner(notice, dirty || captionUnsaved, online);
 
   if (!draft?.fieldEntries || !project || !project.canEdit || draft.projectId !== activeProjectId) return <Screen><BrandHeader title="New daily log" /><Card><Text style={uiStyles.muted}>{project?.canEdit ? status : 'Select a project where you have edit access before creating a daily log.'}</Text></Card>{loadFailed ? <SecondaryButton title="Retry opening saved draft" onPress={() => setLoadRetry((value) => value + 1)} /> : null}<SecondaryButton title="Back" onPress={() => router.back()} /></Screen>;
   return <Screen>
-    <WebHeader projectName={project.name} online={online} navigationDisabled={dirty || busy} />
+    <WebHeader projectName={project.name} online={online} navigationDisabled={dirty || captionUnsaved || busy} />
     <BreadcrumbRow current="Daily Logs / New Log" />
     <ModuleHeading title="New Daily Log" />
     <SecondaryButton title="Back to logs" disabled={busy} onPress={() => router.replace('/(tabs)/logs')} />
     <StatusBanner {...statusBanner} />
     <DailyLogSection title="Date">
-      <Field label="Log date (YYYY-MM-DD)" value={draft.logDate} editable={!busy} maxLength={10} onChangeText={(logDate) => update({ logDate })} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+      <Text style={uiStyles.muted}>Report date: {formatDfrDate(draft.logDate)} (MM/DD/YYYY)</Text>
+      <Field label="Log date (MM/DD/YYYY)" value={formatDfrDateInput(draft.logDate)} editable={!busy} maxLength={10} onChangeText={(logDate) => update({ logDate: dfrDateInputToIso(logDate) })} placeholder="MM/DD/YYYY" autoCapitalize="none" />
     </DailyLogSection>
     <DailyLogFieldSections fields={draft.fieldEntries} conditions={draft.weatherConditions} disabled={busy} onChange={(fieldEntries) => update({ fieldEntries })} onConditions={(weatherConditions) => update({ weatherConditions })} />
     <DailyLogSection title="Work Summary">
@@ -214,9 +260,16 @@ function DailyLogEditor() {
         <SecondaryButton title="Import photo" disabled={busy} onPress={() => void takePhoto('library')} /></View>
       <SecondaryButton title={draft.geoTag ? 'Update location' : 'Attach location'} disabled={busy} onPress={() => void locate()} />
       {draft.geoTag ? <SecondaryButton title="Remove location" disabled={busy} onPress={() => update({ geoTag: null })} /> : null}
+      {photos.map((photo, index) => <View key={photo.photoId} style={{ gap: 8 }}>
+        <Image alt={dfrPhotoLabel(draft.logDate, photo.caption)} accessibilityLabel={dfrPhotoLabel(draft.logDate, photo.caption)} source={{ uri: photo.uri }} style={{ width: '100%', height: 180 }} resizeMode="contain" />
+        <Text>{dfrPhotoLabel(draft.logDate, photo.caption)}</Text>
+        <Field label={`Optional caption for photo ${index + 1}`} value={photo.caption ?? ''} editable={!busy}
+          placeholder={formatDfrDate(draft.logDate)} maxLength={MAX_PHOTO_CAPTION_LENGTH}
+          onChangeText={(caption) => changeCaption(photo, caption)} />
+      </View>)}
       <Text style={styles.evidence}>{photos.length} photo{photos.length === 1 ? '' : 's'} persisted on this device · {draft.geoTag ? `Location ±${Math.round(draft.geoTag.accuracy ?? 0)} m` : 'No location attached'}</Text>
     </DailyLogSection>
-    <SecondaryButton title="Save draft" disabled={busy} onPress={() => void persist(draft).catch(() => setStatus('Could not save. Keep the form open and check device storage.', 'save-error'))} />
+    <SecondaryButton title="Save draft" disabled={busy} onPress={() => void saveWithCaptions(draft).catch(() => setStatus('Could not save. Keep the form open and check device storage.', 'save-error'))} />
     <PrimaryButton title={online ? 'Submit Log' : 'Queue Log & Photos'} busy={busy} onPress={() => void submit()} />
     <Text style={uiStyles.muted}>Your fields autosave locally. Submission creates one idempotent outbox item; photos wait for that parent log and synchronize independently.</Text>
   </Screen>;
