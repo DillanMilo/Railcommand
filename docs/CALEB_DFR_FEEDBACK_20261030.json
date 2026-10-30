@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-30",
+  "status": "Implemented locally; physical device acceptance and release pending",
+  "feedback_source": {
+    "subject": "RailCommand DFR Comments",
+    "received": "2026-10-29",
+    "url": "https://mail.google.com/mail/u/?authuser=dillan%40creativecurrents.io#all/1a189961c9eb5ccd",
+    "scope": "Caleb feedback plus Dillan existing October 30 reply: add control above grid; default report-date photo labels and optional caption; US MM/DD/YYYY dates. No new email sent."
+  },
+  "user_visible_change": [
+    "Add selected photos precedes a bounded scrolling photo grid.",
+    "Newly attached photos accept optional captions up to 500 characters; blank and historical captions display the DFR report date. Original filenames remain intact.",
+    "DFR detail/list/calendar labels, photo timestamps, PDF dates and native date entry use US formats. Storage and queued dates remain ISO."
+  ],
+  "source_locations": {
+    "primary_web": "/Users/dillanmilosevich/.codex/worktrees/2256/Railcommand",
+    "primary_web_base": "cefcec4 / codex/mobile-update-notice-web",
+    "primary_native": "/Users/dillanmilosevich/.codex/worktrees/mobile-photo-save/Railcommand",
+    "primary_native_base": "cbb5bd8 / codex/mobile-update-notice-native",
+    "root_offline_backport": "/Users/dillanmilosevich/Desktop/IDE/Railcommand",
+    "historical_backports": [
+      "/Users/dillanmilosevich/Desktop/IDE/Railcommand/.mobile-recovery/live-backend",
+      "/Users/dillanmilosevich/Desktop/IDE/Railcommand/.mobile-recovery/candidate"
+    ],
+    "note": "October release handoffs supersede September source-location notes in the root checkout. Preserve newer photo-copy, gallery pagination and update-notice changes; do not deploy root offline work wholesale. Native candidate web UI is historical, not the canonical web release."
+  },
+  "web_impact": "DFR new/edit photo previews, library picker, saved gallery, detail/list/calendar, shared PDF template, direct upload receipts. Root offline branch also persists photo files/captions in its private draft and atomically hands them to the outbox from neutral fallback. Its public static cache advances to v9 so the updated fallback is installed.",
+  "mobile_impact": "Shared online Workspace receives matching web UI after a future web release and navigation/refresh. Native Field new-log photo previews/caption entry autosave to existing SQLite photo JSON. Queue worker transmits optional caption, queued review shows it or report date. Native detail/list/share/date entry use US dates. Native import/capture adds each photo immediately, so there is no native Add selected control to relocate. Requires new signed app builds; no OTA configured.",
+  "shared_api_domain_database": {
+    "migration": "supabase/migrations/20261030173344_dfr_photo_captions.sql",
+    "change": "Nullable bounded attachments.caption plus separate SECURITY INVOKER sync_daily_log_photo_attachment_v2; legacy RPC retained. Optional caption fields and common DFR date/label utilities in packages/domain. Root-only standalone helper backport matches shared implementation.",
+    "server_route": "Existing /api/mobile/v1/daily-logs/photos/finalize selects v2 only when caption is supplied; otherwise calls the unchanged v1 RPC.",
+    "no_live_migration": true
+  },
+  "offline_classification": {
+    "native_and_root_daily_log_photos": "Offline draft/queue: photo bytes and captions remain user-scoped through restart; captions save before native queue/navigation. Failed storage writes retain entered values and prevent safe departure until retried. Root browser draft includes File objects and caption metadata, with atomic parent/photo/blob queuing.",
+    "library_download": "Online-only: existing warning; already attached photos/captions remain on the form and can be queued by offline-capable surfaces.",
+    "pdf_export": "Online-only for authenticated remote photo access/generation; existing explicit connection behavior retained. Demo uses locally retained data URLs.",
+    "shared_workspace": "Online-only with existing loss-of-connection cover and mounted-form retention. OS termination can still lose unsaved web form input; save-before-closing notice and Field tools remain required. No claim of durable Workspace web drafts.",
+    "user_signout_and_upgrade": "Existing account-scoped cleanup, pending-work checks and explicit discard behavior retained. No database/outbox purges or device reinstalls. Additive optional JSON fields accept old drafts/queues. Static cache v9 changes only public neutral assets, never private project records."
+  },
+  "supported_older_mobile_builds": "Previously supported clients, including recorded 300012/300013, continue sending their original payloads and using v1. Default labels also work for rows with no caption. No client UUID, idempotency key, parent identity, wire date or native storage schema is rewritten. New captions require the additive backend migration before native distribution.",
+  "permissions_idempotency_conflicts": "V2 retains latest released can_edit, membership, parent author, storage owner/path/type/size and RLS checks. Same UUID/key retry returns the existing photo; changed caption under that receipt fails visibly instead of overwriting. Web receipt reconciliation also compares a supplied caption. Caption entry applies while attaching a photo; no new concurrent saved-caption editor or project/table permission widening was introduced.",
+  "verification": {
+    "current_web_focused_tests": {
+      "passed": 355,
+      "command": "npx mocha --require tsx 'src/lib/mobile-api/*.test.ts' 'src/lib/pdf/daily-log-photos.test.ts' 'packages/domain/src/*.test.ts'"
+    },
+    "current_native_tests": {
+      "passed": 259,
+      "command": "npm run test --workspace @railcommand/mobile"
+    },
+    "native_domain_tests": {
+      "passed": 33,
+      "command": "npm run test --workspace @railcommand/domain"
+    },
+    "root_offline_and_presentation_tests": {
+      "passed": 58
+    },
+    "typecheck": {
+      "root": "passed",
+      "current_web": "passed",
+      "current_native": "passed"
+    },
+    "production_build": {
+      "root": "passed",
+      "current_web": "passed"
+    },
+    "native_exports": {
+      "ios": "passed",
+      "android": "passed",
+      "note": "Hermes exports only; not signed device builds"
+    },
+    "lint": {
+      "native": "passed",
+      "web": "0 errors; one existing SavedDailyLogPhotos effect-cleanup warning"
+    },
+    "browser": {
+      "status": "passed",
+      "viewport": {
+        "client": 390,
+        "scroll": 390
+      },
+      "pdf": "/tmp/railcommand-caleb-dfr.pdf",
+      "checks": [
+        "add button above grid",
+        "library photo and imported photo",
+        "custom caption saved",
+        "blank caption defaults to report date",
+        "mobile and desktop DFR",
+        "PDF download",
+        "no page errors"
+      ]
+    },
+    "indexeddb": {
+      "status": "passed",
+      "restoredCaption": "South entrance paving",
+      "checks": [
+        "real browser IndexedDB restart/readback",
+        "File and caption preserved",
+        "atomic parent/photo/blob handoff",
+        "stable UUID and idempotency identity",
+        "duplicate transaction rolls back and preserves draft"
+      ]
+    },
+    "database": "Disposable PostgreSQL 17: actual migration passed legacy function-definition equality, legacy delivery/retry, caption persistence/retry, conflicting caption rejection, length limit, can_edit revocation, storage owner/metadata, parent identity and invoker/anon-execute checks.",
+    "parity_inventory": "127 actions covered; inventory does not confer physical parity acceptance",
+    "pdf": "Actual DFR generated through browser. Rendered and visually checked: US log/generated dates, authored caption, report-date default, no filename caption, no clipping."
+  },
+  "cross_platform_verification": {
+    "automated": "Shared label/date contracts, actual native worker payload, API v1/v2 request shapes and isolated SQL behavior verified. Browser demo covers phone/desktop UI and PDF.",
+    "pending": [
+      "Physical iPhone and Android capture/import -> caption -> airplane mode -> restart -> queue -> synchronize",
+      "Synthetic authenticated web create -> mobile refresh and native queued create -> web refresh against the designated staging environment",
+      "Installed app upgrade/session/draft/queue retention without reinstall or sign-out",
+      "Workspace iOS/Android WebView file picker, connection-loss and export/share acceptance"
+    ]
+  },
+  "tracked_followups": [
+    {
+      "id": "CALEB-DFR-DEVICE-20261030",
+      "status": "pending before release acceptance",
+      "action": "Complete physical iPhone/Android and staging cross-platform checks above; retain existing unsent field records."
+    },
+    {
+      "id": "CALEB-DFR-RELEASE-20261030",
+      "status": "pending; local request only",
+      "action": "Review migration, apply to designated staging before production, deploy canonical web/backend source preserving all released mobile routes/protections, build/sign/assign native updates, verify installed availability, and then update verified release catalog. No deployment, push, merge, tester assignment or email performed in this task."
+    }
+  ],
+  "rollout_and_rollback": "Migration first, then reviewed web/API, then signed native builds. Existing v1 clients continue unchanged. Roll back UI/API without dropping caption storage or v2 while queued captions may exist. Keep IDs and outboxes; do not uninstall, purge queues, or drop caption data to roll back.",
+  "evidence_directory": "/Users/dillanmilosevich/Desktop/IDE/Railcommand/docs/qa/caleb-dfr-20261030",
+  "migration_sha256": "586423a238320c01da22c11203dd1673bfa2724b367a2d00ee6f8cbda88458e1",
+  "worktree_state": "Changes are local and uncommitted. Existing unrelated root and historical-worktree modifications were preserved."
+}

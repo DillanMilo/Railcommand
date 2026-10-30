@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ImagePlus, Loader2, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProjectPhotos } from '@/hooks/useData';
 import { getAvailablePhotosForDailyLog, getPhotoLocalDate } from '@/lib/daily-log-photo-selection';
 import type { PhotoFile } from '@/components/shared/PhotoUpload';
+import { formatDfrDate, dfrPhotoLabel } from '@/lib/dfr-presentation';
 import type { Attachment } from '@/lib/types';
 
 interface PhotoLibraryPickerProps {
@@ -31,6 +32,8 @@ export default function PhotoLibraryPicker({
   maxFiles = 20,
 }: PhotoLibraryPickerProps) {
   const { data: libraryPhotos, loading, error } = useProjectPhotos(isOffline ? null : projectId);
+  const currentPhotos = useRef(photos);
+  useEffect(() => { currentPhotos.current = photos; }, [photos]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -86,9 +89,14 @@ export default function PhotoLibraryPicker({
           originalSize: photo.file_size,
           capturedAt: photo.captured_at ?? photo.created_at,
           sourceAttachmentId: photo.id,
+          caption: photo.caption ?? undefined,
         };
       }));
-      onPhotosChange([...photos, ...downloaded]);
+      if (currentPhotos.current.length + downloaded.length > maxFiles) {
+        downloaded.forEach((photo) => URL.revokeObjectURL(photo.preview));
+        throw new Error('There is no longer enough room for these photos. Remove a photo or select fewer and retry.');
+      }
+      onPhotosChange([...currentPhotos.current, ...downloaded]);
       setSelectedIds(new Set());
     } catch (caught) {
       setAddError(caught instanceof Error ? caught.message : 'Could not add the selected photos');
@@ -126,32 +134,6 @@ export default function PhotoLibraryPicker({
             <p className="text-sm text-muted-foreground">
               Select any photo previously taken or uploaded in RailCommand. Photos from the report date are shown first, and the originals stay in Photos &amp; Media.
             </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {availablePhotos.map((photo) => {
-                const selected = selectedIds.has(photo.id);
-                const photoDate = getPhotoLocalDate(photo);
-                return (
-                  <button
-                    type="button"
-                    key={photo.id}
-                    onClick={() => toggle(photo.id)}
-                    aria-pressed={selected}
-                    className={`overflow-hidden rounded-lg border-2 text-left transition-colors ${selected ? 'border-rc-blue ring-2 ring-rc-blue/25' : 'border-rc-border'}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.thumbnail_url ?? photoUrl(photo)}
-                      alt={photo.file_name}
-                      className="aspect-square w-full bg-muted object-cover"
-                    />
-                    <span className="block truncate px-2 pt-1 text-xs">{photo.file_name}</span>
-                    <span className="block px-2 pb-1 text-[10px] text-muted-foreground">
-                      {photoDate === logDate ? 'Report date' : photoDate}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
             <Button
               type="button"
               variant="outline"
@@ -161,6 +143,33 @@ export default function PhotoLibraryPicker({
               {adding && <Loader2 className="mr-2 size-4 animate-spin" />}
               Add {activeSelected.length || ''} selected photo{activeSelected.length === 1 ? '' : 's'}
             </Button>
+            <div className="grid max-h-[60vh] overflow-y-auto grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {availablePhotos.map((photo) => {
+                const selected = selectedIds.has(photo.id);
+                const photoDate = getPhotoLocalDate(photo);
+                return (
+                  <button
+                    type="button"
+                    key={photo.id}
+                    onClick={() => toggle(photo.id)}
+                    disabled={adding || (!selected && activeSelected.length >= remainingSlots)}
+                    aria-pressed={selected}
+                    className={`overflow-hidden rounded-lg border-2 text-left transition-colors ${selected ? 'border-rc-blue ring-2 ring-rc-blue/25' : 'border-rc-border'}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.thumbnail_url ?? photoUrl(photo)}
+                      alt={dfrPhotoLabel(logDate, photo.caption)}
+                      className="aspect-square w-full bg-muted object-cover"
+                    />
+                    <span className="block truncate px-2 pt-1 text-xs">{dfrPhotoLabel(logDate, photo.caption)}</span>
+                    <span className="block px-2 pb-1 text-[10px] text-muted-foreground">
+                      {photoDate === logDate ? 'Report date' : `Taken ${formatDfrDate(photoDate)}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </>
         )}
         {remainingSlots === 0 && <p className="text-xs text-amber-700">This daily log already has the maximum of {maxFiles} photos.</p>}

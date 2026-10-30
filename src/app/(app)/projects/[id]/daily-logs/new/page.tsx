@@ -289,7 +289,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
 
       {/* New photos from the phone camera or photo library. */}
       <div className="space-y-2">
-        <PhotoUpload photos={photos} onPhotosChange={setPhotos} />
+        <PhotoUpload captionEditingDisabled={submitting} reportDate={date} photos={photos} onPhotosChange={setPhotos} />
         <p className="text-xs text-muted-foreground">
           Tap the upload area on a phone to choose Camera or Photo Library.
         </p>
@@ -352,6 +352,7 @@ export default function NewDailyLogPage({ params, searchParams }: { params: Prom
                   entity_type: 'daily_log',
                   entity_id: log.id,
                   file_name: photo.file.name,
+                  caption: photo.caption,
                   file_url: demoFileUrl,
                   file_type: photo.file.type,
                   file_size: photo.file.size,

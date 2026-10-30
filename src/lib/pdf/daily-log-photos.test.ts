@@ -36,20 +36,29 @@ describe('daily-log PDF photos', () => {
     const photo = attachment('photo', 'image/jpeg');
     photo.file_url = 'data:image/jpeg;base64,/9j/2Q==';
 
-    assert.deepEqual(await loadDailyLogPdfPhotos([photo]), [{
+    assert.deepEqual(await loadDailyLogPdfPhotos([photo], '2026-10-29'), [{
       source: photo.file_url,
-      caption: photo.file_name,
+      caption: '10/29/2026',
     }]);
   });
   it('does not silently generate a report missing an unavailable photo',async()=>{
     const old=globalThis.fetch;
-    try { globalThis.fetch=async()=>new Response('',{status:403}); await assert.rejects(loadDailyLogPdfPhotos([attachment('missing','image/jpeg')]), /Could not include "missing.jpg"/); }
+    try { globalThis.fetch=async()=>new Response('',{status:403}); await assert.rejects(loadDailyLogPdfPhotos([attachment('missing','image/jpeg')], '2026-10-29'), /Could not include "missing.jpg"/); }
     finally { globalThis.fetch=old; }
   });
   it('reports unsupported photo formats and signed URL failures instead of omitting them',async()=>{
-    await assert.rejects(loadDailyLogPdfPhotos([attachment('iphone','image/heic')]), /JPEG or PNG/);
+    await assert.rejects(loadDailyLogPdfPhotos([attachment('iphone','image/heic')], '2026-10-29'), /JPEG or PNG/);
     const photo={...attachment('private','image/jpeg'),signed_url_error:'Refresh required'};
-    await assert.rejects(loadDailyLogPdfPhotos([photo]), /private.jpg/);
+    await assert.rejects(loadDailyLogPdfPhotos([photo], '2026-10-29'), /private.jpg/);
   });
 
+});
+
+describe('DFR authored photo captions', () => {
+  it('uses an optional caption without renaming the underlying file or changing the source', async () => {
+    const photo = { ...attachment('image', 'image/jpeg'), caption: 'South entrance paving', file_url: 'data:image/jpeg;base64,/9j/2Q==' };
+    const loaded = await loadDailyLogPdfPhotos([photo], '2026-10-29');
+    assert.deepEqual(loaded, [{ source: photo.file_url, caption: 'South entrance paving' }]);
+    assert.equal(photo.file_name, 'image.jpg');
+  });
 });

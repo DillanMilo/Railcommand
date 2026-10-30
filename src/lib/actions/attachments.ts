@@ -19,6 +19,8 @@ export async function uploadAttachment(
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
 
+    const caption = formData.get('caption');
+    if (caption !== null && (typeof caption !== 'string' || caption.length > 500)) return { error: 'Photo caption must be at most 500 characters.' };
     const file = formData.get('file') as File;
     const entityType = formData.get('entity_type') as string;
     const entityId = formData.get('entity_id') as string;
@@ -61,6 +63,7 @@ export async function uploadAttachment(
         entity_id: entityId,
         project_id: projectId,
         file_name: file.name,
+        ...(caption !== null ? { caption: caption.trim() || null } : {}),
         file_url: fileUrl,
         file_type: file.type,
         file_size: file.size,
@@ -109,12 +112,15 @@ export async function recordAttachment(input: {
   photoCategory?: string;
   geoLat?: number | null;
   geoLng?: number | null;
+  caption?: string;
   capturedAt?: string | null;
 }): Promise<ActionResult<Attachment>> {
   try {
     const supabase = await createClient();
     const { user, error: authError } = await getAuthenticatedUser(supabase);
     if (authError || !user) return { error: authError ?? 'Not authenticated' };
+
+    if (input.caption !== undefined && (typeof input.caption !== 'string' || input.caption.length > 500)) return { error: 'Photo caption must be at most 500 characters.' };
 
     if (!input.entityType || !input.entityId || !input.projectId || !input.storagePath) {
       return { error: 'Missing required fields' };
@@ -135,7 +141,7 @@ export async function recordAttachment(input: {
       if (!input.clientId) return null;
       const { data: existing, error } = await supabase.from('attachments').select('*').eq('id',input.clientId).maybeSingle();
       if (error || !existing) return null;
-      if (existing.uploaded_by !== user.id || existing.project_id !== input.projectId || existing.entity_id !== input.entityId || existing.entity_type !== input.entityType || existing.file_url !== fileUrl || existing.file_size !== input.fileSize || existing.file_type !== input.fileType) return null;
+      if (existing.uploaded_by !== user.id || existing.project_id !== input.projectId || existing.entity_id !== input.entityId || existing.entity_type !== input.entityType || existing.file_url !== fileUrl || existing.file_size !== input.fileSize || existing.file_type !== input.fileType || (input.caption !== undefined && (existing.caption ?? null) !== (input.caption.trim() || null))) return null;
       return existing as Attachment;
     };
     const existing = await findReceipt();
@@ -149,6 +155,7 @@ export async function recordAttachment(input: {
         entity_id: input.entityId,
         project_id: input.projectId,
         file_name: input.fileName,
+        ...(input.caption !== undefined ? { caption: input.caption.trim() || null } : {}),
         file_url: fileUrl,
         file_type: input.fileType,
         file_size: input.fileSize,

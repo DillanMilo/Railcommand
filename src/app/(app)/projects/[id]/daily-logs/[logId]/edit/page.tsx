@@ -292,10 +292,12 @@ export default function EditDailyLogPage({ params, searchParams }: { params: Pro
         </CardContent>
       </Card>
 
-      <SavedDailyLogPhotos key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove />
+      <SavedDailyLogPhotos reportDate={date} key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove />
 
       {/* New photos upload only on Save, avoiding competing automatic uploads. */}
       <PhotoUpload
+        captionEditingDisabled={submitting}
+        reportDate={date}
         photos={photos}
         onPhotosChange={setPhotos}
       />

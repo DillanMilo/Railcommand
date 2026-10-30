@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { uploadPhotoAttachment } from '@/lib/uploadPhotosAfterCreate';
 import { resolvePhotoGeoBatch, type PhotoGeoSource } from '@/lib/photoGeotag';
+import { dfrPhotoLabel, MAX_PHOTO_CAPTION_LENGTH } from '@/lib/dfr-presentation';
+import { Input } from '@/components/ui/input';
 import type { PhotoCategory, Attachment } from '@/lib/types';
 
 export interface PhotoFile {
@@ -21,11 +23,14 @@ export interface PhotoFile {
   preparing?: boolean;
   uploadError?: string;
   originalSize?: number;
+  caption?: string;
   capturedAt?: string;
   sourceAttachmentId?: string;
 }
 
 interface PhotoUploadProps {
+  reportDate?: string;
+  captionEditingDisabled?: boolean;
   photos: PhotoFile[];
   onPhotosChange: (photos: PhotoFile[]) => void;
   onPhotoRemove?: (photo: PhotoFile) => void;
@@ -43,6 +48,8 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
 export default function PhotoUpload({
   photos,
+  reportDate,
+  captionEditingDisabled = false,
   onPhotosChange,
   onPhotoRemove,
   maxFiles = 20,
@@ -232,7 +239,7 @@ export default function PhotoUpload({
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={photo.preview}
-                    alt={photo.file.name}
+                    alt={reportDate ? dfrPhotoLabel(reportDate, photo.caption) : photo.file.name}
                     className="aspect-square w-full object-cover"
                   />
                 ) : (
@@ -258,7 +265,7 @@ export default function PhotoUpload({
                   }}>Retry photo</Button>}
                 </div>}
                 {/* Overlay badges */}
-                <div className="absolute bottom-1 left-1 flex flex-wrap gap-1">
+                <div className="absolute top-1 left-1 flex flex-wrap gap-1">
                   <Badge
                     variant="secondary"
                     className={`text-[10px] px-1.5 py-0 ${
@@ -295,7 +302,12 @@ export default function PhotoUpload({
                   <X className="size-3.5" />
                 </button>
                 {/* File name */}
-                <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{photo.file.name}</p>
+                <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{reportDate ? dfrPhotoLabel(reportDate, photo.caption) : photo.file.name}</p>
+                {reportDate && !entityId && <label className="block p-2 text-xs">Optional caption
+                  <Input disabled={captionEditingDisabled || photo.uploading || photo.preparing} value={photo.caption ?? ''} maxLength={MAX_PHOTO_CAPTION_LENGTH} placeholder={dfrPhotoLabel(reportDate)}
+                    aria-label={`Optional caption for photo ${photos.indexOf(photo) + 1}`}
+                    onChange={(event) => onPhotosChange(photos.map((item) => item.id === photo.id ? { ...item, caption: event.target.value } : item))} />
+                </label>}
               </div>
             ))}
           </div>

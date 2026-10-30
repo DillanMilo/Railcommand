@@ -240,6 +240,7 @@ export interface MobilePhotoRecord {
   fileName: string;
   fileType: string;
   size: number;
+  caption?: string;
   capturedAt: string;
   geoTag: MobileGeoTag | null;
   blob: Blob;
@@ -258,6 +259,7 @@ export interface MobileDailyLogPhotoSyncOperation {
     photoCategory: 'standard' | 'thermal';
     geoLat: number | null;
     geoLng: number | null;
+    caption?: string;
     capturedAt: string;
   };
 }
@@ -484,6 +486,7 @@ export function photoToSyncOperation(
       photoCategory: 'standard',
       geoLat: photo.geoTag?.lat ?? null,
       geoLng: photo.geoTag?.lng ?? null,
+      ...(photo.caption !== undefined ? { caption: photo.caption } : {}),
       capturedAt: photo.capturedAt,
     },
   };
@@ -514,6 +517,9 @@ export function isValidPhotoSyncOperation(
     && payload.fileSize > 0
     && payload.fileSize <= 25 * 1024 * 1024
     && (payload.photoCategory === 'standard' || payload.photoCategory === 'thermal')
+    && (payload.caption === undefined || (typeof payload.caption === 'string' && payload.caption.length <= 500))
     && typeof payload.capturedAt === 'string'
     && Number.isFinite(Date.parse(payload.capturedAt));
 }
+
+export { formatDfrDate, formatDfrTimestamp, dfrPhotoLabel, isValidPhotoCaption, MAX_PHOTO_CAPTION_LENGTH, dfrDateInputToIso, formatDfrDateInput } from './dfr-presentation';
