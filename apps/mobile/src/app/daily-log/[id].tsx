@@ -1,3 +1,4 @@
+import { formatDfrDate, formatDfrTimestamp } from '@railcommand/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { normalizeDailyLogReadFields } from '@railcommand/domain';
 import { StyleSheet, Text, View } from 'react-native';
@@ -14,7 +15,7 @@ export default function DailyLogDetailScreen() {
   const log = bootstrap?.dailyLogs.find((item) => item.id === id && item.projectId === activeProjectId);
   const project = bootstrap?.projects.find((item) => item.id === activeProjectId);
   const fields = normalizeDailyLogReadFields(log);
-  const displayDate = log ? new Date(`${log.logDate}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }) : 'Daily Log';
+  const displayDate = log ? formatDfrDate(log.logDate) : 'Daily Log';
   return <Screen>
     <BrandHeader title={project?.name ?? 'RailCommand'} right={<StatusPill online={online} />} />
     <PageHeading eyebrow="FIELD RECORD / DAILY LOG" title={displayDate}
@@ -23,7 +24,7 @@ export default function DailyLogDetailScreen() {
     {!log ? <Card><EmptyState title="Record unavailable" detail="This log is not in the recent device cache. Reconnect and refresh the project." /></Card> : <>
       <StatusBanner tone={online ? 'success' : 'warning'} title={online ? 'Cached copy available offline' : 'Viewing saved device data'}
         detail="Existing-record editing is unavailable in this field release. Reconnect and use RailCommand web for authorized edits." />
-      <Text style={uiStyles.muted}>{log.authorName || 'Team member'} · {new Date(log.createdAt).toLocaleString()} · {log.id.slice(0, 8)}</Text>
+      <Text style={uiStyles.muted}>{log.authorName || 'Team member'} · {formatDfrTimestamp(log.createdAt)} · {log.id.slice(0, 8)}</Text>
       <Card><Text style={styles.eyebrow}>WEATHER</Text><SectionTitle>Field conditions</SectionTitle>
         <Text style={styles.value}>{log.weatherConditions || 'Not recorded'}</Text>
         <Text style={styles.label}>Temperature</Text>
@@ -66,10 +67,10 @@ export default function DailyLogDetailScreen() {
             <Text selectable style={styles.value}>{fields.geoTag.lat.toFixed(6)}, {fields.geoTag.lng.toFixed(6)}</Text>
             {fields.geoTag.accuracy !== undefined ? <Text style={styles.value}>Accuracy: {fields.geoTag.accuracy} m</Text> : null}
             {fields.geoTag.altitude !== undefined ? <Text style={styles.value}>Altitude: {fields.geoTag.altitude} m</Text> : null}
-            <Text style={uiStyles.muted}>Captured: {new Date(fields.geoTag.timestamp).toLocaleString()}</Text>
+            <Text style={uiStyles.muted}>Captured: {formatDfrTimestamp(fields.geoTag.timestamp)}</Text>
           </>}
       </Card>
-      <SecondaryButton title="Share summary" onPress={() => void shareDailyLogSummary(`${log.logDate}\n${log.workSummary}\n${log.safetyNotes}`)} />
+      <SecondaryButton title="Share summary" onPress={() => void shareDailyLogSummary(`${formatDfrDate(log.logDate)}\n${log.workSummary}\n${log.safetyNotes}`)} />
       <Text style={uiStyles.muted}>Existing-record editing is unavailable in this version. Use RailCommand on the web when connected.</Text>
     </>}
   </Screen>;

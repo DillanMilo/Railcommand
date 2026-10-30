@@ -16,6 +16,7 @@ export type ExpoStoredPhoto = {
   fileName: string;
   fileType: string;
   size: number;
+  caption?: string;
   capturedAt: string;
   geoTag: MobileGeoTag | null;
   status: 'pending' | 'retrying' | 'failed' | 'conflicted';

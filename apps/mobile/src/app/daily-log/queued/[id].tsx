@@ -1,3 +1,4 @@
+import { formatDfrDate, formatDfrTimestamp, dfrPhotoLabel } from '@railcommand/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Image, Text, View } from 'react-native';
@@ -70,7 +71,7 @@ export default function QueuedLogReviewScreen() {
     <SecondaryButton title="Back to Sync Center" onPress={() => router.replace('/(tabs)/sync')} />
     {visible && state.error ? <StatusBanner title="Entry unavailable" detail={state.error} tone="warning" /> : null}
     {payload && operation ? <>
-      <StatusBanner title={project?.name ?? 'Saved project'} detail={`${payload.log_date} · Entry ${operation.clientId.slice(0, 8)} · ${new Date(operation.createdAt).toLocaleString()}`} tone="neutral" />
+      <StatusBanner title={project?.name ?? 'Saved project'} detail={`${formatDfrDate(payload.log_date)} · Entry ${operation.clientId.slice(0, 8)} · ${formatDfrTimestamp(operation.createdAt)}`} tone="neutral" />
       <Card><SectionTitle>Existing logs in your device cache</SectionTitle>
         <Text style={uiStyles.muted}>This list may be incomplete or out of date. Refresh the project online to compare current records. Opening a record does not change this saved entry.</Text>
         {existing.map((log) => <View key={log.id} style={{ gap: 8 }}>
@@ -91,8 +92,8 @@ export default function QueuedLogReviewScreen() {
         {payload.geo_tag ? <Text>GPS: {payload.geo_tag.lat}, {payload.geo_tag.lng} · {payload.geo_tag.timestamp}</Text> : null}
       </Card>
       <Card><SectionTitle>Saved photos ({operation.photoIds.length})</SectionTitle>
-        {photos.map((photo) => <View key={photo.photoId} style={{ gap: 8 }}><Text>{photo.fileName}</Text>
-          {/^image\/(jpeg|png|webp)$/i.test(photo.fileType) ? <Image accessibilityLabel={photo.fileName} source={{ uri: photo.uri }} style={{ height: 180, width: '100%' }} resizeMode="contain" /> : null}
+        {photos.map((photo) => <View key={photo.photoId} style={{ gap: 8 }}><Text>{dfrPhotoLabel(payload.log_date, photo.caption)}</Text>
+          {/^image\/(jpeg|png|webp)$/i.test(photo.fileType) ? <Image alt={dfrPhotoLabel(payload.log_date, photo.caption)} accessibilityLabel={dfrPhotoLabel(payload.log_date, photo.caption)} source={{ uri: photo.uri }} style={{ height: 180, width: '100%' }} resizeMode="contain" /> : null}
         </View>)}
         <Text style={uiStyles.muted}>The original photo files and parent relationship are retained. Missing files will block delivery rather than be silently omitted.</Text>
       </Card>

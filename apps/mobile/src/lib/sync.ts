@@ -16,6 +16,7 @@ type SyncLifetime = {
 function photoOperation(userId: string, photo: ExpoStoredPhoto, parentEntityId: string): MobileDailyLogPhotoSyncOperation {
   return { operationId: photo.photoId, userId, projectId: photo.projectId, parentEntityId,
     idempotencyKey: `daily-log-photo:${photo.photoId}`, payload: { fileName: photo.fileName,
+      ...(photo.caption !== undefined ? { caption: photo.caption } : {}),
       fileType: photo.fileType, fileSize: photo.size, photoCategory: 'standard',
       geoLat: photo.geoTag?.lat ?? null, geoLng: photo.geoTag?.lng ?? null, capturedAt: photo.capturedAt } };
 }
