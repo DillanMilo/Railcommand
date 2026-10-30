@@ -71,3 +71,31 @@ describe('content-scoped upload identity',()=>{
     assert.equal(new Set(h.receipts.map(row=>row.clientId)).size,3);assert.equal(new Set(h.uploads).size,3);
   });
 });
+
+describe('DFR caption attachment receipts', () => {
+  it('records the optional caption and reconciles retries without rewriting it', async () => {
+    const h = metadataHarness({ ambiguous: true });
+    const values = { ...input, caption: '  South entrance paving  ' };
+    assert.equal((await h.action(values)).success, true);
+    assert.equal(h.row()?.caption, 'South entrance paving');
+    assert.equal((await h.action(values)).success, true);
+    assert.equal(h.counts().inserts, 1);
+    assert.ok((await h.action({ ...values, caption: 'A concurrent different caption' })).error);
+    assert.equal(h.row()?.caption, 'South entrance paving');
+  });
+  it('rejects invalid caption metadata before writing or uploading a receipt', async () => {
+    for (const caption of ['x'.repeat(501), 10]) {
+      const h = metadataHarness();
+      assert.ok((await h.action({ ...input, caption })).error);
+      assert.equal(h.counts().inserts, 0);
+    }
+  });
+  it('carries captions through compression and uncertain-response retries', async () => {
+    const h = clientHarness();
+    const values = { file: new File(['photo'], 'image.jpeg', { type: 'image/jpeg' }), category: 'standard', projectId: 'project', entityType: 'daily_log', entityId: 'log', caption: 'Paving complete' };
+    await h.fn(values); await h.fn(values);
+    assert.equal(h.receipts[0].caption, 'Paving complete');
+    assert.equal(h.receipts[1].caption, 'Paving complete');
+    assert.equal(h.receipts[0].clientId, h.receipts[1].clientId);
+  });
+});

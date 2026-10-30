@@ -4,7 +4,7 @@ import { getBucket } from '@/lib/attachments-shared';
 import { compressImage } from '@/lib/compressImage';
 import type { PhotoCategory, Attachment } from '@/lib/types';
 
-type Input = { file: File; category: PhotoCategory; entityType: string; entityId: string; projectId: string; geoLat?: number | null; geoLng?: number | null };
+type Input = { caption?: string; file: File; category: PhotoCategory; entityType: string; entityId: string; projectId: string; geoLat?: number | null; geoLng?: number | null };
 type Prepared = { id: string; file: Promise<File>; path: string };
 // Page-lifetime retry state only. Offline persistence remains in native field tools.
 const prepared = new WeakMap<File, Map<string, Prepared>>();
@@ -39,7 +39,7 @@ export async function uploadFileWithReceipt(input: Input): Promise<{ success?: b
   const { error: uploadError } = await supabase.storage.from(bucket).upload(pending.path,file,{contentType:file.type,upsert:false});
   if (uploadError && !/already exists|duplicate/i.test(uploadError.message) && String((uploadError as { statusCode?: string }).statusCode) !== '409') return { error: 'Upload could not be confirmed. Keep this page open and retry; the selected file is preserved.' };
   if (!await stillCurrent()) return { error: 'The account changed. The upload has not been attached.' };
-  const result = await recordAttachment({ clientId:pending.id,entityType:input.entityType,entityId:input.entityId,projectId:input.projectId,storagePath:pending.path,bucket,fileName:file.name,fileType:file.type,fileSize:file.size,photoCategory:input.category,geoLat:input.geoLat??null,geoLng:input.geoLng??null });
+  const result = await recordAttachment({ clientId:pending.id,entityType:input.entityType,entityId:input.entityId,projectId:input.projectId,storagePath:pending.path,bucket,fileName:file.name,fileType:file.type,fileSize:file.size,photoCategory:input.category,...(input.caption !== undefined ? { caption: input.caption } : {}),geoLat:input.geoLat??null,geoLng:input.geoLng??null });
   if (result.error || !result.data) return { error: result.error ?? 'Upload receipt could not be confirmed. Keep this page open and retry.' };
   return {success:true,data:{attachment:result.data,file}};
 }

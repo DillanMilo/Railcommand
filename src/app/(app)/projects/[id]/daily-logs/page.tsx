@@ -151,7 +151,7 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
                     {dayLogs.length > 0 && <span className="block text-xs text-muted-foreground">{dayLogs.length} {dayLogs.length === 1 ? 'log' : 'logs'}</span>}
                     {dayLogs.map((log) => <Link key={log.id} href={`${basePath}/${log.id}`}
                       className="block py-2 text-xs text-rc-orange underline break-words"
-                      aria-label={`Open ${log.log_date} log by ${log.created_by_profile?.full_name || 'team member'}, ${log.id.slice(0, 8)}`}>
+                      aria-label={`Open ${format(parseISO(log.log_date), 'MM/dd/yyyy')} log by ${log.created_by_profile?.full_name || 'team member'}, ${log.id.slice(0, 8)}`}>
                       {log.created_by_profile?.full_name || 'Team member'} · {log.id.slice(0, 8)}
                     </Link>)}
                   </div>
@@ -178,12 +178,12 @@ export default function DailyLogsPage({ params, searchParams }: { params: Promis
                 <Card className="transition-shadow hover:shadow-md">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{format(parseISO(log.log_date), 'EEEE, MMM d, yyyy')}</span>
+                      <span className="font-semibold text-sm">{format(parseISO(log.log_date), 'MM/dd/yyyy')}</span>
                       <Badge variant="outline" className="gap-1">
                         <ClipboardList className="size-3" />{(log.work_items ?? []).length} items
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{log.created_by_profile?.full_name || 'Team member'} · {format(parseISO(log.created_at), 'MMM d, h:mm a')} · {log.id.slice(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground">{log.created_by_profile?.full_name || 'Team member'} · {format(parseISO(log.created_at), 'MM/dd/yyyy h:mm a')} · {log.id.slice(0, 8)}</p>
                     <p className="text-sm text-muted-foreground line-clamp-2">{log.work_summary}</p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Cloud className="size-3" />{log.weather_temp}°F {log.weather_conditions}</span>

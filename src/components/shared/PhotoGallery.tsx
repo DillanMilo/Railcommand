@@ -6,16 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { dfrPhotoLabel, formatDfrTimestamp } from '@/lib/dfr-presentation';
 import type { Attachment } from '@/lib/types';
 
 interface PhotoGalleryProps {
   attachments: Attachment[];
+  reportDate?: string;
   title?: string;
   onRemove?: (photo: Attachment) => void;
   removalDisabled?: boolean;
 }
 
-export default function PhotoGallery({ attachments, title = 'Photos', onRemove, removalDisabled }: PhotoGalleryProps) {
+export default function PhotoGallery({ attachments, title = 'Photos', reportDate, onRemove, removalDisabled }: PhotoGalleryProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<Attachment | null>(null);
 
   const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
@@ -54,7 +56,7 @@ export default function PhotoGallery({ attachments, title = 'Photos', onRemove, 
                   <img
                     onError={() => setFailedUrls(current => new Set(current).add(photo.signed_url ?? photo.file_url))}
                     src={photo.signed_url_error ? undefined : photo.signed_url ?? photo.file_url}
-                    alt={photo.file_name}
+                    alt={reportDate ? dfrPhotoLabel(reportDate, photo.caption) : photo.file_name}
                     className="aspect-square w-full object-cover"
                   />
                   <div className="absolute bottom-1 left-1 flex flex-wrap gap-1">
@@ -69,7 +71,7 @@ export default function PhotoGallery({ attachments, title = 'Photos', onRemove, 
                       </Badge>
                     )}
                   </div>
-                  <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{photo.file_name}</p>
+                  <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{reportDate ? dfrPhotoLabel(reportDate, photo.caption) : photo.file_name}</p>
                 </button>
                 {(photo.signed_url_error || failedUrls.has(photo.signed_url ?? photo.file_url)) && <p role="status" className="text-xs text-amber-700">Attachment listed; preview unavailable. Refresh photos to retry.</p>}
                 {onRemove && <Button type="button" variant="outline" size="sm" className="w-full" disabled={removalDisabled} onClick={() => onRemove(photo)} aria-label={`Remove ${photo.file_name} from this DFR`}>Remove from DFR</Button>}
@@ -88,11 +90,11 @@ export default function PhotoGallery({ attachments, title = 'Photos', onRemove, 
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={selectedPhoto.signed_url_error ? undefined : selectedPhoto.signed_url ?? selectedPhoto.file_url}
-                alt={selectedPhoto.file_name}
+                alt={reportDate ? dfrPhotoLabel(reportDate, selectedPhoto.caption) : selectedPhoto.file_name}
                 className="w-full max-h-[70vh] object-contain bg-black"
               />
               <div className="p-4 space-y-2">
-                <p className="text-sm font-medium">{selectedPhoto.file_name}</p>
+                <p className="text-sm font-medium">{reportDate ? dfrPhotoLabel(reportDate, selectedPhoto.caption) : selectedPhoto.file_name}</p>
                 {selectedPhoto.signed_url_error && <p role="status" className="text-sm text-amber-700">Preview unavailable. Close this preview and refresh photos.</p>}
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   {selectedPhoto.photo_category === 'thermal' && (
@@ -107,7 +109,7 @@ export default function PhotoGallery({ attachments, title = 'Photos', onRemove, 
                     </span>
                   )}
                   {selectedPhoto.captured_at && (
-                    <span>Captured: {new Date(selectedPhoto.captured_at).toLocaleString()}</span>
+                    <span>Captured: {formatDfrTimestamp(selectedPhoto.captured_at)}</span>
                   )}
                 </div>
               </div>

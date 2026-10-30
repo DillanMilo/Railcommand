@@ -400,6 +400,7 @@ export interface Attachment {
   uploaded_by: string;
   geo_lat: number | null;
   geo_lng: number | null;
+  caption?: string | null;
   captured_at: string | null;
   created_at: string;
   /** Transient field — populated at fetch time for private buckets, never stored in DB */

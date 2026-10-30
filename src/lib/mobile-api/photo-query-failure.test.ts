@@ -58,7 +58,7 @@ function harness(options: {
       const query: Query = url.pathname.endsWith('/profiles') ? 'profiles'
         : url.pathname.endsWith('/project_members') ? 'membership'
           : url.pathname.endsWith('/daily_logs') ? 'parent'
-            : url.pathname.endsWith('/rpc/sync_daily_log_photo_attachment') ? 'rpc' : 'sign';
+            : /\/rpc\/sync_daily_log_photo_attachment(?:_v2)?$/.test(url.pathname) ? 'rpc' : 'sign';
       const payload = request.method === 'POST' ? await request.clone().json() : undefined;
       calls.push({ query, request, payload });
       if (query === 'sign') {
@@ -67,7 +67,11 @@ function harness(options: {
         assert.equal(request.headers.get('x-upsert'), 'true');
       } else if (query === 'rpc') {
         assert.equal(request.method, 'POST');
-        assert.deepEqual(payload, {
+        const incoming = payload as Record<string, unknown>;
+        const { p_caption, ...legacyPayload } = incoming;
+        if (url.pathname.endsWith('_v2')) assert.equal(typeof p_caption, 'string');
+        else assert.equal(p_caption, undefined);
+        assert.deepEqual(legacyPayload, {
           p_attachment_id: photoId, p_project_id: projectId, p_daily_log_id: parentId,
           p_idempotency_key: operation.idempotencyKey, p_bucket: storage.bucket, p_storage_path: storage.path,
           p_file_name: operation.payload.fileName, p_file_type: operation.payload.fileType,
@@ -286,5 +290,22 @@ describe('photo synchronization query failures (actual routes and Supabase trans
     });
     await assert.rejects(api.finalizeDailyLogPhoto(operation, storage), (error: unknown) => error instanceof MobileApiError && error.status === 401);
     assert.equal(refreshes, 1); assert.equal(requests, 2);
+  });
+});
+
+describe('caption-aware mobile photo finalization', () => {
+  it('routes captions to v2 and leaves old persisted photo payloads on v1', async () => {
+    const h = harness();
+    assert.equal((await h.run('finalize')).status, 200);
+    assert.equal((await h.run('finalize', { operation: { ...operation, payload: { ...operation.payload, caption: 'Field caption' } }, storage })).status, 200);
+    const calls = h.calls.filter(call => call.query === 'rpc');
+    assert.ok(calls[0].request.url.includes('/sync_daily_log_photo_attachment'));
+    assert.ok(calls[1].request.url.includes('/sync_daily_log_photo_attachment_v2'));
+    assert.equal((calls[1].payload as Record<string, unknown>).p_caption, 'Field caption');
+  });
+  it('rejects oversized captions before reaching storage or finalization', async () => {
+    const h = harness();
+    assert.equal((await h.run('finalize', { operation: { ...operation, payload: { ...operation.payload, caption: 'x'.repeat(501) } }, storage })).status, 400);
+    assert.equal(h.calls.length, 0);
   });
 });

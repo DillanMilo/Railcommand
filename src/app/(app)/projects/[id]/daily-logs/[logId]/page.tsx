@@ -67,8 +67,8 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
     );
   }
 
-  const dateLabel = formatDateSafe(log.log_date, 'MMM d, yyyy');
-  const dateFull = formatDateSafe(log.log_date, 'EEEE, MMMM d, yyyy');
+  const dateLabel = formatDateSafe(log.log_date, 'MM/dd/yyyy');
+  const dateFull = formatDateSafe(log.log_date, 'MM/dd/yyyy');
   const authorName = (log as DailyLog & { created_by_profile?: { full_name?: string } }).created_by_profile?.full_name
     ?? (isDemo ? getProfiles().find((p) => p.id === log.created_by)?.full_name : undefined);
   const totalHeadcount = (log.personnel ?? []).reduce((s, r) => s + r.headcount, 0);
@@ -97,7 +97,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
                 ? { data: attachments }
                 : await getAttachmentsWithSignedUrls('daily_log', logId);
               if ('error' in refreshed && refreshed.error) throw new Error(refreshed.error);
-              const pdfPhotos = await loadDailyLogPdfPhotos(refreshed.data ?? attachments);
+              const pdfPhotos = await loadDailyLogPdfPhotos(refreshed.data ?? attachments, log.log_date);
               return <DailyLogPDF log={log} projectName={currentProject?.name ?? 'Project'} generatedBy={authorName ?? 'User'} photos={pdfPhotos} />;
             }}
             fileName={`daily-log-${log.log_date}-${projectId}`}
@@ -211,7 +211,7 @@ export default function DailyLogDetailPage({ params, searchParams }: { params: P
       )}
 
       {/* Photos */}
-      <SavedDailyLogPhotos key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove={can(ACTIONS.DAILY_LOG_UPDATE)} onPhotosChanged={() => setPhotoRevision(value => value + 1)} />
+      <SavedDailyLogPhotos reportDate={log.log_date} key={logId} projectId={projectId} logId={logId} isDemo={isDemo} canRemove={can(ACTIONS.DAILY_LOG_UPDATE)} onPhotosChanged={() => setPhotoRevision(value => value + 1)} />
 
       {/* Document attachments */}
       {!isDemo && (

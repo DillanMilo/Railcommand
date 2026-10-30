@@ -20,6 +20,7 @@ export async function uploadPhotoAttachment(input: {
   entityType: string;
   entityId: string;
   projectId: string;
+  caption?: string;
   geoLat?: number | null;
   geoLng?: number | null;
 }): Promise<{ success?: boolean; data?: UploadedPhotoAttachment; error?: string }> {
@@ -51,6 +52,7 @@ export async function uploadPhotosAfterCreate(
         entityType,
         entityId,
         projectId,
+        caption: photo.caption,
         geoLat: photo.geo_lat,
         geoLng: photo.geo_lng,
       });

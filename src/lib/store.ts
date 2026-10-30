@@ -1394,6 +1394,7 @@ export function addAttachment(data: {
   entity_type: Attachment['entity_type'];
   entity_id: string;
   project_id?: string;
+  caption?: string;
   file_name: string;
   file_url: string;
   file_type: string;
@@ -1409,6 +1410,7 @@ export function addAttachment(data: {
     entity_id: data.entity_id,
     project_id: data.project_id ?? 'proj-001',
     file_name: data.file_name,
+    caption: data.caption,
     file_url: data.file_url,
     file_type: data.file_type,
     file_size: data.file_size,
@@ -1453,6 +1455,7 @@ export function getAllProjectPhotos(projectId: string): Attachment[] {
 
 /** Add a standalone project photo (captured via camera). */
 export function addProjectPhoto(projectId: string, data: {
+  caption?: string;
   file_name: string;
   file_url: string;
   file_type: string;

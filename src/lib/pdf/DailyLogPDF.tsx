@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer';
 import styles from './styles';
+import { formatDfrDate, formatDfrTimestamp } from '@/lib/dfr-presentation';
 import type { DailyLog } from '@/lib/types';
 import type { DailyLogPdfPhoto } from './daily-log-photos';
 
@@ -11,13 +12,8 @@ interface DailyLogPDFProps {
   photos?: DailyLogPdfPhoto[];
 }
 
-const formatDate = (d: string | null): string => {
-  if (!d) return '—';
-  return d.split('T')[0];
-};
-
 const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy, photos = [] }) => {
-  const now = new Date().toISOString().split('T')[0];
+  const now = formatDfrTimestamp(new Date().toISOString());
 
   return (
     <Document>
@@ -36,7 +32,7 @@ const DailyLogPDF: React.FC<DailyLogPDFProps> = ({ log, projectName, generatedBy
           </View>
           <Text style={styles.reportTitle}>Daily Log Report</Text>
           <Text style={styles.headerMeta}>Project: {projectName}</Text>
-          <Text style={styles.headerMeta}>Log Date: {formatDate(log.log_date)}</Text>
+          <Text style={styles.headerMeta}>Log Date: {formatDfrDate(log.log_date)}</Text>
           <View style={styles.headerDivider} />
         </View>
 

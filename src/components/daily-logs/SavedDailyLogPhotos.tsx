@@ -8,8 +8,8 @@ import { getAttachments as getDemoAttachments } from '@/lib/store';
 import { usePWA } from '@/components/providers/ServiceWorkerProvider';
 import type { Attachment } from '@/lib/types';
 
-export default function SavedDailyLogPhotos({ projectId, logId, isDemo, canRemove = false, onPhotosChanged }: {
-  projectId: string; logId: string; isDemo: boolean; canRemove?: boolean; onPhotosChanged?: () => void;
+export default function SavedDailyLogPhotos({ reportDate, projectId, logId, isDemo, canRemove = false, onPhotosChanged }: {
+  reportDate: string; projectId: string; logId: string; isDemo: boolean; canRemove?: boolean; onPhotosChanged?: () => void;
 }) {
   const { isOffline } = usePWA();
   const [photos, setPhotos] = useState<Attachment[]>([]);
@@ -47,6 +47,6 @@ export default function SavedDailyLogPhotos({ projectId, logId, isDemo, canRemov
     </div>
     {isOffline && <p role="status" className="text-sm text-amber-700">Reconnect to refresh or remove saved photos. Your open form is preserved.</p>}
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-    {(!loading || photos.length > 0) && <PhotoGallery attachments={photos} title="Saved DFR photos" onRemove={canRemove && !isDemo ? remove : undefined} removalDisabled={isOffline || !!removing} />}
+    {(!loading || photos.length > 0) && <PhotoGallery reportDate={reportDate} attachments={photos} title="Saved DFR photos" onRemove={canRemove && !isDemo ? remove : undefined} removalDisabled={isOffline || !!removing} />}
   </section>;
 }

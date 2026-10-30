@@ -37,7 +37,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const operation = body.operation;
-  const result = await context.supabase.rpc('sync_daily_log_photo_attachment', {
+  const result = await context.supabase.rpc(operation.payload.caption !== undefined ? 'sync_daily_log_photo_attachment_v2' : 'sync_daily_log_photo_attachment', {
     p_attachment_id: operation.operationId,
     p_project_id: operation.projectId,
     p_daily_log_id: operation.parentEntityId,
@@ -51,6 +51,7 @@ export async function POST(request: Request): Promise<Response> {
     p_geo_lat: operation.payload.geoLat,
     p_geo_lng: operation.payload.geoLng,
     p_captured_at: operation.payload.capturedAt,
+    ...(operation.payload.caption !== undefined ? { p_caption: operation.payload.caption } : {}),
   });
   const failureStatus = mobileQueryFailureStatus([result]);
   if (failureStatus === 401 || failureStatus === 403) {
