@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ImagePlus, Loader2, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useProjectPhotos } from '@/hooks/useData';
+import { usePhotoLibrary } from '@/hooks/usePhotoLibrary';
 import { getAvailablePhotosForDailyLog, getPhotoLocalDate } from '@/lib/daily-log-photo-selection';
 import type { PhotoFile } from '@/components/shared/PhotoUpload';
 import { formatDfrDate, dfrPhotoLabel } from '@/lib/dfr-presentation';
@@ -31,10 +31,12 @@ export default function PhotoLibraryPicker({
   isOffline,
   maxFiles = 20,
 }: PhotoLibraryPickerProps) {
-  const { data: libraryPhotos, loading, error } = useProjectPhotos(isOffline ? null : projectId);
+  const { scope, data: libraryPhotos, loading, error, hasMore, loadMore } = usePhotoLibrary(projectId, isOffline);
   const currentPhotos = useRef(photos);
   useEffect(() => { currentPhotos.current = photos; }, [photos]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const requestScope = useRef(0);
+  useEffect(() => { requestScope.current += 1; return () => { requestScope.current += 1; }; }, [scope, logDate]);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -54,7 +56,7 @@ export default function PhotoLibraryPicker({
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [logDate]);
+  }, [logDate, scope]);
 
   const toggle = (id: string) => {
     setSelectedIds((current) => {
@@ -67,6 +69,9 @@ export default function PhotoLibraryPicker({
 
   const addSelected = async () => {
     const selected = activeSelected;
+    const startedScope = requestScope.current;
+    const previews: string[] = [];
+    let failed = false;
     if (selected.length === 0) return;
     setAdding(true);
     setAddError(null);
@@ -79,10 +84,13 @@ export default function PhotoLibraryPicker({
         const file = new File([blob], photo.file_name, {
           type: photo.file_type || blob.type || 'image/jpeg',
         });
+        const preview = URL.createObjectURL(blob);
+        previews.push(preview);
+        if (failed) URL.revokeObjectURL(preview);
         return {
           id: crypto.randomUUID(),
           file,
-          preview: URL.createObjectURL(blob),
+          preview,
           category: photo.photo_category,
           geo_lat: photo.geo_lat,
           geo_lng: photo.geo_lng,
@@ -92,13 +100,19 @@ export default function PhotoLibraryPicker({
           caption: photo.caption ?? undefined,
         };
       }));
+      if (requestScope.current !== startedScope) {
+        previews.forEach(url => URL.revokeObjectURL(url));
+        return;
+      }
       if (currentPhotos.current.length + downloaded.length > maxFiles) {
-        downloaded.forEach((photo) => URL.revokeObjectURL(photo.preview));
         throw new Error('There is no longer enough room for these photos. Remove a photo or select fewer and retry.');
       }
       onPhotosChange([...currentPhotos.current, ...downloaded]);
       setSelectedIds(new Set());
     } catch (caught) {
+      failed = true;
+      previews.forEach(url => URL.revokeObjectURL(url));
+      if (requestScope.current !== startedScope) return;
       setAddError(caught instanceof Error ? caught.message : 'Could not add the selected photos');
     } finally {
       setAdding(false);
@@ -119,26 +133,24 @@ export default function PhotoLibraryPicker({
             <WifiOff className="mt-0.5 size-4 shrink-0" />
             <p>Photo-library selection needs a connection. Photos already added remain selected while this form stays open; reconnect before submitting.</p>
           </div>
-        ) : loading ? (
+        ) : loading && libraryPhotos.length === 0 ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Loading photos for this date…
+            <Loader2 className="size-4 animate-spin" /> Loading recent photos…
           </div>
-        ) : error ? (
-          <p className="text-sm text-red-600">Could not load the photo library: {error}</p>
         ) : availablePhotos.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No unused project photos are available yet.
+            No unused photos in the loaded pages.
           </p>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Select any photo previously taken or uploaded in RailCommand. Photos from the report date are shown first, and the originals stay in Photos &amp; Media.
+              Select any photo previously taken or uploaded in RailCommand. Among loaded photos, those from the report date are shown first. Load more to browse older photos. Originals stay in Photos &amp; Media.
             </p>
             <Button
               type="button"
               variant="outline"
               onClick={addSelected}
-              disabled={adding || activeSelected.length === 0 || remainingSlots === 0}
+              disabled={adding || isOffline || activeSelected.length === 0 || remainingSlots === 0}
             >
               {adding && <Loader2 className="mr-2 size-4 animate-spin" />}
               Add {activeSelected.length || ''} selected photo{activeSelected.length === 1 ? '' : 's'}
@@ -160,6 +172,7 @@ export default function PhotoLibraryPicker({
                     <img
                       src={photo.thumbnail_url ?? photoUrl(photo)}
                       alt={dfrPhotoLabel(logDate, photo.caption)}
+                      loading="lazy"
                       className="aspect-square w-full bg-muted object-cover"
                     />
                     <span className="block truncate px-2 pt-1 text-xs">{dfrPhotoLabel(logDate, photo.caption)}</span>
@@ -171,6 +184,13 @@ export default function PhotoLibraryPicker({
               })}
             </div>
           </>
+        )}
+        {!isOffline && error && <p role="alert" className="text-sm text-red-600">Could not load more photos: {error}</p>}
+        {!isOffline && (hasMore || error) && (
+          <Button type="button" variant="outline" onClick={loadMore} disabled={loading || adding}>
+            {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+            {error ? 'Retry loading photos' : loading ? 'Loading photos…' : 'Load more photos'}
+          </Button>
         )}
         {remainingSlots === 0 && <p className="text-xs text-amber-700">This daily log already has the maximum of {maxFiles} photos.</p>}
         {addError && <p className="text-sm text-red-600">{addError}</p>}
