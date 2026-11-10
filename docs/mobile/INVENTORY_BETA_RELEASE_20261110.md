@@ -332,3 +332,27 @@ are in one existing project. The saved copy's 83 original tables remain unchange
 INV-REL-04 stays open for a reviewed preservation/correction decision. No live
 repair or access change was made. Inventory remains local and is not enabled in
 the regular team app; signed native distribution and release gates remain pending.
+
+## Safest repair and release preparation
+
+See [the latest repair and release result](INVENTORY_RELEASE_PREPARATION_20261110.md).
+The real copy rejects NULL punch-item assignments; that attempted local change
+rolled back, and the NOT NULL rule remains intact. A guarded manual template now
+requires explicit confirmed existing project-member replacements and immutable
+before/after evidence. No real mapping was supplied, so no customer assignment
+changed. Preserve the absent project's history and child rows in place.
+
+The final seven-file rehearsal preserves all 83 original tables and all original
+access/metadata. It includes an explicit restriction on the new Inventory request
+number sequence, preventing inherited broad sequence privileges from leaking into
+this new object. No legacy grants/defaults were revoked. Local web/native/backend
+and database checks pass as recorded in JSON. The iPhone production-profile archive
+610009 compiled locally, but is unsigned pending its matching Apple distribution
+profile. It is not a ready TestFlight upload. Known legacy exception disposition,
+independent review, physical acceptance and rollout authorization remain open.
+No live data/access change, installation, upload, cloud build, merge, push or deploy.
+
+Local signing/export was attempted with an export-only destination and no remote
+version management. Apple blocked profile access because the account holder must
+review/accept its updated Developer Program License Agreement (PLA Update available).
+No IPA or upload was produced. This is the concrete next signing blocker.

@@ -93,6 +93,10 @@ create table public.inventory_requests (
  check(verifier_id is null or verifier_id<>requester_id),
  check(approver_id is null or (approver_id<>requester_id and approver_id<>verifier_id))
 );
+-- Request numbers are assigned only inside the owner-executed Inventory RPC.
+-- Existing hosted default privileges can otherwise expose the new identity sequence.
+-- Restrict this new sequence only; retain every pre-existing object grant.
+revoke all on sequence public.inventory_requests_number_seq from public, anon, authenticated, service_role;
 create table public.inventory_request_revisions (
  id uuid primary key default gen_random_uuid(), project_id uuid not null, request_id uuid not null,
  revision integer not null, payload jsonb not null, review_token text not null,

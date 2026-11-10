@@ -136,12 +136,20 @@ try {
   const migration = readdirSync(
     new URL("../supabase/migrations/", import.meta.url),
   ).find((f) => f.endsWith("_inventory_phase_one.sql"));
+  // Reproduce the saved project's inherited broad sequence defaults without
+  // changing them in production. The new Inventory sequence must opt out.
+  sql('alter default privileges in schema public grant all on sequences to anon,authenticated,service_role');
   sql(
     readFileSync(
       new URL(`../supabase/migrations/${migration}`, import.meta.url),
       "utf8",
     ),
   );
+  for (const role of ['anon', 'authenticated', 'service_role']) {
+    for (const privilege of ['USAGE', 'SELECT', 'UPDATE']) {
+      assert.equal(sql(`select has_sequence_privilege('${role}','public.inventory_requests_number_seq','${privilege}')`), 'f');
+    }
+  }
   sql(readFileSync(new URL("../supabase/migrations/20261020172309_inventory_operation_settlement.sql", import.meta.url), "utf8"));
   assert.equal(
     command("pm", { action: "assign", leadId: ids.lead, pmId: ids.pm }).ok,
