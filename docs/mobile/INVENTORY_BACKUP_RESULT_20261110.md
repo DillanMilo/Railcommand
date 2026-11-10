@@ -46,7 +46,8 @@ The normal data-first restore stopped while validating
 `activity_log_project_id_fkey`: **21 activity/history rows refer to absent projects**.
 A read-only live aggregate confirmed the same 21 rows already exist on production,
 although the existing constraint is marked validated. There were no missing actor
-references in that check. No cause, age or affected customer identity is inferred.
+references in that check. The subsequent local investigation established the dates
+and scope below; the original cause is still unproven.
 
 To establish faithful recoverability without losing history, the isolated recovery
 created the original schema first, then replayed archived data with restore-session
@@ -90,3 +91,13 @@ physical-client acceptance remain separate gates. Existing web/mobile/offline
 behavior is unchanged; this round changed no deployed code or client queues.
 
 Reference: [Supabase logical backup/restore and restore-session trigger handling](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore).
+
+## Local investigation follow-up
+
+[The local history investigation](INVENTORY_HISTORY_INVESTIGATION_20261110.md) traced
+all 21 entries to one absent project, dated 4–19 March 2026 UTC. A wider check found
+additional missing-parent records and 24 punch-item assignments to one absent
+profile, including twelve items in one existing project. All 83 original tables
+still match the saved copy. No rows were repaired, deleted or reassigned.
+INV-REL-04 remains open; the history issue is broader than the first failing
+constraint reported by the strict restore.

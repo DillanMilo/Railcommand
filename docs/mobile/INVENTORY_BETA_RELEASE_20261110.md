@@ -322,3 +322,13 @@ for checksums, private recovery location, exact comparison scope and file-storag
 limits. Actual stored photo/document bytes were not downloaded; do not claim full
 project disaster-recovery coverage from the database archive alone. Earlier pending
 backup wording records the prior checkpoint and is superseded by this result.
+
+## History investigation completed locally
+
+The [history investigation](INVENTORY_HISTORY_INVESTIGATION_20261110.md) identifies
+one absent project behind all 21 March history entries and additional existing
+missing-parent records. Twenty-four punch items reference one absent profile; twelve
+are in one existing project. The saved copy's 83 original tables remain unchanged.
+INV-REL-04 stays open for a reviewed preservation/correction decision. No live
+repair or access change was made. Inventory remains local and is not enabled in
+the regular team app; signed native distribution and release gates remain pending.
