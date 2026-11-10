@@ -1,0 +1,464 @@
+import type { InventoryMaterial, InventoryUnit } from "./inventory-catalogue";
+/** Additive Phase 1 contract. Field projections never contain finance. */
+export const COST_BUCKETS = [
+  "log",
+  "mill",
+  "trucking",
+  "treating",
+  "drying",
+  "creosote",
+  "rail_car",
+  "install_labour",
+  "inspection",
+  "carrying_cost",
+  "disposal",
+] as const;
+export type CostBucket = (typeof COST_BUCKETS)[number];
+export type CostComponent = {
+  amount: number | null;
+  status: "awaiting_wendy" | "estimate" | "actual" | "commitment";
+  source: string;
+};
+export type InventoryCommand = {
+  action:
+    | "cost_access"
+    | "policy"
+    | "contract"
+    | "baseline"
+    | "supply_chain_assign"
+    | "supply_chain"
+    | "settle"
+    | "assign"
+    | "catalogue_add"
+    | "catalogue_import"
+    | "opening"
+    | "configuration"
+    | "cost"
+    | "count"
+    | "submit"
+    | "revise"
+    | "cancel"
+    | "verify"
+    | "authorize"
+    | "reject";
+  [key: string]: unknown;
+};
+export type InventoryResult = {
+  ok?: boolean;
+  error?: string;
+  code?: string;
+  requestId?: string;
+  lotId?: string;
+  materialId?: string;
+  importHash?: string;
+  alreadyImported?: boolean;
+  version?: number;
+  balance?: number;
+};
+export type InventoryLot = {
+  id: string;
+  project_id: string;
+  material: string;
+  material_id?: string;
+  material_code?: string;
+  unit?: InventoryUnit;
+  category?: InventoryMaterial["category"];
+  catalogueVersion?: 1 | 3;
+  yard: string;
+  balance: number;
+  version: number;
+  readiness: "ready" | "drying" | "quarantined";
+  inspection_accepted: boolean;
+  opening_quantity?: number;
+  received_at: string | null;
+  age_source: string;
+  drying_started_at: string | null;
+  drying_completed_at: string | null;
+  drying_min_months: 4;
+  drying_max_months: 10;
+  condition: "unknown_age" | "aged" | "current";
+  latestCount: {
+    expected: number;
+    counted: number;
+    lot_version: number;
+    reason: string;
+    created_at: string;
+  } | null;
+};
+export type InventoryRequest = {
+  id: string;
+  number: number;
+  lot_id: string;
+  requester_id: string;
+  quantity: number;
+  work_location: string;
+  reason: string;
+  state: "submitted" | "verified" | "awaiting_supply_chain" | "posted" | "rejected" | "cancelled";
+  version: number;
+  revision: number;
+  verifier_id: string | null;
+  approver_id: string | null;
+  created_at: string;
+};
+export type InventoryEvent = {
+  id: string;
+  request_id: string | null;
+  action: string;
+  actor_id: string;
+  revision: number | null;
+  previous_state: string | null;
+  next_state: string | null;
+  reason?: string | null;
+  created_at: string;
+};
+export type InventoryCost = {
+  /** Delivered acquisition for the whole opening lot; null/absent retains legacy breakdown. */
+  purchase_price?: CostComponent | null;
+  id: string;
+  lot_id: string;
+  version: number;
+  components: Record<CostBucket, CostComponent>;
+  annual_rate_override?: number | null;
+  creosote_oil_reference: string | null;
+  exposure_id: string | null;
+  created_at: string;
+};
+export type InventorySource = {
+  id: string;
+  source_key: string;
+  funding: "funded" | "committed" | "new" | "unknown";
+  amount: number | null;
+  source: string;
+  milestone_id: string | null;
+  change_order_id: string | null;
+};
+export type InventoryPolicy = {
+  organization_id: string; version: number; annual_rate: number;
+  threshold_amount: number; currency: string; period_convention: "contract_year";
+  spend_basis: "approved_commitments_plus_proposed"; source: string;
+  created_by: string | null; created_at: string;
+};
+export type InventoryAnnual = {
+  state: "complete" | "already_funded" | "reconciliation_required" | "period_review_required";
+  contractId?: string; periodYear?: number; periodStart?: string; periodEndExclusive?: string; currency?: string;
+  sourceId?: string; sourceKey?: string; committed?: number; incremental?: number;
+  forecast?: number; requiresSupplyChain?: boolean | null; likelySplit?: boolean;
+  policy?: InventoryPolicy; baseline?: InventoryBaseline | null;
+  assignment?: { actor_id: string; version: number } | null; eligibleSupplyChain?: boolean;
+  proposedSource?: { sourceId: string; sourceKey: string; amount: number; evidence: string; projectId: string; actorId: string };
+  sources?: { sourceId: string; sourceKey: string; amount: number; evidence: string; projectId: string; requestId: string; actorId: string; createdAt: string }[];
+};
+export type InventoryBaseline = {
+  id: string; contract_id: string; period_year: number; currency: string;
+  version: number; amount: number; evidence: string; verified_by: string; verified_at: string;
+};
+export type InventoryFinance = {
+  costEntryVersion?: 2;
+  canConfigurePolicy?: boolean;
+  canManageAccess?: boolean;
+  canApproveSupplyChain?: boolean;
+  costAccess?: { project_id: string; member_id: string; version: number; can_view: boolean; source: string; actor_id: string; created_at: string }[];
+  policy?: InventoryPolicy;
+  policyHistory?: InventoryPolicy[];
+  contracts?: { id: string; contract_key: string; start_date: string; name: string }[];
+  baselines?: InventoryBaseline[];
+  contractSources?: { id: string; contract_id: string; period_year: number; currency: string; source_key: string; amount: number; evidence: string }[];
+  annual?: { lotId: string; evaluation: InventoryAnnual }[];
+  supplyChainAssignment?: { actor_id: string; version: number } | null;
+  approvalEvidence?: { id: string; request_id: string; revision: number; action: string; actor_id: string; created_at: string; snapshot: InventoryAnnual }[];
+  budget: {
+    base: number;
+    spent: number;
+    adjusted: number;
+    postedNewExposure: number;
+    postedSourceIds?: string[];
+    changeOrders: {
+      id: string;
+      number: string;
+      amount: number;
+      status: string;
+      signed: boolean;
+    }[];
+  };
+  costs: InventoryCost[];
+  sources: InventorySource[];
+  milestones: { id: string; name: string }[];
+  configuration: {
+    version: number;
+    status: "unconfirmed";
+    annual_rate: number | null;
+    storage_daily: number | null;
+    threshold_amount: number | null;
+    currency: string | null;
+    source: string;
+  } | null;
+  requestSnapshots?: {
+    request_id: string;
+    revision: number;
+    cost_revision_id: string | null;
+    exposure_id: string | null;
+    budget_snapshot: InventoryFinance["budget"];
+  }[];
+  evaluation: "incomplete_awaiting_wendy";
+};
+export type InventorySnapshot = {
+  projectId: string;
+  asOf: string;
+  canManage: boolean;
+  canReceive?: boolean;
+  catalogue?: InventoryMaterial[];
+  actors?: { id: string; name: string; role: string; can_edit?: boolean }[];
+  revisions?: {
+    request_id: string;
+    revision: number;
+    payload: {
+      quantity: number;
+      workLocation: string;
+      reason: string;
+      lotVersion: number;
+      leadId: string;
+      pmId: string;
+      policyVersion: number;
+    };
+    actor_id: string;
+    created_at: string;
+  }[];
+  assignments: { lead_id: string; pm_id: string; version: number } | null;
+  lots: InventoryLot[];
+  requests: InventoryRequest[];
+  events: InventoryEvent[];
+  denials: {
+    id: string;
+    code: string;
+    actor_id: string;
+    request_id: string | null;
+    created_at: string;
+  }[];
+  finance?: InventoryFinance;
+};
+export function operationalInventory(
+  snapshot: InventorySnapshot,
+): InventorySnapshot {
+  const { finance: _finance, ...field } = snapshot;
+  // Match the server's field boundary. Unknown/new event classes stay online
+  // until explicitly reviewed for operational persistence. No event reason is
+  // public to field clients, even when the current online reader has finance.
+  const actions = new Set([
+    "catalogue_add", "catalogue_import", "assign", "opening", "count", "submit", "revise", "cancel", "verify",
+    "authorize", "reject", "supply_chain",
+  ]);
+  return {
+    ...field,
+    ...(field.events && {
+      events: field.events.filter((e) => actions.has(e.action)).map((e) => ({
+        id: e.id,
+        request_id: e.request_id,
+        action: e.action,
+        actor_id: e.actor_id,
+        revision: e.revision,
+        previous_state: e.previous_state,
+        next_state: e.next_state,
+        created_at: e.created_at,
+      })),
+    }),
+  };
+}
+/** Explicitly supplied example inputs, never an operational rate or config default. */
+export function basicHoldingExample(
+  upstream: readonly number[],
+  storageDaily: number,
+  annualRate: number,
+  days: number,
+  installLabour: number,
+) {
+  if (
+    ![...upstream, storageDaily, annualRate, days, installLabour].every(
+      (v) => Number.isFinite(v) && v >= 0,
+    )
+  )
+    throw new Error("Nonnegative example inputs required");
+  const landed = upstream.reduce((a, b) => a + b, 0);
+  const holding =
+    Math.round(
+      (storageDaily * days + (landed * annualRate * days) / 365) * 100,
+    ) / 100;
+  return {
+    landed,
+    holding,
+    landedAndHolding: landed + holding,
+    installedBasic: landed + holding + installLabour,
+  };
+}
+export function budgetEvaluation(
+  budget: InventoryFinance["budget"],
+  source: InventorySource | undefined,
+  alreadyPosted: boolean,
+) {
+  if (
+    !source ||
+    source.funding === "unknown" ||
+    (source.funding === "new" && source.amount === null)
+  )
+    return { state: "unknown" as const };
+  const incremental =
+    source.funding === "new" &&
+    !alreadyPosted &&
+    !budget.postedSourceIds?.includes(source.id)
+      ? source.amount!
+      : 0;
+  const forecast =
+    Number(budget.spent) +
+    Number(budget.postedNewExposure) +
+    Number(incremental);
+  const headroom = Number(budget.adjusted) - forecast;
+  return {
+    state: headroom < 0 ? ("hold" as const) : ("within_budget" as const),
+    incremental,
+    forecast,
+    headroom,
+    shortfall: Math.max(0, -headroom),
+  };
+}
+export type InventoryDraft = {
+  schemaVersion: 1;
+  userId: string;
+  projectId: string;
+  operationId: string;
+  updatedAt: string;
+  phase: "editing" | "unknown";
+  pending?: { operationId: string; command: InventoryCommand };
+  command: InventoryCommand;
+};
+export function parseInventoryDraft(
+  input: unknown,
+  userId: string,
+  projectId: string,
+): InventoryDraft | null {
+  const d = input as InventoryDraft | null;
+  if (
+    !d ||
+    d.schemaVersion !== 1 ||
+    d.userId !== userId ||
+    d.projectId !== projectId ||
+    !d.operationId ||
+    !d.command ||
+    !["editing", "unknown"].includes(d.phase)
+  )
+    return null;
+  return d;
+}
+
+export function inventoryDeviceDraft(draft: InventoryDraft): InventoryDraft {
+  // Request/revision/count text is operational field input. Decision reasons
+  // are private event evidence; preserve only their original receipt identity.
+  const safeCommand = (command: InventoryCommand): InventoryCommand => {
+    if (!["catalogue_add", "catalogue_import", "opening", "cost", "configuration", "reject", "cancel", "cost_access", "policy", "contract", "baseline", "supply_chain_assign"].includes(command.action))
+      return command;
+    // Retain only original operational scope/baselines, never commercial input.
+    // Missing legacy metadata remains missing; a fresh snapshot cannot supply it.
+    const safe: InventoryCommand = { action: command.action, receiptOnly: true };
+    for (const key of ["requestId", "lotId"])
+      if (typeof command[key] === "string") safe[key] = command[key];
+    for (const key of ["expectedVersion", "lotVersion", "costVersion"])
+      if (Number.isSafeInteger(command[key]) && Number(command[key]) >= 0)
+        safe[key] = command[key];
+    return safe;
+  };
+  const command = safeCommand(draft.command);
+  const pending = draft.pending ?? (command.receiptOnly
+    ? { operationId: draft.operationId, command }
+    : undefined);
+  return {
+    ...draft,
+    command,
+    ...(command.receiptOnly && !draft.pending ? { phase: "unknown" as const } : {}),
+    ...(pending && {
+      pending: {
+        operationId: pending.operationId,
+        command: safeCommand(pending.command),
+      },
+    }),
+  };
+}
+
+/** Partial manual cost totals only. An unconfirmed carrying rate never becomes zero. */
+export function materialCostSummary(cost: InventoryCost | undefined) {
+  const sum = (keys: readonly CostBucket[]) =>
+    cost &&
+    keys.every(
+      (k) =>
+        cost.components[k].amount !== null &&
+        cost.components[k].status !== "awaiting_wendy" &&
+        cost.components[k].source.trim(),
+    )
+      ? keys.reduce((total, k) => total + Number(cost.components[k].amount), 0)
+      : null;
+  const purchase = cost?.purchase_price;
+  const landed = purchase
+    ? purchase.amount != null &&
+      purchase.status !== "awaiting_wendy" &&
+      purchase.source.trim()
+      ? Number(purchase.amount)
+      : null
+    : sum(COST_BUCKETS.slice(0, 7));
+  const installation = sum(["install_labour", "inspection"]);
+  const installed =
+    landed != null && installation != null ? landed + installation : null;
+  const disposal = sum(["disposal"]);
+  return {
+    landed,
+    installedExcludingCarrying: installed,
+    disposal,
+    lifecycleExcludingCarrying:
+      installed != null && disposal != null ? installed + disposal : null,
+    total: null,
+    state: "incomplete_awaiting_wendy" as const,
+  };
+}
+
+/** Shared finance-only wording. Never include this model in an operational cache. */
+export const CONTRACT_RULE_EXPLANATION = "Splitting purchases to avoid authorization is prohibited. Likely split is a review signal, not a finding of fraud. Contract-year approved commitments plus the request is the basis. Contract start anniversaries bound the period; Feb29 uses Feb28 in non-leap years. External approved spend must be reconciled manually, excluding every tracked source.";
+export function annualReviewText(a: InventoryAnnual | undefined) {
+  if (!a || !["complete", "already_funded"].includes(a.state)) return "Contract reconciliation required — new spending held";
+  if (a.state === "already_funded") return "Already-funded stock consumption — zero incremental commitment";
+  const authorization = a.requiresSupplyChain
+    ? (a.eligibleSupplyChain ? "Waiting for distinct Supply Chain authorization after PM" : "Hold: assign an eligible distinct Supply Chain approver")
+    : a.incremental === 0
+      ? "Already committed source — no new spending; lead and distinct PM still required"
+      : "Within annual threshold; lead and distinct PM still required";
+  return `${a.currency} ${Number(a.forecast).toFixed(2)} annual total · ${authorization}${a.likelySplit ? " · Likely split purchases: review linked distinct source evidence" : ""}`;
+}
+/** Acquisition inputs are totals for the accepted opening quantity. Remaining
+ * stock is valued proportionally; elapsed receipt age is ACT/365, UTC dates.
+ * Annual capital only; storage/manual carrying are never added a second time.
+ */
+export function operationalCarrying(lot: InventoryLot, cost: InventoryCost | undefined, policy: InventoryPolicy | undefined, asOf: string) {
+  const landed = materialCostSummary(cost).landed;
+  const rate = cost?.annual_rate_override ?? policy?.annual_rate;
+  const received = lot.received_at ? Date.parse(`${lot.received_at}T00:00:00Z`) : NaN;
+  const now = Date.parse(`${asOf.slice(0, 10)}T00:00:00Z`);
+  const days = Math.floor((now - received) / 86400000);
+  const opening = lot.opening_quantity;
+  if (landed === null || rate === undefined || !Number.isFinite(rate) || rate < 0 || !opening || opening < lot.balance || days < 0 || !Number.isFinite(days))
+    return { state: "incomplete" as const, annual: null, days: null, inventoryValue: null, rate: rate ?? null };
+  const inventoryValue = landed * lot.balance / opening;
+  return { state: "annual_component_only" as const, annual: Math.round((inventoryValue * rate * days / 365 + Number.EPSILON) * 100) / 100, days, inventoryValue, rate };
+}
+
+export function inventoryRuleForms(f: InventoryFinance): { action: InventoryCommand["action"]; title: string; values: Record<string,string>; fields: string[][] }[] {
+  return [
+    { action: "cost_access" as const, title: "Project cost viewing access", values: {expectedVersion:"0",canViewCost:"true",source:""}, fields: [["memberId","Invited engineer or superintendent member UUID"],["expectedVersion","Reviewed member access version (0 for first grant)"],["canViewCost","Allow cost viewing: true or false"],["source","Access change reason"]] },
+    { action: "policy" as const, title: "Organization defaults", values: { expectedVersion: String(f.policy?.version ?? 0), annualRate: String(f.policy?.annual_rate ?? 0.05), thresholdAmount: String(f.policy?.threshold_amount ?? 50000), currency: f.policy?.currency ?? "USD", source: "" }, fields: [["expectedVersion", "Reviewed policy version"], ["annualRate", "Annual carrying rate (fraction per year: 0.05 = 5%)"], ["thresholdAmount", "Additional authorization threshold (currency per contract year; strictly over)"], ["currency", "Threshold currency (ISO 4217)"], ["source", "Policy change evidence"]] },
+    { action: "contract" as const, title: "Register shared organization contract", values: {}, fields: [["contractKey", "Stable contract identity"], ["name", "Contract name"], ["startDate", "Contract start date (YYYY-MM-DD); anniversaries define the contract year"]] },
+    { action: "baseline" as const, title: "Verify opening annual commitments", values: { expectedVersion: "0", currency: f.policy?.currency ?? "USD" }, fields: [["contractId", "Shared contract UUID"], ["periodYear", "Contract period start year"], ["currency", "Commitment currency"], ["expectedVersion", "Reviewed baseline version (0 for first verification)"], ["amount", "External approved commitments, excluding ALL tracked sources"], ["evidence", "Reconciliation evidence and covered scope"], ["verifiedExcludesTrackedSources", "Enter true after verifying external baseline excludes every tracked source"]] },
+    { action: "supply_chain_assign" as const, title: "Assign distinct Supply Chain approver", values: { expectedVersion: String(f.supplyChainAssignment?.version ?? 0), supplyChainId: f.supplyChainAssignment?.actor_id ?? "" }, fields: [["expectedVersion", "Reviewed Supply Chain assignment version"], ["supplyChainId", "Eligible current finance member UUID; distinct from lead and PM"]] },
+  ];
+}
+export function inventoryRuleCommand(action: InventoryCommand["action"], values: Record<string, string>): InventoryCommand {
+  return { action, ...values, ...(action === "baseline" && { verifiedExcludesTrackedSources: values.verifiedExcludesTrackedSources === "true" }), ...(action === "cost_access" && { canViewCost: values.canViewCost === "true" ? true : values.canViewCost === "false" ? false : null }) };
+}
+
+/** Shared form visibility is a convenience; the server enforces every decision. */
+export function allowedInventoryRuleForms(f: InventoryFinance, canManage: boolean) {
+ return inventoryRuleForms(f).filter(form => form.action === "policy" ? f.canConfigurePolicy === true : ["cost_access", "supply_chain_assign"].includes(form.action) ? f.canManageAccess === true : canManage);
+}

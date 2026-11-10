@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCO overview · RailCommand wireframe</title>
+<link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+<header>
+<div class="brand">Rail<b>Command</b>
+<small>PROJECT CONTROL / DESIGN REVIEW</small>
+</div>
+<div class="review">20 OCT 2026<br>STATIC PROTOTYPE · SYNTHETIC DATA</div>
+</header>
+<div class="layout">
+<nav aria-label="Wireframe screens">
+<div class="nav-label">Project workspace</div>
+<a href="index.html">Screen index</a>
+<a href="tco-overview.html" aria-current="page">Cost overview</a>
+<a href="inventory-list.html">Inventory</a>
+<a href="material-cost-detail.html">Material cost</a>
+<a href="approval-queue-trail.html">Approvals & trail</a>
+<a href="dashboard-audit-flags.html">Audit flags</a>
+<a href="field-crew-mobile.html">Field crew mobile</a>
+<div class="nav-foot">Synthetic Track Renewal<br>North yard · USD<br>
+<br>Individual invite-link access<br>Roles remain project scoped</div>
+</nav>
+<main id="main">
+<div class="page-top">
+<div>
+<div class="eyebrow">Purchasing / executive · project TCO</div>
+<h1>What the ties really cost</h1>
+<p class="muted">A single material lot with inspectable assumptions. Recorded acquisition and management estimates stay separate.</p>
+</div>
+<span class="badge amber">Phase 1 pilot</span>
+</div>
+<div class="notice">Drying: 4–10 months; synthetic seven-month process completed before yard receipt. Creosote: oil-linked quote snapshot, no live repricing. Carrying/threshold settings await Wendy.</div>
+<div class="stats">
+<div class="stat">
+<span class="label">Landed source / quote basis</span>
+<strong>$68,000.00</strong>
+<span class="small muted">Log, mill, trucking, treating, drying, creosote, rail car · synthetic</span>
+</div>
+<div class="stat">
+<span class="label">Carrying rate configuration</span>
+<strong>Awaiting Wendy</strong>
+<span class="small muted">Editable unconfirmed placeholders · no active default</span>
+</div>
+<div class="stat">
+<span class="label">Operational true-cost total</span>
+<strong>Incomplete</strong>
+<span class="small muted">Do not substitute a sample rate or zero</span>
+</div>
+</div>
+<div class="grid two">
+<section class="card">
+<div class="row">
+<h2>From raw log to installed tie</h2>
+<span class="badge blue">Isolated example · P1 inputs + P2/3</span>
+</div>
+<p class="small muted">Wendy's eleven buckets: log, mill, trucking, treating, drying, creosote, rail car, install labour, inspection, carrying cost, disposal. Example only: 950 of 1,000 installed after a ready lot is held 60 days.</p>
+<div class="bar" aria-label="Raw log is 14.49 percent of full lifecycle scenario">
+<span class="purchase" style="width:14.49%">
+</span>
+<span class="other" style="width:85.51%">
+</span>
+</div>
+<div class="legend">
+<span>
+<i style="background:#203e50">
+</i>Raw log · $20,000</span>
+<span>
+<i style="background:#ed985b">
+</i>All other costs · $118,029.59</span>
+</div>
+<div class="key space">
+<span>Seven upstream buckets</span>
+<strong>$68,000.00</strong>
+<span>Carrying including expected risk</span>
+<strong>$3,029.59</strong>
+<span>Install labour + inspection + disposal</span>
+<strong>$42,000.00</strong>
+<span>Future lifecycle less salvage</span>
+<strong>$25,000.00</strong>
+<span>Projected lifecycle TCO</span>
+<strong>$138,029.59</strong>
+<span>Per installed tie · 950 installed</span>
+<strong>$145.29</strong>
+</div>
+<div class="actions">
+<a class="button" href="material-cost-detail.html">Inspect cost basis</a>
+</div>
+</section>
+<section class="card">
+<div class="row">
+<h2>Compare like budgets</h2>
+<span class="badge amber">Review required</span>
+</div>
+<p>Lifecycle allowance and project spending are different comparisons.</p>
+<div class="key">
+<span>Illustrative lifecycle allowance</span>
+<strong>$130,000.00</strong>
+<span>Lifecycle scenario</span>
+<strong>$138,029.59</strong>
+<span>Lifecycle gap</span>
+<strong style="color:var(--red)">$8,029.59</strong>
+</div>
+<div class="notice space">This is a lifecycle scenario gap, not a posted project-spend overrun. No lifecycle values enter Phase 1 stock posting.</div>
+<h3>Project-control issue example · Phase 1</h3>
+<p class="small">Already-funded ties: issue value $6,800 adds zero to the $126,000 forecast. A distinct new $6,800 work cost creates a $2,800 hold against $130,000. Link approved CO-007 +$3,000 → budget $133,000, forecast $132,800, headroom $200. The CO budget delta is counted once.</p>
+<a href="dashboard-audit-flags.html#budget">View budget evidence →</a>
+</section>
+</div>
+<section class="card space">
+<h2>Material lines · one-lot pilot</h2>
+<div class="table-wrap" role="region" aria-label="Material cost summary" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>Material / lot</th>
+<th>Basis</th>
+<th class="num">Landed</th>
+<th class="num">Basic carrying</th>
+<th class="num">Landed + holding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="material-cost-detail.html">Timber ties / TIE-0821</a>
+<small>1,000 purchased · each</small>
+</td>
+<td>Synthetic source/quote basis; carrying unconfirmed<small>As of 20 Oct, 09:00 project time</small>
+</td>
+<td class="num">$68,000.00</td>
+<td class="num">Awaiting Wendy</td>
+<td class="num">Incomplete</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="state-note">Coverage: illustrative single lot only. Full project cost is unavailable until spend, commitments and material source IDs reconcile. Approved change orders adjust budget once; they are not added again as material spend.</p>
+</section>
+<details>
+<summary>Other states to design and verify</summary>
+<p>Loading: skeleton with no totals. Empty: add an authorized opening lot. Missing cost/rate: “Estimate incomplete”. Denied: no monetary response or cached projection. Offline: reconnect for current financial data. Error: keep the last entered assumptions as a protected draft and show retry without a green budget state.</p>
+</details>
+<footer>Planning prototype. Actions only change this open page and reset on reload. No server, account, saved draft or approval is created. <a href="../tco-inventory-audit-trail-plan.md">Read the implementation plan</a>.</footer>
+</main>
+</div>
+</body>
+</html>

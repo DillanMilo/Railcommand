@@ -4,7 +4,7 @@ export function nativeWorkspace() {
   return (window as Window & { ReactNativeWebView?: { postMessage(value: string): void } }).ReactNativeWebView;
 }
 
-export async function shareWorkspaceBlob(blob: Blob, name: string): Promise<boolean> {
+export async function shareWorkspaceBlob(blob: Blob, name: string, current: () => boolean = () => true): Promise<boolean> {
   const bridge = nativeWorkspace();
   if (!bridge) return false;
   if (blob.size > 20 * 1024 * 1024 || !blob.size) throw new Error('Mobile exports must be between 1 byte and 20 MB. Export larger files on the website.');
@@ -14,6 +14,7 @@ export async function shareWorkspaceBlob(blob: Blob, name: string): Promise<bool
     reader.onerror = () => reject(new Error('Could not prepare the export.'));
     reader.readAsDataURL(blob);
   });
+  if (!current()) throw new Error('Export cancelled because the account or project changed.');
   const id = crypto.randomUUID();
   bridge.postMessage(JSON.stringify({ type: 'file-start', id, name, mime: blob.type, size: blob.size }));
   for (let offset = 0, index = 0; offset < base64.length; offset += 262144, index++) {

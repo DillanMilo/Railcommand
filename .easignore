@@ -1,0 +1,110 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# supabase local link metadata
+supabase/.temp/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+.env*.local
+backups/
+
+# Preserve native app ignore rules (EAS replaces every .gitignore).
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+/apps/mobile/node_modules/
+
+# Expo
+/apps/mobile/.expo/
+/apps/mobile/dist/
+/apps/mobile/web-build/
+/apps/mobile/expo-env.d.ts
+
+# Native
+/apps/mobile/.kotlin/
+/apps/mobile/*.orig.*
+/apps/mobile/*.jks
+/apps/mobile/*.p8
+/apps/mobile/*.p12
+/apps/mobile/*.key
+/apps/mobile/*.mobileprovision
+
+# Metro
+/apps/mobile/.metro-health-check*
+
+# debug
+/apps/mobile/npm-debug.*
+/apps/mobile/yarn-debug.*
+/apps/mobile/yarn-error.*
+
+# macOS
+/apps/mobile/.DS_Store
+/apps/mobile/*.pem
+
+# local env files
+/apps/mobile/.env*.local
+
+# typescript
+/apps/mobile/*.tsbuildinfo
+
+/apps/mobile/example
+
+# generated native folders
+/apps/mobile/ios
+/apps/mobile/android
+
+# Local evidence, credentials and generated build outputs are never build inputs.
+/.codex-loop/
+/.mobile-recovery/
+/.codex/
+/.agents/
+/.aws/
+.git
+credentials.json
+*.p8
+*.p12
+*.jks
+*.key
+*.mobileprovision
+*.ipa
+*.apk
+*.aab
+*.xcarchive

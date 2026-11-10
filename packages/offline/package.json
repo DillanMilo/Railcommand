@@ -1,0 +1,20 @@
+{
+  "name": "@railcommand/offline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "mocha --require tsx \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@railcommand/domain": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/mocha": "10.0.10",
+    "fake-indexeddb": "6.2.5",
+    "tsx": "4.22.4",
+    "typescript": "5.9.3"
+  }
+}

@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { ACTIONS } from '@/lib/permissions';
+import { ACTIONS,canPerform } from '@/lib/permissions';
 import type { ChangeOrder } from '@/lib/types';
 import {
   type ActionResult,
@@ -25,6 +25,8 @@ export async function getChangeOrders(projectId: string): Promise<ActionResult<C
 
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
+    const {data:membership}=await supabase.from('project_members').select('project_role').eq('project_id',projectId).eq('profile_id',user.id).maybeSingle();
+    if(!canPerform(membership?.project_role??null,ACTIONS.BUDGET_VIEW))return {error:'Budget permission required'};
 
     const { data, error } = await supabase
       .from('change_orders')
@@ -55,6 +57,8 @@ export async function getChangeOrderById(
 
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
+    const {data:membership}=await supabase.from('project_members').select('project_role').eq('project_id',projectId).eq('profile_id',user.id).maybeSingle();
+    if(!canPerform(membership?.project_role??null,ACTIONS.BUDGET_VIEW))return {error:'Budget permission required'};
 
     const { data, error } = await supabase
       .from('change_orders')

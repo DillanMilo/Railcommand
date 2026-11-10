@@ -2,6 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { ACTIONS,canPerform } from '@/lib/permissions';
 import { getLocalDateString } from '@/lib/date-utils';
 import {
   type ActionResult,
@@ -18,9 +19,9 @@ export interface DashboardMetrics {
   criticalPunch: number;
   totalLogs: number;
   lastLogDate: string | null;
-  approvedChangeOrderTotal: number;
-  pendingChangeOrders: number;
-  earnedValue: number;
+  approvedChangeOrderTotal?: number;
+  pendingChangeOrders?: number;
+  earnedValue?: number;
 }
 
 export interface DashboardData {
@@ -41,6 +42,9 @@ export async function getDashboardData(
 
     const access = await checkProjectMembership(supabase, user.id, projectId);
     if (!access.isMember) return { error: access.error };
+
+    const {data:membership}=await supabase.from('project_members').select('project_role').eq('project_id',projectId).eq('profile_id',user.id).maybeSingle();
+    const finance=canPerform(membership?.project_role??null,ACTIONS.BUDGET_VIEW);
 
     const today = getLocalDateString();
     const [
@@ -106,22 +110,19 @@ export async function getDashboardData(
         .limit(1)
         .maybeSingle(),
 
-      supabase
+      finance ? supabase
         .from('change_orders')
         .select('amount')
         .eq('project_id', projectId)
-        .eq('status', 'approved'),
+        .eq('status', 'approved') : Promise.resolve({data:[],error:null}),
 
-      supabase
+      finance ? supabase
         .from('change_orders')
         .select('id', { count: 'exact', head: true })
         .eq('project_id', projectId)
-        .in('status', ['submitted', 'draft']),
+        .in('status', ['submitted', 'draft']) : Promise.resolve({data:[],count:0,error:null}),
 
-      supabase
-        .from('milestones')
-        .select('budget_planned, percent_complete')
-        .eq('project_id', projectId),
+      finance ? supabase.rpc('milestone_finance',{p_project_id:projectId}) : Promise.resolve({data:[],error:null}),
     ]);
 
     // Return first error if any query failed
@@ -145,7 +146,7 @@ export async function getDashboardData(
       0,
     );
     const earnedValue = (milestonesRes.data ?? []).reduce(
-      (sum, milestone) =>
+      (sum:number, milestone:{budget_planned:number;percent_complete:number}) =>
         sum + ((Number(milestone.budget_planned) || 0) * (Number(milestone.percent_complete) || 0)) / 100,
       0,
     );
@@ -162,9 +163,7 @@ export async function getDashboardData(
           criticalPunch: criticalPunchRes.count ?? 0,
           totalLogs: logsCountRes.count ?? 0,
           lastLogDate: lastLogRes.data?.log_date ?? null,
-          approvedChangeOrderTotal,
-          pendingChangeOrders: pendingChangeOrdersRes.count ?? 0,
-          earnedValue,
+          ...(finance?{approvedChangeOrderTotal,pendingChangeOrders:pendingChangeOrdersRes.count??0,earnedValue}:{}),
         },
       },
     };

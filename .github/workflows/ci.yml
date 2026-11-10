@@ -23,6 +23,9 @@ jobs:
       - name: Database grants and isolated PostgreSQL permissions
         run: npm run check:db-grants && npm run test:db-grants
 
+      - name: Inventory finance rollout compatibility
+        run: npm run test:inventory && node scripts/test-inventory-finance-bridge.mjs && node scripts/test-inventory-contract-db.mjs && node scripts/test-inventory-catalogue-db.mjs
+
       - name: Web/mobile action inventory
         run: node scripts/verify-web-mobile-parity.mjs
 
@@ -34,7 +37,10 @@ jobs:
 
       - name: Native field tools and workspace checks
         if: ${{ hashFiles('apps/mobile/package.json') != '' }}
-        run: npm run typecheck --workspace @railcommand/mobile && npm run test --workspace @railcommand/mobile
+        run: |
+          npm ci --prefix apps/mobile
+          npm run typecheck --prefix apps/mobile
+          npm run test --prefix apps/mobile
 
       - name: Lint
         run: npm run lint

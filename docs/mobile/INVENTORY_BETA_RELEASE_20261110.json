@@ -1,0 +1,32 @@
+{
+  "sourceBase": "701849744457b529a7eaa292415a4b4867e11d4e",
+  "featureSource": "4c8b6c05dcf16a61bf2f0888084f2ae146fa121f",
+  "branch": "feature/inventory-beta-release",
+  "webBuild": "passed",
+  "rootTypeScript": "passed",
+  "inventoryTests": 44,
+  "authMobileBackendTests": 359,
+  "projectPhotoTests": 25,
+  "nativeTests": 278,
+  "nativeTypeScript": "passed",
+  "nativeIosAndroidExports": "passed; not signed or installed",
+  "grantTests": "passed preview/reset/legacy-default fixtures and static gate",
+  "inventoryDatabaseTests": "passed finance bridge, contract/profile/delivered-price and catalogue suites",
+  "receivingUi": "passed actual web/native components",
+  "lint": {
+    "errors": 0,
+    "warnings": 59
+  },
+  "productionPreflight": "pending; Vercel 403 requires team consent, connected Supabase accounts do not expose production",
+  "physicalReleaseAcceptance": "pending; see handoff",
+  "offline": "read-only loaded stock; durable request drafts; online-only receiving/import/cost/approval",
+  "preservation": {
+    "checkedAtUtc": "2026-11-10T13:26:14.593344+00:00",
+    "protectedCheckoutAndMainUnchanged": true,
+    "originalFeatureBranchUnchanged": true,
+    "hostedSQLExecuted": false,
+    "persistentLocalDatabaseMutations": false,
+    "phoneAppAccessed": false,
+    "pushMergeDeployOrInvitations": false
+  }
+}

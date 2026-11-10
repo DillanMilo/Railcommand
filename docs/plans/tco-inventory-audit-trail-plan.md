@@ -1,0 +1,479 @@
+# True material cost, inventory and approval trail
+
+> Scope update — 4 November 2026: the user approved a small Phase 1 material-cost CSV export for Excel, for current authorized cost viewers on web/native. See [CSV implementation and validation](../mobile/TCO_PHASE1_CSV_EXPORT_20261104.md). This supersedes only the basic cost-report CSV deferral; audit-history exports, formatted XLSX, retention and investigation ownership remain Phase 3.
+
+**Draft specification • 20 October 2026 • plan and wireframes only**
+Meeting basis: the user's summary of the 13 October meeting with Mark and Wendy at A5, updated with the user's decisions on 20 October. No transcript, supplier quotation or finalized A5 rate/threshold policy was supplied. Cost amounts and prototype identities remain synthetic; the approved workflow and supplied cost-bucket names below are confirmed planning inputs.
+
+Planning branch: `codex/tco-inventory-audit-plan`, based on freshly fetched `origin/main` at `ffc83187500019592907493ecf03d084a38fdc47`. Work takes place in a separate managed worktree. The dirty `codex/offline-foundation-day-1` checkout and separate native checkout are read-only inputs. This change adds documentation and static prototypes only: no app code, migrations, live database, main, PR or merge changes. The authorized final action is committing and pushing this branch. After review of the existing automatic Vercel Git integration, the user explicitly permitted a deployment of this branch on 20 October, while retaining the no-merge instruction. The push may therefore create an automatic preview; no deployment guard or project-setting change is added, and no manual production deployment is requested.
+
+## Confirmed decisions — 20 October update
+
+- **Workflow:** foreman requests → inventory lead verifies → PM authorizes; approval is required before physical release. Keep three distinct named invited identities; inventory handling alone grants no finance access.
+- **Pilot target:** Spike Sambol, inventory, Salt Lake, **pending Mark's introduction**. No invitation, contact, project membership or participation is confirmed by this plan. Mark supplies the intro; foreman/PM names, backups, project and yard still need to be established.
+- **Pilot surfaces/devices:** web plus the **current TestFlight build** on the pilot's actual iOS device(s). Record its exact installed build/OS at onboarding; do not substitute an old release-note number. Android and additional device-model expansion are tracked outside this initial pilot in TIA-05A. New bundled Field features still require a signed successor TestFlight build if absent from the current binary; shared online Workspace checks on the current binary do not prove durable native/offline completion.
+- **Wendy's tie buckets:** log, mill, trucking, treating, drying (**4–10 months**), creosote (**oil-linked**), rail car, install labour, inspection, carrying cost and disposal. Use this taxonomy throughout; broad purchase/freight/handling labels are summaries, not competing cost buckets.
+- **Configurable placeholders:** carrying rates and approval threshold amounts/currencies/bands remain unconfirmed until Wendy confirms them. Store editable, versioned draft configuration with explicit `unconfirmed` status and null values; never activate a numeric example as the default. Every Phase 1 issue still requires both approvers, irrespective of value.
+- **Phase 3 deferrals:** evidence-retention policy, new exports and flag-investigation ownership/case workflow. These are not Phase 1 business-decision blockers. Phase 1 still preserves append-only evidence, enforces authorization and shows operational/budget holds; no new purge, export or investigation-assignment workflow is implied.
+- **Budget/CO design:** the user delegated the proposal to this plan. Adopt the proposal in section 6 as the planning baseline; it is not an assertion that an accounting owner has verified live source reconciliation. No code, migration, invitation, external message or merge is authorized by these decisions.
+
+## 1. Outcome and scope
+
+Give a track crew a simple way to request ties from a known yard, give an inventory lead a reliable quantity/location/age view, and give authorized managers a defensible account of true cost and who approved each action. Wendy's priority is the traceable approval trail. “TCO” belongs only in purchasing/executive views. This feature must reach **both the web application and the native mobile application**; a responsive web page alone does not complete native Field tools.
+
+### Phase 1: one useful pilot slice
+
+Pilot candidate: Spike Sambol (inventory, Salt Lake), pending Mark's intro; keep the existing synthetic North yard fixture until the actual project/yard and consent are confirmed. One invited project, one yard, one tie material and one opening lot; a foreman requests an issue of stock to a work location, the inventory lead verifies it, and a different assigned PM authorizes it. The requester, verifier and final approver are three different named people. The two primary testers are the crew and inventory lead; use one existing invited manager for a short final-approval session. If that person is unavailable, the request remains waiting rather than bypassing a step.
+
+Seed an opening balance through an authorized, audited acceptance operation; do not build a receiving/procurement system first. Show Wendy's named cost buckets with sources/completeness, a carrying-cost estimate only when a confirmed rate version exists (or explicitly in example mode), approved balance, drying/readiness context, age and manual count discrepancy. Seed a finished, inspection-accepted ready lot; no drying-production workflow is built in Phase 1. Pending requests are visible separately. No stock is consumed until final authorization; the pilot therefore requires approval **before physical release**. Record an observed early release as a discrepancy, never fabricate a prior approval.
+
+The first-week pilot is five days of use after the security, draft-persistence and device gates below pass. Aim for 20 minutes of onboarding, one request under two minutes, each approval under one minute and a daily five-minute stock check. This is a small validation exercise, not a promise that all three phases can be engineered or store-approved in a week. If “within a week” means delivery from today, confirm it in Q1: the missing web offline foundation and physical-device distribution are real prerequisites.
+
+Before pilot day 1: Mark introduces Spike; confirm interest, a project/yard and distinct foreman/PM accounts. No automated outreach is part of this task. Pilot week: day 1 confirm invites, current TestFlight build/OS, opening count and cost basis; day 2 request/check/authorize the first issue; day 3 restore a field draft after an offline restart; day 4 exercise denied/stale/duplicate outcomes; day 5 reconcile stock and review the evidence with Wendy. Use the same short script on web and native; no additional beta cohort is required.
+
+Success: one crew and one inventory lead complete ten synthetic/designated-pilot requests without lost drafts or duplicate issues; an existing manager completes final approvals; an observer can reconstruct each request from actor, time, exact revision and stock outcome. One explicit rejection and one stock-count discrepancy are exercised. Production pilot records are never disposable test fixtures.
+
+### Phases 2 and 3
+
+| Phase | User outcome | Included | Explicit boundary |
+| --- | --- | --- | --- |
+| 1 — ties pilot | Request, verify, approve and reconcile one stock issue on web and native | Ready opening lot, issue requests, foreman → lead → PM, plain quantity view, Wendy's manually captured bucket estimates, drying/readiness context, configurable unconfirmed carrying/threshold placeholders, age/count flags, finance authorization, durable field drafts | No purchase ordering, supplier integration, cross-project transfer, material upload or automatic offline submission |
+| 2 — purchasing and controls | Follow spending/change orders and more inventory movements through one trail | Existing change-order adapter; purchase/spend requests; receipts, returns, transfers, adjustments; activation of Wendy-confirmed threshold policies; split-purchase review; partial delivery; full cost component allocation and actual-vs-estimate reconciliation; inventory-request outbox | No replacement of existing accounting/payroll systems; no claim of automatic fraud determination |
+| 3 — lifecycle and assurance | Compare ownership choices and investigate the portfolio | Maintenance/replacement/disposal/salvage forecasts, optional discounted scenarios, portfolio drill-down, retention policy, permission-scoped/tamper-evidence exports, flag-investigation ownership and case workflow, independent review of overrides | No certified accounting valuation, immutable external archive or predictive fraud promise without separate validation |
+
+The full requested feature is delivered across these three phases. Phase 1 does **not** claim to have spending/change-order approval routing, split-purchase detection or lifecycle forecasting implemented. Those are tracked by TIA-06 through TIA-09, and are clearly labeled in the wireframes.
+
+## 2. Repository evidence and reuse
+
+These are source findings, not claims about inspected live grants or currently installed app versions.
+
+| Existing area | Evidence | Reuse / necessary delta |
+| --- | --- | --- |
+| Finance permissions | [`src/lib/permissions.ts`](../../src/lib/permissions.ts), [`permissions-helper.ts`](../../src/lib/actions/permissions-helper.ts) | `budget:view` belongs to manager, superintendent, engineer and owner; `change_order:manage` excludes owner. Org admin currently bypasses helper checks. Inventory lead and purchaser are **assignments**, not existing role enum values. Preserve role restrictions; do not grant budget access merely because somebody handles stock. |
+| Change orders | [`change-orders.ts`](../../src/lib/actions/change-orders.ts), [creation SQL](../migrations/2026-04-12_change_orders.sql), [`schedule/page.tsx`](../../src/app/(app)/projects/[id]/schedule/page.tsx) | Current update directly sets `approved_by`/`approval_date` when status is approved. There is one approver, editable status and deletion, not a sequential ledger. Preserve IDs/numbers/milestone links; Phase 2 routes in-scope transitions through the new engine and closes old/direct write paths. |
+| Budget | [`dashboard.ts`](../../src/lib/actions/dashboard.ts), [`dashboard/page.tsx`](../../src/app/(app)/dashboard/page.tsx), [`types.ts`](../../src/lib/types.ts) | Existing adjusted budget is `projects.budget_total + approved change_orders.amount`; spent comes from `projects.budget_spent`. Milestone planned/actual values also exist. Reuse these baselines; no authoritative procurement ledger exists in inspected source. |
+| Activity history | [`activity-log.ts`](../../src/lib/actions/activity-log.ts), [`permissions-helper.ts`](../../src/lib/actions/permissions-helper.ts), [historical schema](../../supabase/schema_snapshot.sql) | Reuse activity feed navigation and redacted summaries. Current actions call `logActivity` after the mutation; this is not proof of atomic approval evidence. New events must commit with the domain transition. The historical snapshot is not a current bootstrap or live-policy attestation. |
+| Financial RLS precedent | [`20260730170000_up_weekly_reporting_foundation.sql`](../../supabase/migrations/20260730170000_up_weekly_reporting_foundation.sql) | Reuse the project/org boundary and finance-role meaning, not every historical function privilege. Check minimum grants together with RLS. |
+| Invitations | [`invitations.ts`](../../src/lib/actions/invitations.ts), [`onboarding.ts`](../../src/lib/actions/onboarding.ts), mobile invitation route | Reuse individual invite-link onboarding and project membership. No master/shared login, automatic approver account or expanded signup flow. Existing owner assignment is limited by `project-roles.ts`; do not add a new path around that rule. |
+| Shared contracts | [`packages/domain/src/index.ts`](../../packages/domain/src/index.ts), [`packages/api-client/src/index.ts`](../../packages/api-client/src/index.ts), [`src/app/api/mobile/v1`](../../src/app/api/mobile/v1) | Add typed, additive contracts and common validation; web actions and bearer-authenticated native routes call the same services. Preserve existing v1 routes, mobile pilot gate, session bridge, RailBot and sync behavior. |
+| Native source | Separate read-only checkout `.mobile-recovery/candidate`, branch `codex/mobile-beta-20260910`, inspected HEAD `75d9145e47b9d7986eab495fe47621d20a7c190f` | `apps/mobile/src/app`, `src/lib/offline-store.ts`, `src/providers/mobile-data-provider.tsx`, shared packages. SQLite is user/profile scoped. New native inventory list, request, status and approver navigation require bundled changes and signed builds. This checkout is not merged or modified by this plan. |
+| Web offline source gap | AGENTS describes `src/lib/offline/storage.ts` on offline development; **that file is absent at this origin/main baseline** | TIA-00 must integrate an independently reviewed committed foundation before adding web private drafts. Do not import the user's uncommitted branch wholesale or pretend the foundation is already on main. |
+
+### Release-blocking privacy finding for this feature
+
+UI hiding is insufficient. `getChangeOrders` and the dashboard action authorize membership before reading monetary values; `/api/mobile/v1/bootstrap` populates `budgetTotal` and `budgetSpent` without a `budget:view` check. The inspected native dashboard reads those bootstrap values. TIA-01 must inspect their underlying grants/RLS and all related project/schedule/activity/export/RailBot read paths in a designated test environment, then protect monetary data at the server and database boundary. Do not claim this plan repaired the existing behavior.
+
+The field projection must contain no prices, cost rates, carrying amounts, budgets, thresholds or financial audit evidence in JSON, hidden DOM, accessibility labels, exports, logs or offline caches. Cache upgrades must selectively remove previously cached finance fields for a restricted user while preserving all unrelated drafts and queued operations. An older native UI may show its existing zero/“Restricted” fallback when optional finance fields are omitted; verify the actual supported binaries before rollout.
+
+## 3. Web, native and shared implementation map
+
+| Capability | Web application | Native mobile application | Shared contract / release |
+| --- | --- | --- | --- |
+| Inventory | Project Materials/Inventory list, quantity/location/age and filtered costs | Native Field Materials list and cached lot detail; manager may also use the online Workspace | One stock projection and permission model; foreground/manual refresh after mutations |
+| Request issue | Responsive quantity/work-location form; user-scoped IndexedDB draft | Native form, user-scoped SQLite draft; Field entry does not depend on WebView | One request schema, client UUID, baseline and receipt lookup; P1 submission online-only |
+| Approval queue/trail | Assigned-step queue and immutable timeline | Native assigned-step queue/detail and same decisions; online Workspace mirrors authorized web behavior | Same ordered state machine and server events; no separate native business rules |
+| True cost / TCO | Material detail, project roll-up; vocabulary depends on audience | Authorized manager/purchaser cost summary/detail in native navigation, with matching totals; same pages usable in online Workspace | Explicit finance DTO, never attached to field payload; P1 basic estimate, P2 full allocation, P3 lifecycle |
+| Audit flags | Dashboard evidence cards and authorized detail | Native dashboard cards with role-safe evidence and links into native detail; restricted crew sees only stock/request problems | Same flag IDs/rules and role-safe scope; investigation ownership/acknowledgement/disposition workflow in Phase 3 |
+
+The initial pilot acceptance scope is web and current TestFlight iOS device(s), not an inferred Android release. TIA-05A records broader device acceptance before expanding distribution. Native manager summaries need not reproduce wide desktop tables; they must expose the same authorized values, sources, revision and actions. All six HTML screens reflow for mobile review; the crew screen separately depicts the native Field flow. HTML is an interaction specification, not an Expo implementation or device acceptance.
+
+## 4. Proposed data model and RLS
+
+Names are proposals; future schema work needs its own reviewed migrations. Use UUID identities, server timestamps (`timestamptz` UTC, displayed in project time zone), a currency per project, canonical units and numeric decimal quantities/rates. Reject negative/NaN/infinite amounts except explicit credit/reversal types. Store money as integer minor units or `numeric(18,2)` with a single shared rounding rule; calculations retain higher precision until final allocation. Do not use binary floating point for posted monetary totals.
+
+### Entities and invariants
+
+| Object / phase | Core fields / relationships | Invariants |
+| --- | --- | --- |
+| `materials`, `stock_locations` / 1 | `id, organization_id, project_id, code, name, canonical_unit, active`; location name and work-location reference | Unique code per project, no prices in field-readable rows. P1 unit = tie (`each`), no unit conversion. |
+| `inventory_lots` / 1 | `id, project_id, material_id, location_id, received_at, age_source, version, readiness_state, drying_started_at, drying_completed_at, expected_ready_from, expected_ready_to`; receipt reference; opening quantity derived from ledger | A lot is one receipt cohort; retain original age on transfers/returns. Track drying elapsed time separately from yard age. Record the supplied 4–10 calendar-month drying window, not a fixed 30-day month conversion or universal process sequence. Unknown date = unknown; drying/quarantined/unaccepted stock is not releasable. P1 seeds an audited ready lot, not manufacturing automation. |
+| `inventory_movements` / 1 then 2 | Append-only `id, project_id, lot_id, request_id, kind, signed_quantity, posted_at, effective_at, actor_id, reversal_of`; P2 paired transfer legs | P1 opening and approved issue only. Unique posting per request/revision; sum posted legs = on-hand. Pending requests are not posted or silently reserved. Lock lot at final approval; reject insufficient stock. No negative balance. |
+| `material_cost_revisions`, `material_cost_components` / 1 then 2 | Restricted revision ID, project/lot/material line, optional same-project milestone; component category from Wendy's eleven buckets, amount, actual/estimate/commitment, source/quote and allocation references, effective time; creosote quote/oil reference snapshot | P1 manually captures Wendy's bucket amounts/statuses; unknown is not zero. Carrying is derived from one versioned configuration, not duplicated as an extra user-entered charge. Drying duration and oil-link reference remain visible alongside the amounts. A submitted request pins the revision; edits create a new revision and require reapproval. P2 full line allocation and actual reconciliation. |
+| `carrying_rate_versions` / 1 then 2 | Project/material/location, `status: unconfirmed/confirmed/superseded`, nullable rates, validity interval, storage basis, annual capital/shrink/obsolescence rates, carrying-start/valuation basis, per-lot `carrying_started_at`/ownership reference and capital-at-risk intervals, confirmation evidence | Editable draft placeholders in P1; no implicit zero or 8% default. Only Wendy-confirmed versions become active. Example calculations are isolated from operational totals. No overlapping effective confirmed intervals. |
+| `approval_policies`, `approval_policy_steps`, `approval_assignments` / 1 then 2 | Versioned project, request type, `threshold_status: unconfirmed/confirmed`, nullable currency/amount/bands; ordered step eligibility and named assignments | P1 fixes inventory check → PM authorization on every issue and provides a small authorized draft configuration for thresholds; unconfirmed values never bypass either step. P2 activates confirmed bands, complete and non-overlapping, with versioned snapshots. |
+| `approval_requests`, `approval_request_revisions` / 1 then 2 | Request ID, server number, project, submitter, target lot and quantity/location, pinned immutable payload revision, policy/cost/budget/reconciliation versions; nullable same-project `linked_milestone_id` and existing `change_order_id`; P2 spend-request link | Mutable draft has a version; submitted revision is immutable. Separate operational fields from restricted commercial payload. Requester must be actual authenticated actor. An explicit CO link is available in P1; the full staged CO/spend adapter arrives in P2. A missing change order never becomes a fabricated one. |
+| `approval_events` / 1 | `id, request_id, revision_id, project_id, sequence, step, event_type, actor_id, actor_role_snapshot, server_received_at, client_occurred_at, operation_id, reason, previous_event_id`; restricted evidence stored separately | Unique `(request_id, sequence)` and `(actor_id, operation_id)`. Append only: submitted, approved-step, rejected, returned, superseded, canceled, posted, blocked-attempt, reassigned. Server time determines ordering; client time is contextual. |
+| `stock_counts`, `audit_flags`, `audit_flag_events` / 1 through 3 | Count observation, lot baseline/version, counted quantity, observer/time; flag type, rule version, evidence references, severity and derived condition state; P3 nullable investigation assignment and append-only case events | Counts do not adjust stock. Same finding deduplicates by project/type/evidence. P1 keeps original flag/count evidence and operational holds/recounts; no investigator is assigned by default. P2 authorized adjustment is compensating; P3 adds investigation assignments, acknowledgement and case disposition without erasing evidence. |
+| `budget_baseline_revisions`, `cost_source_reconciliations`, `material_budget_links` / 1 then 2 | Restricted project snapshot: base budget, counted approved CO IDs/signed amounts, spent baseline/version, covered source IDs/amounts; lot/material line ↔ project/optional milestone ↔ optional existing CO | P1 explicit authorized snapshots and source mapping, not a second general ledger. Unique source allocation identities prevent duplicate costs; same-project composite FKs prevent cross-project CO attachment. P2 adds detailed commitments/allocations. |
+| `request_receipts` / 1 | User/project/operation UUID, payload digest, request/result IDs, result code and accepted version | Same operation + same payload returns same receipt. Same key + different payload is a conflict. Business receipt and posting commit in one transaction. No expiring identity permits replay duplicates. |
+
+Every child uses project-scoped composite foreign keys, such as `(lot_id, project_id)`, and org/project consistency checks. A forged cross-project ID cannot attach evidence or stock to another project. Use restrictive deletion for requests, events, posted movements and linked costs; archiving a project must retain required evidence rather than cascade it away. Historical profile deletion can null the live profile reference while retaining a minimal stable actor ID/role snapshot without adding unnecessary email addresses. Retention duration, privacy/legal deletion policy and retention-specific access roles are Phase 3 decisions, not invented here. P1 creates no automatic audit purge and must not cascade-delete accepted evidence.
+
+Indexes: `(project_id, material_id, location_id)` for stock, `(project_id, received_at)` for age, `(lot_id, posted_at, id)` for ledger, `(project_id, state, current_step)` for queues, `(request_id, sequence)` for trails and `(project_id, supplier_id, category_id, submitted_at)` for Phase 2 split review. Index membership/assignment predicates. Recompute projections from the ledger and reconcile them; totals are not client-editable columns.
+
+### Authorization and write boundary
+
+| Caller | Operational stock / own request status | Cost, budget and commercial evidence | Writes |
+| --- | --- | --- | --- |
+| Anonymous, uninvited, wrong project/org, revoked member | Denied | Denied | Denied |
+| Invited crew member with explicit request capability | Assigned-project quantities, locations, age, own/crew-authorized status | Denied, including indirect aggregates and finance event reasons | Own drafts and issue submissions; count observations if assigned; no approvals |
+| Assigned inventory lead | Project stock and assigned verification evidence | Only if existing `budget:view` independently allows it | Current inventory-check step; never own request or another person's final step |
+| Existing finance viewer (`budget:view`) | Project read scope | Authorized project costs, rates, budgets and financial flags | Read-only unless separately eligible to submit/manage/approve |
+| Assigned manager approver with existing management permission | Assigned request/stock scope | Requires `budget:view` for monetary review | Current final step only; cannot approve own submission or both stages |
+| Org admin / support | Existing org support scope assessed in TIA-01 | No new cross-org reach | No bypass of separation-of-duties, sequence or immutable-event rules; reassignment is recorded |
+
+Enable RLS and minimum role-specific grants in the same table-creation migration. RLS filters rows, not sensitive columns; separate operational and financial tables/projections. No anonymous grants. Client roles get only intended SELECT access and narrowly scoped draft writes; revoke direct event/movement/posted-state mutations. RLS SELECT checks current membership, project/org consistency, relevant capability and for finance the existing budget role; draft UPDATE checks both `USING` and `WITH CHECK`, immutable scope and ownership. A role name or user-editable JWT metadata is not an authorization decision. Views must preserve caller restrictions. See [Supabase RLS and grants](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+Prefer SECURITY INVOKER for read/draft operations. **Do not specify an invoker RPC that requires table writes revoked from its caller.** For atomic append-only posting, propose a minimal privileged executor in a non-exposed private schema, owned by a dedicated non-login role with only required access, behind a reviewed public invoker wrapper. Deny default PUBLIC/anon EXECUTE, pin empty search paths, schema-qualify relations, derive actor from `auth.uid()` and explicitly recheck membership/assignment/sequence within the executor. Because privileged execution can bypass RLS, its predicates and grants require direct adversarial database tests; no generic service-role endpoint accepts a client-supplied actor or project authority. Validate this exact wrapper/executor privilege design in disposable PostgreSQL before approving a migration. [Function security guidance](https://supabase.com/docs/guides/database/functions).
+
+All authenticated clients, including old web actions, direct REST calls and RailBot tools, must be unable to mutate pilot posting/event tables outside that boundary. For Phase 2 change orders, protect enrolled records against legacy status updates/deletion **at the database boundary**; UI routing alone is bypassable. Leave legacy un-enrolled records readable with “Legacy approval — staged evidence unavailable”; do not invent past approvals or block unrelated older client workflows. Export reads enforce the same finance scope as screen reads.
+
+## 5. Approval workflow and durable evidence
+
+1. **Draft:** requester enters quantity, lot, destination and reason. Autosave locally; no server commitment or stock reservation. Submitted actor comes from the session.
+2. **Submit:** online server validates the foreman's membership/request capability, positive quantity/unit, ready and inspection-accepted stock, baseline versions, fixed two-step policy and eligible distinct inventory-lead/PM identities. Unconfirmed monetary bands cannot remove required steps. Server assigns the visible number and snapshots request/policy/cost/budget versions. A draft remains until a receipt confirms acceptance.
+3. **Inventory check:** assigned lead confirms quantity, condition and location. A count variance may hold the request. Requester cannot perform this step. One step event commits with its state transition.
+4. **PM authorization:** another assigned PM reviews the exact revision, cost exposure and budget evidence. Recheck current membership, policy eligibility and stock. Same submitter, same prior approver, out-of-order action, stale revision or revoked access is rejected.
+5. **Post:** final approval, lot lock, insufficient-stock check, one negative movement, status projection, immutable evidence and receipt commit atomically. Failure rolls back all accepted effects. After commit, invalidate web data and refresh native foreground/manual views; return the posted balance/version.
+6. **Return / reject / cancel:** require a reason. Returned requests become a new draft revision; any changed quantity, destination, amount, attachments or cost basis supersedes previous approvals. Rejection is terminal for that revision. Cancel before posting creates a cancellation event. After posting, correct with a linked reversal and new approval, never edit/delete history.
+
+State vocabulary: `draft → awaiting_inventory → awaiting_manager → posted`; alternate `returned`, `rejected`, `canceled`, `superseded`, `held`. Approval states are projections rebuilt from events; clients cannot write them directly. “Approved” is not “posted” if an external Phase 2 system still has to acknowledge execution. P1 posting is local database stock posting and has no external payment effect.
+
+Concurrent final approvals lock request and lot in a consistent order, compare `expected_version`, and return an explicit conflict to the loser. For multi-lot Phase 2 transfers lock sorted lot IDs and post equal/opposite legs atomically. PostgreSQL [row locks](https://www.postgresql.org/docs/current/explicit-locking.html) provide the database mechanism; the request-level expected version remains necessary for the user-facing conflict.
+
+Blocked self/out-of-order attempts need auditable records too: the executor records a minimal **denied-attempt event and typed rejection result in a committed transaction**, without posting or advancing the request. The API converts that result to a denied response. Raising an exception after inserting the event would roll it back. Unknown/unauthorized request probing must not disclose existence; keep its minimal security telemetry outside project-readable history and rate-limit repeated attempts.
+
+Each accepted event records who, server time, previous/next state, policy version, step, immutable request revision, reason, source channel, operation ID and evidence references. Show project time zone and exact UTC time on screen expansion; new exports are Phase 3. Request payload hashes identify the approved content; correction/reassignment is another event. No shared accounts; an unavailable approver gets an explicit delegated assignment event from an authorized distinct manager, not identity substitution. P1 has no emergency override: insufficient staffing blocks release.
+
+Existing activity history receives only a safe summary and a trail link through the same transaction or a durable transactional notification outbox. A lost notification cannot lose the evidence or change approval state. Financial values/free-text finance reasons never enter the generally readable activity feed. Append-only means protected against ordinary application roles; a database owner can still alter storage. Phase 3 can add chained event hashes, signed manifests and independently retained exports, with key/retention controls. Do not call Phase 1 “tamper-proof”.
+
+## 6. True cost and carrying calculations
+
+### Wendy's cost taxonomy and source treatment
+
+Use these stable bucket keys in shared types, server validation and authorized web/native views. Each bucket stores amount, unit/currency, actual/estimate/commitment or unknown, source and revision; the crew payload receives none of them.
+
+| Bucket | Meaning / proposed treatment |
+| --- | --- |
+| `log` — Log | Raw timber input. It is only one part of the completed tie's true cost. |
+| `mill` — Mill | Milling/manufacturing conversion cost; record bundled supplier charges once. |
+| `trucking` — Trucking | Road transport legs; allocate each shipment source once. |
+| `treating` — Treating | Treatment process/service cost; exclude creosote if it is itemized separately. |
+| `drying` — Drying | Process cost and **4–10 calendar-month** time window, as supplied by the user. Record start/completion, estimated readiness range and actual elapsed time; do not label a drying lot ready merely because it reached month four. |
+| `creosote` — Creosote | **Oil-linked** input. P1 records the supplier quote, as-of date and oil/index-link reference; no invented current oil price, live feed or automatic repricing. P2 may apply a contract-specific, versioned index formula only after Wendy confirms it; approved request snapshots never reprice silently. |
+| `rail_car` — Rail car | Rail transport/car charge, allocated to the material line; do not repeat it under trucking. |
+| `install_labour` — Install labour | Labor for installed units or a supported actual work record. |
+| `inspection` — Inspection | Inspection/testing charge and an operational accepted/not-accepted readiness reference; keep finance amount separate from crew-readable readiness. |
+| `carrying_cost` — Carrying cost | Derived holding cost for time/capital at risk; draft configurable rates until Wendy confirms. Storage, capital, expected shrink and obsolescence are subcomponents of this bucket, not extra duplicate top-level charges. |
+| `disposal` — Disposal | Incremental disposal/waste/rework charge with source. Wasted ties' acquisition value is already included in the upstream buckets. |
+
+Phase 1 uses manual bucket amounts/source references plus one finished opening lot. The eleven categories are present from the start; automated procurement, manufacturing-stage orchestration, invoice allocation and actual reconciliation remain Phase 2. Unknown/missing values are incomplete, not zero. Optional maintenance/replacement and salvage remain separate Phase 3 scenario adjustments, not substitutes for Wendy's core taxonomy.
+
+### Definitions, configurable placeholders and allocation
+
+- Landed acquisition = log + mill + trucking + treating + drying + creosote + rail car, plus explicitly sourced nonrecoverable tax/duty less supplier credits if applicable. A single supplier invoice covering several buckets is a parent source with conserved allocations, not a second purchase cost. Inventory transfers do not create another purchase cost.
+- Installed true cost = allocated landed acquisition + carrying cost + install labour + inspection + disposal. Distinguish booked costs, contractual commitments, management estimates and capital opportunity cost.
+- Lifecycle scenario = installed true cost + future maintenance/replacement/disposal − salvage credits. Future disposal is allowed only for a different dated event from disposal already counted. Phase 3 may add `PV = cash_flow / (1 + annual_discount_rate)^(days/365)`; label discounted and undiscounted values separately.
+- Proposed carrying formula over each interval: `quantity × storage_rate_per_unit_day × days + capital_at_risk × (annual_capital_rate + annual_expected_shrink_rate + annual_obsolescence_rate) × days/365`. P1 supports storage/capital configuration; risk components remain optional Phase 2. `unconfirmed`/null rates yield **“Carrying rate awaiting Wendy — total incomplete”**, not zero or an activated sample percentage. Authorized users can edit draft rates/units/effective dates; confirmation evidence produces a new active version. A rate change never rewrites a pinned approval.
+- Approval settings likewise expose configurable **unconfirmed placeholders** for amount, currency, gross landed exposure basis and bands. No $10,000 default is activated. P1 still routes every issue through inventory verification and PM authorization. P2 split detection cannot run as “clear” without an active threshold; show **“Threshold awaiting Wendy — rule not evaluated.”** Configuration confirmation is not approval to implement this plan.
+- Carrying starts when the organization owns or funds stock, using a recorded carrying-start basis, including drying time when capital is at risk. Yard age and drying age are separate. Integrate at each quantity, valuation and rate change, with half-open fractional-day intervals; actual/365 is a proposed configurable day convention, not a confirmed A5 policy. Calendar months in the drying range are not multiplied by 30 to calculate interest.
+- Exclude storage/capital/lifecycle from the capital-at-risk valuation (no interest on interest). Do not charge drying storage twice if the drying supplier amount already includes that exact storage service/period. If the company does not own/fund supplier stock, do not accrue company carrying on it. Missing ownership dates produce incomplete exposure.
+- P1 uses a single lot's proportional source allocations; P2 can use FIFO physical lot selection with explicit overrides, not a claim of accounting certification. Shipment allocation by weight/volume/quantity/fixed shares must conserve source amount to the cent; reject unlike-unit aggregation without a reviewed conversion. Stable remainder allocation and decimal arithmetic must agree on web/native.
+- Per raw log, per purchased finished tie and per installed tie are distinct denominators. Zero/unknown installed quantity yields “Not available”. Acquisition already contains waste attribution; actual shrink replaces an overlapping risk estimate, not a second charge. Returns/credits refer to their original source and bucket.
+
+### Worked tie example — illustrative bucket scenario, not configured policy
+
+Synthetic supplier drying runs from **1 January to 1 August 2026 (seven calendar months)**, within Wendy's supplied 4–10-month window. A finished, inspection-accepted lot of **1,000 ties** reaches North yard on **21 August**, is held unchanged for **60 days to 20 October**, then **950** are installed and **50** attributed to installation waste. For this example only, the buyer's $68,000 capital-at-risk begins at yard receipt; supplier drying costs exclude the later yard holding service. Actual buyer-funded drying would require earlier carrying intervals. The full-lot scenario is separate from the pending 100-tie request.
+
+All dollar amounts, $0.03/tie/day storage and 8%/2%/1% annual rates below are isolated **example inputs**, not Wendy-confirmed configured values. No taxes/FX are assumed. The operational view stays incomplete until required rates and sources are confirmed; **Load example** is an explicit prototype mode.
+
+| Bucket / subtotal | Basis | USD | Classification / delivery |
+| --- | --- | ---: | --- |
+| Log | 1,000 × $20 | 20,000.00 | Synthetic recorded source / P1 manual |
+| Mill | 1,000 × $10 | 10,000.00 | Synthetic recorded source / P1 manual |
+| Trucking | Source TR-008 | 8,000.00 | Synthetic recorded source / P1 manual |
+| Treating | Source TX-004; creosote excluded | 6,000.00 | Synthetic recorded source / P1 manual |
+| Drying | Seven-month supplier process | 4,000.00 | Synthetic recorded source / P1 manual |
+| Creosote | Quote CR-003, oil-link reference recorded | 12,000.00 | Synthetic quote estimate / P1 manual |
+| Rail car | Source RC-006 | 8,000.00 | Synthetic recorded source / P1 manual |
+| **Landed acquisition** | Seven upstream buckets | **68,000.00** | $68 per purchased finished tie |
+| Carrying cost — storage | 1,000 × $0.03 × 60 | 1,800.00 | Example estimate; not active config |
+| Carrying cost — capital | $68,000 × 8% × 60/365 | 894.25 | Example opportunity estimate |
+| **Basic carrying cost** | Storage + capital | **2,694.25** | Example-only $44.90/day |
+| **Landed + basic holding subtotal** | $68,000 + $2,694.25 | **70,694.25** | Partial estimate; not full true cost |
+| Carrying cost — expected shrink | $68,000 × 2% × 60/365 | 223.56 | Optional P2 example risk |
+| Carrying cost — obsolescence | $68,000 × 1% × 60/365 | 111.78 | Optional P2 example risk |
+| **Carrying including risk** | Storage/capital + risk | **3,029.59** | Example-only $50.49/day |
+| Install labour | 950 × $40 | 38,000.00 | Manual estimate in P1; actual reconciliation P2 |
+| Inspection | Supported work estimate | 2,500.00 | Manual estimate in P1; actual reconciliation P2 |
+| Disposal | Incremental expense | 1,500.00 | Manual estimate in P1; no second tie acquisition |
+| **Installed true cost, basic** | $68,000 + $2,694.25 + $38,000 + $2,500 + $1,500 | **112,694.25** | Example **$118.63/installed tie** |
+| **Installed true cost with risk** | Basic installed + $335.34 risk | **113,029.59** | Example; not all booked actual |
+| Future maintenance/replacement | P3 undiscounted adjustment | 30,000.00 | Separate lifecycle estimate |
+| Salvage credit | P3 undiscounted adjustment | (5,000.00) | Separate lifecycle adjustment |
+| **Projected lifecycle TCO** | $113,029.59 + $30,000 − $5,000 | **138,029.59** | **$138.03/purchased; $145.29/installed tie** |
+
+The raw-log amount ($20,000) is only **14.49%** of this projected lifecycle scenario; the completed landed tie is $68 before later costs. The $3,400 landed-value attribution to 50 wasted ties is already inside $68,000; do not add it again. Risk estimates describe separate yard exposure; substitute actual loss if they overlap. Recompute using unrounded interval values and round final totals to cents. Configurable placeholders with no confirmed values have no numeric carrying/full-cost total, even though the isolated example is reproducible.
+
+### Proposed budget and existing change-order link — planning baseline
+
+The user delegated this design. Reuse the existing project budget, signed approved CO amounts, `budget_spent` and optional milestone linkage; do not introduce a competing authoritative budget or repurpose material consumption as a second expense.
+
+1. **Scope and links:** every material lot/line and issue belongs to one project. Add an optional same-project `linked_milestone_id` and `change_order_id`; validate both by project-scoped FK/server authorization. Reuse existing CO number, status, signed amount and `linked_milestone_id`. Snapshot request, cost, rate, budget and reconciliation versions. P1 allows linking/reading an existing CO; full staged spend/CO routing remains TIA-06 in P2.
+2. **Budget authority:** `adjusted_budget = projects.budget_total + sum(existing approved change_orders.amount)`. Count each CO ID once, including negative approved changes; exclude drafts, rejected and void rows. One CO may fund several material lines, so line links carry allocations/reference IDs and must never multiply its project-wide budget delta. Freeze a versioned read snapshot with as-of time; later corrections create a new revision.
+3. **Cost authority:** `control_forecast = reconciled posted project spend + non-overlapping open commitments + remaining contractual forecast + genuinely incremental pending exposure`. Stable source/line IDs and partial-coverage amounts map material components already included in `projects.budget_spent` or commitments; count each amount once. P1 stores an explicit authorized reconciliation snapshot; no automatic accounting integration is claimed. Unknown mapping, missing required rate/source or stale baseline = **incomplete**, never a green whole-project all-clear.
+4. **Stock issue rule:** consuming ties already purchased/committed for the same project reallocates quantity/cost to the work location or milestone; **incremental project exposure is zero**. Display the $6,800 landed value of a 100-tie issue as context, not new spend. New unfunded install labour, trucking or other distinct source exposure can increase forecast. Cross-project stock allocation/transfer remains P2 and cannot silently change the project on a draft.
+5. **Carrying/lifecycle boundary:** actual contracted yard-storage cost belongs in control forecast once. Capital opportunity cost, expected shrink/obsolescence and future lifecycle belong in separate management/scenario totals unless explicitly adopted in a separately budgeted cost scope. Unconfirmed carrying does not fabricate zero or hide missing cost; a known fully funded stock issue can proceed through both fixed approvals with incomplete management-cost coverage visibly recorded. A request whose **incremental contractual cost or funding is unknown** is held. Monetary approval-band placeholders do not disable budget comparison against known authorized budget.
+6. **Overrun path:** known comparable exposure above adjusted budget holds final posting. PM may link an existing approved CO or create a draft through the existing authorized change-order flow, with proposed budget delta `max(0, control_forecast - adjusted_budget)` and material/milestone references. No automatic CO creation, approval or request posting. An optional existing draft CO link displays **Awaiting CO approval** and contributes zero budget. After the approved CO is visible, explicitly rebase the request to the new budget revision and repeat required approvals of that exact revision; check stock and budget under locks at final posting. P1 does not claim the legacy CO has a multi-step audit trail; P2 closes old/direct write bypasses for enrolled COs.
+7. **Concrete examples:** $126,000 forecast already covering purchased ties stays **$126,000** when 100 ties with $6,800 landed value move to installation. A distinct new $6,800 contractual work item instead makes forecast **$132,800** against $130,000 budget, a **$2,800 hold**. Approved existing `CO-007` of +$3,000 changes budget to **$133,000** once; forecast remains $132,800 and headroom is **$200**, even if several lines link that CO. Draft/rejected CO-007 provides no headroom. A cost covered by both a material source and the spent baseline is counted once; missing mapping stays incomplete.
+
+A lifecycle-only allowance of $130,000 vs the isolated $138,029.59 scenario yields an **$8,029.59 lifecycle gap**, separate from project-spend budget control. Partial line totals never become an authoritative project forecast merely because the screen can sum them. Validate the proposal with synthetic source reconciliation, negative/draft/duplicate COs, multi-line links, stale snapshots and concurrent approvals on web and native before implementation acceptance.
+
+## 7. Audit rules and follow-through
+
+Flags are review evidence, not accusations. Phase 1/2 dashboards show type, severity, as-of time, exact rule/version, source events and derived open/cleared condition. Flag-investigation ownership, case assignment, acknowledgement/resolution policy and new evidence exports are explicitly deferred to **Phase 3 / TIA-09**. Show “Investigation ownership — Phase 3” rather than assigning an approver as an investigator. Operational recount/approval actions still append evidence and may clear a condition without pretending to close an investigation case. Crew sees only operational flags. Sensitive rejected-attempt and purchasing patterns require authorized managers/auditors.
+
+| Rule / phase | Deterministic trigger proposal | Behavior and acceptance example |
+| --- | --- | --- |
+| Budget overrun / 1 | Comparable forecast + nonduplicated incremental exposure > adjusted approved budget | Hold final posting pending a distinct authorized budget revision or a rejected/revised request; P1 has no override. $126k + $6.8k > $130k produces $2.8k evidence. Recheck under project budget lock; do not authorize against a stale total. |
+| Out-of-order approval / 1 | Attempted step differs from next eligible step, or prerequisite belongs to another revision | Reject, append denied-attempt evidence, no state/stock change. Step 2 before step 1 fails even via direct API. |
+| Self / repeated approver / 1 | Actor equals request submitter or any prior required approver | Reject even for org admin. Show the reason and next eligible person; do not offer “approve anyway”. |
+| Aged stock / 1 | Known original lot age ≥ provisional 60 days and on-hand > 0 | Flag the sample at day 60; quantity zero clears current exposure while retaining old evidence. Unknown age gets a separate data-quality flag. Threshold requires Q5. |
+| Missing / unexplained stock / 1 | Latest valid physical count differs from ledger at the captured baseline; or required count is overdue | Expected 1,000 vs observed 980 produces 20 unaccounted ties. Hold affected issue until a valid recount/operational verification resolves the discrepancy; do not silently reduce inventory. Provisional count cadence = seven days; pending movements require recount/rebase, not a false missing-stock claim. |
+| Split purchase / 2 | Two or more positive requests, each below the policy threshold, same normalized supplier + category + project in a rolling seven-day window, aggregate ≥ threshold | In isolated example mode only, threshold $10k and $6k + $5k = $11k triggers review. Operational threshold remains configurable/unconfirmed until Wendy confirms; no active threshold means rule not evaluated, not clear. Include related pending/approved requests once, exclude canceled/void/duplicate deliveries, preserve original submissions/revisions. Serialize supplier/category policy bucket checks so simultaneous splits cannot pass unnoticed. Block/review policy, cross-project scope and false-positive handling need Q4. |
+
+P2 configurable threshold basis proposal is gross committed landed acquisition across Wendy's upstream buckets including transport/nonrecoverable tax, not just raw-log price; amount/currency/bands stay unconfirmed pending Wendy. Exact threshold equality enters the higher band. Credits do not shrink gross-positive purchase exposure to evade approval; authorized credits remain visible separately. P1 has no monetary threshold bypass because every issue takes both steps. Cross-project/supplier-entity split review is Phase 3 unless specifically approved; do not claim the P2 project-level rule covers it.
+
+## 8. Offline design review
+
+**Overall classification: offline draft/queue for field input (P1 draft only; P2 explicit queue), offline read-only for previously synchronized inventory/status, online-only for approvals and authoritative posting.** A draft or queued request never means stock has been reserved or an approval accepted. Current WebView pause behavior does not provide restart-safe drafts; new web form persistence is an explicit requirement.
+
+| Concern | Phase 1 requirement | Phase 2 extension / tests |
+| --- | --- | --- |
+| Available data | Cache only authorized operational material/lot/location and own request-status DTOs, with as-of time, current user/project and version. P1 finance screens remain online-only; last values disappear behind a reconnect state when not fresh. | Explicit limited finance cache needs separate approval and purge tests; not assumed. |
+| Draft persistence | Web uses reviewed user-scoped `src/lib/offline/storage.ts` foundation after TIA-00; native extends user-scoped SQLite `record_drafts`. Persist before confirming “Saved on this device”; preserve last complete snapshot. Project/lot/quantity/destination/reason/UUID/version survive close/restart. | P2 atomically draft → material-request outbox; no arbitrary service-worker request replay. |
+| Submission | P1 “Reconnect to submit”; approval buttons disabled offline with reason. Online timeout retains draft/operation ID and checks server receipt before retry. Unknown outcome is “Checking submission”, not “Failed, start again”. | Foreground retry with bounded backoff/jitter, same UUID/key and payload digest; no dependence on Background Sync. |
+| Dependencies | Project membership and material/location/lot IDs must already be synchronized; unavailable options remain visible as unavailable, never remapped. Numbers assigned only by server. | Parent request receipt precedes any attachment operation. No attachment capture/upload in P1. |
+| Freshness/conflict | Proposed operational refresh: foreground/manual and after posting, max 15-minute cache freshness; offline stale banner. Discard operational cache after 30 days, never unsent drafts. Submission/approval revalidates lot, request, cost and policy versions; stale data requires review, with entered values preserved. | Queue reconnect can return insufficient stock, superseded policy or revoked membership; visible failed/conflicted state and explicit amendment, never silent overwrite. |
+| Permissions | Every submit/approve/post rechecks authenticated membership and assignment on server; role downgrade blocks finance reads and clears only restricted cached projections on reconnect. Offline access to previously authorized operational data is bounded by cache age; immediate remote revocation while disconnected cannot be promised. | No client cache is an authorization boundary. Cross-user A→B→A access and revoked-member sync tested. |
+| Close / sign-out | Restart restores owned drafts. Sign-out lists drafts/queued work and requires synchronize, reopen, cancel or two-step discard; then deletes only that user's private database/temp files. No other account sees drafts. | Upgrade is additive and preserves old daily-log/photo outboxes, UUIDs and retry/conflict states. Unsupported future operation versions stay quarantined with recovery/export guidance, never deleted. |
+| Storage / flapping | Warn at 90%; quota/SQLite failures show “Not saved — keep this screen open” and retain current fields. No false saved badge. Serialize saves; pause retry on auth refresh failures and preserve operation identity. | Exercise quota exhaustion, forced close during save, repeated drops, ambiguous receipt and retry limits. |
+| Public caches / files | `public/sw.js` remains static assets only; no authenticated HTML/RSC/API/Supabase data/signed URL/project records in Cache Storage or global localStorage. Neutral `/offline.html` remains identity-free. Workspace has no worker. | P2 blobs require size/quota/compression, retry state, parent-before-attachment and safe removal only after confirmed receipt. Existing lossless thermal policy remains intact. |
+
+State copy: **Saved on this device**, **Reconnect to submit**, **Checking submission**, **Awaiting inventory check**, **Awaiting manager approval**, **Conflict — review required**, **Could not synchronize**, **Posted / refreshed at …**. Save failure, waiting for approval and completed synchronization are different states. Cache/request status can be viewed offline but cannot be represented as current stock authority.
+
+## 9. Audience wording and wireframes
+
+| Audience | Navigation / labels | Allowed content |
+| --- | --- | --- |
+| Crew / foreman | Materials, On hand, Request ties, Work location, Approvals, Saved on this device | Quantities, unit, location, condition, last refresh, own request steps. No finance values, risk scores, thresholds or TCO label. |
+| Operations / inventory lead | Inventory, Material cost (only if permitted), Holding time, Stock check, Approvals | Quantity/location/age; carrying amounts only with independent budget access. “True cost” explains more than unit price without implying “cheap”. |
+| Purchasing | TCO overview, Landed cost, Cost assumptions, Approval policy | Authorized costs, commitments, rates, supplier/source/allocation detail. |
+| Executive / auditor | Project TCO, Cost exposure, Audit flags, Approval trail | Authorized roll-ups, completeness, evidence and exceptions; flags say “Review required”, not “Fraud found”. |
+
+Open [`wireframes/index.html`](wireframes/index.html) directly in a browser. No bundler, network, CDN, login or backend is needed. Cost amounts and prototype actors are fictional. Spike Sambol is a real pilot target supplied by the user, shown only as pending Mark's introduction, not as an invited user, approver or investigator. Prototype actions affect only the open page and reset on reload; there is no claim of actual local persistence or server approval.
+
+| Screen | File | Review focus |
+| --- | --- | --- |
+| TCO overview | [tco-overview.html](wireframes/tco-overview.html) | Wendy's bucket roll-up, unconfirmed rates, isolated example and budget/CO link |
+| Inventory list | [inventory-list.html](wireframes/inventory-list.html) | Search/filter, lot age, stock discrepancy, basic carrying with budget access |
+| Material cost detail | [material-cost-detail.html](wireframes/material-cost-detail.html) | Eleven buckets, 4–10-month drying, oil-linked creosote and configurable/unconfirmed rate vs example mode |
+| Approval queue and trail | [approval-queue-trail.html](wireframes/approval-queue-trail.html) | Ordered distinct approvers, revision, refused attempts, append-only timeline |
+| Dashboard audit flags | [dashboard-audit-flags.html](wireframes/dashboard-audit-flags.html) | All six requested flag types, evidence, unconfirmed threshold state and investigation-ownership Phase 3 labels |
+| Field crew mobile | [field-crew-mobile.html](wireframes/field-crew-mobile.html) | Native/web mobile quantity-only request; offline draft, reconnect, confirmation and conflict states |
+
+All screens need loading, empty, denied, unavailable-source and retry states before implementation is accepted. Wireframes provide reviewable examples of these states using expandable notes/scenario controls; they are not a complete interaction test suite. Use semantic headings/forms, visible focus, text alongside status colors, 44px touch targets, screen-reader announcements and no horizontal page overflow at 390px. Wide finance tables may scroll within a labeled region. Validate larger text/VoiceOver/TalkBack in actual builds.
+
+## 10. Ordered build backlog — all DRAFT, no Build authorization
+
+Stable IDs below are local planning records, held in this requested document instead of creating external tracker issues or `.codex-loop` files. User has authorized planning, commit and push, not implementation. S = bounded change usually ≤ half a day; M = roughly 1–2 engineering days; L = roughly 3–5 days and should be split at implementation spec review. Sizes include both platform impact and relevant tests, exclude store waiting, and are estimates rather than a one-week delivery commitment. All have `claimed_by: null`, `claim_started_at: null`, `branch: null`, `worktree: null`; the current branch contains only this plan.
+
+| ID | Phase / size / priority | Objective / dependency | Acceptance summary |
+| --- | --- | --- | --- |
+| TIA-00 | P1 / M / high / DRAFT | Establish safe web draft foundation; no dependencies | Reviewed committed foundation on canonical source; account-isolated draft survives restart; existing queues untouched. |
+| TIA-01 | P1 / M / high / DRAFT | Restrict finance at shared read boundaries; depends on TIA-00 for cache checks | Crew receives no finance data from server/DB/exports/cache; authorized totals retained; supported-client regressions pass. |
+| TIA-02 | P1 / L / high / DRAFT | Request/check/authorize one tie issue through immutable stock ledger on both platforms; depends TIA-01 and confirmed role chain; named roster/source-build details Q2/Q6 | One posted issue after two distinct ordered approvals; retries/concurrency create one movement; evidence cannot be edited. |
+| TIA-03 | P1 / M / medium / DRAFT | Explain basic material/holding cost and count/age evidence in web + native; depends TIA-02 and Q5/Q7 | Wendy's eleven buckets and unconfirmed configuration are visible; isolated $70,694.25 partial / $112,694.25 installed example reconciles; nonfinancial lead sees quantities only; 20-tie count variance is flagged without adjustment. |
+| TIA-04 | P1 / M / high / DRAFT | Finish durable web/native request drafts and reconnect recovery; depends TIA-00/TIA-02 | Close/restart, quota, loss of network and unknown submit outcome preserve input; approvals online-only. |
+| TIA-05 | P1 / M / high / DRAFT | Accept the bounded pilot on web and current TestFlight iOS device(s); depends TIA-01–04 | Spike's participation follows Mark's intro; web/TestFlight ten-request, privacy/restart/bidirectional evidence passes; exact installed build recorded; successor signed build required for missing bundled screens. |
+| TIA-05A | P2 expansion / M / high / DRAFT | Verify Android and additional device models before broader distribution; depends TIA-05 | Physical device restart/permissions/queue-upgrade and web↔native evidence pass for each added supported target; no expansion inferred from iOS. |
+| TIA-06 | P2 / L / high / DRAFT | Route existing change orders and spending through the same trail; depends TIA-05, Q3/Q4/Q8 | Existing IDs retained, enrolled legacy/direct writes cannot bypass policy; approvals invalidate on changed revision; old unrelated routes remain compatible. |
+| TIA-07 | P2 / L / medium / DRAFT | Receive/return/transfer/reconcile multiple lots with full allocated costs; depends TIA-05/Q5/Q7 | Paired transfer conserves quantity and value; actual-vs-estimate costs reconcile per invoice and project; corrections use reversals. |
+| TIA-08 | P2 / M / high / DRAFT | Surface potential threshold splitting and queue requests safely; depends TIA-06/TIA-07/Q4 | Unconfigured threshold says not evaluated; isolated $6k+$5k/$10k policy example triggers one review, including concurrent submissions; request outbox retries once logically, preserving old queues. Split detection and queue extension may be separated into two reviewable issues before READY. |
+| TIA-09 | P3 / L / medium / DRAFT | Compare lifecycle scenarios; define retention/exports/investigation ownership; depends TIA-06–08/Q7/Q9 | Reproduce $138,029.59 undiscounted scenario, separate discount view, retention decisions, investigation ownership/case events, permission-scoped portfolio and verifiable signed export; no tamper-proof claim. Split scenario/export slices before READY. |
+
+Implementation review should split TIA-02 into independently reviewable contracts as needed without releasing a partial approval security boundary. TIA-03 and TIA-04 can proceed after TIA-02's stable service contract, but shared domain/API/offline files require coordinated sequential edits. No parallel-agent execution is requested by this plan.
+
+### Phase 1 issue contracts
+
+#### TIA-00 — safe web drafts
+
+- **Need/current:** crew input must survive close; main lacks the named web foundation although offline development contains it.
+- **Required:** integrate only a reviewed committed foundation, additive user-scoped schema and neutral fallback. Likely areas: `src/lib/offline`, providers, `public/sw.js`, sign-out; no copy of dirty root files.
+- **AC-1:** A's draft survives restart/offline; B cannot read it; A's sign-out removes only A after pending-work confirmation.
+- **AC-2:** Public Cache Storage contains no authenticated HTML/RSC/API/private records; neutral fallback exposes no account identity.
+- **AC-3:** Pre-existing daily-log/photo drafts, IDs, queued payloads and conflicts survive upgrade/rollback compatibility tests.
+- **NG-1:** No general offline ERP or automatic inventory posting. **Risks:** source divergence, destructive schema upgrade. **Tests/manual:** IndexedDB restart/quota/account-isolation tests and real browser network-offline restart. **Open:** which reviewed offline foundation commit can be integrated (Q6)?
+
+#### TIA-01 — finance-safe reads
+
+- **Need/current:** current UI permissions do not establish a complete monetary response boundary; bootstrap includes budget values.
+- **Required:** shared capability evaluation and separate operational/finance projections, column/table grants and RLS for new data, safe related legacy reads/cache sanitization. Likely areas: permissions, project/dashboard/change-order reads, bootstrap, native dashboard, domain/API types, activity/export/RailBot paths.
+- **AC-1:** Foreman/contractor/inspector, nonmember, wrong-org and revoked accounts cannot obtain monetary fields or infer them from financial flags via routes, direct data access, rendered/a11y content, exports or local cache.
+- **AC-2:** Existing authorized finance roles retain correct values; assignment as inventory lead alone adds no finance permission; owner read does not grant change-order management.
+- **AC-3:** Supported old mobile binaries tolerate omitted optional restricted finance fields; daily-log/photo sync, pilot gate, invites and session bridge remain working. Cache sanitation leaves unsent work intact.
+- **NG-1:** No global role rewrite, signup or master login. **Risks:** legacy RLS/read leakage and cached finance; tests must fail on actual payloads, not CSS checks. **Tests/manual:** role-matrix integration and real DB allow/deny queries; inspect field network/cache and authorized manager screens on both platforms. **Open:** named role roster and existing finance visibility (Q2); retention/export/investigation decisions (Q9) deferred to P3, not required here.
+
+#### TIA-02 — trace one issue end to end
+
+- **Need/current:** no material ledger/staged approvals in inspected main; current CO approval is single-step.
+- **Required:** minimal one-lot setup and issue transaction, fixed two-step policy, web and native list/request/queue/trail, scoped cost exposure and audit evidence. Likely areas: new shared domain/service/routes, future schema/grants, project navigation and `apps/mobile/src/app`.
+- **AC-1:** Opening 1,000 ties plus a foreman request for 100 stays at 1,000 until inventory lead verifies and PM authorizes; then ledger and both clients show 900 after refresh with one movement and ordered actor/revision/time evidence.
+- **AC-2:** Same submitter, same prior approver and out-of-order attempts return denied, append safe evidence and leave stock/state unchanged; direct table/event mutation is denied, including old route attempts against new records.
+- **AC-3:** Duplicate submit/final-approval operations return the same receipt; mismatched payload reuse conflicts; concurrent 600-tie requests cannot take stock below zero; stale revision/membership/cost/budget rejects preserve user input.
+- **AC-4:** Already-funded $6.8k stock issue leaves $126k forecast unchanged; distinct new $6.8k exposure vs $130k budget holds $2.8k. Approved CO-007 +$3k adjusts budget to $133k once with $200 headroom, regardless of linked-line count; a draft CO adds zero. Stale reconciliation/budget versions require explicit rebase/reapproval; failed posting rolls back all domain effects.
+- **AC-5:** Revisions, cancellation and reversal leave prior evidence readable; notifications are recoverable without a second stock posting.
+- **NG-1:** No PO/receipt UI, transfers, external payments, activated unconfirmed thresholds or emergency override; a small authorized draft placeholder editor is in scope. **Risks:** privileged executor bypass, races, budget double counting, absent approver. **Tests/manual:** disposable DB grants/RLS and transaction tests, simultaneous clients, web→native and native→web using synthetic IDs. **Open:** Q2 named identities, Q3 broader P2 action routes and Q5 source data; budget/CO design is the delegated section 6 proposal (Q8), not a new policy-interview blocker.
+
+#### TIA-03 — basic cost, age and discrepancy
+
+- **Need/current:** budgets exist but no line-level carrying calculation or inventory count evidence.
+- **Required:** Wendy's eleven buckets, 4–10-month drying metadata/readiness, oil-linked creosote quote reference, authorized cost cards on web/native, configurable unconfirmed rate/threshold placeholders, isolated example calculator, crew-safe quantities, count evidence and section 6 budget/CO links.
+- **AC-1:** Both clients expose all eleven bucket keys with source/status; no finance in crew DTO. Drying shows 4–10 calendar months and actual dates/readiness; creosote preserves its oil-linked quote snapshot with no live repricing. Unconfirmed rates/thresholds show null/incomplete/not-evaluated and never activate sample numbers. Explicit example mode gives landed $68,000, basic carrying $2,694.25, partial subtotal $70,694.25 and installed basic estimate $112,694.25; full risk/lifecycle preview is $138,029.59. Operational confirmed-rate totals and example mode remain separate.
+- **AC-2:** Partial issues reduce subsequent carrying intervals; missing dates/rates and zero installed quantity show incomplete/not available; allocations/credits cannot double count waste, invoices or approved CO amounts.
+- **AC-3:** 60-day on-hand stock flags aged; expected 1,000/count 980 flags a 20-tie variance and holds issue pending valid recount/operational verification; flag-investigation case ownership remains P3. Stale-count baselines require recount; no automatic adjustment.
+- **NG-1:** No capitalized accounting book, automatic shrink charge or lifecycle tool. **Risks:** ambiguous basis and counts captured during movement. **Tests/manual:** independent decimal arithmetic, interval/rounding/unknown inputs and row-level finance checks, lead walk-through of age/count evidence. **Open:** Q5 source data and Q7 rate/source confirmation; Q8 proposal is specified, not a request for the user to invent the link.
+
+#### TIA-04 — preserve field input and receipt recovery
+
+- **Need/current:** existing native SQLite is durable; WebView page lifetime alone cannot meet restart preservation.
+- **Required:** hook request forms into approved user-scoped persistence, finite-state submission/receipt recovery and visible conflict states. No new material outbox in P1.
+- **AC-1:** Save quantity/location/reason, go offline, terminate/restart, restore on web and native; show “Saved” only after persistence succeeds.
+- **AC-2:** Offline submit/approve is clearly unavailable; network loss before/during/after submit keeps fields and operation identity; reconnect receipt lookup prevents a duplicate request.
+- **AC-3:** Quota failure keeps entered fields with a clear unsaved message; repeated connectivity changes, auth-refresh failure and role revocation never discard or silently resubmit input.
+- **AC-4:** A→B→A, sign-out guard and additive upgrade/unsupported-version recovery tests preserve existing daily-log/photo work. User sees draft/pending/retry/failed/conflicted/synchronized distinctions accurately.
+- **NG-1:** No automatic queue for material requests/approval decisions, attachments or Background Sync dependency. **Risks:** asynchronous save races, stale statuses and unsupported native build. **Tests/manual:** browser and SQLite persistence tests plus pilot TestFlight iOS close/reopen, restart and network tests; Android expansion tracked by TIA-05A. **Open:** Q1/Q6.
+
+#### TIA-05 — accept the two-platform pilot
+
+- **Need/current:** documented shared-workspace action coverage is not functional/native device acceptance.
+- **Required:** invite-only named tester roster centered on Spike Sambol (inventory, Salt Lake), pending Mark's intro; approved baseline/count/source fixture; web and current TestFlight build/device evidence; one short script per role. Verify both directions and preserve installed data. Do not contact or invite Spike as part of planning.
+- **AC-1:** Build/TypeScript/focused shared/API/permission/calculation/grant/transaction/offline tests pass; `npm run check:db-grants`, `npm run test:db-grants` and mobile parity inventory pass with new actions listed. Native typecheck/tests and iOS production export pass; Android export/device evidence is tracked by TIA-05A before Android distribution, not an extra initial tester requirement.
+- **AC-2:** Actual current TestFlight pilot device(s) and web cover restart/network, no-finance response/cache, approvals, role denial, conflict, deep links and preservation of old queues. Record exact installed build/OS, device model, commit, identity/project and timestamps; new native Field screens require a signed successor if absent in that binary. Do not call current Workspace testing native/offline completion; do not require Android/additional iPad/iPhone models until TIA-05A expansion.
+- **AC-3:** At least one web-created issue is approved/refreshed on native and one native-created request is checked/refreshed on web with same IDs/revision/events; ten pilot requests and daily count review meet section 1 success criteria.
+- **AC-4:** Mark's intro and Spike's interest are recorded before inviting; foreman/PM and backups use distinct invites. Current TestFlight build is recorded and any required signed successor is available/assigned; backend/web keeps released mobile v1 routes/protections; rollback retains ledger/evidence and never clears devices or reopens legacy bypasses.
+- **NG-1:** No external promise of full parity or offline stock posting. **Risks:** tester/store delays and inconsistent source branches. **Tests/manual:** complete QA script with synthetic or expressly approved pilot records. **Open:** Q1 date/success target, Q2 names/intro, Q5 fixture and Q6 build/foundation evidence; Q9 is Phase 3 and does not block this pilot spec.
+
+### Phase 2/3 contract addenda
+
+TIA-05A expansion: validate Android/additional device models with exact builds and physical restart/permissions/queue tests before broader release; no current TestFlight acceptance claim transfers automatically.
+
+These remain concept-sized DRAFT records and must be refined/split with full platform test scripts before READY.
+
+- **TIA-06:** Current CO writes bypass staged history; required adapter preserves existing IDs/number/milestone and consumes one approved budget delta. **AC-1:** enrolled CO cannot approve/delete via old action, direct REST or RailBot; **AC-2:** changed amount restarts policy and retains old events; **AC-3:** legacy rows show no invented evidence. **NG-1:** no ERP integration. **Risk/tests:** old-client bypass and downgrade; database and old/new API tests, web/native revision walk-through. **Open:** Q3/Q4/Q8.
+- **TIA-07:** Current main has no multi-lot ledger; add receiving/return/paired transfer/reversal and source-based allocation. **AC-1:** quantities/value conserved per atomic transfer; **AC-2:** two materials sharing one invoice allocate exactly once to the cent; **AC-3:** actual loss replaces overlapping estimates with linked evidence. **NG-1:** no cross-org transfer. **Risk/tests:** backdating, units, partial delivery; randomized ledger/allocation and two-device retry tests. **Open:** Q5 source data and Q7 rate/source confirmation; Q8 proposal is specified, not a request for the user to invent the link.
+- **TIA-08:** No split-review/outbox exists for new requests; introduce deterministic supplier/category windows and durable request-only queue. **AC-1:** unconfigured bands say not evaluated; under an explicitly configured synthetic $10k policy, concurrent $6k/$5k submissions flag one $11k exposure; **AC-2:** cancellation/credits/duplicates follow section 7; **AC-3:** close/restart/retry sends one logical request, approval still requires online action and current permission. **NG-1:** no automatic fraud verdict. **Risk/tests:** false positives and fresh-stock conflicts; DB concurrency, window boundaries, mobile/web queue upgrade. **Open:** Q4/Q6.
+- **TIA-09:** No lifecycle/scenario or external evidence assurance exists; add the separately budgeted forecast and export pipeline. **AC-1:** $138,029.59 example and dated PV scenario reconcile independently; **AC-2:** all export rows obey project/finance scope; **AC-3:** altering an exported event fails manifest verification while corrections remain linked; **AC-4:** approved retention/access/deletion rules and named flag-investigation ownership, acknowledgement/disposition/reopen events are documented/tested before enabling those P3 workflows. **NG-1:** no claim database administrators cannot tamper. **Risk/tests:** uncertain costs, retention and signing-key custody; decimal/scenario and artifact-verifier tests plus authorized mobile/web export review. **Open:** Q7/Q9.
+
+## 11. Rollout, compatibility and impact record
+
+- **User-visible change:** currently only a written plan and static wireframes. Future releases add inventory, true-cost and approval/audit functions on web and native, in the phases above.
+- **Web impact:** planned project navigation, inventory/request/cost/approvals/audit screens and draft persistence; no application implementation in this branch.
+- **Mobile impact:** planned native Field list/request/status and authorized cost/queue/trail/dashboard views, plus online Workspace adaptation. Initial pilot target is the current TestFlight iOS build/device(s) plus web, with exact build evidence pending onboarding. New bundled screens need a signed successor if absent; no OTA is configured. Android/additional device-model acceptance is TIA-05A before broader distribution, not silently marked passed or added to the initial tester bottleneck.
+- **Shared API/domain/database:** planned additive DTOs, capability checks, service/RPC boundary, events/stock/cost/rate/policy objects and explicit grants/RLS. No schema or database work in this branch.
+- **Offline:** P1 drafts + cached operational reads, online submission/approval/posting; P2 explicit request queue. Preserve current daily-log/photo operation payloads and identity. TIA-00 is a real dependency, not a passed gate.
+- **Older mobile builds:** main is canonical backend after the October 5 reconciliation; native source remains separate. The user selected the current TestFlight build as the pilot baseline; September's 300010 note does not identify that build. Record the actual installed build/OS/device at onboarding (Q6), then preserve supported old-client contracts. Add a capabilities response/feature gate; new endpoints return explicit unsupported-version errors and clients retain drafts. Old clients keep current v1 routes, bootstrap compatibility and queues; they do not gain new native features automatically.
+- **Permissions / idempotency / conflict:** role/assignment matrix and transactional receipt/version rules in sections 4/5/8; all are proposed and unimplemented.
+- **Web→mobile / mobile→web:** TIA-05 records exact same-ID bidirectional tests, refresh visibility and denied access. No such runtime acceptance has been claimed for this planning branch.
+- **Tests/builds/device checks:** this documentation-only change uses local links/content checks, arithmetic checks, JavaScript syntax and browser wireframe review. `npm ci` completed in the isolated worktree (842 packages); it reported 21 existing dependency advisories (5 moderate, 15 high, 1 critical). No dependency or lockfile remediation is authorized here. Application build/TypeScript/runtime suites are not applicable to these static-only edits under the web/mobile policy and PR template; they remain mandatory implementation gates in TIA-05. Physical-device implementation acceptance is pending, not passed.
+- **20 October revision validation:** confirmed decision register and all eleven bucket keys checked; default carrying/threshold amounts are blank, example activation/clear behavior and the +$3,000 CO / $200 headroom interaction checked; independent decimal arithmetic reproduces $112,694.25 installed basic and $138,029.59 lifecycle examples. No app/runtime/device acceptance is implied.
+- **Original planning validation completed:** seven HTML files (six requested screens plus index), 98 local links/assets/anchors, unique IDs, inline JavaScript syntax and independent decimal arithmetic passed. Browser review used desktop and 390px phone widths; exercised out-of-order/self-approval rejection, distinct two-step posting (1,000 → 900), future-cost toggles, empty inventory filter, phase-filtered flags, and offline/conflict states with fields preserved in the open prototype. This verifies static interactions only; real persistence, authentication, server posting and physical devices are unimplemented.
+- **Deployment/build/assignment / rollback:** no manual deployment, native build or tester assignment is created by this round. The existing Vercel integration has automatic deployments enabled and no ignored-build command; the user explicitly allowed a branch deployment before push. An automatic preview can therefore build the unchanged application with these added documentation files. This is not implementation or release of the proposed feature, and main is not merged. Future feature rollout order: approve business decisions → resolve source/foundation prerequisites → reviewed additive schema/contract in test environment → backend/web with finance and approval protections → signed native builds/tester assignment → gated one-project pilot. Retain old API/outboxes, migrate no unsent identity, verify actual deployed source and available/installed build IDs. A server-side pilot gate disables new submissions, never erases accepted records; rollback keeps new events/ledger readable and forbids legacy write bypasses. Disable entry, allow safe read/recovery, and roll UI back to a compatible revision; no down-migration that deletes evidence.
+- **Deliberate gaps and tracked follow-ups:** web foundation absent on main (TIA-00); finance boundary (TIA-01); current TestFlight/foundation evidence (TIA-05/Q6) and later device expansion (TIA-05A); CO/spend routing (TIA-06); broader inventory/full cost (TIA-07); split detection/material queue (TIA-08); lifecycle, retention, exports and flag-investigation ownership (TIA-09). No app feature is complete merely because the wireframe exists.
+
+## 12. Decision register and remaining questions
+
+The supplied answers replace the earlier questionnaire. Do not reopen confirmed choices or treat explicitly deferred Phase 3 decisions as pilot blockers. All implementation records remain DRAFT: updating a plan is not Build authorization.
+
+| ID / status | Recorded decision / remaining item | Next action / phase |
+| --- | --- | --- |
+| Q1 — partly open | Pilot target is Spike Sambol, inventory, Salt Lake, pending Mark's introduction. One-project/one-yard/one-tie slice remains. Delivery-vs-five-day-use meaning and calendar start/success target are still open. | Mark supplies intro; after Spike confirms interest, choose actual project/yard and pilot date without expanding the tester cohort. No contact is sent by this task. |
+| Q2 — workflow answered; roster open | **Foreman requests, inventory lead verifies, PM authorizes, before release.** Three distinct invited identities; no shared/master accounts. Inventory-lead assignment alone adds no finance rights. | Supply foreman/PM names, backups and existing role/finance visibility after intro; do not assign Spike an account or investigation role by assumption. |
+| Q3 — P1 answered; P2 refinement | Every P1 issue takes both steps before physical release. Unavailable approver = waiting. No threshold escape, self-approval or override. | Confirm routes for later purchasing/spending, receipt, transfer, write-off and full CO adapter when refining P2; not a fresh P1 workflow question. |
+| Q4 — configurable placeholder | Approval thresholds are editable **unconfirmed** configuration until Wendy confirms amount/currency/bands. P1 fixed lead→PM continues for every issue. | Wendy confirms activation separately. $10k/seven-day split examples are synthetic; unset rule says not evaluated. Aggregation/exception details remain P2 refinement. |
+| Q5 — source data open; investigation deferred | Use one finished, inspection-accepted tie lot and original receipt/drying dates, with count observations. Provisional age/count cadence remains an explicit example, not approved A5 policy. | After intro, obtain opening quantity/units, actual yard/work locations, dates/readiness and the operational recount process. Investigation-case ownership is deferred to P3/Q9. |
+| Q6 — devices answered; evidence pending | Initial target is **current TestFlight build + web**. Exact installed build/OS, actual pilot device model(s), signed successor dependency and reviewed web-offline foundation commit must be recorded. | Technical owner supplies release/source evidence; do not make broader Android/model testing a prerequisite to this initial cohort. TIA-05A gates later distribution; current binary cannot gain bundled code automatically. |
+| Q7 — buckets answered; rate/quote confirmation pending | Wendy's eleven buckets are fixed as listed in section 6, including 4–10-month drying and oil-linked creosote. Carrying rates remain configurable/unconfirmed placeholders. | Obtain actual bucket source amounts, drying/title/funding dates, creosote quote/index reference, and Wendy's rate/unit/day-basis confirmation before activating operational cost calculations. No live oil lookup is assumed. |
+| Q8 — delegated proposal supplied | Section 6 defines project/milestone/material/CO links, source reconciliation, zero extra spend on already-funded issues, one approved CO budget delta, and explicit overrun rebase/reapproval. | Use this as the design baseline and validate synthetic examples; name the actual budget/spend source custodian during implementation discovery. No unresolved request for the user to design the link. |
+| Q9 — **deferred to Phase 3** | Evidence-retention policy, new exports and flag-investigation ownership/case workflow are out of P1/P2. | TIA-09 decides duration/deletion/access, export permissions/assurance and named investigators; P1 still preserves append-only evidence with no new automatic purge. Do not hold the pilot spec waiting for Q9. |
+
+Before READY: refine the exact Phase 1 issue set around the confirmed decisions, name the pilot roster after Mark's intro, record current TestFlight/foundation evidence and decide the date/source-data scope. Keep unconfirmed rates/thresholds as non-active placeholders; their numeric confirmation is not required to build or review that placeholder behavior. Full operational true-cost totals remain visibly incomplete until active values exist. No Build starts and no issue changes to READY without approval of the exact issue set.
+
+### Phase 1 implementation handoff — 20 October 2026
+
+The user's explicit 20 October build approval superseded the historical plan-only/DRAFT restriction for Phase 1. Local web and native implementation, role-safe finance reads, transactional stock/approval evidence, drafts and receipt recovery are recorded in [the Phase 1 handoff](../mobile/INVENTORY_PHASE_ONE_HANDOFF_20261020.md). Configuration remains unconfirmed; no migration, deployment, signed distribution, tester onboarding or physical-device acceptance is claimed. Phase 2/3 remain unapproved implementation scope. The exact source revision and command evidence are in `.codex-loop/reports/TIA-P1/build.md` in the isolated build worktree.
+
+
+### Phase 1 bounded privacy correction — 20 October 2026
+
+Independent Review R1/R2 identified privileged event reasons in operational device
+caches and private decision text in unknown-operation drafts. The correction uses
+an operational event allowlist on web/native writes and legacy reads, and
+receipt-only persistence for reject/cancel decisions alongside financial editors.
+Operational field work and existing log/photo identities stay durable. Receipt-only
+restart cannot replay forgotten private input: it keeps the original identity and
+remains unresolved until receipt lookup succeeds. See the platform handoff's
+bounded privacy correction section and the new exact-revision Build report.
+No Phase 2/3, schema, policy-confirmation, hosted or release scope was added.
+
+### 20 October 2026 — R3 bounded correction
+
+Completed same-identity online settlement for private receipt-only restart recovery
+on web and native. New envelopes retain allowlisted original request/lot scope and
+expected versions without private values. Missing receipts never imply abandonment:
+the additive settlement RPC shares the original actor/UUID lock, returns an accepted
+receipt or durably resolves never-applied; late original delivery cannot mutate.
+Legacy minimal envelopes need no inferred versions. Changed-payload conflicts look
+up the original receipt. Field drafts/old queues remain intact. Finance/decisions
+stay online-only; cached operations read-only; field drafts remain draft-only.
+See the platform handoff and current TIA-P1 Build report for exact local evidence.
+No policy amounts confirmed, Phase 2/3 added, hosted writes, distribution or merge.
+Independent Review and physical/signed/hosted/pilot release gates remain required.
+
+
+## Authorized confirmed-rule delta — 21 October 2026
+
+TIA-CONFIRMED-RULES supersedes the prior unconfirmed rate/threshold and deferred
+likely-split slice only. Wendy confirms editable organization defaults of 5% per
+year carrying and an additional distinct Supply Chain sign-off strictly over
+USD 50,000 per contract year. The user confirms approved commitments plus the
+request, and contract anniversaries anchored to recorded start dates. Feb29 uses
+Feb28 in non-leap years; UTC dates, start inclusive/end exclusive. There is no
+calendar-year fallback. Missing contract/start, currency, period or verified
+external opening commitment baseline holds new spending. External baselines
+explicitly exclude tracked source identities; external procurement history still
+requires manual reconciliation. Distinct known subthreshold sources with a sum
+over the limit produce a finance-only likely-split warning, never a fraud verdict.
+
+Organization policy and contract/source/baseline/approval evidence are append-only.
+Final authorization commits source spend and stock atomically under an organization
+lock across projects, retaining the project→lot→request order. Pending approvals
+are not procurement reservations; they cannot spend/release, and a changed total
+requires explicit requester rebase and fresh approvals. Funded stock adds zero;
+canonical sources are committed once across projects. Field input remains device
+draft only and operational cached reads remain read-only; all finance, decisions,
+posting and receipt settlement are online-only. No private financial editor values
+enter device persistence; stable original operation metadata survives uncertainty.
+
+Both actual web and native components, shared domain/API, additive local migration,
+real DB concurrency/RLS, real SQLite, Chromium and the existing offline/recovery
+contracts are in scope. Current native build300014 additions are reconciled only
+from immutable ce2a1e67d913e931690f34982a45b334c7ae64db. Hosted/signed/physical
+acceptance remains a separate release gate. Parent may prepare only the authorized
+protected preview/private TestFlight; Build/Review do not push or release.
+
+
+## Approved profile access update - 29 October 2026
+
+The user approved the narrower organization/project profile rules and a shareable profile/access handout. The current implementation and remaining verification record are in [TCO profile access](../mobile/TCO_PROFILE_ACCESS_20261029.md). This supersedes earlier assumptions that engineer/superintendent titles alone grant TCO cost editing or organization policy changes. Organization admins manage defaults and explicit cost-view grants; PMs manage project costs; Supply Chain is a distinct assigned decision with no general management grant. Existing invite-only accounts, local-only testing and draft/queue preservation continue. No production rollout is authorized.
+
+## Approved catalogue, units and receiving update — 5 November 2026
+
+Managers/admins now approve project material codes, specifications and fixed units;
+receiving selects those items rather than creating materials from free text. An
+assigned editable inventory lead or manager receives accepted deliveries. Measured
+units include fuel volumes, weights and lengths. Desktop CSV setup can import the
+catalogue and accepted opening stock; Excel is saved as CSV first. The local web /
+iPhone build 610008 checkpoint, preservation evidence, offline classification and
+remaining platform checks are recorded in [catalogue and receiving](../mobile/TCO_PHASE1_CATALOGUE_UNITS_RECEIVING_20261105.md).
+This is local testing only; no production rollout, merge or deployment is authorized.

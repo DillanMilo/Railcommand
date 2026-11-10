@@ -43,6 +43,9 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules"
+    ".codex-loop",
+    "node_modules",
+    "apps/mobile",
+    "packages/offline"
   ]
 }

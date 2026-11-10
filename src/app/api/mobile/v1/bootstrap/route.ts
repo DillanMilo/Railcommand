@@ -1,3 +1,4 @@
+import { enrichProject } from '@/lib/finance-projection';
 import type {
   MobileBootstrap,
   MobileDailyLog,
@@ -67,7 +68,7 @@ export async function GET(request: Request): Promise<Response> {
       context.supabase.from('profiles').select('role').eq('id', context.user.id).single(),
       context.supabase
         .from('project_members')
-        .select('project_id, project_role, can_edit, project:projects(id, name, status, location, client, start_date, target_end_date, budget_total, budget_spent, created_at)')
+        .select('project_id, project_role, can_edit, project:projects(id, name, status, location, client, start_date, target_end_date, created_at)')
         .eq('profile_id', context.user.id)
         .limit(200),
     ]);
@@ -81,7 +82,7 @@ export async function GET(request: Request): Promise<Response> {
   if (profile?.role === 'admin') {
     const projectsResult = await context.supabase
       .from('projects')
-      .select('id, name, status, location, client, start_date, target_end_date, budget_total, budget_spent, created_at')
+      .select('id, name, status, location, client, start_date, target_end_date, created_at')
       .order('name')
       .limit(200);
     const projectsFailure = bootstrapQueryFailure([projectsResult], 'Could not list projects');
@@ -95,6 +96,8 @@ export async function GET(request: Request): Promise<Response> {
       project,
     }) as MembershipRow[];
   }
+
+  rows = await Promise.all(rows.map(async row => ({...row,project:row.project?await enrichProject(context.supabase,row.project):null})));
 
   const projects = rows
     .filter((row) => row.project)
@@ -111,8 +114,7 @@ export async function GET(request: Request): Promise<Response> {
       updatedAt: row.project!.created_at,
       startDate: row.project!.start_date ?? undefined,
       targetEndDate: row.project!.target_end_date ?? undefined,
-      budgetTotal: row.project!.budget_total ?? 0,
-      budgetSpent: row.project!.budget_spent ?? 0,
+      ...(canPerform(row.project_role,ACTIONS.BUDGET_VIEW)&&row.project!.budget_total!==undefined ? {budgetTotal:row.project!.budget_total??0,budgetSpent:row.project!.budget_spent??0}:{}),
       canViewEarthCam: profile?.role === 'admin'
         || canPerform(row.project_role, ACTIONS.EARTHCAM_VIEW),
       canManageEarthCam: profile?.role === 'admin'

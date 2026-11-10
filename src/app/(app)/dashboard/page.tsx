@@ -92,8 +92,8 @@ export default function DashboardPage() {
     );
   }
 
-  const approvedCOTotal = metrics.approvedChangeOrderTotal;
-  const pendingCOs = metrics.pendingChangeOrders;
+  const approvedCOTotal = metrics.approvedChangeOrderTotal??0;
+  const pendingCOs = metrics.pendingChangeOrders??0;
   const adjustedBudget = project.budget_total + approvedCOTotal;
 
   const budgetDisplay = `$${(adjustedBudget / 1_000_000).toFixed(1)}M`;
@@ -124,7 +124,7 @@ export default function DashboardPage() {
   }
 
   // Earned Value metrics (CPI / SPI)
-  const earnedValue = metrics.earnedValue;
+  const earnedValue = metrics.earnedValue??0;
   const timeRatio = totalDays > 0 ? Math.min(1, Math.max(0, elapsed / totalDays)) : 1;
   const plannedValue = adjustedBudget * timeRatio;
   const actualCost = project.budget_spent;

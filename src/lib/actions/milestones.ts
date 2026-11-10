@@ -1,6 +1,7 @@
 // src/lib/actions/milestones.ts
 'use server';
 
+import { MILESTONE_OPERATIONAL_FIELDS,enrichMilestones } from '@/lib/finance-projection';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { ACTIONS } from '@/lib/permissions';
@@ -28,13 +29,13 @@ export async function getMilestones(projectId: string): Promise<ActionResult<Mil
 
     const { data, error } = await supabase
       .from('milestones')
-      .select('*')
+      .select(MILESTONE_OPERATIONAL_FIELDS)
       .eq('project_id', projectId)
       .order('sort_order', { ascending: true });
 
     if (error) return { error: error.message };
 
-    return { success: true, data: (data as Milestone[]) ?? [] };
+    return { success: true, data: await enrichMilestones(supabase,projectId,(data??[]) as unknown as Milestone[]) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to fetch milestones' };
   }
@@ -91,7 +92,7 @@ export async function createMilestone(
         budget_actual: data.budget_actual ?? 0,
         sort_order: sortOrder,
       })
-      .select()
+      .select(MILESTONE_OPERATIONAL_FIELDS)
       .single();
 
     if (error) return { error: error.message };
@@ -109,7 +110,7 @@ export async function createMilestone(
     revalidatePath(`/projects/${projectId}/schedule`);
     revalidatePath(`/projects/${projectId}`);
 
-    return { success: true, data: milestone as Milestone };
+    return { success: true, data: (await enrichMilestones(supabase,projectId,[milestone as unknown as Milestone]))[0] };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to create milestone' };
   }
@@ -155,7 +156,7 @@ export async function updateMilestone(
       .update(updateData)
       .eq('id', milestoneId)
       .eq('project_id', projectId)
-      .select()
+      .select(MILESTONE_OPERATIONAL_FIELDS)
       .single();
 
     if (error) return { error: error.message };
@@ -178,7 +179,7 @@ export async function updateMilestone(
     revalidatePath(`/projects/${projectId}/schedule`);
     revalidatePath(`/projects/${projectId}`);
 
-    return { success: true, data: milestone as Milestone };
+    return { success: true, data: (await enrichMilestones(supabase,projectId,[milestone as unknown as Milestone]))[0] };
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to update milestone' };
   }

@@ -55,6 +55,7 @@ export default function MobileNav() {
   ];
 
   const moreItems = [
+    { label: 'Inventory', href: hasProject ? `/projects/${currentProjectId}/inventory` : '#', Icon: ClipboardPenLine, requiresProject: true, badge: 'Beta' },
     { label: 'Punch List', href: hasProject ? `/projects/${currentProjectId}/punch-list` : '#', Icon: ClipboardCheck, requiresProject: true },
     { label: 'Safety', href: hasProject ? `/projects/${currentProjectId}/safety` : '#', Icon: ShieldAlert, requiresProject: true },
     { label: 'QC/QA', href: hasProject ? `/projects/${currentProjectId}/qcqa` : '#', Icon: ClipboardPenLine, requiresProject: true },

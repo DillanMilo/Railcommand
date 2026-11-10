@@ -523,3 +523,9 @@ export function isValidPhotoSyncOperation(
 }
 
 export { formatDfrDate, formatDfrTimestamp, dfrPhotoLabel, isValidPhotoCaption, MAX_PHOTO_CAPTION_LENGTH, dfrDateInputToIso, formatDfrDateInput } from './dfr-presentation';
+
+export * from "./inventory";
+export * from "./inventory-controller";
+export * from "./inventory-presentation";
+export * from "./inventory-export";
+export * from "./inventory-catalogue";

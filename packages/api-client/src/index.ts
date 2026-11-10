@@ -1,3 +1,4 @@
+import type { InventoryCommand,InventoryResult,InventorySnapshot,InventoryCsvReport } from '@railcommand/domain';
 import type {
   MobileBootstrap,
   MobileAppRelease,
@@ -55,6 +56,15 @@ export interface MobilePageRequest {
 }
 
 export class MobileApiClient {
+  createWorkspaceSession(path: string): Promise<{ ticket: string; userId: string }> {
+    return this.request('/api/mobile/v1/web-session',{method:'POST',body:JSON.stringify({path})});
+  }
+
+  exportInventoryCsv(projectId: string): Promise<InventoryCsvReport> { return this.request(`/api/mobile/v1/inventory?${new URLSearchParams({projectId,format:'csv'})}`); }
+  readInventory(projectId: string): Promise<InventorySnapshot> { return this.request(`/api/mobile/v1/inventory?${new URLSearchParams({projectId,costEntryVersion:"2",inventoryVersion:"3"})}`); }
+  executeInventory(projectId: string, operationId: string, command: InventoryCommand): Promise<InventoryResult> { return this.request('/api/mobile/v1/inventory',{method:'POST',body:JSON.stringify({projectId,operationId,command})}); }
+  inventoryReceipt(projectId: string, operationId: string): Promise<{receipt: InventoryResult | null}> { return this.request(`/api/mobile/v1/inventory?${new URLSearchParams({projectId,operationId})}`); }
+
   private readonly baseUrl: URL;
   private readonly getAccessToken: () => Promise<string | null>;
   private readonly refreshAccessToken?: () => Promise<string | null>;

@@ -1,0 +1,285 @@
+.page {
+  max-width: 1200px;
+  margin: auto;
+  padding: 24px;
+  color: var(--foreground);
+  line-height: 1.5;
+}
+.page header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.page h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+.page h2 {
+  font-size: 21px;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.page h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.page small {
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+.page section {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #94a3b855;
+  border-radius: 12px;
+}
+.page article {
+  padding: 16px;
+  border: 1px solid #94a3b855;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.page p {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+.page form {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+  margin: 14px 0;
+}
+.page label {
+  display: grid;
+  gap: 5px;
+  font-weight: 500;
+}
+.page input,
+.page textarea,
+.page select {
+  min-height: 44px;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  padding: 9px;
+  background: var(--background);
+  color: inherit;
+  width: 100%;
+}
+.page input[type="checkbox"] {
+  width: 24px;
+  min-height: 24px;
+}
+.page button {
+  min-height: 44px;
+  padding: 9px 14px;
+  background: #0f766e;
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+  margin: 5px 8px 5px 0;
+}
+.page button:disabled {
+  opacity: 0.5;
+}
+.page button:focus-visible,
+.page input:focus-visible,
+.page summary:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 3px;
+}
+.page summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  font-weight: 600;
+}
+.notice {
+  padding: 12px;
+  background: #f59e0b1a;
+  border-left: 3px solid #d97706;
+}
+.hold {
+  color: #b45309;
+}
+.balance {
+  font-size: 28px;
+}
+.page fieldset {
+  padding: 12px;
+  border: 1px solid #94a3b855;
+}
+.page dl > div {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  border-bottom: 1px solid #94a3b833;
+  padding: 6px 0;
+}
+.page dd {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .page {
+    padding: 14px;
+  }
+  .page section {
+    padding: 14px;
+  }
+  .page h1 {
+    font-size: 24px;
+  }
+  .page header {
+    align-items: flex-start;
+  }
+  .page dl > div {
+    display: block;
+  }
+}
+
+.beta {
+  display: inline-block;
+  vertical-align: middle;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f59e0b1a;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sectionLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+}
+.sectionLinks a {
+  padding: 8px 12px;
+  border: 1px solid #94a3b855;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.metrics > div {
+  padding: 16px;
+  border: 1px solid #94a3b855;
+  border-radius: 10px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.metrics span {
+  font-size: 14px;
+  font-weight: 600;
+}
+.metrics strong {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.metrics small,
+.subtle {
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: normal !important;
+  color: var(--muted-foreground, #64748b);
+}
+.status {
+  padding: 10px 12px;
+  border-left: 3px solid #0f766e;
+  background: #0f766e0c;
+  font-weight: 600;
+}
+.tableScroll {
+  overflow-x: auto;
+  margin: 18px 0;
+}
+.costTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+.costTable caption {
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.costTable th,
+.costTable td {
+  padding: 12px;
+  border-bottom: 1px solid #94a3b833;
+  vertical-align: top;
+}
+.costTable td:nth-child(2),
+.costTable td:nth-child(3) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #94a3b81a;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.page .editAction {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #0f766e;
+  color: white;
+  margin: 8px 0;
+}
+.timeline {
+  list-style: none;
+  margin: 20px 0;
+  padding: 0 0 0 18px;
+  border-left: 2px solid #0f766e55;
+}
+.timeline li {
+  padding: 0 0 20px 18px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #94a3b833;
+}
+.timelineHeading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.timelineHeading time {
+  font-size: 14px;
+  color: var(--muted-foreground, #64748b);
+}
+.page :target {
+  scroll-margin-top: 90px;
+}
+
+.page [hidden] {
+  display: none !important;
+}
+.sectionLinks button[aria-pressed="true"] {
+  background: #133b2b;
+  color: white;
+  border-color: #133b2b;
+}
+.page input[type="search"] {
+  width: 100%;
+  max-width: 640px;
+}

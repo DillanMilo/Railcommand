@@ -1,4 +1,6 @@
 'use client';
+import { inspectWebDeviceWork } from '@/lib/inventory/drafts';
+import { clearOfflineDataForUser } from '@/lib/offline/storage';
 
 import { nativeWorkspace } from '@/lib/native-workspace';
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -401,6 +403,14 @@ export default function Topbar({ children }: TopbarProps) {
       return; // Native sign-out checks preserved drafts and queued work first.
     }
     const supabase = createClient();
+    const {data:{user}}=await supabase.auth.getUser();
+    if(user) {
+      try {
+        const pending=await inspectWebDeviceWork(user.id);
+        if(pending && (!window.confirm(`This device has ${pending} unsent drafts or operations. Cancel to keep or synchronize them. Continue to discard?`) || !window.confirm('Permanently discard all this account’s unsent device work and sign out?'))) return;
+        await clearOfflineDataForUser(user.id);
+      } catch { window.alert('Device work could not be checked or removed. Sign-out was canceled to preserve your work.'); return; }
+    }
     await supabase.auth.signOut();
     await fetch('/api/demo/local-session', { method: 'DELETE' }).catch(() => {});
     // Clear demo mode state
