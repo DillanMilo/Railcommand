@@ -17,7 +17,7 @@
     "errors": 0,
     "warnings": 59
   },
-  "productionPreflight": "read-only inspection complete; organization fix verified locally; release held for actual backup/restore, privilege and release review",
+  "productionPreflight": "database recovery and Inventory preservation rehearsal verified locally; release held for existing history integrity, privilege review and final release acceptance",
   "supabaseReadOnlyPreflight": {
     "organizationId": "ffzboakthmscpmrhafnv",
     "organizationName": "Railcommand",
@@ -40,7 +40,7 @@
     "requiredProjectionColumnsPresent": true,
     "releasedSyncFunctionBodiesMatchCandidateSource": "4 of 4, ignoring whitespace",
     "scheduledBackups": "not included on current plan; dashboard reports no backups",
-    "backupRestoreRehearsal": "not performed",
+    "backupRestoreRehearsal": "now completed as faithful recovery; see result; historical integrity remains open",
     "organizationMismatchMemberships": 6,
     "affectedRoles": "5 manager memberships; 1 superintendent membership",
     "affectedProjectOrgsMarkedDemo": false,
@@ -52,7 +52,7 @@
     "hostedDataOrSchemaMutations": false,
     "noExtraCostsIncurred": true,
     "protectedCheckoutBaselineStillMatches": true,
-    "releaseDecision": "hold; INV-REL-02 resolved locally; INV-REL-01 and INV-REL-03 remain"
+    "releaseDecision": "hold; INV-REL-02 resolved locally; database recovery verified; INV-REL-03 and new INV-REL-04 remain"
   },
   "vercelReadOnlyPreflight": {
     "teamId": "team_s16JIS0pr4dx8WxpQZ6jAD2R",
@@ -102,8 +102,8 @@
   "backupPreparation": {
     "checklist": "INVENTORY_BACKUP_RESTORE_CHECK.md",
     "syntheticDockerRestore": "passed",
-    "actualProductionCapture": "pending existing database password/private entry and project CA",
-    "productionDataRestore": "not performed",
+    "actualProductionCapture": "verified; one database export using approved temporary read-only backup role",
+    "productionDataRestore": "faithful local recovery verified; existing 21 missing-project history references retained",
     "storageObjectsAndEncryptionRecovery": "explicit remaining scope; not claimed",
     "paidResourcesCreated": false,
     "syntheticResult": {
@@ -119,6 +119,16 @@
         "authorized read/nonmember denial/write denial",
         "source unchanged"
       ]
-    }
+    },
+    "result": "INVENTORY_BACKUP_RESULT_20261110.md",
+    "allOriginalTablesPreserved": 83,
+    "inventoryMigrationRehearsal": "passed on isolated recovered copy; original values/access retained",
+    "temporaryLoginRemoved": true,
+    "temporaryPasswordFileRemoved": true,
+    "copyClientReceivedBytes": 3173374,
+    "archiveBytes": 1056621,
+    "cleanIntegrityAcceptance": false,
+    "localRestoreContainerRemoved": true,
+    "preservationVerified": true
   }
 }

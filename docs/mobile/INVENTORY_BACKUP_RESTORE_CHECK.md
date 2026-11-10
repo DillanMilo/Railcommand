@@ -1,9 +1,16 @@
 # Inventory Beta — no-cost backup and restore check
 
-Prepared 10 November 2026. **Production capture and production-data restore have
-not run.** The synthetic local rehearsal passes; it does not replace this gate.
-No paid branch, plan upgrade, password reset, temporary hosted role, linked-project
-reset, merge or deployment is needed or authorized.
+Updated 10 November 2026. **A real database copy, faithful isolated recovery and
+Inventory rehearsal are now verified. Historical integrity remains open because
+21 existing history entries refer to missing projects.** Read the authoritative
+[backup result](INVENTORY_BACKUP_RESULT_20261110.md) before using this procedural
+checklist. No merge, push or deployment occurred.
+
+The original password was unavailable. The user separately approved a temporary
+backup-only login with read access and a one-hour expiry. It was used for one copy,
+then removed along with its password file. This was the only approved hosted access
+change; existing users, their permissions and passwords were preserved. No paid
+resources, plan upgrade, password reset or linked-project reset occurred.
 
 ## Source and destination
 
@@ -18,7 +25,9 @@ reset, merge or deployment is needed or authorized.
 
 ## Capture prerequisites
 
-Use the existing database password, entered privately at the terminal prompt.
+For the original-password option, use the existing database password privately.
+The actual completed run instead used the separately approved temporary login;
+do not recreate it or repeat the export without an authorized need.
 The connector OAuth grant is not a PostgreSQL password. **Do not reset an existing
 password to complete this check.** No password, database URL containing a password,
 API secret or recovery code belongs in chat, shell history, logs or repository files.
@@ -31,7 +40,7 @@ is unavailable, use the **session** pooler connection shown by this exact projec
 Connect panel, with user `postgres.gwvftrrknusdfdgiwuij`. Do not buy an IPv4 add-on
 or use the transaction pooler for this workflow.
 
-## Production capture checklist — still pending
+## Production capture procedure — completed; retained for reference
 
 1. Verify the project reference and private output directory. Record the live
    deployment SHA and current migration history. Review active workloads before
@@ -59,7 +68,7 @@ or use the transaction pooler for this workflow.
    record file sizes and SHA-256 checksums in a manifest. Retain partial files as
    visibly incomplete; never label a failed or empty archive as a successful backup.
 
-## Isolated local restore checklist — still pending
+## Isolated local restore procedure — completed with the recorded history issue
 
 1. Use a fresh local Supabase-compatible PostgreSQL 17 container with a random
    `railcommand-restore-check-...` name, no published ports, no network, no existing

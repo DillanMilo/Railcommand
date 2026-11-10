@@ -293,3 +293,32 @@ online-only receiving, costs, CSV and approvals**. Cache scope, draft versions,
 UUIDs/idempotency keys and outboxes are unchanged; current project permissions are
 revalidated on retry. Database tests cover the shared web/native command contract,
 not a new physical-device run. Production-data migration rehearsal remains a gate.
+
+
+## Real database recovery and Inventory rehearsal completed
+
+The original DB password was unavailable; the user explicitly approved a separate
+read-only backup login with one-hour expiry. One database copy was made, using
+3,173,374 received bytes on the copying client plus small manifest/control reads.
+The login and its password file were removed. No live application data, existing
+password or existing user's access was changed.
+
+Faithful local recovery matches all 83 original tables and original access rules.
+All seven Inventory/preparation files then applied successfully on that copy,
+retaining every original count/value and original access definition. The isolated
+container was removed; the protected original backend/apps/checkouts remain intact.
+**INV-REL-01's fresh database backup and faithful-recovery work is complete.**
+
+**INV-REL-04 remains open:** normal foreign-key validation found 21 existing history
+rows whose projects are absent. A read-only live check confirmed the same issue.
+Those rows were preserved, using schema-first recovery and restore-session trigger
+suppression, and triggers were reenabled. This is not clean historical integrity
+acceptance. Do not delete history or fabricate parent records to force a pass.
+The source history issue, inherited privilege review and final release/device gates
+still hold deployment. No merge, push, deployment or paid infrastructure occurred.
+
+See [the complete database recovery result](INVENTORY_BACKUP_RESULT_20261110.md)
+for checksums, private recovery location, exact comparison scope and file-storage
+limits. Actual stored photo/document bytes were not downloaded; do not claim full
+project disaster-recovery coverage from the database archive alone. Earlier pending
+backup wording records the prior checkpoint and is superseded by this result.
