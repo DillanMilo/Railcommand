@@ -137,11 +137,20 @@ try {
   // Model the initial live deployment window: the old application keeps its
   // original grants while the new application can call the preparation RPCs.
   sql('grant select on public.projects,public.milestones,public.profiles to authenticated');
+  // Reproduce production's invited collaborators without modifying real records.
+  const collaboratorOrg=randomUUID();
+  sql(`insert into organizations values('${collaboratorOrg}');update profiles set organization_id='${collaboratorOrg}' where id='${ids.pm}';update profiles set organization_id=null where id='${ids.lead}'`);
+  const legacyAccess=()=>sql(`select jsonb_build_object(
+    'tables',(select jsonb_agg(jsonb_build_array(c.relname,c.relacl::text,c.relrowsecurity) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('projects','milestones','change_orders','activity_log')),
+    'columns',(select jsonb_agg(jsonb_build_array(c.relname,a.attname,a.attacl::text) order by c.relname,a.attname) from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('projects','milestones','change_orders','activity_log') and a.attnum>0 and not a.attisdropped),
+    'policies',(select jsonb_agg(to_jsonb(p) order by p.tablename,p.policyname) from pg_policies p where p.schemaname='public' and p.tablename in ('projects','milestones','change_orders','activity_log'))) `);
+  const originalLegacyAccess=legacyAccess();
+
   const rolloutBridge = readFileSync(new URL('../supabase/migrations/20261103152824_inventory_finance_rollout_bridge.sql', import.meta.url), 'utf8');
   sql(rolloutBridge);
   assert.equal(Number(as('pm', `select budget_total from public.projects where id='${ids.project}'`)), 130000);
   assert.equal(Number(as('pm', `select budget_total from public.project_finance('${ids.project}')`)), 130000);
-  assert.equal(as('foreman', `select count(*) from public.project_finance('${ids.project}')`), '0');
+  assert.equal(as('foreman', `select count(*) from public.project_finance('${ids.project}')`), '1');
   const migration = readdirSync(
     new URL("../supabase/migrations/", import.meta.url),
   ).find((f) => f.endsWith("_inventory_phase_one.sql"));
@@ -166,10 +175,13 @@ try {
   for(const t of preserved)t.rows=fingerprint(t);
   sql(readFileSync(new URL('../supabase/migrations/20261105221954_inventory_catalogue_units_receiving.sql',import.meta.url),'utf8'));
   for(const t of preserved)assert.equal(fingerprint(t),t.rows,`original values ${t.t}`);
+  assert.equal(legacyAccess(),originalLegacyAccess,'existing table/column grants and policies remain byte-equivalent');
   assert.equal(sql(`select inventory_private.token('${ids.project}','${legacy.lotId}')`),oldReviewToken,'pre-upgrade review token remains valid');
   assert.deepEqual(command('pm',legacyCommand,oldOp),legacy,'pre-upgrade operation replays exactly');
   let s=read('pm');assert.equal(s.catalogue[0].catalogueVersion,1);assert.equal(s.catalogue[0].unit,'each');
   assert.equal(s.finance.policy.annual_rate,.05);assert.equal(s.finance.policy.threshold_amount,50000);
+  assert.ok(read('pm').actors.some(a=>a.id===ids.pm),'cross-org manager remains in approver choices');
+  assert.ok(read('pm').actors.some(a=>a.id===ids.lead),'missing-org lead remains in approver choices');
   assert.equal(read('lead').canReceive,true);assert.equal(read('lead').finance,undefined);assert.equal(read('foreman').canReceive,false);
   const fuel={code:'DIESEL-US',name:'Dyed diesel - US gallons',unit:'us_gallon',category:'fuel'};
   assert.equal(command('foreman',{action:'catalogue_add',...fuel}).code,'catalogue_management_denied');
@@ -224,8 +236,19 @@ try {
   const release=command('pm',{action:'authorize',lotId:l.id,lotVersion:1,requestId:req.id,expectedVersion:verified.version});assert.equal(release.ok,true,JSON.stringify(release));assert.equal(release.balance,240);
   assert.equal(read('foreman').finance,undefined);
 
-  const sc=randomUUID();sql(`insert into profiles(id,organization_id,role) values('${sc}','${ids.org}','member');insert into project_members values('${ids.project}','${sc}','engineer',true),('${ids.project}','${ids.admin}','manager',true);update projects set budget_total=1000000,budget_spent=0 where id='${ids.project}'`);
+  const sc=randomUUID();sql(`insert into profiles(id,organization_id,role) values('${sc}','${collaboratorOrg}','member');insert into project_members values('${ids.project}','${sc}','engineer',true),('${ids.project}','${ids.admin}','manager',true);update projects set budget_total=1000000,budget_spent=0 where id='${ids.project}'`);
   assert.equal(command('admin',{action:'supply_chain_assign',expectedVersion:0,supplyChainId:sc}).ok,true);
+
+  // A global admin in the collaborator's own org is not this project's org admin.
+  const externalAdmin=randomUUID();
+  sql(`insert into profiles(id,organization_id,role) values('${externalAdmin}','${collaboratorOrg}','admin');insert into project_members values('${ids.project}','${externalAdmin}','manager',true)`);
+  assert.equal(read(externalAdmin).finance.canConfigurePolicy,false);
+  assert.equal(command(externalAdmin,{action:'policy',expectedVersion:1,annualRate:.01,thresholdAmount:1,currency:'USD',source:'Denied foreign admin'}).code,'configuration_denied');
+  assert.equal(command(externalAdmin,{action:'cost_access',memberId:sc,expectedVersion:0,canViewCost:true,source:'Denied foreign admin'}).code,'access_management_denied');
+  // Reorganization alone is not membership revocation, even with no profile org.
+  sql(`update profiles set organization_id=null where id='${ids.pm}'`);
+  assert.ok(read('pm').finance);assert.equal(read('pm').canManage,true);
+  sql(`update profiles set organization_id='${collaboratorOrg}' where id='${ids.pm}'`);
   const year=Number(sql("select extract(year from current_date)::integer"));
   function setupContract(key,amount=0){
     assert.equal(command('pm',{action:'contract',contractKey:key,name:key,startDate:`${year}-01-01`}).ok,true);
@@ -265,6 +288,8 @@ try {
   assert.equal(sql(`select count(*) from inventory_lots l join inventory_materials m on m.id=l.material_id where m.code='CONCURRENT'`),'1');
   const normalizeReplay=command('pm',{...race,importReference:'CONCURRENT-ALIAS',rows:[{...race.rows[0],code:' concurrent ',name:' Concurrent import stock ',quantity:12.000}]});
   assert.equal(normalizeReplay.alreadyImported,true);
+  assert.equal(legacyAccess(),originalLegacyAccess);
+  console.log('PASS invited collaborators: cross-org PM and Supply Chain, missing-org receiving lead, preserved legacy ACL/RLS, foreign-admin and nonmember denials.');
   console.log('PASS upgraded rules: exactly $50k, >$50k distinct SC before release, split flags, fractional issues and concurrent/canonical CSV dedup.');
   console.log('PASS catalogue DB: additive preservation; role/RLS/helper denials; approved selection; fixed units/fractions; receipt replay; CSV atomicity, duplicate/reference safety; fractional ordered approval/release; unchanged 5%/$50k defaults.');
 } finally { if(created) docker(['rm','--force','--volumes',name]); }

@@ -26,7 +26,7 @@ begin
  result:=inventory_private.inventory_read_phase_one(p_project_id);
  result:=jsonb_set(result,'{lots}',coalesce((select jsonb_agg(l||jsonb_build_object('opening_quantity',(select sum(m.quantity) from public.inventory_movements m where m.lot_id=(l->>'id')::uuid and m.kind='opening'))) from jsonb_array_elements(result->'lots') l),'[]'::jsonb));
  if result ? 'error' then return result; end if;
- result:=jsonb_set(result,'{actors}',coalesce((select jsonb_agg(jsonb_build_object('id',u.id,'name',coalesce(nullif(u.full_name,''),u.email,'Project member'),'role',m.project_role,'can_edit',m.can_edit) order by u.full_name,u.id) from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id and p.organization_id=u.organization_id where m.project_id=p_project_id),'[]'::jsonb));
+ result:=jsonb_set(result,'{actors}',coalesce((select jsonb_agg(jsonb_build_object('id',u.id,'name',coalesce(nullif(u.full_name,''),u.email,'Project member'),'role',m.project_role,'can_edit',m.can_edit) order by u.full_name,u.id) from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id where m.project_id=p_project_id),'[]'::jsonb));
  -- Explicit allowlist on the field boundary, including additive online events.
  if not inventory_private.finance(p_project_id) then
   result:=jsonb_set(result,'{events}',coalesce((select jsonb_agg(e) from jsonb_array_elements(result->'events') e where e->>'action' in ('assign','opening','count','submit','revise','cancel','verify','authorize','reject','supply_chain')),'[]'::jsonb));
@@ -91,7 +91,7 @@ begin
  -- All feature mutations lock project -> lot -> request, including source revisions.
  perform 1 from public.projects where id=p_project_id for update;
  perform 1 from public.project_members where project_id=p_project_id for share;
- perform 1 from public.profiles where organization_id=org or id=actor for share;
+ perform 1 from public.profiles where id=actor or id in (select profile_id from public.project_members where project_id=p_project_id) for share;
  -- Initial checks precede a potentially long org-lock wait. Re-read under the
  -- project/member/profile locks and retain them through the mutation's commit.
  role_name:=inventory_private.role(p_project_id);
@@ -105,7 +105,7 @@ begin
  select * into assigned from public.inventory_assignments where project_id=p_project_id;
  if cmd='cost_access' then
   if not inventory_private.admin(p_project_id) then code:='access_management_denied';
-  elsif not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=(p_command->>'memberId')::uuid and m.project_role in ('engineer','superintendent') and u.organization_id=org) then code:='eligible_cost_viewer_required';
+  elsif not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=(p_command->>'memberId')::uuid and m.project_role in ('engineer','superintendent')) then code:='eligible_cost_viewer_required';
   elsif coalesce((select max(version) from public.inventory_cost_access where project_id=p_project_id and member_id=(p_command->>'memberId')::uuid),0) is distinct from (p_command->>'expectedVersion')::integer then code:='stale_cost_access';
   elsif jsonb_typeof(p_command->'canViewCost') is distinct from 'boolean' then code:='access_value_required';
   else
@@ -142,15 +142,15 @@ begin
   select * into sc from public.inventory_supply_chain_assignments where project_id=p_project_id order by version desc limit 1;
   if not inventory_private.admin(p_project_id) then code:='assignment_denied';
   elsif coalesce(sc.version,0) is distinct from (p_command->>'expectedVersion')::integer then code:='stale_assignment';
-  elsif (p_command->>'supplyChainId')::uuid in (assigned.lead_id,assigned.pm_id) or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=(p_command->>'supplyChainId')::uuid and m.can_edit and m.project_role in ('manager','superintendent','engineer') and u.organization_id=org) then code:='distinct_eligible_supply_chain_required';
+  elsif (p_command->>'supplyChainId')::uuid in (assigned.lead_id,assigned.pm_id) or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=(p_command->>'supplyChainId')::uuid and m.can_edit and m.project_role in ('manager','superintendent','engineer')) then code:='distinct_eligible_supply_chain_required';
   else
    insert into public.inventory_supply_chain_assignments(project_id,version,actor_id,assigned_by) values(p_project_id,coalesce(sc.version,0)+1,(p_command->>'supplyChainId')::uuid,actor);
    answer:=jsonb_build_object('ok',true);
   end if;
  elsif cmd='assign' then
   if not inventory_private.manage(p_project_id) then code:='assignment_denied';
-  elsif not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id and p.organization_id=u.organization_id where m.project_id=p_project_id and m.profile_id=(p_command->>'leadId')::uuid)
-   or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id and p.organization_id=u.organization_id where m.project_id=p_project_id and m.profile_id=(p_command->>'pmId')::uuid and m.project_role='manager' and m.can_edit)
+  elsif not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id where m.project_id=p_project_id and m.profile_id=(p_command->>'leadId')::uuid)
+   or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id where m.project_id=p_project_id and m.profile_id=(p_command->>'pmId')::uuid and m.project_role='manager' and m.can_edit)
    or p_command->>'leadId'=p_command->>'pmId' then code:='distinct_current_members_required';
   elsif assigned.project_id is not null and assigned.version<>coalesce((p_command->>'expectedVersion')::integer,0) then code:='stale_assignment';
   else
@@ -294,8 +294,8 @@ begin
   elsif cmd in ('verify','authorize','supply_chain','reject') then
    old_state:=req.state;
    annual:=inventory_private.annual(p_project_id,lid);
-   if not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=assigned.lead_id and m.can_edit and u.organization_id=org)
-    or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=assigned.pm_id and m.can_edit and m.project_role='manager' and u.organization_id=org) then code:='current_approver_membership_required';
+   if not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=assigned.lead_id and m.can_edit)
+    or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id where m.project_id=p_project_id and m.profile_id=assigned.pm_id and m.can_edit and m.project_role='manager') then code:='current_approver_membership_required';
    elsif actor=req.requester_id then code:='self_approval_denied';
    elsif cmd='verify' and (actor is distinct from assigned.lead_id or req.state<>'submitted') then code:='verification_order_or_assignment_denied';
    elsif cmd='authorize' and (actor is distinct from assigned.pm_id or actor=req.verifier_id or req.state<>'verified' or not inventory_private.manage(p_project_id)) then code:='authorization_order_or_assignment_denied';

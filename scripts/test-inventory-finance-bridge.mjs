@@ -11,10 +11,10 @@ assert.match(endpoint,/^(unix:\/\/|npipe:\/\/)/);
 const sql = input => execFileSync('docker',['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-d','postgres','-Atq','-v','ON_ERROR_STOP=1'],{input,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 const bridge = readFileSync(new URL('../supabase/migrations/20261103152824_inventory_finance_rollout_bridge.sql',import.meta.url),'utf8');
 const org=randomUUID(), foreignOrg=randomUUID(), project=randomUUID(), other=randomUUID();
-const people=Object.fromEntries(['manager','engineer','superintendent','owner','foreman','contractor','inspector','outsider','foreign','admin'].map(k=>[k,randomUUID()]));
+const people=Object.fromEntries(['manager','engineer','superintendent','owner','foreman','contractor','inspector','outsider','foreign','unassigned','admin'].map(k=>[k,randomUUID()]));
 const as=(actor,query)=>sql(`set role authenticated; set request.jwt.claim.sub='${people[actor]??''}'; ${query}`);
 try {
- docker(['run','--detach','--name',name,'--env','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);
+ docker(['run','--detach','--name',name,'--env','POSTGRES_HOST_AUTH_METHOD=trust','--network','none','--tmpfs','/var/lib/postgresql/data','postgres:17']);
  let ready=false;
  for(let i=0;i<100;i++) { try{docker(['exec',name,'pg_isready','-h','127.0.0.1','-U','postgres']);ready=true;break;}catch{await new Promise(r=>setTimeout(r,100));} }
  assert.ok(ready,'PostgreSQL not ready');
@@ -27,8 +27,8 @@ try {
  create table project_members(project_id uuid,profile_id uuid,project_role text);
  insert into projects values('${project}','${org}',200000,1000),('${other}','${foreignOrg}',999999,999);
  insert into milestones values('${randomUUID()}','${project}',10000,5000,50),('${randomUUID()}','${other}',99999,999,1);
- ${Object.entries(people).map(([role,id])=>`insert into profiles values('${id}','${role==='foreign'?foreignOrg:org}','${role==='admin'?'admin':'member'}');`).join('\n')}
- ${Object.entries(people).filter(([role])=>role!=='outsider').map(([role,id])=>`insert into project_members values('${project}','${id}','${['foreign','admin'].includes(role)?'manager':role}');`).join('\n')}
+ ${Object.entries(people).map(([role,id])=>`insert into profiles values('${id}',${role==='unassigned'?'null':`'${role==='foreign'?foreignOrg:org}'`},'${role==='admin'?'admin':'member'}');`).join('\n')}
+ ${Object.entries(people).filter(([role])=>role!=='outsider').map(([role,id])=>`insert into project_members values('${project}','${id}','${['foreign','unassigned','admin'].includes(role)?'manager':role}');`).join('\n')}
  grant select on projects,milestones,profiles,project_members to authenticated;
  alter table projects enable row level security;
  create policy membership on projects for select to authenticated using(exists(select 1 from project_members m where m.project_id=projects.id and m.profile_id=auth.uid()));
@@ -36,12 +36,12 @@ try {
  create policy membership on milestones for select to authenticated using(exists(select 1 from project_members m where m.project_id=milestones.project_id and m.profile_id=auth.uid()));`);
  const before=sql('select md5(string_agg(t::text,\'|\' order by id)) from projects t');
  sql(bridge);
- for(const role of ['manager','engineer','superintendent','owner','admin']) {
+ for(const role of ['manager','engineer','superintendent','owner','foreman','contractor','inspector','foreign','unassigned','admin']) {
   assert.equal(as(role,`select budget_total from project_finance('${project}')`),'200000');
   assert.equal(as(role,`select budget_planned from milestone_finance('${project}')`),'10000');
   assert.equal(as(role,`select count(*) from project_finance('${other}')`),'0');
  }
- for(const role of ['foreman','contractor','inspector','outsider','foreign','anonymous']) {
+ for(const role of ['outsider','anonymous']) {
   assert.equal(as(role,`select count(*) from project_finance('${project}')`),'0');
   assert.equal(as(role,`select count(*) from milestone_finance('${project}')`),'0');
  }
@@ -55,7 +55,7 @@ try {
  sql(bridge);
  assert.equal(sql("select pg_get_functiondef('project_finance(uuid)'::regprocedure)||pg_get_functiondef('milestone_finance(uuid)'::regprocedure)"),definitions);
  assert.equal(sql("select has_function_privilege('anon','project_finance(uuid)','execute')"),'f');
- console.log('PASS finance rollout bridge: legacy authorized roles, field/foreign/nonmember/anonymous denials, RLS, unchanged rows/grants, repeat delivery and final-RPC preservation.');
+ console.log('PASS finance rollout bridge: legacy RLS preserved across roles, invited cross-org/missing-org access, nonmember/anonymous denials, RLS, unchanged rows/grants, repeat delivery and final-RPC preservation.');
 } finally {
  try{docker(['rm','--force','--volumes',name]);}catch{/* Only this generated disposable container. */}
 }

@@ -141,7 +141,7 @@ try {
   sql(rolloutBridge);
   assert.equal(Number(as('pm', `select budget_total from public.projects where id='${ids.project}'`)), 130000);
   assert.equal(Number(as('pm', `select budget_total from public.project_finance('${ids.project}')`)), 130000);
-  assert.equal(as('foreman', `select count(*) from public.project_finance('${ids.project}')`), '0');
+  assert.equal(as('foreman', `select count(*) from public.project_finance('${ids.project}')`), '1');
   const migration = readdirSync(
     new URL("../supabase/migrations/", import.meta.url),
   ).find((f) => f.endsWith("_inventory_phase_one.sql"));
@@ -334,7 +334,7 @@ try {
   }
   const mutationTables=['inventory_requests','inventory_request_revisions','inventory_request_finance','inventory_counts','inventory_movements','inventory_events','inventory_approval_evidence','inventory_lots','inventory_exposures','inventory_cost_revisions','inventory_contract_commitments'];
   const mutationSnapshot=()=>sql(`select jsonb_build_array(${mutationTables.map(t=>`(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.${t} t)`).join(',')})`);
-  for(const action of ['submit','revise','cancel','count'])for(const revocation of ['edit','membership','organization',...(action==='submit'?['role']:[])]) {
+  for(const action of ['submit','revise','cancel','count'])for(const revocation of ['edit','membership',...(action==='submit'?['role']:[])]) {
     const actor=action==='count'?'lead':'foreman',actorId=ids[actor];
     const member=JSON.parse(sql(`select to_jsonb(m) from public.project_members m where project_id='${ids.project}' and profile_id='${actorId}'`));
     const testLot=lot(ids.project,`wait-${action}-${revocation}`,1,'',{funding:'funded'});
@@ -351,7 +351,6 @@ try {
     await waitFor(tag,"wait_event='advisory'");
     const revokeSql=revocation==='edit'?`update public.project_members set can_edit=false where project_id='${ids.project}' and profile_id='${actorId}'`:
       revocation==='membership'?`delete from public.project_members where project_id='${ids.project}' and profile_id='${actorId}'`:
-      revocation==='organization'?`update public.profiles set organization_id='${newOrg}' where id='${actorId}'`:
       `update public.project_members set project_role='owner' where project_id='${ids.project}' and profile_id='${actorId}'`;
     sql(revokeSql);holder.proc.stdin.end('commit;\n');await holder.done;
     const result=JSON.parse((await pending.done).trim());

@@ -5,9 +5,10 @@ revoke all on schema inventory_private from public, anon, authenticated;
 
 create or replace function inventory_private.role(p uuid) returns text
 language sql stable security definer set search_path = '' as $$
+ -- Explicit project membership supports invited collaborators across organizations.
  select m.project_role::text from public.project_members m
  join public.projects pr on pr.id=m.project_id
- join public.profiles u on u.id=m.profile_id and u.organization_id=pr.organization_id
+ join public.profiles u on u.id=m.profile_id
  where m.project_id=p and m.profile_id=auth.uid()
 $$;
 create or replace function inventory_private.finance(p uuid) returns boolean
@@ -258,7 +259,7 @@ begin
  role_name:=inventory_private.role(p_project_id);
  if role_name is null then return jsonb_build_object('error','Project access required'); end if;
  result:=jsonb_build_object('projectId',p_project_id,'asOf',now(),'canManage',inventory_private.manage(p_project_id),
- 'actors',coalesce((select jsonb_agg(jsonb_build_object('id',u.id,'name',coalesce(nullif(u.full_name,''),u.email,u.id::text),'role',m.project_role) order by u.id) from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects pr on pr.id=m.project_id and pr.organization_id=u.organization_id where m.project_id=p_project_id),'[]'::jsonb),
+ 'actors',coalesce((select jsonb_agg(jsonb_build_object('id',u.id,'name',coalesce(nullif(u.full_name,''),u.email,u.id::text),'role',m.project_role) order by u.id) from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects pr on pr.id=m.project_id where m.project_id=p_project_id),'[]'::jsonb),
  'assignments',(select to_jsonb(a) from public.inventory_assignments a where a.project_id=p_project_id),
  'lots',coalesce((select jsonb_agg(to_jsonb(l)||jsonb_build_object('material',m.name,'yard',s.name,'condition',case when l.received_at is null then 'unknown_age' when current_date-l.received_at>=60 then 'aged' else 'current' end,
  'latestCount',(select to_jsonb(c) from public.inventory_counts c where c.lot_id=l.id order by c.created_at desc,c.id desc limit 1))) from public.inventory_lots l join public.inventory_materials m on m.id=l.material_id join public.inventory_locations s on s.id=l.location_id where l.project_id=p_project_id),'[]'::jsonb),
@@ -318,8 +319,8 @@ begin
  select * into assigned from public.inventory_assignments where project_id=p_project_id;
  if cmd='assign' then
   if not inventory_private.manage(p_project_id) then code:='assignment_denied';
-  elsif not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id and p.organization_id=u.organization_id where m.project_id=p_project_id and m.profile_id=(p_command->>'leadId')::uuid)
-   or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id and p.organization_id=u.organization_id where m.project_id=p_project_id and m.profile_id=(p_command->>'pmId')::uuid and m.project_role in ('manager','superintendent','engineer'))
+  elsif not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id where m.project_id=p_project_id and m.profile_id=(p_command->>'leadId')::uuid)
+   or not exists(select 1 from public.project_members m join public.profiles u on u.id=m.profile_id join public.projects p on p.id=m.project_id where m.project_id=p_project_id and m.profile_id=(p_command->>'pmId')::uuid and m.project_role in ('manager','superintendent','engineer'))
    or p_command->>'leadId'=p_command->>'pmId' then code:='distinct_current_members_required';
   elsif assigned.project_id is not null and assigned.version<>coalesce((p_command->>'expectedVersion')::integer,0) then code:='stale_assignment';
   else
@@ -493,31 +494,25 @@ revoke all on function public.inventory_receipt(uuid,uuid) from public, anon;
 grant execute on function public.inventory_receipt(uuid,uuid) to authenticated;
 revoke all on function inventory_private.budget(uuid),inventory_private.token(uuid,uuid),inventory_private.manage(uuid),inventory_private.immutable() from public,anon,authenticated;
 
--- Column grants make legacy financial values inaccessible to direct field clients.
-revoke select on public.projects from authenticated, anon;
-grant select(id,name,description,status,start_date,target_end_date,actual_end_date,location,client,created_by,created_at,updated_at,organization_id,turnover_date,substantial_completion_date,project_completion_date) on public.projects to authenticated;
-revoke select on public.milestones from authenticated, anon;
-grant select(id,project_id,name,description,target_date,actual_date,status,percent_complete,sort_order,created_at,updated_at) on public.milestones to authenticated;
-
--- Restrictive policy composes with existing membership policies; does not widen them.
-create policy inventory_co_finance_boundary on public.change_orders as restrictive for select to authenticated using(inventory_private.finance(project_id));
+-- Inventory is additive: preserve existing project/milestone/change-order/activity
+-- grants and RLS. These compatibility projections obey the caller's existing RLS;
+-- Inventory cost authorization remains inventory_private.finance, independently.
 create or replace function public.project_finance(p_project_id uuid)
 returns table(id uuid,budget_total numeric,budget_spent numeric)
-language sql stable security definer set search_path = '' as $$
- select p.id,p.budget_total,p.budget_spent from public.projects p where p.id=p_project_id and inventory_private.finance(p.id)
+language sql stable security invoker set search_path = '' as $$
+ select p.id,p.budget_total,p.budget_spent from public.projects p
+ where p.id=p_project_id and auth.uid() is not null
 $$;
 revoke all on function public.project_finance(uuid) from public,anon;
 grant execute on function public.project_finance(uuid) to authenticated;
 create or replace function public.milestone_finance(p_project_id uuid)
 returns table(id uuid,budget_planned numeric,budget_actual numeric,percent_complete numeric)
-language sql stable security definer set search_path = '' as $$
- select m.id,m.budget_planned,m.budget_actual,m.percent_complete from public.milestones m where m.project_id=p_project_id and inventory_private.finance(p_project_id)
+language sql stable security invoker set search_path = '' as $$
+ select m.id,m.budget_planned,m.budget_actual,m.percent_complete from public.milestones m
+ where m.project_id=p_project_id and auth.uid() is not null
 $$;
 revoke all on function public.milestone_finance(uuid) from public,anon;
 grant execute on function public.milestone_finance(uuid) to authenticated;
-
-revoke select on public.change_orders from anon;
-create policy inventory_activity_finance_boundary on public.activity_log as restrictive for select to authenticated using(not(entity_type='change_order' or (entity_type='project' and description ilike '%change order%')) or inventory_private.finance(project_id));
 
 -- Rejection reasons may contain commercial details. Field clients receive the
 -- safe event shape; authorized readers obtain the full reason via inventory_read.

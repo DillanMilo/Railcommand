@@ -48,11 +48,17 @@ projection RPCs. There are 24 new inventory tables; existing projects and users
 are referenced by their existing IDs. No seed, reset, bulk record replacement,
 project duplication or data-deleting down migration is part of this release.
 
-There are important shared boundaries: the initial migration adds composite unique
-constraints to change orders/milestones, tightens direct financial column grants
-and change-order/activity read policies, and introduces authorized finance RPCs.
+The initial migration adds composite unique constraints to change orders/milestones
+and finance compatibility RPCs. The 10 November correction removes the proposed
+legacy financial grant and change-order/activity policy tightening. Existing table
+and column ACLs and RLS stay unchanged; the compatibility RPCs are SECURITY INVOKER
+and honor that existing access. New Inventory costs retain their separate role
+and RPC boundaries. Explicit project membership admits invited collaborators whose
+profile organization differs or is missing; organization-wide Inventory settings
+still require an admin in the project organization.
 Later files add inventory fields, broaden units and preserve old integer values
-while allowing fractional quantities. These are **not** permission-neutral DDL.
+while allowing fractional quantities. The new feature adds its own access boundaries
+without rewriting existing project access.
 New records/RPCs alone do not establish production compatibility. Do not run a
 blanket `supabase db push`, replay a shipped caption migration or deploy the older
 feature branch over current main.
@@ -72,8 +78,9 @@ restore rehearsal and comparison against the actual live database.
 2. Apply the conditional finance preparation bridge first if pending:
    `20261103152824_inventory_finance_rollout_bridge.sql`. It preserves existing
    grants and never replaces existing final projection functions.
-3. Put the compatible projection-based application/API in place before financial
-   access is tightened. Coordinate beta entry with completion of schema checks;
+3. Put the compatible projection-based application/API in place after the
+   preparation RPCs exist. Existing financial table grants are not tightened.
+   Coordinate beta entry with completion of schema checks;
    do not advertise Inventory as available while its tables/RPCs are missing.
    Confirm old clients' supported daily-log/photo/recovery/sync paths still work.
 4. Apply **only missing** Inventory migrations, reviewed together with their
@@ -99,9 +106,10 @@ restore rehearsal and comparison against the actual live database.
 
 Rollback retains all new receipts, stock, immutable evidence and pending drafts.
 Do not restore an old backup over newer field work or drop inventory tables.
-Rolling back to pre-projection web code after financial grants tighten also needs
-an explicitly reviewed restoration of the exact previous ACL/policies. Prefer a
-compatible application rollback, then fix forward. Never purge queues or identities.
+This revised candidate preserves legacy ACL/policies; its rollout does not require
+an ACL rewrite on rollback. Do not apply the older pre-correction Inventory SQL
+that tightened those grants. Prefer a compatible application rollback, then fix
+forward. Never purge queues or identities.
 
 ## Platform and offline impact record
 
@@ -128,17 +136,91 @@ compatible application rollback, then fix forward. Never purge queues or identit
   flow; Android before Android rollout. Verify actual pilot build installation and
   populated-queue upgrade preservation before expanding beyond the agreed pilot.
 
-## Current access blockers
+## Read-only production preflight — 10 November
 
-The Vercel connector returned 403 for the existing RailCommand team; live deployment
-identity could not be confirmed. Existing app team consent must be refreshed.
-Neither connected Supabase account exposed production project `gwvftrrknusdfdgiwuij`;
-one exposed only inactive Mobile Staging. No schema or customer row query was run
-against a hosted database, and no inactive project was resumed or billed.
+Vercel team consent was restored on 10 November. Read-only connector checks confirm
+RailCommand project `prj_AKXr0Bz4LLmh3mWBwwbp1nQRvKfw` in team
+`team_s16JIS0pr4dx8WxpQZ6jAD2R`, with verified domain `railcommand.io` pointing to
+production deployment `dpl_3YwL8jBF7B4yW8BiPXBmoxjt1WLy` (READY). Its source is
+`main` at `701849744457b529a7eaa292415a4b4867e11d4e`, matching this candidate's
+base. Inventory Beta has not been deployed. Public HTTPS GET checks returned 200
+for `/` and `/login`; unauthenticated `/api/mobile/v1/bootstrap` and
+`/api/mobile/v1/app-release` returned 401 with `Cache-Control: no-store, max-age=0`.
+These are identity and anonymous smoke checks, not authenticated workflow acceptance.
 
-Production preflight, actual backup/restore acceptance, independent release review,
-and the staged rollout remain pending. Local checks are evidence of readiness to
-review, not a guarantee of zero migration risk or authorization to release.
+Supabase access is now restored to the correct **Railcommand** organization
+(`ffzboakthmscpmrhafnv`) and **RailCommand** production project
+(`gwvftrrknusdfdgiwuij`, ACTIVE_HEALTHY, PostgreSQL 17, us-west-2). The existing
+connection was reauthorized after the user explicitly approved its standard
+read/write OAuth scopes. All subsequent operations in this task were reads;
+no API keys/secrets were retrieved and no general plugin permission mode changed.
+
+The checks used `BEGIN READ ONLY` and an eight-second statement timeout, with
+`transaction_read_only = on` confirmed. Only schema/ACL/function metadata and
+aggregate counts were read; no customer record contents were exported. Findings:
+
+- All 42 public tables have RLS enabled. There are zero Inventory tables, no
+  `inventory_private` schema, no Inventory object/constraint name collisions and
+  no `project_finance` or `milestone_finance` projection functions. The project
+  and milestone projection columns required by the candidate are present.
+- There are 19 recorded migrations, ending at `20261030173344_dfr_photo_captions`.
+  None of the seven reviewed Inventory/preparation files is recorded. Do not
+  replay the caption migration or infer that a later version includes the feature.
+- Existing daily-log create, original/v2 photo sync and checked-edit function
+  bodies match the latest corresponding candidate migration source, ignoring
+  whitespace. Signatures and explicit authenticated grants remain present.
+  No write RPC was invoked; this is static compatibility evidence, not a live
+  authenticated sync or queued-client upgrade test.
+- Aggregate baseline: 16 projects, 28 profiles, 35 memberships, 120 daily logs,
+  125 milestones and five change orders at observation time. No orphan/duplicate
+  memberships or null project IDs on milestones/change orders were found.
+  These counts are not a full data backup or proof that all values are valid.
+- **INV-REL-01 — backup/restore gate, open:** the organization is on the Free
+  plan. The project's backup page explicitly says scheduled backups are not
+  included; the overview reports no backups. A fresh private no-cost local
+  logical backup and isolated restore verification are still required before
+  any production migration. No upgrade, paid branch or backup purchase occurred.
+- **INV-REL-02 — original organization finding, resolved locally:** six existing
+  editable memberships would have failed the earlier candidate's same-org predicate:
+  four manager memberships with a different profile organization, one manager
+  membership whose profile organization is missing, and one superintendent
+  membership with a different organization. Their project organizations are not
+  marked as demos. Five are different-organization relationships, one is missing
+  profile organization; no project organization is missing. Do not reassign,
+  remove or automatically repair these memberships. Establish whether these are
+  valid invited collaborators rather than rewriting their profile organization.
+  The correction below preserves their membership and existing access. A successful
+  DDL rehearsal alone would have missed the original access loss.
+- **INV-REL-03 — inherited privilege review, open:** security advisors flag three
+  anonymous-callable reporting helpers, 15 authenticated SECURITY DEFINER
+  functions, and disabled leaked-password protection. Two anonymous reporting
+  helpers constrain rows to `auth.uid()`; the third is a trigger function. Their
+  presence alone does not demonstrate a public data leak. All three no-policy
+  tables have RLS enabled; `email_events` is service-role-only. Separately, current
+  authenticated ACLs include TRUNCATE on 37 public tables. RLS does not protect
+  TRUNCATE; this catalog finding does not establish an exposed HTTP truncate
+  endpoint. Review narrowly without blanket revokes that could break clients.
+  [Anonymous helper guidance](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable),
+  [authenticated helper guidance](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable),
+  [password protection guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- Health advisor returned no findings. Existing performance notices include 34
+  unindexed foreign keys, 111 auth/RLS init-plan notices, 103 unused indexes and
+  63 multiple-permissive-policy notices. These are inherited observations, not
+  Inventory regressions or a reason for an unrelated database overhaul.
+
+Private metadata-only evidence is in
+`~/Library/Application Support/RailCommand/Phase1Local/private/preflight/20261110/metadata-only.json`
+(directory 0700, file 0600). It contains schema definitions, aggregate counts and
+advisors, not a restoreable application-data backup. The original dirty checkout's
+branch, HEAD, main, status and binary diff still match its preparation baseline.
+
+**Release decision: hold.** Account reconnection and read-only inspection are
+complete; the organization correction is implemented and tested locally. Actual
+production backup/restore acceptance, privilege review, independent release review
+and physical acceptance remain open. The checks did not mutate hosted rows, grants, policies or schema,
+resume an inactive project, add costs, touch installed apps, merge, push or deploy.
+Application web/mobile/offline impact and existing draft/queue behavior remain as
+recorded above; this checkpoint changes documentation only.
 
 ## Candidate verification outcome
 
@@ -155,3 +237,59 @@ binary diff exactly match the start of this preparation. Original feature branch
 remains clean at 4c8b6c0. Hosted databases, persistent local data and phone apps
 were not mutated. Full production preflight and physical release acceptance remain
 pending. Machine-readable results: `INVENTORY_BETA_RELEASE_20261110.json`.
+
+
+## Local organization correction and backup preparation
+
+The current `feature/inventory-beta-release` source fixes INV-REL-02 without
+changing any production profile, organization or membership. All seven Inventory
+files were confirmed **unapplied on production** before these source corrections;
+no shipped migration was edited. Existing persistent Phase1 databases were not
+migrated or reset. Do not replay revised migration history into an already-upgraded
+local database; use a separately reviewed forward upgrade if that runtime is needed.
+
+- Explicit project membership controls Inventory access, actor choices, lead/PM
+  assignments and Supply Chain eligibility, independent of profile organization.
+  Project-specific role, current `can_edit`, distinct people and ordered approval
+  checks remain. Missing membership, revoked editing and nonmember projects deny.
+- Organization-wide policy/cost-access/SC assignment administration still requires
+  this project's organization's admin with editable project membership. A global
+  admin from another organization does not inherit those powers.
+- The candidate preserves existing projects/milestones/change-order/activity ACLs
+  and RLS exactly. Project/milestone projections use SECURITY INVOKER and existing
+  row/column privileges. New Inventory finance remains restricted independently;
+  field Inventory snapshots still contain no finance. This does not retrofit new
+  finance restrictions onto the older project's already-authorized API surface.
+- Profile organization changes alone are no longer treated as project membership
+  revocation. Real membership/edit revocation still revalidates after lock waits;
+  all approver profiles are locked through their project membership, including
+  external collaborators. No invitations, memberships or profile values are rewritten.
+
+Passed after this correction: `npm run build`; `npx tsc --noEmit`; 44 Inventory
+unit tests; 317 mobile-backend tests; real PostgreSQL initial/settlement, contract/
+profile/delivered-price, catalogue and finance-bridge suites; static grant gate and
+all three disposable grant fixtures. The catalogue suite runs the complete CSV,
+fractional receiving and >$50k/Supply Chain/split workflow with a cross-org PM,
+cross-org Supply Chain approver and missing-org lead, and asserts unchanged legacy
+ACLs and policies. Foreign-admin denial and null-org manager continuity pass.
+Targeted ESLint has zero errors and three existing warnings.
+
+The new `scripts/test-inventory-backup-restore.mjs` passes a real, network-isolated
+PostgreSQL dump/restore rehearsal with synthetic records and verifies values/UUIDs,
+fractions, memberships, ACL/RLS/functions/constraints/history and denied access.
+**No production data was backed up or restored.** The exact remaining capture and
+isolated Supabase-compatible restore procedure, credential handling, consistent
+snapshot requirements and storage/encryption limits are in
+[the no-cost backup/restore checklist](INVENTORY_BACKUP_RESTORE_CHECK.md).
+The real capture needs an existing DB password entered privately and the public
+project CA; do not reset a password, create a hosted role or buy infrastructure.
+
+Impact of this correction: web and native use the same existing Inventory RPCs;
+no UI, bundled client, API payload, invitation or authentication changes. A new
+mobile binary is not required for this backend access correction itself (the
+original native Inventory UI release still needs its signed build). Offline
+classification stays **read-only synchronized stock / durable request drafts /
+online-only receiving, costs, CSV and approvals**. Cache scope, draft versions,
+UUIDs/idempotency keys and outboxes are unchanged; current project permissions are
+revalidated on retry. Database tests cover the shared web/native command contract,
+not a new physical-device run. Production-data migration rehearsal remains a gate.

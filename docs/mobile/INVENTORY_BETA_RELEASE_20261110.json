@@ -17,7 +17,56 @@
     "errors": 0,
     "warnings": 59
   },
-  "productionPreflight": "pending; Vercel 403 requires team consent, connected Supabase accounts do not expose production",
+  "productionPreflight": "read-only inspection complete; organization fix verified locally; release held for actual backup/restore, privilege and release review",
+  "supabaseReadOnlyPreflight": {
+    "organizationId": "ffzboakthmscpmrhafnv",
+    "organizationName": "Railcommand",
+    "projectId": "gwvftrrknusdfdgiwuij",
+    "projectName": "RailCommand",
+    "status": "ACTIVE_HEALTHY",
+    "plan": "free",
+    "connectionRestored": true,
+    "standardReadWriteOauthExplicitlyApproved": true,
+    "actionsPerformed": "metadata and aggregate SELECTs only; read-only transactions with 8-second timeout",
+    "readOnlyTransactionConfirmed": true,
+    "secretsRetrieved": false,
+    "publicTables": 42,
+    "publicTablesWithRls": 42,
+    "inventoryTables": 0,
+    "recordedMigrations": 19,
+    "latestMigration": "20261030173344_dfr_photo_captions",
+    "pendingReviewedInventoryFiles": 7,
+    "financeProjectionFunctionsExist": false,
+    "requiredProjectionColumnsPresent": true,
+    "releasedSyncFunctionBodiesMatchCandidateSource": "4 of 4, ignoring whitespace",
+    "scheduledBackups": "not included on current plan; dashboard reports no backups",
+    "backupRestoreRehearsal": "not performed",
+    "organizationMismatchMemberships": 6,
+    "affectedRoles": "5 manager memberships; 1 superintendent membership",
+    "affectedProjectOrgsMarkedDemo": false,
+    "orphanMemberships": 0,
+    "duplicateMemberships": 0,
+    "authenticatedTruncateGrants": 37,
+    "healthAdvisorFindings": 0,
+    "liveAuthenticatedWorkflowTests": "not performed",
+    "hostedDataOrSchemaMutations": false,
+    "noExtraCostsIncurred": true,
+    "protectedCheckoutBaselineStillMatches": true,
+    "releaseDecision": "hold; INV-REL-02 resolved locally; INV-REL-01 and INV-REL-03 remain"
+  },
+  "vercelReadOnlyPreflight": {
+    "teamId": "team_s16JIS0pr4dx8WxpQZ6jAD2R",
+    "projectId": "prj_AKXr0Bz4LLmh3mWBwwbp1nQRvKfw",
+    "domain": "railcommand.io",
+    "domainVerified": true,
+    "productionDeploymentId": "dpl_3YwL8jBF7B4yW8BiPXBmoxjt1WLy",
+    "state": "READY",
+    "branch": "main",
+    "commit": "701849744457b529a7eaa292415a4b4867e11d4e",
+    "anonymousHttpsSmoke": "root/login 200; mobile bootstrap/app-release 401 with no-store",
+    "authenticatedWorkflowAcceptance": "not performed",
+    "configurationOrDeploymentChanged": false
+  },
   "physicalReleaseAcceptance": "pending; see handoff",
   "offline": "read-only loaded stock; durable request drafts; online-only receiving/import/cost/approval",
   "preservation": {
@@ -28,5 +77,48 @@
     "persistentLocalDatabaseMutations": false,
     "phoneAppAccessed": false,
     "pushMergeDeployOrInvitations": false
+  },
+  "localOrganizationCorrection": {
+    "status": "implemented and verified in release candidate only",
+    "membershipAuthority": "explicit project membership, regardless of profile organization",
+    "organizationAdministration": "same-org admin plus editable project membership",
+    "legacyAclAndRls": "unchanged; real PostgreSQL fingerprint comparison passed",
+    "financeProjection": "SECURITY INVOKER; existing caller ACL/RLS",
+    "inventoryCostPrivacy": "separate finance boundary retained",
+    "hostedSqlExecutedThisCorrection": false,
+    "persistentLocalDatabaseMutations": false,
+    "existingUsersOrMembershipsRewritten": false,
+    "tests": {
+      "webBuild": "passed",
+      "rootTypeScript": "passed",
+      "inventoryUnitTests": 44,
+      "mobileBackendTests": 317,
+      "postgresSuites": "initial/settlement, contracts/profile/price, catalogue, finance bridge, grants passed",
+      "targetedLint": "0 errors; 3 existing warnings"
+    },
+    "offline": "unchanged read-only stock / durable request drafts / online-only receiving/import/cost/approval",
+    "protectedCheckoutAndOriginalFeatureUnchanged": true
+  },
+  "backupPreparation": {
+    "checklist": "INVENTORY_BACKUP_RESTORE_CHECK.md",
+    "syntheticDockerRestore": "passed",
+    "actualProductionCapture": "pending existing database password/private entry and project CA",
+    "productionDataRestore": "not performed",
+    "storageObjectsAndEncryptionRecovery": "explicit remaining scope; not claimed",
+    "paidResourcesCreated": false,
+    "syntheticResult": {
+      "status": "passed",
+      "scope": "synthetic local backup/restore rehearsal only",
+      "fingerprintSha256": "48f178e0b79c772733df9213de298cd22a147a5a06f9f6dc519a05e329275893",
+      "productionBackupCaptured": false,
+      "checks": [
+        "consistent custom archive",
+        "rows/UUIDs/fractional quantities/JSON",
+        "membership organization/null values",
+        "ACL/RLS/function/constraint/migration history",
+        "authorized read/nonmember denial/write denial",
+        "source unchanged"
+      ]
+    }
   }
 }

@@ -26,6 +26,9 @@ jobs:
       - name: Inventory finance rollout compatibility
         run: npm run test:inventory && node scripts/test-inventory-finance-bridge.mjs && node scripts/test-inventory-contract-db.mjs && node scripts/test-inventory-catalogue-db.mjs
 
+      - name: Isolated local backup and restore rehearsal
+        run: node scripts/test-inventory-backup-restore.mjs
+
       - name: Web/mobile action inventory
         run: node scripts/verify-web-mobile-parity.mjs
 
