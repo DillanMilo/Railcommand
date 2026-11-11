@@ -47,7 +47,8 @@ or Inventory access. There is no database/schema/membership migration.
 
 ## Required step for every future native release
 
-1. Verify Apple approval, **Testing** status and the intended existing TestFlight
+1. Choose a native production build number higher than the last published build
+   (currently 610011); do not resume the older 300xxx sequence. Verify Apple approval, **Testing** status and the intended existing TestFlight
    group's access. Do not announce a queued, uploaded or private-only build to
    users who cannot install it. Keep pilot and wider audience rules separate.
 2. Update the published native build number/version in the server catalog and
@@ -76,3 +77,39 @@ Physical deep-link/reopen acceptance remains **UPDATE-NOTICE-DEVICE**, now inclu
 in the existing first pilot iPhone gate INV-REL-05. Do not claim installation,
 physical TestFlight handoff or wider Inventory acceptance from mocked tests.
 No additional pilot release or wider enrollment is authorized by this change.
+
+The standing update-notice release requirement is also recorded in repository
+`AGENTS.md`, which future changes must read.
+
+
+## Production activation result
+
+- Deployed source: `629d619f03db61ee569619a552574c60a4bbdf55`, branch
+  `feature/inventory-beta-release`; no merge.
+- Vercel `dpl_EWSRRTMojHCE3DWrc2gBet4tFZes`: production staged without aliases,
+  verified READY and promoted unchanged to `railcommand.io`. Prior compatible
+  release: `dpl_CEZMYZPnCxCTihPx1H71jufWcqf3`.
+- The connector could not manage project environment settings (403); the existing
+  authenticated CLI managed the same explicitly verified team/project instead.
+  Exactly one new production Secret holds the five confirmed existing field-beta
+  app identity IDs. No existing variable, authentication or project access changed.
+- Saved configuration checked with the actual selector: all five targeted app
+  identities select 610011; an outsider selects 300012. A later general release
+  overrides a lower pilot. No identities are returned in release metadata.
+- Staged login 200; unauthenticated app-release and bootstrap 401/no-store.
+  Public live app-release 401/no-store after promotion. All 22 previously released
+  mobile routes retained. Authenticated response selection is covered by the
+  endpoint and saved-configuration tests; a real-user device pop-up/OS handoff is
+  still pending the first pilot check, not claimed from these HTTP probes.
+- Checks passed: 11 server/domain/client release tests, 11 existing native update
+  checker/component tests, 7 mobile pilot-boundary tests, root/native TypeScript,
+  production web build and focused ESLint. No native source change/rebuild needed.
+- No database write, migration, new membership, extra TestFlight distribution,
+  paid resource, app-container replacement or draft/outbox modification performed.
+  The original dirty checkout's branch/HEAD/main/status/binary diff exactly match
+  the saved baseline. No broader Inventory rollout; INV-REL-05 remains pending.
+
+Rollback this notice only by promoting the prior compatible web deployment or
+reverting the release catalog/targeting setting. Keep all Inventory records,
+receipts, memberships, drafts and queues intact. Future app releases must include
+this published-update catalog step; TestFlight upload/email alone is insufficient.

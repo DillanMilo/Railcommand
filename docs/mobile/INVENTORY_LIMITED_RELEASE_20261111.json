@@ -2,13 +2,13 @@
   "asOf": "2026-11-11",
   "scope": "owner-confirmed existing RailCommand Field Beta testers first; first hardware check required before wider rollout",
   "branch": "feature/inventory-beta-release",
-  "deployedCommit": "93210780ea4183dbd7c0522b5507276dfcbf7526",
+  "deployedCommit": "629d619f03db61ee569619a552574c60a4bbdf55",
   "mainUnmerged": "701849744457b529a7eaa292415a4b4867e11d4e",
   "web": {
     "status": "production promoted and public login/unauthenticated security checks passed",
-    "deploymentId": "dpl_CEZMYZPnCxCTihPx1H71jufWcqf3",
+    "deploymentId": "dpl_EWSRRTMojHCE3DWrc2gBet4tFZes",
     "url": "https://railcommand.io",
-    "previousDeploymentId": "dpl_3YwL8jBF7B4yW8BiPXBmoxjt1WLy",
+    "previousDeploymentId": "dpl_CEZMYZPnCxCTihPx1H71jufWcqf3",
     "previousMobileRoutesRetained": 22
   },
   "database": {
@@ -56,7 +56,17 @@
     "testerNotificationSent": true,
     "testerInstallAvailability": "released to existing RailCommand Field Beta group; no installation or hardware acceptance claimed",
     "notificationAuthorization": "Owner explicitly approved Notify Testers for build 610011 and the five existing field-beta testers",
-    "releaseVerifiedAt": "2026-11-11T17:38:56.493442+00:00"
+    "releaseVerifiedAt": "2026-11-11T17:38:56.493442+00:00",
+    "updateNotice": {
+      "targetedReleasedBuild": 610011,
+      "targetedExistingFieldBetaAppAccounts": 5,
+      "generalBuildUnchanged": 300012,
+      "serverOnlyAudienceConfiguration": true,
+      "noInventoryPermissionChange": true,
+      "requiredForEveryFutureNativeRelease": true,
+      "physicalHandoff": "UPDATE-NOTICE-DEVICE / INV-REL-05 pending",
+      "report": "UPDATE_NOTICE_RELEASE_20261111.md"
+    }
   },
   "checks": {
     "inventoryFocusedTests": 47,
@@ -75,5 +85,6 @@
     "receivingImportCostApproval": "online-only",
     "existingDraftAndQueueIdentities": "preserved",
     "newPilotAccess": "revalidated online by shared API and database"
-  }
+  },
+  "inventoryInitialDeployedCommit": "93210780ea4183dbd7c0522b5507276dfcbf7526"
 }

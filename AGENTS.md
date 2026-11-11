@@ -152,3 +152,24 @@ Run `npm run check:db-grants` and `npm run test:db-grants` (local Docker require
 The latter provisions disposable PostgreSQL databases with synthetic data and
 no automatic table grants. See [the grant rollout record](docs/SUPABASE_EXPLICIT_GRANTS.md)
 for reset/preview limitations and production approval requirements.
+
+
+## Native app update notices are part of every release
+
+For every new iPhone release, activate the existing in-app **Update available**
+notice as part of the release, with **Update** opening RailCommand in TestFlight.
+After Apple approval and actual availability to the intended testers, advance the
+published native build/version in `src/lib/mobile-api/app-release.ts` and deploy
+the compatible backend. Keep targeted pilot notices limited to the confirmed
+TestFlight audience; a global notice must point to a build all intended users can
+install. Use a monotonically increasing native production build number, not just
+the marketing version. Uploading a build or sending TestFlight email alone does
+not activate the app's published-update catalog.
+
+Preserve **Later**, offline access, device drafts and queues; never force a reload,
+sign-out, storage reset or update over unsaved field work. Old builds without the
+bundled popup need one manual TestFlight update before future notices can work.
+Verify newer/equal-build behavior, safe/offline failure and the TestFlight button;
+record untested physical handoff as pending. Follow
+`docs/mobile/UPDATE_NOTICE_RELEASE_20261111.md`. Android/web users must never be
+sent to iPhone TestFlight; their store/browser update paths are separate.
