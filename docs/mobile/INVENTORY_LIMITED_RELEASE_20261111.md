@@ -109,8 +109,11 @@ the stated conservative assumption is the existing field-beta group first.
   membership, pilot, roles and finance rights. Inherited unrelated warnings remain
   tracked in the previous review and existing access was preserved.
 - Native: verified production build **1.0.0 (610011)** uploaded successfully using
-  local Xcode and the existing Apple account. Apple processing/field-group
-  assignment is pending at this checkpoint. No public App Store submission.
+  local Xcode and the existing Apple account. Apple processing completed and the build is **Approved**, assigned only to
+  the existing RailCommand Field Beta group (5 testers). Manual distribution
+  remains at **Notify Testers**; this sends Apple email, so explicit messaging
+  permission was requested before clicking it. No notification was sent and
+  install availability is not yet claimed. No public App Store submission.
   `availableMobileRelease` intentionally still advertises 300012: do not globally
   recommend the new build before Apple availability and the hardware gate.
 - No paid branch/cloud build/new service/plan upgrade was used. The database backup
@@ -146,3 +149,21 @@ web traffic to `dpl_3YwL8jBF7B4yW8BiPXBmoxjt1WLy`; stop distributing 610011.
 Do not drop Inventory tables, remove receipts/history, erase drafts/outboxes,
 restore an old whole database over newer field work, or change project membership.
 Retain both old and new records for a reviewed compatible forward fix.
+
+
+### Apple approval checkpoint
+
+Apple build ID `94623f25-277d-42ca-96c2-36ce568dd7c6` is Approved after
+TestFlight submission. What to Test notes include the pilot hardware check,
+CSV/material codes/units, 5% carrying cost, contract threshold, split flags,
+approval order and offline draft restart. The single assigned group is the
+existing RailCommand Field Beta external group, with 5 existing testers and no
+individual additions. Automatic tester notification was deselected. No old build
+was expired and the private group/settings were not changed. Apple requires manual
+distribution after approval when notifications were deselected; **Notify Testers**
+is the remaining owner-authorized messaging step, not an Apple review delay.
+
+Official workflow: [Apple external beta distribution](https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers/).
+The local screenshot and private upload logs record this checkpoint. The owner was
+asked for permission to send Apple's standard notification to the existing five
+field testers, as required by the agent's explicit-messaging rule.

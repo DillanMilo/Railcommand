@@ -44,13 +44,17 @@
     "nativeSourceCommit": "ef28859cfa6b8f7b9d36754e001eebde9512fb6f",
     "nativeSourceTree": "f9d065adeb5017f129ce7b444ba47db2ee007e81",
     "upload": "succeeded via local Xcode",
-    "appleProcessing": "pending",
+    "appleProcessing": "complete; approved for external beta testing",
     "fieldGroupId": "35f5c4a4-8577-47bf-8e93-8c6d8d9f2383",
-    "fieldGroupAssignment": "pending",
+    "fieldGroupAssignment": "assigned only to existing RailCommand Field Beta (5 testers)",
     "publicAppStoreSubmission": false,
     "firstPilotHardwareAcceptance": "INV-REL-05 pending",
     "widerRolloutPermitted": false,
-    "globalUpdateRecommendationUnchanged": 300012
+    "globalUpdateRecommendationUnchanged": 300012,
+    "appleBuildId": "94623f25-277d-42ca-96c2-36ce568dd7c6",
+    "testFlightState": "Approved; Notify Testers pending explicit messaging permission",
+    "testerNotificationSent": false,
+    "testerInstallAvailability": "not claimed until manual distribution is confirmed"
   },
   "checks": {
     "inventoryFocusedTests": 47,
