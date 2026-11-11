@@ -67,7 +67,7 @@
     "authenticatedWorkflowAcceptance": "not performed",
     "configurationOrDeploymentChanged": false
   },
-  "physicalReleaseAcceptance": "pending iOS 27 hardware/distributed-build smoke; fresh iOS 26.5 simulator passed",
+  "physicalReleaseAcceptance": "INV-REL-05 deferred at owner preference; continue Xcode only; iOS 27 hardware and final-distributed-build checks remain before team release",
   "offline": "read-only loaded stock; durable request drafts; online-only receiving/import/cost/approval",
   "preservation": {
     "checkedAtUtc": "2026-11-10T13:26:14.593344+00:00",
@@ -260,6 +260,25 @@
     "simulatorAcceptanceReport": "INVENTORY_FINAL_REVIEW_20261111.md",
     "offlineRestartScope": "QA backend unreachable; not physical radio or airplane-mode acceptance",
     "nativeProductionBuild": "610011 signed and verified locally",
-    "physicalIos27Acceptance": "pending; no phone used this round"
+    "physicalIos27Acceptance": "INV-REL-05 deferred at owner preference; continue Xcode only; iOS 27 hardware and final-distributed-build checks remain before team release"
+  },
+  "additionalReleaseChecks20261111": {
+    "report": "INVENTORY_FINAL_REVIEW_20261111.md",
+    "ownerSelected": "Xcode simulator; no phone/certificate setup now",
+    "releasedMobileRoutesRetained": true,
+    "existingMobileAuthSyncRecoveryPhotoRailBotImplementationsUnchanged": true,
+    "bootstrapFinanceProjection": "sole changed released route; existing tests passed",
+    "nativeAndSevenSqlHashesMatchTestedCandidate": true,
+    "distribution610011ChecksumVerifiedAgain": true,
+    "separateDevelopmentBuild": "610012 signed locally; not installed; does not replace 610011 distribution candidate",
+    "phoneMetadataReadOnly": true,
+    "phoneAppsOrDataMutated": false,
+    "phoneCertificateInstalled": false,
+    "productionConnectionOrSqlUsed": false,
+    "paidResourcesOrNewProvisioning": false,
+    "originalDirtyCheckoutMainAndArchiveUnchanged": true,
+    "noApplicationSourceChangesInContinuation": true,
+    "mergePushDeployOrUpload": false,
+    "physicalGap": "INV-REL-05"
   }
 }

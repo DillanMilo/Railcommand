@@ -41,7 +41,8 @@ links and restart; simulated results must remain distinct from physical acceptan
 
 The production backup and all 83 original tables/access definitions must still
 match in the isolated migration rehearsal. Required app builds/types, relevant
-PostgreSQL tests, grant checks and simulator workflow results are recorded below. The older 610009 package is superseded by the scene-enabled rebuild;
+PostgreSQL tests, grant checks and simulator workflow results are recorded below.
+The older 610009 package is superseded by the scene-enabled rebuild;
 it must not be uploaded as the final candidate.
 
 
@@ -50,7 +51,7 @@ it must not be uploaded as the final candidate.
 The final seven Inventory SQL files were applied to another isolated restore of
 the saved production archive. Before and after comparisons passed for all **83
 original tables**, including their original values/counts, access grants, column
- grants, policies, functions, constraints, roles and memberships. The saved archive
+grants, policies, functions, constraints, roles and memberships. The saved archive
 checksum remains unchanged. No production connection was used in this round.
 
 The 21 old history entries still reference the same absent project, and 24 punch
@@ -61,7 +62,7 @@ integrity is not claimed. These inherited exceptions are documented separately;
 the additive Inventory pilot does not require guessing or deleting them.
 
 The existing 37 authenticated TRUNCATE grants were preserved. No public function
- offering TRUNCATE or arbitrary SQL was found, and the current table HTTP routes
+offering TRUNCATE or arbitrary SQL was found, and the current table HTTP routes
 do not expose a SQL TRUNCATE operation. Anonymous/nonmember denial checks passed.
 This is a bounded access review, not a claim that all inherited security settings
 have been independently audited or corrected.
@@ -69,18 +70,18 @@ have been independently audited or corrected.
 ## First-use contract correction verified
 
 Both final contract definitions passed real PostgreSQL tests. A normal PM can now
- select a newly registered contract before entering its first cost. Same-org
- unrelated projects and field finance access remain excluded. Repeating the same
- operation returns the same contract. A real local HTTP check also confirmed the
- behavior and that an older unlinked contract remains unassigned and hidden.
+select a newly registered contract before entering its first cost. Same-org
+unrelated projects and field finance access remain excluded. Repeating the same
+operation returns the same contract. A real local HTTP check also confirmed the
+behavior and that an older unlinked contract remains unassigned and hidden.
 
 Required web build and TypeScript, 44 Inventory tests, static grants, 9 grant parser
- tests and preview/reset/legacy-default database fixtures passed. Native TypeScript
- and 278 tests passed after the supported scene setting was enabled. The isolated
+tests and preview/reset/legacy-default database fixtures passed. Native TypeScript
+and 278 tests passed after the supported scene setting was enabled. The isolated
 QA identity copy also passed all 278 tests after its app-name/scheme substitutions
 were checked against canonical native source. The final
- catalogue and contract PostgreSQL suites passed. Simulator and replacement signed
- package results follow after completion.
+catalogue and contract PostgreSQL suites passed. Simulator and replacement signed
+package results are recorded below.
 
 
 ## Simulator acceptance results
@@ -146,3 +147,49 @@ and the compatible new mobile build must be coordinated. No merge, push,
 deployment, production SQL, invitation, existing app replacement or paid resource
 creation occurred in this round. The owner's original uncommitted checkout and
 saved production archive still match their recorded baselines.
+
+
+## Further release checks and owner-selected simulator scope
+
+The owner chose to continue with Xcode instead of the physical phone. **No phone
+certificate setup is needed for the simulator.** No physical app was installed,
+updated, opened, signed out or erased. Read-only connection/installed-app metadata
+was collected before that decision. The existing RailCommand apps remain intact.
+
+A separate local development build **610012**, `io.railcommand.app.reviewqa`, was
+prepared with the same tested native source and supported scene lifecycle. Its
+existing development profile, isolated keychain identity, signature and local
+server-secret scan passed. It stays on the Mac, uninstalled; it does not replace
+signed distribution candidate 610011. No new provisioning access, paid resource,
+cloud build or live connection was needed. The renewed seven-day test certificate
+is staged locally only; it was not installed or trusted on the phone.
+
+Additional read-only source/artifact checks passed:
+
+- All mobile routes present in the released source base remain present. The only
+  modified released route is the already-tested bootstrap finance projection; the
+  Inventory route is additive. Existing authentication, allowlist, sync, recovery,
+  photo and RailBot route implementations and mobile authentication helpers remain
+  byte-identical to the release base. The two changed helper files are tests.
+- The native source tree and all seven SQL hashes still match the tested candidate
+  and faithful 83-table preservation rehearsal.
+- The signed 610011 distribution package still matches its verified checksum.
+- The original dirty checkout's branch, HEAD, main, status and binary-diff checksum,
+  and the saved production database archive, still match their recorded baselines.
+
+No application code changed in this continuation. Existing passing builds/tests
+remain valid; no redundant database restore or production query was run.
+
+**INV-REL-05 — physical iOS 27 acceptance, explicitly deferred:** before iOS team
+release, verify cold launch and sign-in link handling, the primary online workspace,
+Inventory navigation and receiving controls, CSV sharing, role privacy, and a saved
+field request through actual network loss/restart/reconnection. Verify synthetic
+pending-work upgrade preservation before expanding distribution. Use a separate
+QA identity/environment or an explicitly approved test project, preserving existing
+apps and field work. Current Xcode simulator results do not close this hardware or
+final-distributed-build gap. Android/iPad acceptance is not added by this review.
+
+The source and signed package remain local. Independent release review, Apple
+build-number availability, fresh production preflight at the eventual rollout
+window and explicit rollout authorization remain outstanding. No merge, push,
+TestFlight upload, deployment or production data/access change occurred.
