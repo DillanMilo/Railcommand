@@ -193,3 +193,46 @@ The source and signed package remain local. Independent release review, Apple
 build-number availability, fresh production preflight at the eventual rollout
 window and explicit rollout authorization remain outstanding. No merge, push,
 TestFlight upload, deployment or production data/access change occurred.
+
+
+## Final backup refresh and physical-control limitation
+
+The owner subsequently authorized the new backup and brief physical-phone check.
+The [11 November backup refresh](INVENTORY_BACKUP_RESULT_20261110.md#11-november-refresh--verified-new-backup-and-restore)
+passed capture, isolated restore and the final Inventory rehearsal. All 83 original
+tables/access definitions were preserved. The temporary source login was removed;
+existing role/access fingerprints match before/after. Current read-only source
+checks still show 21 old missing-project history entries, 24 missing punch
+assignees, zero orphan project memberships and zero live Inventory tables.
+No historical repair or Inventory migration was applied to production.
+
+The separate **RailCommand Review QA 610012** development app was installed on the
+owner's iPhone 17 Pro Max/iOS 27.0. Existing RailCommand, Development, Phase1 and
+Staging apps retained their original versions and bundle locations. The owner
+confirmed the seven-day local certificate was installed/trusted and the phone
+unlocked. The OS accepted launching only the separate QA app with a synthetic
+local sign-in link; this alone is not proof of completed sign-in or native UI
+acceptance. No existing app's user data, drafts or account session was opened.
+
+Device Hub's selection did not change from the simulator despite ordinary,
+raised-window and filtered-device/keyboard selection attempts. The temporary
+search filter was cleared. The owner asked for the remaining work to proceed
+without their involvement. **No real-phone screen, Local Network permission,
+receiving/export or true network-offline result was observed in this continuation.**
+INV-REL-05 therefore stays pending. The earlier Xcode tests remain passed, and no
+additional phone taps or repeated setup are being requested now.
+
+The final source/data review for release preparation is complete: current native
+and seven SQL hashes match their passing tests/rehearsal, the signed 610011
+candidate retains its verified checksum, and released mobile authentication,
+allowlist, sync, recovery, photo and RailBot implementations remain retained. This
+is the same agent's technical review; a separate independent reviewer is not
+claimed. Known legacy exceptions remain preserved, not silently repaired.
+
+The owner need not personally perform the hardware check. A proposed alternative
+is for a nominated first pilot tester to check the final distributed build with
+approved test data, before wider field rollout. That requires later explicit
+approval for the controlled backend/web/TestFlight release; it is not authorization
+from this note. Apple build-number availability and final distributed-build
+acceptance remain pre-release checks. Nothing was merged, pushed, deployed or
+uploaded; production records, existing access and Storage contents remain intact.

@@ -101,3 +101,45 @@ profile, including twelve items in one existing project. All 83 original tables
 still match the saved copy. No rows were repaired, deleted or reassigned.
 INV-REL-04 remains open; the history issue is broader than the first failing
 constraint reported by the strict restore.
+
+
+## 11 November refresh — verified new backup and restore
+
+The owner explicitly authorized a new one-hour backup-only login for this fresh
+copy. The correct Railcommand Free organization/project were verified again.
+Current dashboard usage showed 0.168 / 5 GB outgoing transfer for 2 November–
+2 December, no overage and the spending cap enabled. Usage figures may lag by an
+hour. No plan, spending cap, paid project, add-on or hosted restore was changed.
+
+Exactly one fresh database copy completed with TLS verification and read-only
+transactions. Preflight logical row data was **2,192,330 bytes**, below the new
+10 MB size limit. The copying client received **3,176,153 bytes**, below the 15 MB
+transfer stop. Small metadata/control reads are separate from that client counter.
+The archive is **1,057,231 bytes**, SHA-256
+`2e838200a60055eb2160f65edf556ec78a83612ed61fed2a384c9cd487ac6198`.
+The original 10 November archive remains untouched.
+
+Immediately after capture, only the temporary backup role's pooled sessions were
+closed, its read membership/login removed, and its private password file deleted.
+The source confirms zero backup-only roles. Before/after fingerprints match for
+all original roles, memberships, table access, RLS policies and default privileges.
+No existing password, permission, record, storage object or migration was changed.
+
+A new disconnected, bounded local database restored the fresh archive and matched
+all **83 original tables** and original access/functions/constraints/roles. The
+final seven Inventory files were rehearsed only there; the second comparison also
+retained all 83 original tables and access definitions. The generated local
+container was removed afterward. No copied customer Auth identity was signed in,
+and no application/mail/push/Storage workers were started on the recovered data.
+
+The same 21 old history references and 24 missing punch assignees remain documented
+and unchanged; no ownership was guessed. Faithful recovery preserves those existing
+exceptions and does not claim clean historical foreign-key validation. Storage
+photo/document bytes are still outside this logical database archive; their live
+buckets were not touched or downloaded.
+
+Private files remain outside Git, folder 0700/files 0600, under
+`~/Library/Application Support/RailCommand/Phase1Local/private/backups/production-20261111T163523Z/`.
+Source metadata and usage checks were read-only. The only approved hosted access
+operation was creation/removal of the separate temporary backup login. No Inventory
+migration, merge, push, deployment or TestFlight upload occurred.

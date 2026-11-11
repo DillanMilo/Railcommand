@@ -67,7 +67,7 @@
     "authenticatedWorkflowAcceptance": "not performed",
     "configurationOrDeploymentChanged": false
   },
-  "physicalReleaseAcceptance": "INV-REL-05 deferred at owner preference; continue Xcode only; iOS 27 hardware and final-distributed-build checks remain before team release",
+  "physicalReleaseAcceptance": "INV-REL-05 pending; separate 610012 installed but real-phone UI/permission check blocked; Xcode passed; first pilot tester may perform hardware check after later authorization",
   "offline": "read-only loaded stock; durable request drafts; online-only receiving/import/cost/approval",
   "preservation": {
     "checkedAtUtc": "2026-11-10T13:26:14.593344+00:00",
@@ -280,5 +280,57 @@
     "noApplicationSourceChangesInContinuation": true,
     "mergePushDeployOrUpload": false,
     "physicalGap": "INV-REL-05"
+  },
+  "freshBackup20261111": {
+    "report": "INVENTORY_BACKUP_RESULT_20261110.md",
+    "status": "verified fresh capture, faithful isolated restore and final Inventory preservation rehearsal",
+    "archiveBytes": 1057231,
+    "archiveSha256": "2e838200a60055eb2160f65edf556ec78a83612ed61fed2a384c9cd487ac6198",
+    "logicalBytes": 2192330,
+    "copyClientReceivedBytes": 3176153,
+    "maximumLogicalBytesBeforeCopy": 10000000,
+    "copyClientReceiveStopBytes": 15000000,
+    "oneExportOnly": true,
+    "temporaryBackupLoginExplicitlyApproved": true,
+    "temporaryBackupLoginRemoved": true,
+    "temporaryPasswordFileRemoved": true,
+    "existingSourceAccessFingerprintsUnchanged": true,
+    "allOriginalTablesPreserved": 83,
+    "allOriginalAccessPreserved": true,
+    "generatedRestoreContainerRemoved": true,
+    "oldArchivePreserved": true,
+    "storageMetadataIncluded": true,
+    "storageFileBytesIncluded": false,
+    "productionApplicationDataOrMigrationChanges": false,
+    "freeUsageBeforeCapture": {
+      "outgoingGb": 0.168,
+      "includedGb": 5,
+      "spendCapEnabled": true,
+      "plan": "free",
+      "usageMayLag": true
+    }
+  },
+  "physicalCheck20261111": {
+    "bundle": "io.railcommand.app.reviewqa",
+    "build": "610012",
+    "device": "iPhone 17 Pro Max / iOS 27.0",
+    "installedSeparateQaApp": true,
+    "fourExistingAppsVersionsAndBundleLocationsPreserved": true,
+    "newLocalCertificateTrusted": "owner-confirmed",
+    "osAcceptedQaLaunch": true,
+    "completedNativeSignInOrUiAcceptance": "not observed",
+    "screenControlLimitation": "Device Hub remained on simulator; device selection did not respond; temporary search cleared",
+    "ownerPreference": "continue without owner interaction",
+    "hardwareAcceptance": "INV-REL-05 remains pending",
+    "proposedAlternative": "first nominated pilot tester checks approved test data on final distributed build after explicit controlled-release authorization",
+    "existingAppDataOrSessionsTouched": false
+  },
+  "finalTechnicalReview20261111": {
+    "sourceAndDataReview": "complete for release preparation; same-agent review, no separate independent reviewer claimed",
+    "signed610011ChecksumStillVerified": true,
+    "nativeAndSevenSqlHashesStillMatchTests": true,
+    "sourceAccessRestoredExactlyAfterApprovedTemporaryBackup": true,
+    "physicalAcceptance": "pending; do not replace with simulator claim",
+    "mergePushDeployOrUpload": false
   }
 }
