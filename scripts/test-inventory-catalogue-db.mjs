@@ -289,6 +289,33 @@ try {
   const normalizeReplay=command('pm',{...race,importReference:'CONCURRENT-ALIAS',rows:[{...race.rows[0],code:' concurrent ',name:' Concurrent import stock ',quantity:12.000}]});
   assert.equal(normalizeReplay.alreadyImported,true);
   assert.equal(legacyAccess(),originalLegacyAccess);
+  // A limited release is empty/closed by default, including direct PostgREST RLS.
+  const priorRows=sql("select jsonb_agg(to_jsonb(x) order by x.id) from public.inventory_lots x");
+  sql('alter default privileges in schema public grant all on tables to anon,authenticated,service_role');
+  sql(readFileSync(new URL('../supabase/migrations/20261111165723_inventory_limited_pilot_access.sql',import.meta.url),'utf8'));
+  assert.equal(sql("select jsonb_agg(to_jsonb(x) order by x.id) from public.inventory_lots x"),priorRows);
+  assert.equal(as('pm',`select public.inventory_beta_access('${ids.project}')`),'f');
+  assert.ok(read('pm').error,'unenrolled member cannot read RPC');
+  assert.equal(command('pm',{action:'assign',leadId:ids.lead,pmId:ids.pm}).code,'denied');
+  assert.equal(as('pm','select count(*) from public.inventory_lots'),'0','direct RLS is closed');
+  for(const role of ['anon','authenticated'])
+    for(const privilege of ['SELECT','INSERT','UPDATE','DELETE','TRUNCATE'])
+      assert.equal(sql(`select has_table_privilege('${role}','public.inventory_beta_participants','${privilege}')`),'f');
+  for(const privilege of ['DELETE','TRUNCATE'])
+    assert.equal(sql(`select has_table_privilege('service_role','public.inventory_beta_participants','${privilege}')`),'f');
+  assert.throws(()=>as('pm','insert into public.inventory_beta_participants(project_id,profile_id,approval_reference) values(\''+ids.project+'\',\''+ids.pm+'\',\'self enrollment\')'),/Command failed/);
+  sql(`set role service_role;insert into public.inventory_beta_participants(project_id,profile_id,approval_reference) values('${ids.project}','${ids.pm}','Synthetic release approval'),('${ids.project}','${ids.outsider}','No membership; must not grant it'),('${ids.project}','${ids.foreman}','Synthetic field enrollment')`);
+  assert.equal(as('pm',`select public.inventory_beta_access('${ids.project}')`),'t');
+  assert.equal(as('pm',`select public.inventory_beta_access('${ids.foreign}')`),'f');
+  assert.equal(as('outsider',`select public.inventory_beta_access('${ids.project}')`),'f','enrollment cannot invent membership');
+  assert.ok(read('pm').finance);assert.equal(read('foreman').finance,undefined,'pilot enrollment never grants finance');
+  assert.equal(as('lead','select count(*) from public.inventory_lots'),'0','same-project unenrolled role remains excluded');
+  assert.deepEqual(command('pm',legacyCommand,oldOp),legacy,'old operation receipt identity survives enrollment');
+  sql(`set role service_role;update public.inventory_beta_participants set enabled=false where project_id='${ids.project}' and profile_id='${ids.pm}'`);
+  assert.ok(read('pm').error);assert.equal(as('pm','select count(*) from public.inventory_lots'),'0');
+  assert.equal(sql("select jsonb_agg(to_jsonb(x) order by x.id) from public.inventory_lots x"),priorRows,'pilot closure never changes stock');
+  assert.equal(legacyAccess(),originalLegacyAccess,'pilot restriction does not change any legacy access');
+  console.log('PASS limited pilot: default denial, direct RLS, explicit grants under broad defaults, named project/user enrollment, member/finance boundaries, receipt identity and safe closure.');
   console.log('PASS invited collaborators: cross-org PM and Supply Chain, missing-org receiving lead, preserved legacy ACL/RLS, foreign-admin and nonmember denials.');
   console.log('PASS upgraded rules: exactly $50k, >$50k distinct SC before release, split flags, fractional issues and concurrent/canonical CSV dedup.');
   console.log('PASS catalogue DB: additive preservation; role/RLS/helper denials; approved selection; fixed units/fractions; receipt replay; CSV atomicity, duplicate/reference safety; fractional ordered approval/release; unchanged 5%/$50k defaults.');

@@ -1,1 +1,6 @@
 marketing-video/
+
+# Native generated build files are not part of the Next.js deployment.
+apps/mobile/ios/
+apps/mobile/.expo/
+**/*.tsbuildinfo

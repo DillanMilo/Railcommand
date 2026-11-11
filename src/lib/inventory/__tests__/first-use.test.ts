@@ -198,6 +198,7 @@ describe("First-use pricing and approvals", () => {
       } as InventorySnapshot;
     const db = {
       rpc: async (name: string) => {
+        if (name === "inventory_beta_access") return { data: true, error: null };
         assert.equal(name, "inventory_read");
         return { data: s, error: null };
       },

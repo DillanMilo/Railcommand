@@ -206,6 +206,7 @@ describe("Phase 1 cost CSV export", () => {
     const db = {
       rpc: async (name: string) => {
         calls.push(name);
+        if (name === "inventory_beta_access") return { data: true, error: null };
         return { data: s, error: null };
       },
     } as unknown as SupabaseClient;
@@ -224,7 +225,7 @@ describe("Phase 1 cost CSV export", () => {
     const denied = await get();
     assert.equal(denied.status, 403);
     assert.ok(!(await denied.text()).includes("10000"));
-    assert.deepEqual(calls, ["inventory_read", "inventory_read"]);
+    assert.deepEqual(calls, ["inventory_beta_access", "inventory_read", "inventory_beta_access", "inventory_read"]);
     assert.throws(() => createInventoryCsvReport(s), /Cost access/);
     const old = await inventoryHttp(
       new Request(`http://localhost/api/inventory?projectId=${projectId}`),
@@ -238,6 +239,7 @@ describe("Phase 1 cost CSV export", () => {
     const db = {
       rpc: async (name: string) => {
         calls.push(name);
+        if (name === "inventory_beta_access") return { data: true, error: null };
         return { data: null, error: null };
       },
     } as unknown as SupabaseClient;
@@ -249,7 +251,7 @@ describe("Phase 1 cost CSV export", () => {
       db,
     );
     assert.deepEqual(await old.json(), { receipt: null });
-    assert.deepEqual(calls, ["inventory_receipt"]);
+    assert.deepEqual(calls, ["inventory_beta_access", "inventory_receipt"]);
     const combined = await inventoryHttp(
       new Request(
         `http://localhost/api/inventory?projectId=${projectId}&operationId=${operationId}&format=csv`,
@@ -257,7 +259,7 @@ describe("Phase 1 cost CSV export", () => {
       db,
     );
     assert.equal(combined.status, 400);
-    assert.equal(calls.length, 1);
+    assert.deepEqual(calls, ["inventory_beta_access", "inventory_receipt", "inventory_beta_access"]);
   });
   it("cancels before fetching offline and after a project/account switch or connection loss", async () => {
     let online = false,

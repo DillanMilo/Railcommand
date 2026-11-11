@@ -45,6 +45,8 @@ export async function inventoryHttp(
     if (request.method === "GET") {
       const q = new URL(request.url).searchParams;
       const projectId = uuid.parse(q.get("projectId"));
+      const pilot = await pilotAccess(db, projectId);
+      if (pilot) return pilot;
       const operationId = q.get("operationId");
       if (q.get("format") === "csv") {
         if (operationId)
@@ -84,6 +86,8 @@ export async function inventoryHttp(
     const body = await request.text();
     if (body.length > 64000) return response({ error: "Input too large" }, 413);
     const v = input.parse(JSON.parse(body));
+    const pilot = await pilotAccess(db, v.projectId);
+    if (pilot) return pilot;
     return response(
       await executeInventory(db, v.projectId, v.operationId, v.command),
     );
@@ -100,6 +104,16 @@ export async function inventoryHttp(
       400,
     );
   }
+}
+async function pilotAccess(db: SupabaseClient, projectId: string): Promise<Response | null> {
+  const { data, error } = await db.rpc("inventory_beta_access", {
+    p_project_id: projectId,
+  });
+  if (error)
+    return response({ error: "Inventory Beta is temporarily unavailable. Saved work stays on this device." }, 503);
+  if (data !== true)
+    return response({ error: "Inventory Beta is limited to the invited pilot project and testers. Saved work stays on this device." }, 403);
+  return null;
 }
 function response(body: unknown, status = 200) {
   return Response.json(body, {
