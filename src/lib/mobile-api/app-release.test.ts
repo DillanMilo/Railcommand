@@ -4,16 +4,16 @@ import { runInNewContext } from 'node:vm';
 import { describe, it } from 'mocha';
 import ts from 'typescript';
 import { mobileJson, mobileOptions } from './auth';
-import { availableMobileRelease } from './app-release';
+import { availableMobileRelease, mobileReleaseForUser, pilotMobileRelease } from './app-release';
 
-function handler(mode: 'signed-in' | 'anonymous' | 'unavailable') {
+function handler(mode: 'signed-in' | 'anonymous' | 'unavailable', pilot = false) {
   const compiled = { exports: {} as { GET: (r: Request) => Promise<Response> } };
   const dependencies: Record<string, unknown> = {
     '@/lib/mobile-api/auth': { mobileJson, mobileOptions, authenticateMobileRequest: async () => {
       if (mode === 'unavailable') throw new Error('private synthetic auth failure');
-      return mode === 'signed-in' ? { user: { id: 'synthetic' } } : null;
+      return mode === 'signed-in' ? { user: { id: '10000000-0000-4000-8000-000000000001' } } : null;
     } },
-    '@/lib/mobile-api/app-release': { availableMobileRelease },
+    '@/lib/mobile-api/app-release': { mobileReleaseForUser: (id: string) => mobileReleaseForUser(id, pilot ? '10000000-0000-4000-8000-000000000001' : '') },
   };
   const source = readFileSync(new URL('../../app/api/mobile/v1/app-release/route.ts', import.meta.url), 'utf8');
   runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, {
@@ -34,4 +34,32 @@ describe('read-only mobile release endpoint', () => {
       else { assert.equal(typeof body.error, 'string'); assert.equal('ios' in body, false); assert.doesNotMatch(JSON.stringify(body), /private synthetic/); }
     });
   }
+});
+
+
+describe('published update audience', () => {
+  const pilotId = '10000000-0000-4000-8000-000000000001';
+  it('advertises the released pilot build only to its authenticated audience', async () => {
+    const response = await handler('signed-in', true)(new Request('https://staging.example/api/mobile/v1/app-release?userId=someone-else'));
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), pilotMobileRelease);
+    assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+    assert.deepEqual(mobileReleaseForUser('20000000-0000-4000-8000-000000000002', pilotId), availableMobileRelease);
+    assert.deepEqual(mobileReleaseForUser(pilotId, '  '+pilotId.toUpperCase()+' , '), pilotMobileRelease);
+  });
+  it('never advertises a targeted release on missing or malformed configuration', () => {
+    for (const audience of ['', 'not-a-user', pilotId+',broken', '*']) {
+      assert.deepEqual(mobileReleaseForUser(pilotId, audience), availableMobileRelease);
+    }
+  });
+  it('a later general release supersedes the pilot instead of stranding pilot users', () => {
+    const newer = { schemaVersion: 1 as const, ios: { buildNumber: 610012, version: '1.0.0', channel: 'testflight' as const } };
+    assert.deepEqual(mobileReleaseForUser(pilotId, pilotId, { general: newer, pilot: pilotMobileRelease }), newer);
+  });
+  it('does not expose rollout identities or allow anonymous targeting', async () => {
+    const response = await handler('anonymous', true)(new Request('https://staging.example/api/mobile/v1/app-release?userId='+pilotId));
+    assert.equal(response.status, 401);
+    assert.doesNotMatch(await response.text(), /610011|10000000/);
+    assert.equal('userIds' in pilotMobileRelease, false);
+  });
 });

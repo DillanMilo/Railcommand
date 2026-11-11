@@ -193,3 +193,15 @@ recommendation remains unchanged during this limited pilot. Saved stock is
 **offline read-only** and requests are **durable offline drafts**; receiving,
 import, cost changes and approvals remain **online-only**. This administrative
 release does not change any app code, offline database or queued work.
+
+
+### Update-notice follow-up
+
+The owner requested in-app update notices for each future available release.
+See [update notice activation](UPDATE_NOTICE_RELEASE_20261111.md). Build 610011 is
+now the targeted catalog candidate for the five existing field-beta app identities;
+the general recommendation remains 300012 until the wider release gate is met.
+This changes update discovery only, not Inventory enrollment or existing access.
+Include **older prompt-aware build → Update → RailCommand in TestFlight → 610011**
+in INV-REL-05 / UPDATE-NOTICE-DEVICE. Very old builds without the bundled prompt
+need one manual update first. No new Inventory rollout or data changes are implied.

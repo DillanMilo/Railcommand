@@ -1,3 +1,5 @@
+> Current activation and required future release steps: [11 November update notice](UPDATE_NOTICE_RELEASE_20261111.md).
+
 # TestFlight update notice — October 20, 2026
 
 ## Impact and behavior
