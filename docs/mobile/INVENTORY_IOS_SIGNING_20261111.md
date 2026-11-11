@@ -1,3 +1,6 @@
+> Historical signing checkpoint. For the subsequently approved live web/backend
+> release and TestFlight upload status, see [limited release](INVENTORY_LIMITED_RELEASE_20261111.md).
+
 # Inventory iPhone signing completed locally — 11 November 2026
 
 **Signed package verified locally. No TestFlight upload, installation, merge, push

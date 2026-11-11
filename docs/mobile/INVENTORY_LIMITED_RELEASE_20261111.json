@@ -1,0 +1,73 @@
+{
+  "asOf": "2026-11-11",
+  "scope": "existing RailCommand Field Beta group first; first hardware check required before wider rollout",
+  "branch": "feature/inventory-beta-release",
+  "deployedCommit": "93210780ea4183dbd7c0522b5507276dfcbf7526",
+  "mainUnmerged": "701849744457b529a7eaa292415a4b4867e11d4e",
+  "web": {
+    "status": "production promoted and public login/unauthenticated security checks passed",
+    "deploymentId": "dpl_CEZMYZPnCxCTihPx1H71jufWcqf3",
+    "url": "https://railcommand.io",
+    "previousDeploymentId": "dpl_3YwL8jBF7B4yW8BiPXBmoxjt1WLy",
+    "previousMobileRoutesRetained": 22
+  },
+  "database": {
+    "project": "gwvftrrknusdfdgiwuij",
+    "reviewedMigrationSourceHashes": {
+      "20261103152824_inventory_finance_rollout_bridge.sql": "8f2a0a0f46ba9ec37b1e3764ef48055b4233d010fd7167e339126920cba8ed42",
+      "20261020161326_inventory_phase_one.sql": "fd3bce40ea0e5b2743f5587028a14ff5f97d3890b57e7935570b298ceb0a7aee",
+      "20261020172309_inventory_operation_settlement.sql": "ae49ce3c0e8a2d060a94d755a6d594725be0673b1d413335cc7d7700027c6c55",
+      "20261021170501_inventory_confirmed_contract_rules.sql": "02f639019cb7a0884cf223cc7c6fd7aad72854e157f9bc20bd4577ed09bf3767",
+      "20261029192357_inventory_profile_access.sql": "3e0bf35cb507927db5f849796f5c1199416f98ef7bb6ca42c3d8ec7a2cf0080d",
+      "20261105160000_inventory_delivered_purchase_price.sql": "076fe139a4f11c0986aa91d02cdbd16586739acb756ce9cfbe605aa7928d865f",
+      "20261105221954_inventory_catalogue_units_receiving.sql": "5eb2392c19e687fc3826cce617ac394e384368db07ac919dbed8cc12d1c576e6",
+      "20261111165723_inventory_limited_pilot_access.sql": "ba309324d20a51111ac2b56a322e5c69a88fc12100f399524a560d61389e5748"
+    },
+    "originalApplicationAuthStorageTablesMatched": 82,
+    "originalMigrationHistoryRowsRetained": 19,
+    "newMigrationHistoryRows": 8,
+    "existingRecordsRolesMembershipsPoliciesAndDefaultsUnchanged": true,
+    "missingProjectHistoryRowsPreserved": 21,
+    "ownershipRepairPerformed": false,
+    "pilotExistingTesterCount": 4,
+    "pilotExistingProjectMemberPairCount": 11,
+    "newProjectMemberships": 0,
+    "annualCarryingRate": 0.05,
+    "annualContractThreshold": 50000,
+    "thresholdBasis": "contract year; approved commitments plus current request; strictly greater than threshold",
+    "configurationOrgEditable": true
+  },
+  "ios": {
+    "build": "610011",
+    "version": "1.0.0",
+    "bundleId": "io.railcommand.app",
+    "nativeSourceCommit": "ef28859cfa6b8f7b9d36754e001eebde9512fb6f",
+    "nativeSourceTree": "f9d065adeb5017f129ce7b444ba47db2ee007e81",
+    "upload": "succeeded via local Xcode",
+    "appleProcessing": "pending",
+    "fieldGroupId": "35f5c4a4-8577-47bf-8e93-8c6d8d9f2383",
+    "fieldGroupAssignment": "pending",
+    "publicAppStoreSubmission": false,
+    "firstPilotHardwareAcceptance": "INV-REL-05 pending",
+    "widerRolloutPermitted": false,
+    "globalUpdateRecommendationUnchanged": 300012
+  },
+  "checks": {
+    "inventoryFocusedTests": 47,
+    "realPostgresPilotAndCatalogueTests": "passed",
+    "explicitGrantStaticAndDatabaseTests": "passed",
+    "nextBuild": "passed",
+    "typescript": "passed",
+    "freshDisconnectedBackupRestoreWithEightMigrations": "passed; 83 original tables and access preserved",
+    "liveReadSmoke": "pilot allowed; nonmember/other project denied; defaults confirmed",
+    "originalDirtyCheckoutUnchanged": true,
+    "noNewPaidResourceOrCloudBuild": true
+  },
+  "offline": {
+    "stock": "offline read-only",
+    "requests": "durable offline drafts",
+    "receivingImportCostApproval": "online-only",
+    "existingDraftAndQueueIdentities": "preserved",
+    "newPilotAccess": "revalidated online by shared API and database"
+  }
+}

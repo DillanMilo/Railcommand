@@ -69,3 +69,80 @@ Pilot project/testers and release results are recorded below once confirmed.
 - Physical iPhone acceptance remains INV-REL-05, to be completed by the first
   field-beta tester before wider release. Simulator acceptance is recorded in the
   preceding release record and does not count as that hardware check.
+
+## Limited release outcome
+
+The owner approved release on web and TestFlight. The existing **RailCommand Field
+Beta** group is the first audience; wider distribution remains blocked on
+INV-REL-05. This is the same `io.railcommand.app` app and existing accounts, not
+another local QA app. No new public link, tester, shared login or project
+membership was created. Four existing testers have 11 existing project/member
+pairs enrolled; the fifth has no project membership and receives no new access.
+The optional scope preference was left open while release preparation continued;
+the stated conservative assumption is the existing field-beta group first.
+
+- Web/backend source: `93210780ea4183dbd7c0522b5507276dfcbf7526` on
+  `feature/inventory-beta-release`. The branch was pushed; `main` remains
+  `701849744457b529a7eaa292415a4b4867e11d4e` and was not merged.
+- Vercel deployment `dpl_CEZMYZPnCxCTihPx1H71jufWcqf3`: staged as production with
+  `--skip-domain`, verified READY, then promoted without rebuilding. Login returns
+  200; unauthenticated Inventory and mobile bootstrap return 401 with no-store.
+  All 22 previously released mobile API routes are retained in deployment output.
+- Correct existing Supabase project: `gwvftrrknusdfdgiwuij`. Only the eight reviewed
+  SQL files above were applied, in rehearsal order, each with 3-second lock and
+  30-second statement limits. All original 19 migration entries remain unchanged.
+  The MCP tool's newly generated version identifiers were individually mapped to
+  their exact reviewed source filenames; only those eight new history rows were
+  adjusted, with exact name/version and collision guards. No bulk push/reset.
+- Live before/after fingerprints matched for all 82 existing application/Auth/file
+  metadata tables, existing table access/RLS policies, roles, memberships and
+  default privileges. The 83rd original table is migration history: its original
+  19 entries remain and the eight release entries were added. Known old orphaned
+  history/assignments remain preserved and unresolved; no ownership was inferred.
+- Live authenticated-role read: enrolled existing project returns an empty initial
+  catalogue/stock snapshot, 5% annual carrying rate and $50,000 contract threshold.
+  Other-project lookup returns false; an existing nonmember sees no stock. These
+  are read-only checks, not new field records or real-user sign-ins.
+- Security advisor comparison: no new anonymous-callable privileged function.
+  New service-only finance/enrollment tables intentionally have RLS and no client
+  policies; the five authenticated Inventory entry points intentionally revalidate
+  membership, pilot, roles and finance rights. Inherited unrelated warnings remain
+  tracked in the previous review and existing access was preserved.
+- Native: verified production build **1.0.0 (610011)** uploaded successfully using
+  local Xcode and the existing Apple account. Apple processing/field-group
+  assignment is pending at this checkpoint. No public App Store submission.
+  `availableMobileRelease` intentionally still advertises 300012: do not globally
+  recommend the new build before Apple availability and the hardware gate.
+- No paid branch/cloud build/new service/plan upgrade was used. The database backup
+  and its restore evidence remain private on the Mac. Storage object bytes were
+  not part of the database backup; this release does not change those objects.
+- The original dirty checkout's branch/HEAD/main/status/binary diff match its
+  saved baseline exactly. Existing local apps and private drafts were not cleared.
+
+### First pilot iPhone check — INV-REL-05
+
+Keep pending until a tester reports or demonstrates these checks on real hardware:
+
+1. Update the existing RailCommand app from the selected TestFlight group to
+   610011; sign in with the normal invited account and open its existing project.
+2. Open **Inventory Beta**. Confirm readable lists/search, correct material code
+   and units, and receiving controls fit the iPhone. Existing role/cost access must
+   match the web. No tester should guess ownership or edit real stock as a test.
+3. Save an intended stock request as a device draft, disconnect, close/reopen the
+   app and confirm the input survives. Reconnect and explicitly submit once;
+   verify it creates one request and shows its real approval state.
+4. Check CSV import/preview and report sharing where that tester's role permits;
+   commit only genuine approved material/stock information or records in an
+   explicitly designated disposable test project. The catalogue starts empty and
+   is not automatically populated from unrelated legacy records.
+5. Record device/iOS/build, success or exact issue, and confirm no existing draft,
+   account or project data disappeared. Keep wider enrollment/distribution closed
+   until this gate passes. Remaining Android/hardware breadth is not claimed.
+
+### Rollback
+
+If a release issue appears, disable the affected new enrollment rows or restore
+web traffic to `dpl_3YwL8jBF7B4yW8BiPXBmoxjt1WLy`; stop distributing 610011.
+Do not drop Inventory tables, remove receipts/history, erase drafts/outboxes,
+restore an old whole database over newer field work, or change project membership.
+Retain both old and new records for a reviewed compatible forward fix.
