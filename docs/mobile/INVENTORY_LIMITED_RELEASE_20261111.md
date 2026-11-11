@@ -78,8 +78,9 @@ INV-REL-05. This is the same `io.railcommand.app` app and existing accounts, not
 another local QA app. No new public link, tester, shared login or project
 membership was created. Four existing testers have 11 existing project/member
 pairs enrolled; the fifth has no project membership and receives no new access.
-The optional scope preference was left open while release preparation continued;
-the stated conservative assumption is the existing field-beta group first.
+The owner explicitly confirmed the existing field-beta group first, retaining
+each tester's existing project permissions. Wider access stays closed until the
+first iPhone check passes.
 
 - Web/backend source: `93210780ea4183dbd7c0522b5507276dfcbf7526` on
   `feature/inventory-beta-release`. The branch was pushed; `main` remains
@@ -110,10 +111,10 @@ the stated conservative assumption is the existing field-beta group first.
   tracked in the previous review and existing access was preserved.
 - Native: verified production build **1.0.0 (610011)** uploaded successfully using
   local Xcode and the existing Apple account. Apple processing completed and the build is **Approved**, assigned only to
-  the existing RailCommand Field Beta group (5 testers). Manual distribution
-  remains at **Notify Testers**; this sends Apple email, so explicit messaging
-  permission was requested before clicking it. No notification was sent and
-  install availability is not yet claimed. No public App Store submission.
+  the existing RailCommand Field Beta group (5 testers). After the owner explicitly approved notification, **Notify Testers** was
+  activated once and Apple's status changed from Approved to **Testing**. The
+  update is released to the existing field-beta group; actual installation and
+  hardware acceptance remain pending. No public App Store submission.
   `availableMobileRelease` intentionally still advertises 300012: do not globally
   recommend the new build before Apple availability and the hardware gate.
 - No paid branch/cloud build/new service/plan upgrade was used. The database backup
@@ -167,3 +168,28 @@ Official workflow: [Apple external beta distribution](https://developer.apple.co
 The local screenshot and private upload logs record this checkpoint. The owner was
 asked for permission to send Apple's standard notification to the existing five
 field testers, as required by the agent's explicit-messaging rule.
+
+
+### Confirmed field-beta distribution
+
+The owner explicitly confirmed **existing field-beta testers first** and approved
+**Notify Testers** for the five existing members of RailCommand Field Beta.
+The button was activated once for build **610011**. A fresh App Store Connect
+state shows **Testing**, confirming manual distribution completed and Apple's
+standard notification was triggered. The release screenshot is retained locally
+as `testflight-testing-610011.png`; no unrelated mail or invitation was sent.
+
+Existing field-beta testers can now open TestFlight, update the existing
+RailCommand app to 1.0.0 (610011), sign in normally and open **Inventory Beta** in
+their authorized project. The fifth tester still has no project membership; no
+membership or existing permissions were added or changed. No wider group,
+individual tester or public invitation link was added. No previous build was
+expired. No new database mutation or web deployment was needed in this step.
+
+INV-REL-05 remains **pending**: release availability is not installation or a
+physical-device pass. The first tester must report the iPhone check before wider
+Inventory enrollment or TestFlight distribution. The global app update
+recommendation remains unchanged during this limited pilot. Saved stock is
+**offline read-only** and requests are **durable offline drafts**; receiving,
+import, cost changes and approvals remain **online-only**. This administrative
+release does not change any app code, offline database or queued work.

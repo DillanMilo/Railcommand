@@ -1,6 +1,6 @@
 {
   "asOf": "2026-11-11",
-  "scope": "existing RailCommand Field Beta group first; first hardware check required before wider rollout",
+  "scope": "owner-confirmed existing RailCommand Field Beta testers first; first hardware check required before wider rollout",
   "branch": "feature/inventory-beta-release",
   "deployedCommit": "93210780ea4183dbd7c0522b5507276dfcbf7526",
   "mainUnmerged": "701849744457b529a7eaa292415a4b4867e11d4e",
@@ -52,9 +52,11 @@
     "widerRolloutPermitted": false,
     "globalUpdateRecommendationUnchanged": 300012,
     "appleBuildId": "94623f25-277d-42ca-96c2-36ce568dd7c6",
-    "testFlightState": "Approved; Notify Testers pending explicit messaging permission",
-    "testerNotificationSent": false,
-    "testerInstallAvailability": "not claimed until manual distribution is confirmed"
+    "testFlightState": "Testing",
+    "testerNotificationSent": true,
+    "testerInstallAvailability": "released to existing RailCommand Field Beta group; no installation or hardware acceptance claimed",
+    "notificationAuthorization": "Owner explicitly approved Notify Testers for build 610011 and the five existing field-beta testers",
+    "releaseVerifiedAt": "2026-11-11T17:38:56.493442+00:00"
   },
   "checks": {
     "inventoryFocusedTests": 47,
