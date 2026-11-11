@@ -141,6 +141,7 @@ const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => {
       ],
     },
     plugins: [
+      ['expo-build-properties', { ios: { enableSceneSupport: true } }],
       'expo-router',
       'expo-secure-store',
       'expo-sqlite',

@@ -251,8 +251,8 @@ try {
   sql(`update profiles set organization_id='${collaboratorOrg}' where id='${ids.pm}'`);
   const year=Number(sql("select extract(year from current_date)::integer"));
   function setupContract(key,amount=0){
-    assert.equal(command('pm',{action:'contract',contractKey:key,name:key,startDate:`${year}-01-01`}).ok,true);
-    const cid=sql(`select id from inventory_contracts where contract_key='${key}'`);
+    const registered=command('pm',{action:'contract',contractKey:key,name:key,startDate:`${year}-01-01`});assert.equal(registered.ok,true);
+    const cid=registered.contractId;assert.ok(cid);assert.equal(read('pm').finance.contracts.find(c=>c.id===cid)?.contract_key,key,'new contract selectable before its first cost/source');
     assert.equal(command('pm',{action:'baseline',contractId:cid,periodYear:year,currency:'USD',expectedVersion:0,amount,evidence:'Synthetic external baseline excludes every tracked purchase',verifiedExcludesTrackedSources:true}).ok,true);return cid;
   }
   function purchase(key,amount,cid){

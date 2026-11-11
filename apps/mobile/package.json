@@ -6,8 +6,10 @@
     "@railcommand/api-client": "file:../../packages/api-client",
     "@railcommand/domain": "file:../../packages/domain",
     "@supabase/supabase-js": "2.106.2",
-    "expo": "~57.0.16",
+    "expo": "~57.0.23",
+    "expo-application": "57.0.2",
     "expo-audio": "57.0.4",
+    "expo-build-properties": "57.0.23",
     "expo-constants": "~57.0.14",
     "expo-crypto": "~57.0.1",
     "expo-device": "~57.0.1",
@@ -38,8 +40,7 @@
     "react-native-url-polyfill": "2.0.0",
     "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1",
-    "react-native-worklets": "0.10.1",
-    "expo-application": "57.0.2"
+    "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

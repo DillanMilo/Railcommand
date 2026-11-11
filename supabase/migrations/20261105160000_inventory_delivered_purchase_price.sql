@@ -33,7 +33,12 @@ begin
   return result;
  end if;
  select organization_id into org from public.projects where id=p_project_id;
- select coalesce(array_agg(c.id),array[]::uuid[]) into scoped from public.inventory_contracts c where c.organization_id=org and (inventory_private.admin(p_project_id) or exists(select 1 from public.inventory_exposure_contracts ec join public.inventory_exposures e on e.id=ec.exposure_id join public.inventory_contract_sources cs on cs.id=ec.source_id where e.project_id=p_project_id and cs.contract_id=c.id));
+ select coalesce(array_agg(c.id),array[]::uuid[]) into scoped from public.inventory_contracts c where c.organization_id=org and (inventory_private.admin(p_project_id)
+  -- A newly registered contract belongs in this project's chooser before its
+  -- first purchase. Its immutable command receipt proves that project scope.
+  or exists(select 1 from public.inventory_receipts receipt where receipt.project_id=p_project_id
+    and receipt.result @> jsonb_build_object('ok',true,'contractId',c.id))
+  or exists(select 1 from public.inventory_exposure_contracts ec join public.inventory_exposures e on e.id=ec.exposure_id join public.inventory_contract_sources cs on cs.id=ec.source_id where e.project_id=p_project_id and cs.contract_id=c.id));
  f:=jsonb_build_object(
   'costEntryVersion',2,
   'canConfigurePolicy',inventory_private.admin(p_project_id),
@@ -123,8 +128,8 @@ begin
  elsif cmd='contract' then
   if not inventory_private.manage(p_project_id) then code:='configuration_denied';
   else
-   insert into public.inventory_contracts(organization_id,contract_key,start_date,name,created_by) values(org,trim(p_command->>'contractKey'),nullif(p_command->>'startDate','')::date,trim(p_command->>'name'),actor);
-   answer:=jsonb_build_object('ok',true);
+   insert into public.inventory_contracts(organization_id,contract_key,start_date,name,created_by) values(org,trim(p_command->>'contractKey'),nullif(p_command->>'startDate','')::date,trim(p_command->>'name'),actor) returning id into mid;
+   answer:=jsonb_build_object('ok',true,'contractId',mid);
   end if;
  elsif cmd='baseline' then
   select * into contract from public.inventory_contracts where id=(p_command->>'contractId')::uuid and organization_id=org;

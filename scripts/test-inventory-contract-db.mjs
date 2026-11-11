@@ -435,6 +435,17 @@ try {
   const movementBefore = sql("select json_agg(m order by id) from public.inventory_movements m");
   sql(readFileSync(new URL("../supabase/migrations/20261105160000_inventory_delivered_purchase_price.sql",import.meta.url),"utf8"));
   assert.equal(sql("select json_agg(to_jsonb(c)-'purchase_price' order by id) from public.inventory_cost_revisions c"),pricingBefore);
+  // A normal PM must see a just-created contract before any source/cost link.
+  // The receipt is also the persistent project provenance after a new read.
+  const firstUseOp=randomUUID(),firstUseCommand={action:'contract',contractKey:'PM-FIRST-USE',name:'Synthetic first-use contract',startDate:`${year}-01-01`};
+  const firstUse=at(ids.project,'pm',firstUseCommand,firstUseOp);
+  assert.equal(firstUse.ok,true);assert.ok(firstUse.contractId);
+  assert.equal(snap().finance.contracts.find(c=>c.id===firstUse.contractId)?.contract_key,'PM-FIRST-USE');
+  assert.equal(snap(ids.project2).finance.contracts.some(c=>c.id===firstUse.contractId),false,'same-org other project has no provenance');
+  assert.equal(snap(ids.project,'foreman').finance,undefined,'field roles receive no contract metadata');
+  assert.deepEqual(at(ids.project,'pm',firstUseCommand,firstUseOp),firstUse,'retry returns same registered contract');
+  assert.equal(sql(`select count(*) from public.inventory_contracts where id='${firstUse.contractId}'`),'1');
+
   assert.equal(sql("select json_agg(m order by id) from public.inventory_movements m"),movementBefore);
   assert.equal(snap().finance.costEntryVersion,2);
   assert.equal(snap(ids.project,'foreman').finance,undefined);
