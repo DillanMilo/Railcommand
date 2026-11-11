@@ -356,3 +356,13 @@ Local signing/export was attempted with an export-only destination and no remote
 version management. Apple blocked profile access because the account holder must
 review/accept its updated Developer Program License Agreement (PLA Update available).
 No IPA or upload was produced. This is the concrete next signing blocker.
+
+## 11 November signing update
+
+The owner accepted the pending Apple agreement. A normal signed archive and local
+App Store export now pass signature, existing push/app-link entitlement and server
+credential checks. Build 1.0.0 (610009) is saved locally; it was not uploaded or
+installed. This supersedes the earlier signing blocker. See
+[the verified signing result](INVENTORY_IOS_SIGNING_20261111.md).
+Legacy issue disposition, independent review, final physical acceptance, Apple build
+number confirmation and explicit rollout authorization remain separate requirements.

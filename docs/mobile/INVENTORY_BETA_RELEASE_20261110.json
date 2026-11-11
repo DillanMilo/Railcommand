@@ -176,18 +176,24 @@
       "version": "1.0.0",
       "build": "610009",
       "bundleIdentifier": "io.railcommand.app",
-      "status": "local unsigned release archive compiled; server credential scan passed",
-      "signed": false,
-      "matchingDistributionProfileAvailable": false,
+      "status": "signed local App Store distribution IPA verified; not uploaded or installed",
+      "signed": true,
+      "matchingDistributionProfileAvailable": true,
       "uploadedOrInstalled": false,
       "cloudBuild": false,
       "physicalAcceptance": "pending",
       "buildNumberVerifiedAgainstApple": false,
-      "exportAttempt": "blocked by Apple: updated Program License Agreement must be accepted; matching App Store profile unavailable locally",
-      "exportExitCode": 70,
+      "exportAttempt": "succeeded after owner accepted pending agreement; normal signed archive preserves existing push and associated domains",
+      "exportExitCode": 0,
       "uploadDestination": "export only; no upload",
       "remoteBuildNumberManagement": false,
-      "accountHolderActionRequired": true
+      "accountHolderActionRequired": false,
+      "previousExportExitCode": 70,
+      "agreementHoldCleared": true,
+      "ipaSha256": "b3d52dbffaa17842dd3b0658703491ff77fbcb37455eba12898d08346ad361aa",
+      "ipaBytes": 15943302,
+      "signatureEntitlementAndCredentialVerification": "passed",
+      "result": "INVENTORY_IOS_SIGNING_20261111.md"
     },
     "preservation": {
       "branch": true,
@@ -204,8 +210,7 @@
     "remaining": [
       "review disposition for known legacy integrity/privilege exceptions",
       "confirmed mappings before any real reassignment",
-      "Apple account holder must review/accept updated Developer Program agreement before signing-profile access",
-      "matching Apple distribution profile and build number confirmation/sign/export",
+      "confirm Apple build number availability before upload; signing/export complete locally",
       "independent review and final physical iPhone acceptance",
       "explicit authorization before backend/web/mobile rollout"
     ],
@@ -222,5 +227,16 @@
     "repairTemplateSha256": "b17ae481c3cf1d29cd042105733f1bcfd1a8289d94cd9fb23848ec598294820f",
     "nativeSourceTree": "4d2fd35d19e630df6a31ec5879899770d87f1f23",
     "targetedLint": "0 errors; 1 pre-existing unused-variable warning in Inventory DB fixture"
+  },
+  "iosSigningCompletion20261111": {
+    "report": "INVENTORY_IOS_SIGNING_20261111.md",
+    "signed": true,
+    "deepStrictSignatureVerification": "passed",
+    "existingNotificationAndAppLinkEntitlements": "preserved and verified",
+    "agreementHoldCleared": true,
+    "uploadedOrInstalled": false,
+    "physicalAcceptance": "pending",
+    "productionDatabaseOrDeploymentTouched": false,
+    "cloudBuild": false
   }
 }
