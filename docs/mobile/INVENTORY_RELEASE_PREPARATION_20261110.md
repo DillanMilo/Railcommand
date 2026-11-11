@@ -1,5 +1,13 @@
 # Inventory release preparation and safest repair — 10 November 2026
 
+**11 November update:** the saved-copy technical review is complete; original
+records/access and the known legacy exceptions are preserved. A narrow first-use
+contract fix and supported iOS scene launch setting are verified in source. Signed
+build **610011** supersedes 610009 and remains local. See the
+[latest final review](INVENTORY_FINAL_REVIEW_20261111.md) and
+[verified signing record](INVENTORY_IOS_SIGNING_20261111.md) for current acceptance
+limits. Earlier dated observations below are retained as history.
+
 **Prepared locally; not live, merged, pushed, installed or uploaded to TestFlight.**
 This report supersedes the earlier proposal to clear invalid assignees. The real
 copy requires an assignee on every punch item; the attempted NULL correction failed

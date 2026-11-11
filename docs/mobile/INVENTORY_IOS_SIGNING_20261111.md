@@ -14,15 +14,18 @@ omitted the app's existing notification and associated-domain entitlements. It w
 rejected and retained privately with DO NOT DISTRIBUTE labels. The current source
 was then archived with normal automatic signing and exported again, using
 `destination=export` and remote version/build management disabled. Only the final
-verified package below is a release candidate. No runtime code or capability was
-added to work around signing, and no unrelated app's profile was used.
+verified package below is a release candidate. No unrelated app's profile was used.
+The earlier signed 610009 package is
+superseded: the final candidate enables Expo's supported iOS scene lifecycle
+required by the current Xcode SDK. The signed Info.plist contains the expected
+`EXExpoAppSceneDelegate`; existing push and associated domains remain intact.
 
 ## Verified artifact
 
-- Version/build: **1.0.0 (610009)**; bundle ID `io.railcommand.app`.
-- Source commit: `1f6f4aba1e6a7b2fd4c81f58e966534cf0c82932`.
-- Native source tree: `4d2fd35d19e630df6a31ec5879899770d87f1f23`, identical to the
-  previously tested release candidate.
+- Version/build: **1.0.0 (610011)**; bundle ID `io.railcommand.app`.
+- Source commit: `ef28859cfa6b8f7b9d36754e001eebde9512fb6f`.
+- Native source tree: `f9d065adeb5017f129ce7b444ba47db2ee007e81`; includes the tested
+  supported iOS scene launch setting.
 - Deep, strict code-signature verification and ZIP CRC: passed.
 - Matching App Store distribution profile; debugging disabled; no device-specific
   development profile substituted. Profile expires 27 August 2027 at 20:15:41 UTC.
@@ -30,11 +33,11 @@ added to work around signing, and no unrelated app's profile was used.
   `applinks:railcommand.io`.
 - Packaged JavaScript matches the signed archive. Scan for existing server credential
   values passed; the build uses the selected public production client configuration.
-- IPA size: 15,943,302 bytes.
-- SHA-256: `b3d52dbffaa17842dd3b0658703491ff77fbcb37455eba12898d08346ad361aa`.
+- IPA size: 15,943,406 bytes.
+- SHA-256: `a3ecc591ccdb043fc2a28a3fe5b19a9568fad9a3564042f0bba43197ddd8d2b7`.
 
 Private artifact:
-`~/Library/Application Support/RailCommand/Phase1Local/private/release-prep-20261111/store-export/RailCommand.ipa`.
+`~/Library/Application Support/RailCommand/Phase1Local/private/release-prep-20261111/scene-enabled-build/store-export/RailCommand.ipa`.
 Signed archive, verification evidence and logs remain outside Git in that dated
 folder. No signing private keys or customer rows were copied into the repository.
 No cloud build, paid service, subscription change or new spending was used.
@@ -47,18 +50,24 @@ Before any upload, verify it is available and complete the release review. This 
 an App Store distribution package, not a directly installable development app.
 No upload or tester assignment is authorized by agreement acceptance alone.
 
-Final physical iPhone acceptance and the existing legacy integrity/privilege review
-remain pending. The safeguarded legacy assignment repair still requires confirmed
+The bounded legacy data/access review is complete and documented in
+[the final review](INVENTORY_FINAL_REVIEW_20261111.md); old missing links and
+assignments remain preserved and unresolved. Physical iPhone acceptance remains
+pending; simulator results do not replace iOS 27 hardware acceptance. The
+safeguarded legacy assignment repair still requires confirmed
 replacement owners; none were guessed or changed. All original history remains
 preserved. The reviewed backend/web rollout must precede team use of Inventory in
-the signed app; none of the pending Inventory SQL was applied to live or persistent
-local databases during this signing work.
+the signed app. No Inventory SQL was applied to production or the existing
+persistent Phase1 backend; new synthetic QA and disposable restore databases are
+separate.
 
 ## Platform, offline and preservation record
 
-Web, shared API/domain, database and installed-client payloads: unchanged. Native:
-packaging/signing only, with existing capabilities verified. No installed app,
-project record, membership, private draft or outbox was opened, cleared or replaced.
+Package verification makes no web, API, database or installed-client payload changes.
+The first-use contract correction is recorded in the final review. Native:
+supported scene launch setting plus packaging/signing, with existing capabilities
+verified. No existing physical app, user project record, membership, private draft
+or outbox was opened, cleared or replaced.
 The protected original checkout still matches its prior branch/HEAD/main/status
 and binary-diff fingerprint. The source branch remains local and unmerged.
 

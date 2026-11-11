@@ -1,5 +1,13 @@
 # Inventory Beta — local release candidate, 10 November 2026
 
+**11 November update:** the saved-copy technical review is complete; original
+records/access and the known legacy exceptions are preserved. A narrow first-use
+contract fix and supported iOS scene launch setting are verified in source. Signed
+build **610011** supersedes 610009 and remains local. See the
+[latest final review](INVENTORY_FINAL_REVIEW_20261111.md) and
+[verified signing record](INVENTORY_IOS_SIGNING_20261111.md) for current acceptance
+limits. Earlier dated observations below are retained as history.
+
 Status: integrated locally; not deployed or approved for live migration. The user's
 priority is preservation of every existing record, app and unfinished field entry.
 Earlier no-merge/no-deploy constraints remain in force during this preparation.
