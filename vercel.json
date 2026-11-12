@@ -9,7 +9,8 @@
     "deploymentEnabled": {
       "codex/tco-inventory-audit-phase-1": false,
       "feature/inventory-beta-release": false,
-      "feature/tco-inventory-phase-1": false
+      "feature/tco-inventory-phase-1": false,
+      "feature/inventory-all-users": false
     }
   }
 }
