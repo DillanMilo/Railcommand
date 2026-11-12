@@ -5,9 +5,9 @@ import { inventoryHttp } from "../http";
 const projectId = "94ab552b-9220-4c67-8362-4155c764ab8e";
 const operationId = "fcaa989a-4a6a-4387-baae-dd0b948164b0";
 
-describe("limited Inventory pilot HTTP boundary", () => {
+describe("Inventory project membership HTTP boundary", () => {
   for (const pathname of ["/api/inventory", "/api/mobile/v1/inventory"]) {
-    it(`closes reads, CSV, receipts, writes and settlement outside the pilot: ${pathname}`, async () => {
+    it(`closes reads, CSV, receipts, writes and settlement without project membership: ${pathname}`, async () => {
       const calls: string[] = [];
       const db = { rpc: async (name: string, args: unknown) => {
         calls.push(name);
@@ -29,13 +29,13 @@ describe("limited Inventory pilot HTTP boundary", () => {
         assert.equal(result.status, 403);
         assert.match(result.headers.get("cache-control")!, /no-store/);
         const message = (await result.json()).error;
-        assert.match(message, /limited.*pilot/);
+        assert.match(message, /access to this project/);
         assert.match(message, /Saved work/);
       }
       assert.deepEqual(calls, requests.map(() => "inventory_beta_access"));
     });
   }
-  it("fails closed if enrollment cannot be checked, without calling business operations", async () => {
+  it("fails closed if membership cannot be checked, without calling business operations", async () => {
     const calls: string[] = [];
     const db = { rpc: async (name: string) => {
       calls.push(name); return { data: null, error: { message: "unavailable" } };

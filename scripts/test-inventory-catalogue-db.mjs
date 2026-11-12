@@ -315,6 +315,27 @@ try {
   assert.ok(read('pm').error);assert.equal(as('pm','select count(*) from public.inventory_lots'),'0');
   assert.equal(sql("select jsonb_agg(to_jsonb(x) order by x.id) from public.inventory_lots x"),priorRows,'pilot closure never changes stock');
   assert.equal(legacyAccess(),originalLegacyAccess,'pilot restriction does not change any legacy access');
+  // General availability removes only enrollment, including for an unenrolled
+  // receiving lead. Every existing row/ACL and role-specific rule is preserved.
+  const allTables=JSON.parse(sql("select json_agg(tablename order by tablename) from pg_tables where schemaname='public'"));
+  const dataDigest=()=>allTables.map(t=>[t,sql(`select md5(coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text)::text,'[]')) from public.${t} r`)]);
+  const beforeGeneral=dataDigest();
+  const beforeAccess=sql("select jsonb_agg(jsonb_build_array(c.relname,c.relacl::text,c.relrowsecurity,c.relforcerowsecurity) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'");
+  sql(readFileSync(new URL('../supabase/migrations/20261112210321_inventory_general_availability.sql',import.meta.url),'utf8'));
+  assert.deepEqual(dataDigest(),beforeGeneral,'general availability changes no existing records');
+  assert.equal(sql("select jsonb_agg(jsonb_build_array(c.relname,c.relacl::text,c.relrowsecurity,c.relforcerowsecurity) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'"),beforeAccess,'table grants/RLS remain unchanged');
+  assert.equal(as('lead',`select public.inventory_beta_access('${ids.project}')`),'t','unenrolled lead now has normal project access');
+  assert.equal(as('pm',`select public.inventory_beta_access('${ids.project}')`),'t','disabled pilot row no longer blocks an existing member');
+  assert.equal(as('outsider',`select public.inventory_beta_access('${ids.project}')`),'f','enrolled outsider still denied');
+  assert.equal(as('pm',`select public.inventory_beta_access('${ids.foreign}')`),'f','foreign project still denied');
+  assert.equal(as('lead','select count(*) from public.inventory_lots'),String(read('lead').lots.length));
+  assert.equal(read('lead').finance,undefined);assert.equal(read('lead').canReceive,true);
+  assert.equal(read('foreman').finance,undefined);assert.equal(read('foreman').canReceive,false);
+  assert.equal(read('pm').canManage,true);assert.ok(read('pm').finance);
+  assert.deepEqual(command('pm',legacyCommand,oldOp),legacy,'existing operation identity still replays');
+  assert.equal(command('lead',{action:'catalogue_add',code:'NOT-ALLOWED',name:'Denied',unit:'each',category:'other'}).code,'catalogue_management_denied');
+  assert.equal(legacyAccess(),originalLegacyAccess,'legacy access unaffected by general availability');
+  console.log('PASS general Inventory availability: no data/ACL changes; unenrolled and previously disabled members allowed; foreign/nonmembers denied; finance, receiving, catalogue and receipt replay unchanged.');
   console.log('PASS limited pilot: default denial, direct RLS, explicit grants under broad defaults, named project/user enrollment, member/finance boundaries, receipt identity and safe closure.');
   console.log('PASS invited collaborators: cross-org PM and Supply Chain, missing-org receiving lead, preserved legacy ACL/RLS, foreign-admin and nonmember denials.');
   console.log('PASS upgraded rules: exactly $50k, >$50k distinct SC before release, split flags, fractional issues and concurrent/canonical CSV dedup.');

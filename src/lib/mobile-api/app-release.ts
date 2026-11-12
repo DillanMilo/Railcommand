@@ -4,7 +4,7 @@ import type { MobileAppRelease } from '@railcommand/domain';
 // to the intended TestFlight audience. Uploading alone is not availability.
 export const availableMobileRelease: MobileAppRelease = {
   schemaVersion: 1,
-  ios: { buildNumber: 300012, version: '1.0.0', channel: 'testflight' },
+  ios: { buildNumber: 610011, version: '1.0.0', channel: 'testflight' },
 };
 
 export const pilotMobileRelease: MobileAppRelease = {

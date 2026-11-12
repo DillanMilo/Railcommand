@@ -39,13 +39,23 @@ describe('read-only mobile release endpoint', () => {
 
 describe('published update audience', () => {
   const pilotId = '10000000-0000-4000-8000-000000000001';
-  it('advertises the released pilot build only to its authenticated audience', async () => {
+  it('publishes Inventory build 610011 without requiring a pilot identity', () => {
+    assert.equal(availableMobileRelease.ios?.buildNumber, 610011);
+    assert.deepEqual(mobileReleaseForUser('20000000-0000-4000-8000-000000000002', ''), availableMobileRelease);
+  });
+  it('returns the available build to the authenticated audience', async () => {
     const response = await handler('signed-in', true)(new Request('https://staging.example/api/mobile/v1/app-release?userId=someone-else'));
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), pilotMobileRelease);
     assert.match(response.headers.get('cache-control') ?? '', /no-store/);
     assert.deepEqual(mobileReleaseForUser('20000000-0000-4000-8000-000000000002', pilotId), availableMobileRelease);
     assert.deepEqual(mobileReleaseForUser(pilotId, '  '+pilotId.toUpperCase()+' , '), pilotMobileRelease);
+  });
+  it('keeps a future targeted update private even after the general Inventory release', () => {
+    const future = { schemaVersion: 1 as const, ios: { buildNumber: 610012, version: '1.0.0', channel: 'testflight' as const } };
+    const published = { general: availableMobileRelease, pilot: future };
+    assert.deepEqual(mobileReleaseForUser(pilotId, pilotId, published), future);
+    assert.deepEqual(mobileReleaseForUser('20000000-0000-4000-8000-000000000002', pilotId, published), availableMobileRelease);
   });
   it('never advertises a targeted release on missing or malformed configuration', () => {
     for (const audience of ['', 'not-a-user', pilotId+',broken', '*']) {
