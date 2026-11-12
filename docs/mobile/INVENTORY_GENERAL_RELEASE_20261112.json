@@ -1,0 +1,58 @@
+{
+  "asOf": "2026-11-12",
+  "scope": "Owner requested Inventory Beta for all existing RailCommand project members, subject to existing roles; supersedes pilot-only release condition",
+  "branch": "feature/inventory-all-users",
+  "deployedCommit": "e8bedeebeb4afd106b7fbd73c9858b6f40946506",
+  "mainUnmerged": "701849744457b529a7eaa292415a4b4867e11d4e",
+  "web": {
+    "url": "https://railcommand.io",
+    "deploymentId": "dpl_AMc95Btz3AuhioCQu8Mb27iE2KfV",
+    "state": "READY; promoted; four production aliases verified",
+    "previousDeploymentId": "dpl_EWSRRTMojHCE3DWrc2gBet4tFZes"
+  },
+  "database": {
+    "project": "gwvftrrknusdfdgiwuij",
+    "migration": "20261112210321_inventory_general_availability",
+    "migrationSha256": "25df1ecdd476e3e0f5f00d7abd24abe62bde169e37f507d59e385719ad4b2bfb",
+    "existingTablesPreservedInTransaction": 104,
+    "projectMembershipsVerified": 35,
+    "separateInventoryEnrollmentRequired": false,
+    "formerPilotPairsPreserved": 11,
+    "oldMigrationEntriesPreserved": 27,
+    "migrationCountAfter": 28,
+    "existingRolesMembershipsTableGrantsColumnGrantsRlsOtherFunctionsAndDataPreserved": true,
+    "rollbackFunctionSavedPrivately": true,
+    "nonmemberAnonymousForeignProjectDenied": true
+  },
+  "ios": {
+    "build": 610011,
+    "existingFieldBetaTesters": 5,
+    "existingPrivateBetaTesters": 1,
+    "availableToBothExistingGroups": true,
+    "generalUpdateNoticeCatalog": 610011,
+    "newNativeBuildRequired": false,
+    "noNewTestersOrPublicLink": true,
+    "physicalHardwareAcceptance": "INV-REL-05 / UPDATE-NOTICE-DEVICE still pending; not claimed passed"
+  },
+  "checks": {
+    "inventoryTests": 47,
+    "releaseAndMobileBoundaryTests": 19,
+    "catalogueRealPostgres": "passed including new general availability case and unchanged ordered approval, thresholds, split flags, catalogue/CSV/receipts",
+    "grantStaticAndRealPostgres": "passed",
+    "build": "passed locally and Vercel",
+    "typescript": "passed",
+    "stagedAndLiveUnauthenticatedChecks": "login 200; Inventory redirect 307; mobile release/bootstrap 401",
+    "signedInLivePage": "previously blocked owner project now loads stock screen; no stock added",
+    "errorLogs": "no error entries in deployment since release scan",
+    "oldDirtyCheckoutUnchanged": true,
+    "rfqDesignUnchangedAndNotDeployed": true,
+    "noNewPaidResourceOrCloudNativeBuild": true
+  },
+  "offline": {
+    "stock": "read-only cached",
+    "requests": "durable offline draft",
+    "receivingImportsCostApprovals": "online-only",
+    "existingDraftQueueSchemaIdsAndSignoutProtection": "unchanged"
+  },
+  "metadataNote": "Independent before/after role hash differs because the authenticated Supabase CLI refreshes its own cli_login_postgres expiry. All role attributes matched inside the guarded migration transaction; independent non-role metadata hashes match. No application account, role assignment or password changed."
+}

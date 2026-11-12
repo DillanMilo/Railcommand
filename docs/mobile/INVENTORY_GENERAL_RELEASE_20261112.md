@@ -69,4 +69,39 @@ Do not expire builds or reset apps. Record actual deployment/check outcomes belo
 
 ## Outcomes
 
-Prepared; live rollout verification follows in the release record.
+Released source `e8bedeebeb4afd106b7fbd73c9858b6f40946506` to production deployment
+`dpl_AMc95Btz3AuhioCQu8Mb27iE2KfV`; railcommand.io, www.railcommand.io and
+both standard project aliases verified. Database migration 20261112210321 applied
+as a guarded transaction: all 104 existing public/Auth/Storage table fingerprints,
+table/column grants, RLS/policies, other function definitions/grants, database
+roles/memberships and defaults matched inside the change. All 27 prior migration
+entries and 11 pilot enrollment pairs retained; migration count is now 28.
+
+Read-only live verification passed for all 35 existing project memberships,
+including previously unenrolled members, with field finance exclusion and
+anonymous/nonmember denial. The owner's previously blocked project opened the
+live stock screen with no pilot message; no stock or other test records were
+created. Staged and live smoke checks: login 200, unauthenticated Inventory 307,
+unauthenticated native bootstrap/release 401. No error log entries returned in
+the release observation window.
+
+47 Inventory tests, 19 release/mobile-boundary tests, disposable real PostgreSQL
+catalogue/availability tests, static and real grant checks, local/Vercel builds and
+TypeScript passed. Native bundled code and released mobile route handlers remain
+unchanged. Independent role hash outside the transaction changes when Supabase
+CLI refreshes its own short-lived cli_login_postgres expiry; all non-role access
+hashes match, and the transaction guard verified roles unchanged by this migration.
+
+Build 610011 is Testing in both existing Field Beta (five testers) and Private
+Beta (one tester). General update discovery advertises this available build.
+First real-iPhone workflow/update-handoff acceptance remains pending and must not
+be reported as passed. The owner explicitly authorized the wider audience today.
+No new app user/project membership, public TestFlight link, App Store submission,
+paid resource, cloud native build, main merge or RFQ deployment occurred. Original
+dirty checkout matches its baseline. Local RFQ work remains untracked and intact
+in the previous inventory-beta-release worktree.
+
+The faithful restored backup from 11 November remains private and unchanged. This
+small release saved the exact previous function separately and verified all live
+rows stayed unchanged; it did not reset passwords or create another backup login.
+See the adjacent JSON for machine-readable release IDs and outcomes.
